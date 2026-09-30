@@ -381,7 +381,7 @@ mod tests {
 
         let wf = wellen::simple::read(tmp.to_str().unwrap()).expect("wellen reads converted FST");
         let h = wf.hierarchy();
-        let names: Vec<String> = h.all_vars().map(|v| v.name(h).to_string()).collect();
+        let names: Vec<String> = h.all_vars().map(|v| h[v].name(h).to_string()).collect();
         assert!(
             names.contains(&"clk".to_string()),
             "clk missing in {names:?}"

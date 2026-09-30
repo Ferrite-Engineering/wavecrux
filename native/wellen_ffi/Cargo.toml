@@ -9,7 +9,7 @@ edition = "2024"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-wellen = "0.24"
+wellen = "0.25"
 
 # The LXT/LXT2 → FST converter. Linked in (see `src/lib.rs`) so this one
 # library also exports the `lxt2fst_*` C ABI: every platform already builds,

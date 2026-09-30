@@ -49,7 +49,7 @@ fn simple_counter_lxt2_structural_round_trip() {
     // since the value-change decoder is intentionally incomplete.
     let wf = wellen::simple::read(dst.to_str().unwrap()).expect("wellen reads converted FST");
     let h = wf.hierarchy();
-    let names: Vec<String> = h.all_vars().map(|v| v.name(h).to_string()).collect();
+    let names: Vec<String> = h.all_vars().map(|v| h[v].name(h).to_string()).collect();
     assert!(
         names.contains(&"clk".to_string()),
         "clk missing in {names:?}"
@@ -68,7 +68,7 @@ fn multi_scope_lxt2_hierarchy_preserved() {
 
     let wf = wellen::simple::read(dst.to_str().unwrap()).expect("wellen reads converted FST");
     let h = wf.hierarchy();
-    let scope_names: Vec<String> = h.all_scopes().map(|s| s.name(h).to_string()).collect();
+    let scope_names: Vec<String> = h.all_scopes().map(|s| h[s].name(h).to_string()).collect();
     assert!(
         scope_names.contains(&"top".to_string()),
         "top missing in {scope_names:?}"
@@ -116,7 +116,7 @@ fn vector_signals_lxt2_recognizes_real_and_vector_geometry() {
 
     let wf = wellen::simple::read(dst.to_str().unwrap()).expect("wellen reads converted FST");
     let h = wf.hierarchy();
-    let names: Vec<String> = h.all_vars().map(|v| v.name(h).to_string()).collect();
+    let names: Vec<String> = h.all_vars().map(|v| h[v].name(h).to_string()).collect();
     assert!(names.contains(&"bus32".to_string()), "bus32 missing");
     assert!(names.contains(&"bus64".to_string()), "bus64 missing");
     assert!(names.contains(&"voltage".to_string()), "voltage missing");
@@ -130,7 +130,7 @@ fn string_values_lxt2_emits_string_facilities_as_variable_length() {
 
     let wf = wellen::simple::read(dst.to_str().unwrap()).expect("wellen reads converted FST");
     let h = wf.hierarchy();
-    let names: Vec<String> = h.all_vars().map(|v| v.name(h).to_string()).collect();
+    let names: Vec<String> = h.all_vars().map(|v| h[v].name(h).to_string()).collect();
     assert!(names.contains(&"state".to_string()), "state missing");
     assert!(names.contains(&"msg".to_string()), "msg missing");
     assert!(names.contains(&"code".to_string()), "code missing");
@@ -157,7 +157,7 @@ fn lxt_classic_structural_round_trip() {
     // since the value-change decoder is intentionally incomplete.
     let wf = wellen::simple::read(dst.to_str().unwrap()).expect("wellen reads converted FST");
     let h = wf.hierarchy();
-    let names: Vec<String> = h.all_vars().map(|v| v.name(h).to_string()).collect();
+    let names: Vec<String> = h.all_vars().map(|v| h[v].name(h).to_string()).collect();
     assert!(
         names.contains(&"clk".to_string()),
         "clk missing in {names:?}"
@@ -166,7 +166,7 @@ fn lxt_classic_structural_round_trip() {
         names.contains(&"count".to_string()),
         "count missing in {names:?}"
     );
-    let scope_names: Vec<String> = h.all_scopes().map(|s| s.name(h).to_string()).collect();
+    let scope_names: Vec<String> = h.all_scopes().map(|s| h[s].name(h).to_string()).collect();
     assert!(
         scope_names.contains(&"top".to_string()),
         "top scope missing in {scope_names:?}"
@@ -245,9 +245,9 @@ fn read_changes(wf: &wellen::simple::Waveform, name: &str) -> Vec<(u64, String)>
     let h = wf.hierarchy();
     let var = h
         .all_vars()
-        .find(|v| v.name(h) == name)
+        .find(|&v| h[v].name(h) == name)
         .unwrap_or_else(|| panic!("var {name} not found"));
-    let sig = wf.get_signal(var.signal_ref()).expect("signal loaded");
+    let sig = wf.get_signal(h[var].signal_ref()).expect("signal loaded");
     let tt = wf.time_table();
     sig.iter_changes()
         .map(|(idx, v)| {
@@ -269,8 +269,8 @@ fn simple_counter_lxt2_value_equivalence() {
     let h = wf.hierarchy();
     let refs: Vec<_> = h
         .all_vars()
-        .filter(|v| v.name(h) == "clk" || v.name(h) == "count")
-        .map(|v| v.signal_ref())
+        .filter(|&v| h[v].name(h) == "clk" || h[v].name(h) == "count")
+        .map(|v| h[v].signal_ref())
         .collect();
     wf.load_signals(&refs);
 
@@ -299,7 +299,7 @@ fn multi_scope_lxt2_value_equivalence() {
 
     let mut wf = wellen::simple::read(dst.to_str().unwrap()).expect("wellen reads converted FST");
     let h = wf.hierarchy();
-    let refs: Vec<_> = h.all_vars().map(|v| v.signal_ref()).collect();
+    let refs: Vec<_> = h.all_vars().map(|v| h[v].signal_ref()).collect();
     wf.load_signals(&refs);
 
     // 16-bit ALU result: 0x0000 @0, 0x00FF @30, 0x1234 @50, 0xFFFF @90.
@@ -333,7 +333,7 @@ fn vector_signals_lxt2_value_equivalence() {
 
     let mut wf = wellen::simple::read(dst.to_str().unwrap()).expect("wellen reads converted FST");
     let h = wf.hierarchy();
-    let refs: Vec<_> = h.all_vars().map(|v| v.signal_ref()).collect();
+    let refs: Vec<_> = h.all_vars().map(|v| h[v].signal_ref()).collect();
     wf.load_signals(&refs);
 
     // 32-bit bus with x/z states preserved per bit.
@@ -350,11 +350,8 @@ fn vector_signals_lxt2_value_equivalence() {
 
     // Real-valued facility: voltage = 1.8, 3.3, -1.2, 0.0 (read as f64).
     let h = wf.hierarchy();
-    let voltage_ref = h
-        .all_vars()
-        .find(|v| v.name(h) == "voltage")
-        .unwrap()
-        .signal_ref();
+    let voltage_var = h.all_vars().find(|&v| h[v].name(h) == "voltage").unwrap();
+    let voltage_ref = h[voltage_var].signal_ref();
     let sig = wf.get_signal(voltage_ref).expect("voltage loaded");
     let tt = wf.time_table();
     let reals: Vec<(u64, f64)> = sig
@@ -388,8 +385,8 @@ fn lxt_classic_value_equivalence_post_decoder() {
     let h = wf.hierarchy();
     let refs: Vec<_> = h
         .all_vars()
-        .filter(|v| v.name(h) == "clk" || v.name(h) == "count")
-        .map(|v| v.signal_ref())
+        .filter(|&v| h[v].name(h) == "clk" || h[v].name(h) == "count")
+        .map(|v| h[v].signal_ref())
         .collect();
     wf.load_signals(&refs);
 

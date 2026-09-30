@@ -313,9 +313,9 @@ mod tests {
 
         let wf = wellen::simple::read(tmp.to_str().unwrap()).expect("wellen reads our FST");
         let h = wf.hierarchy();
-        assert!(h.all_scopes().any(|s| s.name(h) == "top"));
-        assert!(h.all_vars().any(|v| v.name(h) == "clk"));
-        assert!(h.all_vars().any(|v| v.name(h) == "count"));
+        assert!(h.all_scopes().any(|s| h[s].name(h) == "top"));
+        assert!(h.all_vars().any(|v| h[v].name(h) == "clk"));
+        assert!(h.all_vars().any(|v| h[v].name(h) == "count"));
     }
 
     #[test]

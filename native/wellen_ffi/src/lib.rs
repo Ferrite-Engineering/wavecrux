@@ -54,14 +54,28 @@ impl WellenHandle {
         let h = waveform.hierarchy();
         let date = CString::new(h.date()).unwrap_or_default();
         let version = CString::new(h.version()).unwrap_or_default();
-        let scope_names: Vec<CString> = h
-            .all_scopes()
-            .map(|s| CString::new(s.name(h)).unwrap_or_default())
-            .collect();
-        let var_names: Vec<CString> = h
-            .all_vars()
-            .map(|v| CString::new(v.name(h)).unwrap_or_default())
-            .collect();
+        // Indexed by `ScopeRef::index()` / `VarRef::index()`, which is what the
+        // C side hands back. Placed by index rather than collected in iteration
+        // order: since wellen 0.25 `all_scopes()` / `all_vars()` walk the tree
+        // recursively, so their order is no longer the storage order the refs
+        // count in, and a cache built by `collect()` handed out the wrong name
+        // — or null — for every ref past the first divergence.
+        let mut scope_names: Vec<CString> = Vec::new();
+        for s in h.all_scopes() {
+            let i = s.index();
+            if scope_names.len() <= i {
+                scope_names.resize_with(i + 1, CString::default);
+            }
+            scope_names[i] = CString::new(h[s].name(h)).unwrap_or_default();
+        }
+        let mut var_names: Vec<CString> = Vec::new();
+        for v in h.all_vars() {
+            let i = v.index();
+            if var_names.len() <= i {
+                var_names.resize_with(i + 1, CString::default);
+            }
+            var_names[i] = CString::new(h[v].name(h)).unwrap_or_default();
+        }
         Box::new(WellenHandle {
             waveform,
             last_error: CString::new("").unwrap(),

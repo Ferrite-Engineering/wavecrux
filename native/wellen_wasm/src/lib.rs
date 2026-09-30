@@ -27,8 +27,7 @@ use std::panic;
 
 use wasm_bindgen::prelude::*;
 use wellen::{
-    Hierarchy, ScopeRef, ScopeType, SignalRef, TimescaleUnit, VarDirection, VarRef, VarType,
-    simple,
+    Hierarchy, ScopeRef, ScopeType, SignalRef, TimescaleUnit, VarDirection, VarRef, VarType, simple,
 };
 
 // ── file format constants ─────────────────────────────────────────────────────
@@ -248,8 +247,27 @@ impl WellenWasm {
             let waveform = simple::read_from_reader(cursor).map_err(into_js_err)?;
 
             let h = waveform.hierarchy();
-            let scope_names: Vec<String> = h.all_scopes().map(|s| s.name(h).to_string()).collect();
-            let var_names: Vec<String> = h.all_vars().map(|v| v.name(h).to_string()).collect();
+            // Indexed by `ScopeRef::index()` / `VarRef::index()`, which is what
+            // the JS side hands back. Placed by index rather than collected in
+            // iteration order: since wellen 0.25 `all_scopes()` / `all_vars()`
+            // walk the tree recursively, so their order is no longer the
+            // storage order the refs count in.
+            let mut scope_names: Vec<String> = Vec::new();
+            for s in h.all_scopes() {
+                let i = s.index();
+                if scope_names.len() <= i {
+                    scope_names.resize_with(i + 1, String::new);
+                }
+                scope_names[i] = h[s].name(h).to_string();
+            }
+            let mut var_names: Vec<String> = Vec::new();
+            for v in h.all_vars() {
+                let i = v.index();
+                if var_names.len() <= i {
+                    var_names.resize_with(i + 1, String::new);
+                }
+                var_names[i] = h[v].name(h).to_string();
+            }
 
             Ok(WellenWasm {
                 waveform,
@@ -516,12 +534,7 @@ impl WellenWasm {
     /// transition as index i in `values`. Times are encoded as `f64` (JS
     /// Number) — simulation times fit in 53 bits.
     #[wasm_bindgen(js_name = signalChanges)]
-    pub fn signal_changes(
-        &self,
-        signal_ref: u32,
-        start_time: f64,
-        end_time: f64,
-    ) -> JsValue {
+    pub fn signal_changes(&self, signal_ref: u32, start_time: f64, end_time: f64) -> JsValue {
         let start_u64 = start_time as u64;
         let end_u64 = end_time as u64;
         let sr = match SignalRef::from_index(signal_ref as usize) {
@@ -622,11 +635,8 @@ impl WellenWasm {
                     &JsValue::from_str("time"),
                     &JsValue::from_f64(t as f64),
                 );
-                let _ = js_sys::Reflect::set(
-                    &obj,
-                    &JsValue::from_str("value"),
-                    &JsValue::from_str(&v),
-                );
+                let _ =
+                    js_sys::Reflect::set(&obj, &JsValue::from_str("value"), &JsValue::from_str(&v));
                 obj.into()
             }
             None => JsValue::NULL,
@@ -656,8 +666,7 @@ impl WellenWasm {
     #[wasm_bindgen(js_name = memoryUsageBytes)]
     pub fn memory_usage_bytes(&self) -> f64 {
         let time_bytes = self.waveform.time_table().len() as u64 * 8;
-        let hier_bytes =
-            self.scope_names.len() as u64 * 200 + self.var_names.len() as u64 * 100;
+        let hier_bytes = self.scope_names.len() as u64 * 200 + self.var_names.len() as u64 * 100;
         let signal_bytes = self.total_transitions * 16;
         (time_bytes + hier_bytes + signal_bytes) as f64
     }
