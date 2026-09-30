@@ -29,7 +29,6 @@ import 'package:wavecrux/domain/models/variable.dart';
 // An extension point, not a callback: implementations are `const` values
 // referenced from widget definitions, and the interface is the seam the Pro
 // overlay implements. Same rationale as TelemetryService / DebugAdvisorService.
-// ignore: one_member_abstracts
 abstract class StageAutoBindService {
   const StageAutoBindService();
 

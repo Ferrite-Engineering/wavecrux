@@ -267,7 +267,7 @@ void main() {
         'command': command,
         'data': data ?? <String, dynamic>{},
       });
-      return ws.next();
+      return await ws.next();
     }
 
     test('reload with no file loaded returns error code 5', () async {
@@ -440,7 +440,7 @@ void main() {
         'command': command,
         'data': data ?? <String, dynamic>{},
       });
-      return ws.next();
+      return await ws.next();
     }
 
     test('greeting announces wavecrux.setActiveTab', () async {
@@ -587,7 +587,7 @@ void main() {
         'command': command,
         'data': data ?? <String, dynamic>{},
       });
-      return ws.next();
+      return await ws.next();
     }
 
     // ── set_cursor success ────────────────────────────────────────────────
@@ -1032,7 +1032,7 @@ void main() {
         'command': command,
         'data': data ?? <String, dynamic>{},
       });
-      return ws.next();
+      return await ws.next();
     }
 
     test(
@@ -1159,7 +1159,7 @@ void main() {
         'command': command,
         'data': data ?? <String, dynamic>{},
       });
-      return ws.next();
+      return await ws.next();
     }
 
     _ReloadableFakeNotifier tabNotifier() =>

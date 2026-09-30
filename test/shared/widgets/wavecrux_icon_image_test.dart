@@ -44,7 +44,7 @@ class _RecordingAssetBundle extends CachingAssetBundle {
     String key,
     Future<T> Function(String value) parser,
   ) async {
-    return parser(await rootBundle.loadString(key));
+    return await parser(await rootBundle.loadString(key));
   }
 
   @override
@@ -52,7 +52,7 @@ class _RecordingAssetBundle extends CachingAssetBundle {
     String key,
     FutureOr<T> Function(ByteData data) parser,
   ) async {
-    return parser(await rootBundle.load(key));
+    return await parser(await rootBundle.load(key));
   }
 }
 

@@ -270,7 +270,6 @@ class RiscvIdentityTrackResult {
 /// Reconstructs instruction identity across pipeline stages.
 // An extension point: the `tag` implementation is Pro and arrives through
 // [RiscvIdentityTrackerRegistry], so this stays a one-member interface.
-// ignore: one_member_abstracts
 abstract class RiscvInstructionIdentityTracker {
   const RiscvInstructionIdentityTracker();
 

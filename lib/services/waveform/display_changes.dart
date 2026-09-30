@@ -33,7 +33,6 @@ import 'package:wavecrux/services/waveform/compact_changes.dart';
 /// [WaveformDataSource.changesInRange], with identical results.
 // A class rather than a function type: callers test for it with `is` on a
 // data source they already hold.
-// ignore: one_member_abstracts
 abstract interface class CompactChangesSource {
   /// The packed change store for [signalRef], or null when the signal is not
   /// loaded.

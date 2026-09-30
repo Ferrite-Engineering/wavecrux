@@ -214,7 +214,7 @@ class _ColorThemeSectionState extends ConsumerState<ColorThemeSection> {
     );
     final path = file?.path;
     if (path == null) return null;
-    return File(path).readAsString();
+    return await File(path).readAsString();
   }
 
   static Future<String?> _defaultSavePackDocument(String document) async {

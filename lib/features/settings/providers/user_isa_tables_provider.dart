@@ -30,5 +30,5 @@ Future<UserIsaTableLoadResult> userIsaTables(Ref ref) async {
     );
   }
   final settings = await ref.watch(appSettingsProvider.future);
-  return loadUserIsaTables(directories: settings.isaTableDirectories);
+  return await loadUserIsaTables(directories: settings.isaTableDirectories);
 }

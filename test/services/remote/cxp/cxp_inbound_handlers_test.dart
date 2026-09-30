@@ -1056,7 +1056,7 @@ void main() {
       );
       addTearDown(container.dispose);
       await container.read(appSettingsProvider.future);
-      return dispatchCxpOpenSource(
+      return await dispatchCxpOpenSource(
         container.read(_refProvider),
         filePath,
         42,

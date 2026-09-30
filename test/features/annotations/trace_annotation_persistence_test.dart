@@ -62,7 +62,7 @@ void main() {
     // different strings; if they keyed differently the user would lose their
     // notes depending on how they happened to open the file.
     final dir = await Directory.systemTemp.createTemp('trace-id');
-    addTearDown(() async => dir.delete(recursive: true));
+    addTearDown(() async => await dir.delete(recursive: true));
     final file = File('${dir.path}${Platform.pathSeparator}out.vcd')
       ..writeAsStringSync('');
 

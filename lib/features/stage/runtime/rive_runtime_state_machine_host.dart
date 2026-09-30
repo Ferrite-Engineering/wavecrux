@@ -176,7 +176,7 @@ Future<LoadedRiveFile> loadRiveFileForStageWidget({
     byteData.offsetInBytes,
     byteData.lengthInBytes,
   );
-  return decodeRiveFileForStageWidget(
+  return await decodeRiveFileForStageWidget(
     bytes: bytes,
     artboardName: artboardName,
     sourceLabel: assetPath,

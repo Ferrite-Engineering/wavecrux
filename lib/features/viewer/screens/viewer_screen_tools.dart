@@ -394,7 +394,7 @@ extension _ViewerScreenTools on _ViewerScreenState {
     unawaited(
       ModalGuard.run(
         'addDecoder',
-        () async => DecoderPickerDialog.show(
+        () async => await DecoderPickerDialog.show(
           context,
           signalMap: signalMap,
           tabContainer: _activeTabContainer,
@@ -407,8 +407,10 @@ extension _ViewerScreenTools on _ViewerScreenState {
     unawaited(
       ModalGuard.run(
         'openSearch',
-        () async =>
-            SignalSearchDialog.show(context, tabContainer: _activeTabContainer),
+        () async => await SignalSearchDialog.show(
+          context,
+          tabContainer: _activeTabContainer,
+        ),
       ),
     );
   }
@@ -417,7 +419,7 @@ extension _ViewerScreenTools on _ViewerScreenState {
     unawaited(
       ModalGuard.run(
         'patternSearch',
-        () async => PatternSearchDialog.show(
+        () async => await PatternSearchDialog.show(
           context,
           tabContainer: _activeTabContainer,
         ),
@@ -438,7 +440,7 @@ extension _ViewerScreenTools on _ViewerScreenState {
     unawaited(
       ModalGuard.run(
         'exportWaveform',
-        () async => _activeTabContainer
+        () async => await _activeTabContainer
             .read(exportProvider.notifier)
             .showExportDialog(
               context,
@@ -456,7 +458,7 @@ extension _ViewerScreenTools on _ViewerScreenState {
     unawaited(
       ModalGuard.run(
         'shareAnnotatedWaveform',
-        () async => _activeTabContainer
+        () async => await _activeTabContainer
             .read(sharePackProvider.notifier)
             .shareAnnotatedWaveform(
               context,

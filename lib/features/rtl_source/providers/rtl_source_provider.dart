@@ -143,7 +143,6 @@ class RtlSourceState {
 
 /// File-IO surface used by [RtlSourceNotifier]; abstracted to support test
 /// injection without `dart:io` access.
-// ignore: one_member_abstracts
 abstract class StemsFileReader {
   Future<String> readAsString(String path);
 }
@@ -255,7 +254,7 @@ class RtlSourceNotifier extends _$RtlSourceNotifier {
       );
       return false;
     }
-    return _navigateToEntry(
+    return await _navigateToEntry(
       entry: entry,
       signalRef: signalRef,
       signalPath: signalPath,
@@ -281,7 +280,7 @@ class RtlSourceNotifier extends _$RtlSourceNotifier {
       );
       return false;
     }
-    return _navigateToEntry(
+    return await _navigateToEntry(
       entry: entry,
       signalRef: null,
       signalPath: entry.path,

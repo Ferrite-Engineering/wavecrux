@@ -46,7 +46,7 @@ Future<Directory> _defaultAppCacheDir() async {
   try {
     return await getApplicationCacheDirectory();
   } on Object {
-    return getApplicationSupportDirectory();
+    return await getApplicationSupportDirectory();
   }
 }
 

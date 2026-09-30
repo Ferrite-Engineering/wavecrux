@@ -248,43 +248,43 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
   ) async {
     switch (command) {
       case 'load':
-        return _handleLoad(data);
+        return await _handleLoad(data);
       case 'reload':
-        return _handleReload();
+        return await _handleReload();
       case 'clear':
-        return _handleClear();
+        return await _handleClear();
       case 'shutdown':
-        return _handleShutdown();
+        return await _handleShutdown();
       case 'add_items':
-        return _handleAddItems(data);
+        return await _handleAddItems(data);
       case 'remove_items':
-        return _handleRemoveItems(data);
+        return await _handleRemoveItems(data);
       case 'get_item_list':
-        return _handleGetItemList();
+        return await _handleGetItemList();
       case 'get_item_info':
-        return _handleGetItemInfo(data);
+        return await _handleGetItemInfo(data);
       case 'set_cursor':
-        return _handleSetCursor(data);
+        return await _handleSetCursor(data);
       case 'set_viewport_range':
-        return _handleSetViewportRange(data);
+        return await _handleSetViewportRange(data);
       case 'set_viewport_to':
-        return _handleSetViewportTo(data);
+        return await _handleSetViewportTo(data);
       case 'zoom_to_fit':
-        return _handleZoomToFit();
+        return await _handleZoomToFit();
       case 'set_item_color':
-        return _handleSetItemColor(data);
+        return await _handleSetItemColor(data);
       case 'focus_item':
-        return _handleFocusItem(data);
+        return await _handleFocusItem(data);
       case 'add_markers':
-        return _handleAddMarkers(data);
+        return await _handleAddMarkers(data);
       case 'wavecrux.getValueAt':
-        return _handleGetValueAt(data);
+        return await _handleGetValueAt(data);
       case 'wavecrux.getHierarchy':
-        return _handleGetHierarchy();
+        return await _handleGetHierarchy();
       case 'wavecrux.getState':
-        return _handleGetState();
+        return await _handleGetState();
       case 'wavecrux.setActiveTab':
-        return _handleSetActiveTab(data);
+        return await _handleSetActiveTab(data);
       default:
         throw WcpException('Unknown command: $command', code: 2);
     }

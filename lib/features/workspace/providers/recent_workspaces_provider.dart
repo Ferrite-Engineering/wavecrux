@@ -50,7 +50,7 @@ class RecentWorkspacesNotifier extends _$RecentWorkspacesNotifier {
 
   /// Replaces the list with the empty list. Test seam and "Forget all
   /// recent workspaces" hook for a future settings affordance.
-  Future<void> clear() async => _persist(const <String>[]);
+  Future<void> clear() async => await _persist(const <String>[]);
 
   Future<void> _persist(List<String> paths) async {
     final prefs = await SharedPreferences.getInstance();

@@ -146,7 +146,7 @@ class _GenerateStemsDialogState extends ConsumerState<GenerateStemsDialog> {
   }
 
   Future<List<String>> _pickFiles() async {
-    if (widget._filesPicker != null) return widget._filesPicker!();
+    if (widget._filesPicker != null) return await widget._filesPicker!();
     final result = await FilePicker.pickFiles(
       // file_picker 12: pickFiles selects multiple by default; allowMultiple
       // is deprecated, so it is dropped here while preserving multi-select.
@@ -159,15 +159,15 @@ class _GenerateStemsDialogState extends ConsumerState<GenerateStemsDialog> {
   }
 
   Future<String?> _pickFolder() async {
-    if (widget._folderPicker != null) return widget._folderPicker!();
-    return FilePicker.getDirectoryPath(
+    if (widget._folderPicker != null) return await widget._folderPicker!();
+    return await FilePicker.getDirectoryPath(
       dialogTitle: L10N.of(context).rtlGenerateFolderPickerTitle,
     );
   }
 
   Future<String?> _pickSave(String suggested) async {
-    if (widget._savePicker != null) return widget._savePicker!(suggested);
-    return FilePicker.saveFile(
+    if (widget._savePicker != null) return await widget._savePicker!(suggested);
+    return await FilePicker.saveFile(
       // file_picker 12 requires bytes & writes the file itself; pass empty so
       // it only returns the chosen path and we write via _write below.
       bytes: Uint8List(0),

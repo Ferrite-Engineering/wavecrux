@@ -111,7 +111,7 @@ class _ImportVerilatorAstDialogState
   }
 
   Future<String?> _pickAstFile() async {
-    if (widget._astPicker != null) return widget._astPicker!();
+    if (widget._astPicker != null) return await widget._astPicker!();
     final result = await FilePicker.pickFiles(
       dialogTitle: L10N.of(context).rtlImportAstPickerTitle,
       type: FileType.custom,
@@ -123,8 +123,8 @@ class _ImportVerilatorAstDialogState
   }
 
   Future<String?> _pickSave(String suggested) async {
-    if (widget._savePicker != null) return widget._savePicker!(suggested);
-    return FilePicker.saveFile(
+    if (widget._savePicker != null) return await widget._savePicker!(suggested);
+    return await FilePicker.saveFile(
       // file_picker 12 requires bytes & writes the file itself; pass empty so
       // it only returns the chosen path and we write via _write below.
       bytes: Uint8List(0),

@@ -61,8 +61,9 @@ void main() {
       // top of the two CLI files. Sibling workspace tests do the same.
       await WorkspaceService(codec: const WaveCruxWorkspaceCodec()).clear();
       addTearDown(
-        () async =>
-            WorkspaceService(codec: const WaveCruxWorkspaceCodec()).clear(),
+        () async => await WorkspaceService(
+          codec: const WaveCruxWorkspaceCodec(),
+        ).clear(),
       );
 
       final firstPath = _fixturePath('vcd/scalar_basics.vcd');

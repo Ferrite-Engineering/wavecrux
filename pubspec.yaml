@@ -262,7 +262,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   flutter_riverpod: ^3.3.2
-  go_router: ^17.3.0
+  go_router: ^18.0.2
   http: ^1.2.0
   logging: ^1.3.0  # ring-buffer log capture for the Beta Issue Reporter
   meta: ^1.18.0  # pinned to 1.18.0 by flutter_test (1.18.2 latest blocked by SDK)
@@ -310,7 +310,7 @@ dev_dependencies:
   mocktail: ^1.0.4
   plugin_platform_interface: ^2.1.8
   riverpod_generator: ^4.0.4
-  very_good_analysis: ^10.2.0
+  very_good_analysis: ^11.0.0
 
 flutter:
   generate: true

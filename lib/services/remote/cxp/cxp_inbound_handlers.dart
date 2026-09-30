@@ -375,13 +375,13 @@ Future<_ElementOutcome> _dispatchCxpHighlight(
     case KnownElementKind.instance:
     case KnownElementKind.net:
     case KnownElementKind.port:
-      return _highlightSignalLikeOrOpen(ref, element.path, metadata);
+      return await _highlightSignalLikeOrOpen(ref, element.path, metadata);
     case KnownElementKind.scope:
       return _ElementOutcome(await _highlightScope(ref, element.path));
     case KnownElementKind.marker:
       return _ElementOutcome(await _highlightMarker(ref, element.path));
     case KnownElementKind.source:
-      return _highlightSource(ref, element.path);
+      return await _highlightSource(ref, element.path);
     case KnownElementKind.rule:
     case KnownElementKind.test:
     case KnownElementKind.breakpoint:
@@ -442,7 +442,7 @@ Future<({bool loaded, bool openedTab})> _openDesignWaveformFromWorkspace(
   if (designId is! String || designId.isEmpty) return nothing;
   final path = resolveWaveformArtifactPath(ref, designId);
   if (path == null) return nothing;
-  return _openWaveformInNewTab(ref, path);
+  return await _openWaveformInNewTab(ref, path);
 }
 
 /// Opens the waveform at absolute [path] via the same workspace-then-source
@@ -1247,7 +1247,7 @@ Future<CxpHandlerResult> dispatchCxpOpenSource(
   }
   final target = column == null ? '$filePath:$line' : '$filePath:$line:$column';
   final runner = ref.read(cxpEditorCommandRunnerProvider);
-  return runner(command, target);
+  return await runner(command, target);
 }
 
 /// Type of the editor-command runner injected via

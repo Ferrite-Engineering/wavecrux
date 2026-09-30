@@ -638,7 +638,7 @@ extension _ViewerScreenFileIo on _ViewerScreenState {
     if (!guard.shouldWarnBeforeLoad(fileSize, deviceClass)) return true;
     if (!mounted) return false;
     final threshold = guard.fileSizeThresholdBytes(deviceClass)!;
-    return LargeFileWarningDialog.show(
+    return await LargeFileWarningDialog.show(
       context,
       fileSizeBytes: fileSize,
       thresholdBytes: threshold,

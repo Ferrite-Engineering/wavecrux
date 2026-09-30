@@ -20,7 +20,7 @@ import 'package:wavecrux/plugins/custom_stage_widget_registry_provider.dart';
 /// [customWidgetBundleStoreProvider] and [customWidgetBundleManagerProvider].
 final customWidgetBundleStoreProvider = FutureProvider<CustomWidgetBundleStore>(
   (ref) async {
-    return CustomWidgetBundleStore.load();
+    return await CustomWidgetBundleStore.load();
   },
 );
 

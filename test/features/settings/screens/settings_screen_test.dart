@@ -410,7 +410,7 @@ void main() {
       tester,
     ) async {
       await tester.binding.setSurfaceSize(const Size(420, 800));
-      addTearDown(() async => tester.binding.setSurfaceSize(null));
+      addTearDown(() async => await tester.binding.setSurfaceSize(null));
 
       await tester.pumpWidget(_wrap());
       await tester.pumpAndSettle();
@@ -536,7 +536,7 @@ void main() {
       'dialog adapts to small viewports (Issue 9)',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(500, 500));
-        addTearDown(() async => tester.binding.setSurfaceSize(null));
+        addTearDown(() async => await tester.binding.setSurfaceSize(null));
 
         await tester.pumpWidget(_wrapWithTrigger());
         await tester.pumpAndSettle();

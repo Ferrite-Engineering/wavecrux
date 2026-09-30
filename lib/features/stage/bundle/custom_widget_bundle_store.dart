@@ -103,7 +103,7 @@ class CustomWidgetBundleStore {
   Future<CustomWidgetBundleStoreState> addManualBundle(String path) async {
     final current = read();
     if (current.manualBundlePaths.contains(path)) return current;
-    return write(
+    return await write(
       current.copyWith(
         manualBundlePaths: [...current.manualBundlePaths, path],
       ),
@@ -114,14 +114,14 @@ class CustomWidgetBundleStore {
   Future<CustomWidgetBundleStoreState> removeManualBundle(String path) async {
     final current = read();
     final updated = current.manualBundlePaths.where((p) => p != path).toList();
-    return write(current.copyWith(manualBundlePaths: updated));
+    return await write(current.copyWith(manualBundlePaths: updated));
   }
 
   /// Adds [path] to the watched-directories list and persists.
   Future<CustomWidgetBundleStoreState> addWatchedDirectory(String path) async {
     final current = read();
     if (current.watchedDirectories.contains(path)) return current;
-    return write(
+    return await write(
       current.copyWith(
         watchedDirectories: [...current.watchedDirectories, path],
       ),
@@ -134,6 +134,6 @@ class CustomWidgetBundleStore {
   ) async {
     final current = read();
     final updated = current.watchedDirectories.where((p) => p != path).toList();
-    return write(current.copyWith(watchedDirectories: updated));
+    return await write(current.copyWith(watchedDirectories: updated));
   }
 }

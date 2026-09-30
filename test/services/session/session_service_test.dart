@@ -804,9 +804,9 @@ void main() {
 
   group('SessionService — missing fields (forward compatibility)', () {
     Future<SessionState> loadJson(String json) async {
-      return _withTempFile((path) async {
+      return await _withTempFile((path) async {
         await File(path).writeAsString(json);
-        return _service.loadSession(path);
+        return await _service.loadSession(path);
       });
     }
 
@@ -1026,9 +1026,9 @@ void main() {
 
   group('SessionService — v3 session-restore state', () {
     Future<SessionState> loadJson(String json) async {
-      return _withTempFile((path) async {
+      return await _withTempFile((path) async {
         await File(path).writeAsString(json);
-        return _service.loadSession(path);
+        return await _service.loadSession(path);
       });
     }
 

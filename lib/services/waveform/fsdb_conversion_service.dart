@@ -28,7 +28,8 @@ typedef FsdbExecutableLocator = String? Function(String executableName);
 Future<ProcessResult> _defaultProcessRunner(
   String executable,
   List<String> arguments,
-) async => Process.run(requireSpawnExecutableForHost(executable), arguments);
+) async =>
+    await Process.run(requireSpawnExecutableForHost(executable), arguments);
 
 String? _defaultLocator(String name) {
   if (kIsWeb) return null;

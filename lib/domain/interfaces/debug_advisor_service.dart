@@ -162,7 +162,6 @@ bool _mapEquals(Map<String, String> a, Map<String, String> b) {
 /// Implementations must be pure: same `(source, cursorTime, focusSignal)`
 /// triple → same suggestions. No persistent state, no network access, no
 /// LLM/model inference.
-// ignore: one_member_abstracts
 abstract class DebugAdvisorService {
   /// Run every registered rule against the loaded waveform and return the
   /// set of suggestions for the cursor at [cursorTime].

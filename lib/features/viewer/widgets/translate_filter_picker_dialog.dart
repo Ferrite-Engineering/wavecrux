@@ -18,7 +18,7 @@ class TranslateFilterPickerDialog extends StatelessWidget {
 
   /// Shows the dialog and returns the selected file path (or null).
   static Future<String?> show(BuildContext context) async {
-    return showDialog<String?>(
+    return await showDialog<String?>(
       context: context,
       builder: (_) => const TranslateFilterPickerDialog(),
     );

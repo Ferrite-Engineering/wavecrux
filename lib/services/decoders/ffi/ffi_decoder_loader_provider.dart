@@ -217,7 +217,7 @@ class DecoderPluginList extends _$DecoderPluginList {
       return _startupScanCache!;
     }
     final loader = await ref.watch(decoderPluginLoaderProvider.future);
-    return loader.scan();
+    return await loader.scan();
   }
 
   /// Re-runs plugin discovery, replacing the cached scan result. The
@@ -226,7 +226,7 @@ class DecoderPluginList extends _$DecoderPluginList {
     state = const AsyncLoading<List<DecoderPluginInfo>>();
     state = await AsyncValue.guard(() async {
       final loader = await ref.read(decoderPluginLoaderProvider.future);
-      return loader.scan();
+      return await loader.scan();
     });
   }
 }

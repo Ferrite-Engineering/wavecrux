@@ -166,7 +166,7 @@ class _PanelBodyState extends State<_PanelBody> {
 
   Future<String?> _defaultPickDirectory(BuildContext context) async {
     final l10n = L10N.of(context);
-    return FilePicker.getDirectoryPath(
+    return await FilePicker.getDirectoryPath(
       dialogTitle: l10n.customStageWidgetsDirectoryPickerTitle,
     );
   }

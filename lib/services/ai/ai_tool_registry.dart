@@ -59,6 +59,6 @@ class AiToolRegistry {
   ) async {
     final tool = _tools[name];
     if (tool == null) return AiToolResult.failure('Unknown tool: "$name"');
-    return tool.handler(ref, arguments);
+    return await tool.handler(ref, arguments);
   }
 }
