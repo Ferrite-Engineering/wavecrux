@@ -19,7 +19,7 @@ Desktop and mobile builds are native binaries, not webview wrappers. Installers 
 
 !!! note "No activation step"
 
-    You do not need an account or a license key to begin, on any build: the free Open Core viewer opens waveforms with no key, no account and no network call. Through the 0.8.x public beta every tier is unlocked on top of that, so nothing at all is gated; from 1.0 only the Pro and Enterprise features ask for a key. See [Tiers & licensing](licensing.md) for how tiers and license keys work.
+    You do not need an account or a license key to begin, on any build: the free Open Core viewer opens waveforms with no key, no account and no network call. Only the Pro and Enterprise features ask for a key. See [Tiers & licensing](licensing.md) for how tiers and license keys work.
 
 !!! warning "Web requires WebAssembly"
 
@@ -61,8 +61,7 @@ Mobile devices have tighter memory budgets than desktops. A large-file warning a
 
 WaveCrux can send anonymous usage and error counts — which features get used, and how often the app hits an error it did not handle — never your files, your designs, file paths, or anything that identifies you. An error is counted by its kind alone (for example, a state error in the widgets library), never with its message or stack trace. The exact field list, and the list of things that are never collected, is published at [edacrux.app/telemetry](https://edacrux.app/telemetry).
 
-- **Through the 0.8.x public beta, nothing is sent.** The beta builds cannot transmit at all: there is no prompt and no Privacy section in Settings.
-- **From 1.0, you choose on first launch.** A one-time **Help make WaveCrux better** dialog explains what is collected and holds a **Send anonymous usage statistics** switch; **Continue** records your choice. The switch starts **on**, except where your device's region is in the EEA, the UK, Switzerland or South Korea, where it starts **off**. Nothing is sent before you have answered — if you quit without choosing, you are asked again on the next launch.
+- **You choose on first launch.** A one-time **Help make WaveCrux better** dialog explains what is collected and holds a **Send anonymous usage statistics** switch; **Continue** records your choice. The switch starts **on**, except where your device's region is in the EEA, the UK, Switzerland or South Korea, where it starts **off**. Nothing is sent before you have answered — if you quit without choosing, you are asked again on the next launch.
 - **Change it any time** in **Settings → Privacy → Send anonymous usage statistics**.
 - **Your organization may decide for you.** The `telemetry` key in an organization's [policy file](https://edacrux.app/policy-reference) can turn usage statistics off, or on, for every seat; where it decides, WaveCrux shows neither the dialog nor the Privacy section. In the regions above, an organization's "on" still leaves the choice to each person.
 

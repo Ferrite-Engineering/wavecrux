@@ -2,9 +2,9 @@
 
 A protocol decoder turns raw signal transitions into structured transactions — bytes, frames, packets, and bus cycles — overlaid on the waveform and listed in a sortable table. WaveCrux ships decoders for the buses you actually trace, binds them to your signals automatically, and flags protocol violations where they happen. This page covers how decoders work and the full catalog across Open Core, Pro, and Enterprise.
 
-!!! info "Unlocked in the beta, licensed from 1.0"
+!!! info "What the tier badges cover"
 
-    Every Pro and Enterprise decoder is unlocked for everyone through the 0.8.x public beta; from 1.0 they need a Pro or Enterprise license key. The decoder picker shows a tier badge on each one either way, and the unbadged Open Core decoders stay free. See [Tiers & licensing](licensing.md) for details.
+    The Pro and Enterprise decoders need a matching license key; the decoder picker shows a tier badge on each one. The unbadged Open Core decoders are free. See [Tiers & licensing](licensing.md) for details.
 
 ## How decoders work { #how-decoders-work }
 

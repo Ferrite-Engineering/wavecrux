@@ -15,9 +15,9 @@ WaveCrux ships as a single application. The free **Open Core** viewer is fully f
 - <span class="tier tier-enterprise">Enterprise</span> Collaborative viewing, plus organization-wide settings from a policy file, an audit log, and the Ethernet RGMII decoder and PCAP-to-VCD conversion.
 - <span class="tier tier-edu">EDU</span> Every Pro feature, free for verified students and faculty, non-commercial.
 
-!!! info "Unlocked in the beta, licensed from 1.0"
+!!! info "What the badges mean"
 
-    Through the 0.8.x public beta every tier is unlocked for everyone: the badges tell you which tier a feature belongs to, but nothing is gated and no license key is issued. From 1.0 the badges take effect — Open Core stays free, with no account, no key and no time limit, while Pro and Enterprise features need a key. See [Tiers & licensing](licensing.md) for the full picture, including the Education tier and how the license key system works.
+    Open Core is free: no account, no key and no time limit. Pro and Enterprise features need a license key, and the badges throughout the app and these docs tell you which is which. See [Tiers & licensing](licensing.md) for the full picture, including the Education tier and how the license key system works.
 
 ## How this guide is organized { #map }
 

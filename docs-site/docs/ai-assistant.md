@@ -119,6 +119,6 @@ WaveCrux does not run, host, or proxy any AI model, and it ships no API key. Whe
 - <span class="tier tier-pro">Pro</span> **AI Waveform Assistant** — the agentic assistant: natural-language navigation, conversational explain-with-drill-down, and root-cause hypotheses over WaveCrux's deterministic engines.
 - *(experimental)* Both are experimental and off by default until you enable them in **Settings → AI Assistant**.
 
-!!! info "Unlocked in the beta, licensed from 1.0"
+!!! info "Pro, plus your own provider key"
 
-    The AI Waveform Assistant is a Pro feature. Through the 0.8.x public beta every tier is unlocked for everyone, so you can use it today as soon as you connect your own provider key; from 1.0 it needs a Pro license key as well. Explain Selection is Open Core in either build and needs only your provider key. See [Tiers & licensing](licensing.md) for the full picture.
+    The AI Waveform Assistant needs a Pro license key as well as your own provider key. Explain Selection is Open Core and needs only your provider key. See [Tiers & licensing](licensing.md) for the full picture.

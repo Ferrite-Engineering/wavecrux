@@ -6,9 +6,9 @@ A translator reinterprets a signal's value into something you can read — a rad
 
     A **translator** answers "what does this value mean, right here" — it works on one signal's value and re-renders it. A [protocol decoder](protocol-decoders.md) answers "what protocol event happened over this time window" — it correlates several signals and walks a state machine across the sample stream to produce transactions. Reach for a translator to read a bus field or an instruction word; reach for a decoder to follow SPI, AXI, or USB traffic.
 
-!!! info "Unlocked in the beta, licensed from 1.0"
+!!! info "What the Pro badge covers"
 
-    The Pro translator pack is unlocked for everyone through the 0.8.x public beta; from 1.0 it needs a Pro license key. Everything without a badge — the built-in display formats, struct/bitfield decomposition, RISC-V disassembly, and the translators you author yourself — is Open Core and stays free in both. See [Tiers & licensing](licensing.md) for details.
+    The Pro translator pack needs a Pro license key. Everything without a badge is Open Core and free: the built-in display formats, struct/bitfield decomposition, RISC-V disassembly, and the translators you author yourself. See [Tiers & licensing](licensing.md) for details.
 
 ## How translators work { #how-translators-work }
 

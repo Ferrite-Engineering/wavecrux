@@ -215,6 +215,6 @@ SVA visualization (**View → Toggle SystemVerilog Assertion Panel**, ++cmd+shif
 
     A vacuous result is worth a second look — it means the assertion never actually evaluated, so a "no failures" run may simply not have exercised it. Combine a failing band with [cocotb log correlation](#cocotb) to read the assertion message and the waveform at the same instant. **Tools → Clear SVA Results** removes the overlay.
 
-!!! info "Unlocked in the beta, licensed from 1.0"
+!!! info "What the Pro badges cover"
 
-    The Debug Advisor and SVA visualization are Pro features. Through the 0.8.x public beta they are unlocked for everyone and nothing is gated; from 1.0 they need a Pro license key. The <span class="tier tier-pro">Pro</span> badges above mark which features that covers — everything on this page without a badge is Open Core and stays free. See [Tiers & licensing](licensing.md) for the full picture.
+    The Debug Advisor and SVA visualization need a Pro license key. Everything else on this page is Open Core and free: diff, X-trace, switching activity, pattern search, FSM visualization, cocotb correlation and RTL source annotation. See [Tiers & licensing](licensing.md) for the full picture.

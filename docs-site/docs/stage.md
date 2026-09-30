@@ -178,6 +178,6 @@ The Pro board widgets cover higher-end development boards whose richer periphera
 - **Terasic DE10-Nano**
 - **Digilent Zybo Z7**
 
-!!! info "Unlocked in the beta, licensed from 1.0"
+!!! info "What the Pro badges cover"
 
-    The curated Pro widget pack and the Pro FPGA boards are unlocked for everyone through the 0.8.x public beta; from 1.0 they need a Pro license key. The <span class="tier tier-pro">Pro</span> badges above mark which widgets and boards that covers — the unbadged [built-in widgets](#built-in-widgets) and [educational FPGA boards](#fpga-board-widgets) are Open Core and stay free, as does [authoring your own Rive widgets](authoring-rive-widgets.md). See [Tiers & licensing](licensing.md) for how the license key system works.
+    The curated Pro widget pack and the Pro FPGA boards need a Pro license key. The [built-in widgets](#built-in-widgets), the [educational FPGA boards](#fpga-board-widgets) and [authoring your own Rive widgets](authoring-rive-widgets.md) are Open Core and free. See [Tiers & licensing](licensing.md) for how the license key system works.

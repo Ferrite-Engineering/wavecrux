@@ -224,9 +224,9 @@ A session also carries **the annotations people write during it** — balloons, 
 
     The relay address is **Settings → Collaboration → Relay server URL**, so a team that would rather keep internet sessions inside its own network can point every client at a relay it runs (changes apply to your next session). **We do not ship a packaged relay image today** — if self-hosting is a requirement for your deployment, [tell us](mailto:support@ferriteengineering.com) and we will work through it with you rather than leave you to reverse-engineer the protocol.
 
-!!! info "Unlocked in the beta, licensed from 1.0"
+!!! info "Collaborative viewing is Enterprise"
 
-    Collaborative viewing is an Enterprise feature, and through the 0.8.x public beta it — like every Enterprise feature — is unlocked for everyone. From 1.0 it needs an Enterprise license key. The <span class="tier tier-enterprise">Enterprise</span> badge marks it in either build. See [Tiers & licensing](licensing.md) for the details.
+    Collaborative viewing needs an Enterprise license key; the <span class="tier tier-enterprise">Enterprise</span> badge marks it. See [Tiers & licensing](licensing.md) for the details.
 
 !!! note "Related"
 

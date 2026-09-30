@@ -6,9 +6,9 @@ Everything WaveCrux reads from your organization's signed `.crux-policy.json`, p
 
     One policy file configures all four EDACrux products. Where it goes on each platform, how you sign it, discovery order, precedence and the full key table live in [the policy file reference](https://edacrux.app/policy-reference); the rollout procedure is [Deployment](https://edacrux.app/deployment). This page covers only what WaveCrux's own keys do.
 
-!!! info "Unlocked in the beta, licensed from 1.0"
+!!! info "Which keys need an Enterprise seat"
 
-    Through the 0.8.x public beta every tier is unlocked and no licences are issued, so there is nothing to deploy *against* yet — but the file already parses, lints and signs, so you can write and validate one today. From 1.0 the keys divide: a key that **grants** a capability (`signalGroups`, `decoderSettings`, `themePacks`, `sessionTemplates`) is honoured only on a seat holding an Enterprise licence, while the keys that can only **withhold** something — the `approvedPlugins` allowlist and the two server switches — are honoured at every tier, so a security control never waits on a licence check.
+    A policy key that **grants** a capability (`signalGroups`, `decoderSettings`, `themePacks`, `sessionTemplates`) is honoured only on a seat holding an Enterprise licence. The keys that can only **withhold** something, the `approvedPlugins` allowlist and the two server switches, are honoured at every tier, so a security control never waits on a licence check.
 
 ## WaveCrux's policy keys { #keys }
 
