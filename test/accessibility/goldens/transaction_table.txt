@@ -1,0 +1,22 @@
+# Tab stops inside the transaction table: 9
+1. Decoder filter button All Decoders
+2. Search transactions… edit
+3. Export CSV button
+4. [Transactions. Up and Down move between transactions, and Enter jumps the waveform to the one you are on. grouping] # button sorted ascending
+5. Decoder button
+6. Start button
+7. End button
+8. Label button
+9. 1, APB #1, 5 to 15, W 0x00000004 = 0xDEADBEEF button
+# The rows
+Down: 2, APB #1, 25 to 35, R 0x00000008 to 0x12345678 button
+End: 4, APB #1, 75 to 85, R 0x00000010 to 0xA5A5A5A5 [SLVERR], error: Slave error (PSLVERR) button
+Up: 3, APB #1, 45 to 65, W 0x0000000C = 0xCAFEBABE button
+Up: 2, APB #1, 25 to 35, R 0x00000008 to 0x12345678 button
+Enter: 2, APB #1, 25 to 35, R 0x00000008 to 0x12345678 button selected
+# The decoder filter
+Enter: [Popup menu grouping] All Decoders button selected
+Down: APB #1 button
+Tab: Configure APB #1 button
+Tab: Remove APB #1 button
+Escape: [Panel dock Transactions grouping] Decoder filter button All Decoders

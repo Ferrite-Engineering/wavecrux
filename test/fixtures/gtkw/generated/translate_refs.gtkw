@@ -1,0 +1,21 @@
+[dumpfile] "fixture.vcd"
+[timestart] 0
+*-19.0 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+@28
+top.clk
+[translate_filter_file] /path/to/sample_filter.txt
+top.data
+@28
+^1 /path/to/sample_filter.txt
+top.rst
+^>2 /path/to/filter_process
+top.cpu.addr
+^<3 /path/to/transaction_process
+top.cpu.dout
+@800200
+-Separators and Comments
+@28
+-
+-This is a comment
+@1000200
+-Separators and Comments

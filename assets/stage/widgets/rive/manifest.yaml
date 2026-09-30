@@ -1,0 +1,45 @@
+id: com.wavecrux.pro.stage.tachometer
+version: 1.0.0
+display_name:
+  en: Tachometer
+  zh: 转速表
+  zh_CN: 转速表
+  ja: タコメーター
+  ko: 타코미터
+category: instrument
+runtime: rive
+runtime_asset_path: runtime/tachometer.riv
+required_api_version: 1
+signal_bindings:
+  - name: rpm
+    description: >-
+      RPM bus signal driving the gauge needle. Linearly mapped from the
+      configured RPM range to 0.0..1.0 and written to the Rive state
+      machine's "rpm" Number input.
+    signal_type: vector
+    bit_width:
+      min: 1
+    required: true
+  - name: redline
+    description: >-
+      Boolean indicator that the configured redline threshold has been
+      exceeded. Written to the Rive state machine's "redline" Boolean
+      input; the artboard's redline-zone glow renders accordingly.
+    signal_type: scalar
+    required: true
+  - name: shift
+    description: >-
+      Boolean rising-edge signal that pulses the redline-pulse animation.
+      Written to the Rive state machine's "shift" Boolean input; the
+      state machine handles edge detection and pulse playback internally.
+    signal_type: scalar
+    required: true
+parameters:
+  - binding: rpm
+    normalizer:
+      kind: linear
+      input_min: 0
+      input_max: 8192
+      output_min: 0.0
+      output_max: 1.0
+      clamp: true

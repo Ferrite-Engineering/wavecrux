@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Monitor",
+      "Artifact"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath // \"\"' | grep -q 'app_en\\.arb' && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"REMINDER: app_en.arb was modified. Update app_zh_CN.arb, app_zh.arb, app_ja.arb and app_ko.arb with translations for any new or changed strings, then regenerate lib/l10n/generated/.\"}}' || true",
+            "statusMessage": "Checking for CJK translation updates..."
+          }
+        ]
+      }
+    ]
+  }
+}

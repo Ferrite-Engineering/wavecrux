@@ -1,0 +1,20 @@
+[package]
+name = "wavecrux_onewire"
+version = "0.1.0"
+edition = "2021"
+description = "Rust port of the WaveCrux 1-Wire decoder demonstrator plugin."
+license = "MIT OR Apache-2.0"
+
+# `cdylib` produces a C-compatible shared library — `.so` on Linux,
+# `.dylib` on macOS, `.dll` on Windows. WaveCrux's decoder plugin
+# loader scans for these extensions in the user's plugin directory
+# and treats any successfully `dlopen`'d library that exports the two
+# required entry points as a candidate plugin.
+[lib]
+name = "wavecrux_onewire"
+crate-type = ["cdylib"]
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = "symbols"

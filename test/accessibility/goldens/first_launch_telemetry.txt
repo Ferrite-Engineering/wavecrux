@@ -1,0 +1,5 @@
+# Tab walk: 4 stops, cycles
+1. See exactly what's collected button
+2. Share anonymous usage statistics switch on
+3. Continue button
+4. Anonymous usage and error counts help decide what to build and fix next. Never your files, your designs, or anything that identifies you. text

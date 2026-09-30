@@ -1,0 +1,205 @@
+# RV64D — double-precision floating point (RV64-only in this bundle, matching
+# JKU's coverage choice — RV32D in the spec exists but is rarely used in real
+# silicon and is omitted from launch).
+#
+# Schema follows the JKU `instruction-decoder` Rust crate.
+set = "RV64D"
+width = 32
+
+[formats]
+names = ["fp_load_d", "fp_store_d", "fp_rrr_d", "fp_rr_d", "fp_minmax_d"]
+parts = [
+    ["rd_fp", 5, "Register_float"],
+    ["rs1_int", 5, "Register_int"],
+    ["rs1_fp", 5, "Register_float"],
+    ["rs2_fp", 5, "Register_float"],
+    ["imm", 32, "VInt"],
+    ["none", 32, "u32"],
+]
+
+[types]
+names = ["t_fld", "t_fsd", "t_fpd_rrr", "t_fpd_rr", "t_fpd_minmax"]
+
+[[types.t_fld]]
+name = "imm"
+top = 11
+bot = 0
+[[types.t_fld]]
+name = "rs1_int"
+top = 4
+bot = 0
+[[types.t_fld]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_fld]]
+name = "rd_fp"
+top = 4
+bot = 0
+[[types.t_fld]]
+name = "none"
+top = 6
+bot = 0
+
+[[types.t_fsd]]
+name = "imm"
+top = 11
+bot = 5
+[[types.t_fsd]]
+name = "rs2_fp"
+top = 4
+bot = 0
+[[types.t_fsd]]
+name = "rs1_int"
+top = 4
+bot = 0
+[[types.t_fsd]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_fsd]]
+name = "imm"
+top = 4
+bot = 0
+[[types.t_fsd]]
+name = "none"
+top = 6
+bot = 0
+
+[[types.t_fpd_rrr]]
+name = "none"
+top = 31
+bot = 25
+[[types.t_fpd_rrr]]
+name = "rs2_fp"
+top = 4
+bot = 0
+[[types.t_fpd_rrr]]
+name = "rs1_fp"
+top = 4
+bot = 0
+[[types.t_fpd_rrr]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_fpd_rrr]]
+name = "rd_fp"
+top = 4
+bot = 0
+[[types.t_fpd_rrr]]
+name = "none"
+top = 6
+bot = 0
+
+[[types.t_fpd_rr]]
+name = "none"
+top = 31
+bot = 20
+[[types.t_fpd_rr]]
+name = "rs1_fp"
+top = 4
+bot = 0
+[[types.t_fpd_rr]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_fpd_rr]]
+name = "rd_fp"
+top = 4
+bot = 0
+[[types.t_fpd_rr]]
+name = "none"
+top = 6
+bot = 0
+
+[[types.t_fpd_minmax]]
+name = "none"
+top = 31
+bot = 25
+[[types.t_fpd_minmax]]
+name = "rs2_fp"
+top = 4
+bot = 0
+[[types.t_fpd_minmax]]
+name = "rs1_fp"
+top = 4
+bot = 0
+[[types.t_fpd_minmax]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_fpd_minmax]]
+name = "rd_fp"
+top = 4
+bot = 0
+[[types.t_fpd_minmax]]
+name = "none"
+top = 6
+bot = 0
+
+[mappings]
+names = ["Register_int", "Register_float"]
+Register_int = [
+    "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
+    "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5",
+    "a6", "a7", "s2", "s3", "s4", "s5", "s6", "s7",
+    "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6",
+]
+Register_float = [
+    "ft0", "ft1", "ft2", "ft3", "ft4", "ft5", "ft6", "ft7",
+    "fs0", "fs1", "fa0", "fa1", "fa2", "fa3", "fa4", "fa5",
+    "fa6", "fa7", "fs2", "fs3", "fs4", "fs5", "fs6", "fs7",
+    "fs8", "fs9", "fs10", "fs11", "ft8", "ft9", "ft10", "ft11",
+]
+
+[fp_load_d]
+type = "t_fld"
+[fp_load_d.repr]
+default = "$name$ %rd_fp%, %imm%(%rs1_int%)"
+[fp_load_d.instructions."fld"]
+mask = 0x0000707f
+match = 0x00003007
+
+[fp_store_d]
+type = "t_fsd"
+[fp_store_d.repr]
+default = "$name$ %rs2_fp%, %imm%(%rs1_int%)"
+[fp_store_d.instructions."fsd"]
+mask = 0x0000707f
+match = 0x00003027
+
+[fp_rrr_d]
+type = "t_fpd_rrr"
+[fp_rrr_d.repr]
+default = "$name$ %rd_fp%, %rs1_fp%, %rs2_fp%"
+[fp_rrr_d.instructions."fadd.d"]
+mask = 0xfe00007f
+match = 0x02000053
+[fp_rrr_d.instructions."fsub.d"]
+mask = 0xfe00007f
+match = 0x0a000053
+[fp_rrr_d.instructions."fmul.d"]
+mask = 0xfe00007f
+match = 0x12000053
+[fp_rrr_d.instructions."fdiv.d"]
+mask = 0xfe00007f
+match = 0x1a000053
+
+[fp_rr_d]
+type = "t_fpd_rr"
+[fp_rr_d.repr]
+default = "$name$ %rd_fp%, %rs1_fp%"
+[fp_rr_d.instructions."fsqrt.d"]
+mask = 0xfff0007f
+match = 0x5a000053
+
+[fp_minmax_d]
+type = "t_fpd_minmax"
+[fp_minmax_d.repr]
+default = "$name$ %rd_fp%, %rs1_fp%, %rs2_fp%"
+[fp_minmax_d.instructions."fmin.d"]
+mask = 0xfe00707f
+match = 0x2a000053
+[fp_minmax_d.instructions."fmax.d"]
+mask = 0xfe00707f
+match = 0x2a001053

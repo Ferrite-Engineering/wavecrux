@@ -1,0 +1,65 @@
+{
+  "edge.always_x": {
+    "analog": true,
+    "format": "unsignedDecimal",
+    "bitWidth": 8,
+    "changeCount": 1,
+    "gapCount": 1,
+    "min": null,
+    "max": null,
+    "plotted": [
+      null
+    ]
+  },
+  "edge.constant_bus": {
+    "analog": true,
+    "format": "unsignedDecimal",
+    "bitWidth": 8,
+    "changeCount": 1,
+    "gapCount": 0,
+    "min": 66.0,
+    "max": 66.0,
+    "plotted": [
+      66.0
+    ]
+  },
+  "edge.full_swing": {
+    "analog": true,
+    "format": "signedDecimal",
+    "bitWidth": 16,
+    "changeCount": 3,
+    "gapCount": 0,
+    "min": -32768.0,
+    "max": 32767.0,
+    "plotted": [
+      -32768.0,
+      32767.0,
+      -32768.0
+    ]
+  },
+  "edge.lone_real": {
+    "analog": true,
+    "format": null,
+    "bitWidth": null,
+    "changeCount": 1,
+    "gapCount": 0,
+    "min": 2.5,
+    "max": 2.5,
+    "plotted": [
+      2.5
+    ]
+  },
+  "edge.single_change": {
+    "analog": true,
+    "format": "unsignedDecimal",
+    "bitWidth": 8,
+    "changeCount": 2,
+    "gapCount": 0,
+    "min": 0.0,
+    "max": 255.0,
+    "plotted": [
+      0.0,
+      255.0
+    ]
+  }
+}

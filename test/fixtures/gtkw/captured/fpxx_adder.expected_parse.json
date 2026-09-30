@@ -1,0 +1,194 @@
+{
+  "dumpFilePath": "(null)",
+  "timeStart": 11871460,
+  "zoomFactor": -4.924823,
+  "primaryMarker": 11871605,
+  "canvasBackgroundHex": null,
+  "openScopes": [
+    "TOP.",
+    "TOP.FpxxAddDut."
+  ],
+  "namedMarkers": {},
+  "entries": [
+    {
+      "type": "signal",
+      "path": "TOP.FpxxAddDut.fp_op.reset",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "TOP.FpxxAddDut.fp_op.clk",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "signal",
+      "path": "TOP.FpxxAddDut.fp_op.p0_vld",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "TOP.FpxxAddDut.fp_op.op_a_p0_sign",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "TOP.FpxxAddDut.fp_op.op_a_p0_exp[7:0]",
+      "format": "unsignedDecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "TOP.FpxxAddDut.fp_op.op_a_p0_mant[22:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "signal",
+      "path": "TOP.FpxxAddDut.fp_op.op_b_p0_sign",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "TOP.FpxxAddDut.fp_op.op_b_p0_exp[7:0]",
+      "format": "unsignedDecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "TOP.FpxxAddDut.fp_op.op_b_p0_mant[22:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "signal",
+      "path": "TOP.FpxxAddDut.fp_op.exp_add_p0[7:0]",
+      "format": "unsignedDecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "signal",
+      "path": "TOP.FpxxAddDut.fp_op.exp_add_adj_p4[7:0]",
+      "format": "unsignedDecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "signal",
+      "path": "TOP.FpxxAddDut.fp_op.exp_add_p5[7:0]",
+      "format": "unsignedDecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "TOP.FpxxAddDut.fp_op.lz_p5[4:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "TOP.FpxxAddDut.fp_op.exp_add_m_lz[8:0]",
+      "format": "signedDecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "signal",
+      "path": "TOP.FpxxAddDut.fp_op.io_result_vld",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "TOP.FpxxAddDut.fp_op.io_result_sign",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "TOP.FpxxAddDut.fp_op.io_result_exp[7:0]",
+      "format": "unsignedDecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "TOP.FpxxAddDut.fp_op.io_result_mant[22:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    }
+  ]
+}

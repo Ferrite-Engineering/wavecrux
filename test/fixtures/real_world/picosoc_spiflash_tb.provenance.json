@@ -1,0 +1,16 @@
+{
+  "source_url": "https://github.com/YosysHQ/picorv32",
+  "source_commit": "87c89acc18994c8cf9a2311e871818e87d304568",
+  "license": "ISC",
+  "license_spdx": "ISC",
+  "simulator": "iverilog",
+  "simulator_version": "13.0",
+  "acquired_date": "2026-05-31",
+  "size_bytes": 19083,
+  "brief_description": "PicoSoC SPI-flash model testbench from picorv32's picosoc/. Exercises tri-state IO, x-state propagation through the SPI bus model, and `$display`-driven status messages alongside the trace. Built locally: iverilog -s testbench -o spiflash_tb.vvp spiflash.v spiflash_tb.v && vvp -N spiflash_tb.vvp. Distinct from picorv32_ez_testbench in covering bus-side X states and tri-state IO assignments.",
+  "anchors": [
+    "scope `testbench` exists with `flash_csb`, `flash_clk`, `flash_io0..3` tri-state nets",
+    "child scope `testbench.uut` is the spiflash model",
+    "value stream contains x and z bits (tri-state IO) alongside concrete 0/1 transitions"
+  ]
+}

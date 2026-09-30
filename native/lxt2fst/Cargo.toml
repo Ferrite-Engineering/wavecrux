@@ -1,0 +1,65 @@
+[package]
+name = "lxt2fst"
+version = "0.1.0"
+edition = "2024"
+description = "Clean-room converter from GTKWave's legacy LXT (2003) and LXT2 (2005) waveform formats to FST. C-ABI for desktop/mobile, wasm-bindgen for web."
+license = "Apache-2.0"
+publish = false
+
+[lib]
+# rlib   → linked into native/wellen_ffi, whose single native library carries
+#          this crate's C ABI (lxt2fst_*) to Linux/macOS/Windows/Android/iOS —
+#          no platform bundles a separate liblxt2fst. Also what the integration
+#          tests link.
+# cdylib → the web build's .wasm, via wasm-pack (tool/build_lxt2fst_wasm.dart).
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Gzip inflate for LXT/LXT2 section decompression. Selected for the small wasm
+# footprint (miniz_oxide backend) — also already a transitive dep of wellen, so
+# no new top-level crate enters the desktop/mobile dep tree.
+flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
+
+# FST writer — sibling BSD-3-Clause crate to fst-reader (the FST reader that
+# wellen uses). Authored by the wellen author and intentionally non-GPL, which
+# keeps the LXT/LXT2 → FST conversion path fully clean-room. See README.
+# Resolved to the vendored, patched copy — see [patch.crates-io] below.
+fst-writer = "0.3"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2"
+js-sys = "0.3"
+console_error_panic_hook = "0.1"
+
+[dev-dependencies]
+# Loaded by the round-trip tests to verify the converted FST parses identically
+# to the original VCD ground truth via wellen.
+wellen = "0.24"
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = "0.3"
+
+[patch.crates-io]
+# fst-writer 0.3.1 can only write to a file path, which wasm32 does not have.
+# The vendored copy adds a public `FstHeaderWriter::new` over any `Write + Seek`
+# sink so the web build converts in memory. Patches apply only at the root of a
+# build, so `native/wellen_ffi/Cargo.toml` (which links this crate) carries the
+# same entry. Provenance and the exact change: native/vendor/fst-writer/Cargo.toml.
+fst-writer = { path = "../vendor/fst-writer" }
+
+[profile.release]
+# Size-optimized release for the wasm bundle. Mirrors wellen_wasm's profile so
+# the gzipped wasm stays inside its 400 KiB budget. Profiles apply
+# only at the root of a build: when wellen_ffi links this crate, wellen_ffi's
+# own release profile (which unwinds, so `ffi_guard!`'s catch_unwind works)
+# governs the shipped desktop/mobile library instead.
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[package.metadata.wasm-pack.profile.release]
+# wasm-opt in wasm-pack 0.13.x lags rustc's bulk-memory emit; rely on the
+# in-toolchain LTO + opt-level=z. Same rationale as wellen_wasm.
+wasm-opt = false

@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "wavecrux-light",
+  "displayName": "WaveCrux Light",
+  "brightness": "light",
+  "tokens": {
+    "canvas": {
+      "background": "#F5F5F5",
+      "lane.backgroundOdd": "#F5F5F5",
+      "lane.backgroundEven": "#EFEFEF",
+      "lane.divider": "#CCCCCC",
+      "group.header": "#E8E8E8",
+      "signal.x.fill": "#CC1111",
+      "signal.x.hatch": "#991111",
+      "signal.z.line": "#888888",
+      "signal.scalar.low": "#CCCCCC",
+      "signal.valueLabel": "#111111",
+      "cursor.primary": "#886600",
+      "cursor.secondary": "#0066AA",
+      "cursor.delta": "#88660033",
+      "marker.line": "#0066CC",
+      "marker.flag": "#0066CC",
+      "marker.flagText": "#FFFFFF",
+      "ruler.background": "#E0E0E0",
+      "ruler.tick": "#999999",
+      "ruler.tickMajor": "#555555",
+      "ruler.label": "#333333",
+      "ruler.cursorTime": "#886600",
+      "selection": "#0066CC22"
+    }
+  }
+}

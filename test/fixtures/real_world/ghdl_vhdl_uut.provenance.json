@@ -1,0 +1,16 @@
+{
+  "source_url": "https://github.com/YosysHQ/yosys",
+  "source_commit": "e56c6a954ce26b6263dedd8a9f853a468b925c83",
+  "license": "ISC",
+  "license_spdx": "ISC",
+  "simulator": "ghdl",
+  "simulator_version": "0",
+  "acquired_date": "2026-05-31",
+  "size_bytes": 418,
+  "brief_description": "GHDL-emitted VCD (VHDL simulator), shipped in Yosys's test suite (`tests/sim/var_reference_with_whitespace.vcd`) as a regression for whitespace handling in `$var` directives. Distinct from iverilog/Verilator output: includes `$date` directive, multiple top-level VHDL package scopes (`standard`, `std_logic_1164`), and timescale at `1 fs`. Exercises the GHDL simulator-origin axis of the parser.",
+  "anchors": [
+    "scope `tb` exists alongside VHDL standard library scopes `standard` and `std_logic_1164`",
+    "child scope `tb.uut` carries 4-bit signals `a` and `b`",
+    "timescale is `1 fs` (femtoseconds) — unusual for Verilog flows"
+  ]
+}

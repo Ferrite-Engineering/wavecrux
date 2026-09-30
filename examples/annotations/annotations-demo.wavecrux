@@ -1,0 +1,172 @@
+{
+  "version": 4,
+  "sourceFilePath": "annotations-demo.vcd",
+  "signals": [
+    {
+      "kind": "signal",
+      "ref": "0",
+      "path": "top.clk",
+      "name": "clk",
+      "format": "binary",
+      "height": 30.0
+    },
+    {
+      "kind": "signal",
+      "ref": "1",
+      "path": "top.req",
+      "name": "req",
+      "format": "binary",
+      "height": 30.0
+    },
+    {
+      "kind": "signal",
+      "ref": "2",
+      "path": "top.ack",
+      "name": "ack",
+      "format": "binary",
+      "height": 30.0
+    },
+    {
+      "kind": "signal",
+      "ref": "3",
+      "path": "top.bus",
+      "name": "bus",
+      "format": "hexadecimal",
+      "height": 30.0
+    }
+  ],
+  "cursor": {
+    "primary": 500,
+    "secondary": null
+  },
+  "markers": {
+    "a": 200,
+    "b": 500
+  },
+  "view": {
+    "ticksPerPixel": 1.5,
+    "panOffsetTicks": 0.0,
+    "scrollOffset": 0.0
+  },
+  "panels": {
+    "signalTree": true,
+    "valueColumn": true,
+    "transactionView": false,
+    "stageView": false
+  },
+  "translateFilters": {},
+  "stage": {
+    "activePanelId": null,
+    "panels": []
+  },
+  "activeTheme": "wavecrux-dark",
+  "annotations": [
+    {
+      "id": "demo-req-rise",
+      "shape": "callout",
+      "anchor": {
+        "kind": "point",
+        "time": 200,
+        "rowId": "top.req"
+      },
+      "text": "req asserts here, one clock before the bus is driven",
+      "author": "WaveCrux demo",
+      "createdAt": "2026-08-12T09:30:00.000Z",
+      "labelDx": 30,
+      "labelDy": -46
+    },
+    {
+      "id": "demo-bus-value",
+      "shape": "callout",
+      "anchor": {
+        "kind": "point",
+        "time": 500,
+        "rowId": "top.bus"
+      },
+      "text": "bus should read a3 at the ack edge. Edit the VCD and reopen to see this note flag itself as drifted.",
+      "author": "WaveCrux demo",
+      "createdAt": "2026-08-12T09:31:00.000Z",
+      "labelDx": 40,
+      "labelDy": -70,
+      "witness": {
+        "bits": "10100011",
+        "edgeOrdinal": 1
+      }
+    },
+    {
+      "id": "demo-ack-arrow",
+      "shape": "arrow",
+      "anchor": {
+        "kind": "point",
+        "time": 500,
+        "rowId": "top.ack"
+      },
+      "author": "WaveCrux demo",
+      "createdAt": "2026-08-12T09:32:00.000Z",
+      "labelDx": -60,
+      "labelDy": -28
+    },
+    {
+      "id": "demo-handshake-band",
+      "shape": "band",
+      "anchor": {
+        "kind": "range",
+        "start": 200,
+        "end": 700
+      },
+      "text": "handshake window",
+      "author": "WaveCrux demo",
+      "createdAt": "2026-08-12T09:33:00.000Z"
+    },
+    {
+      "id": "demo-lane-band",
+      "shape": "band",
+      "anchor": {
+        "kind": "range",
+        "start": 400,
+        "end": 700,
+        "rowId": "top.bus"
+      },
+      "text": "bus driven",
+      "author": "WaveCrux demo",
+      "createdAt": "2026-08-12T09:34:00.000Z"
+    },
+    {
+      "id": "demo-orphan",
+      "shape": "callout",
+      "anchor": {
+        "kind": "point",
+        "time": 800,
+        "rowId": "top.spare"
+      },
+      "text": "anchored to top.spare, which is not displayed — this must draw NOTHING on the canvas",
+      "author": "WaveCrux demo",
+      "createdAt": "2026-08-12T09:35:00.000Z"
+    },
+    {
+      "id": "demo-unresolved",
+      "shape": "callout",
+      "anchor": {
+        "kind": "point",
+        "time": 300,
+        "rowId": "top.does_not_exist"
+      },
+      "text": "anchored to a signal absent from this file — must also draw nothing",
+      "author": "WaveCrux demo",
+      "createdAt": "2026-08-12T09:36:00.000Z"
+    },
+    {
+      "id": "demo-collapsed",
+      "shape": "callout",
+      "anchor": {
+        "kind": "point",
+        "time": 700,
+        "rowId": "top.req"
+      },
+      "text": "authored collapsed — shows as a numbered dot until expanded",
+      "author": "WaveCrux demo",
+      "createdAt": "2026-08-12T09:37:00.000Z",
+      "collapsed": true
+    }
+  ]
+}

@@ -1,0 +1,263 @@
+name: Web (Chrome)
+
+# ─── Trigger configuration ─────────────────────────────────────────────────────
+# Runs WaveCrux's two headless-Chrome test suites:
+#
+#   * integration-web — the integration_test/web/* suite via `flutter drive` +
+#     chromedriver. Covers the WASM open path, the cross-bridge FFI-vs-WASM
+#     equivalence sweep, and web-only failure modes (path_provider / dart:io
+#     unavailable in the browser) that the desktop/mobile suites cannot reach.
+#     This job builds the wellen_wasm bundle from source first via
+#     `tool/build_web_wasm.dart` so the suite runs against the crate at HEAD.
+#   * widget-web — web-only widget/provider tests (`@TestOn('browser')`) via
+#     `flutter test --platform chrome`, so kIsWeb == true at compile time and
+#     the WASM-load-failure path is exercised for real.
+#
+# Nightly, alongside the Linux integration suite (which runs at 05:00 UTC); this
+# job is offset to 05:30 UTC to avoid runner contention. Also dispatchable
+# manually with an optional list of test basenames (integration suite only).
+on:
+  workflow_dispatch:
+    inputs:
+      tests:
+        description: 'Space-separated web test basenames (empty = all). e.g. "web_file_picker_test"'
+        required: false
+        default: ''
+  pull_request:
+  # WEEKLY. The nightly was retired at beta launch (2026-07-12) and left
+  # pull requests as the only automatic trigger, in a repository whose work
+  # lands directly on `main` — so from then until 2026-09-21 this suite never
+  # ran. A web suite that nothing runs rots silently. Linux, so cheap:
+  # measured 2026-09-21 at ~15 minutes for the two jobs, about $0.50 a month at one run a week.
+  schedule:
+    - cron: '40 6 * * 3'
+
+concurrency:
+  # Keyed by event as well as ref: a nightly must never be cancelled by a
+  # push, and a push must never be cancelled by a nightly.
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  # Superseded pushes are cancelled outright. `false` on main was the source
+  # of a whole class of phantom failures: a run still QUEUED when a third
+  # push arrives is cancelled by GitHub regardless, and a run whose jobs were
+  # cancelled reports conclusion=failure — not cancelled. So main never did
+  # verify every commit, it just misreported the ones it skipped. Cancelling
+  # is honest, cheaper, and gates the thing that matters: the tip.
+  cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  integration-web:
+    name: Integration / Web (headless Chrome)
+    runs-on: ubuntu-latest
+    # Cost guardrail: no job may run unbounded (max observed suite-wide is 29 min).
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          submodules: recursive
+          # Token for the crux-shared submodule checkout. A pull request from a
+          # fork receives no secrets, so the workflow token stands in — the
+          # submodule is a public repository and needs no extra scope.
+          token: ${{ secrets.SUBMODULE_PAT || github.token }}
+
+      - name: Install Chrome
+        id: chrome
+        uses: browser-actions/setup-chrome@c785b87e244131f27c9f19c1a33e2ead956ab7ce # v1.7.3
+        with:
+          chrome-version: stable
+
+      # browser-actions/setup-chrome's `install-chromedriver` resolves the
+      # driver from the Chrome-for-Testing "stable" channel, which can be a
+      # version ahead of the google-chrome .deb the runner actually launches
+      # (observed: chromedriver 150 vs /opt/google/chrome 149 →
+      # SessionNotCreated "only supports Chrome version 150"). Install the
+      # chromedriver build that exactly matches the installed Chrome instead —
+      # self-maintaining as the runner's Chrome moves.
+      - name: Install chromedriver matching the installed Chrome
+        run: |
+          set -euo pipefail
+          ver="$(google-chrome --version | grep -oE '[0-9]+(\.[0-9]+){3}')"
+          echo "Installed Chrome: $ver"
+          curl -fsSL "https://storage.googleapis.com/chrome-for-testing-public/${ver}/linux64/chromedriver-linux64.zip" -o /tmp/chromedriver.zip
+          unzip -o -j /tmp/chromedriver.zip chromedriver-linux64/chromedriver -d /tmp/chromedriver-bin
+          sudo install -m 0755 /tmp/chromedriver-bin/chromedriver /usr/local/bin/chromedriver
+          echo "chromedriver: $(chromedriver --version)"
+          # The browser chromedriver launches is this system Chrome, so it is
+          # also the one CHROME_EXECUTABLE must name. The runner script sizes
+          # its driver from CHROME_EXECUTABLE; pointed at setup-chrome's newer
+          # Chromium it fetched a driver one major ahead of the Chrome that
+          # actually started, and every file failed session creation
+          # ("only supports Chrome version 153 / Current browser version is
+          # 152"), a red run that tested nothing.
+          echo "CHROME_EXECUTABLE=$(command -v google-chrome)" >> "$GITHUB_ENV"
+
+      - name: Install Flutter (pinned)
+        id: flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: '3.47.3'
+          cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: |
+            ${{ steps.flutter.outputs.pub-cache-path }}
+            .dart_tool/
+          key: pub-integ-web-${{ hashFiles('pubspec.yaml') }}
+          restore-keys: pub-integ-web-
+
+      # The restored `.dart_tool/` carries build_runner's asset graph, which a
+      # `!` exclusion on the cache path cannot prevent. A graph written before
+      # a source file was deleted — a crux-shared package's file after a pin
+      # bump — fails codegen with `InvalidOutputException … Tried to delete
+      # from package not in the build`, measured on the Pro overlay when
+      # `lib/services/spawn/spawn_guards.dart` was removed here. Dropping the
+      # graph is what actually keeps it out; a cold codegen costs ~13s.
+      - name: Drop the restored build_runner asset graph
+        shell: bash
+        run: rm -rf .dart_tool/build
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Riverpod codegen
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate l10n
+        run: flutter gen-l10n
+
+      # Build the wellen_wasm bundle from source so the web suite runs against
+      # the crate at this commit, not a possibly-stale committed artefact. The
+      # script invokes wasm-pack, copies the artefacts into web/wasm/, and
+      # enforces the gzipped size budget.
+      - name: Install Rust + wasm-pack
+        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable branch head, 2026-09-03
+        with:
+          targets: wasm32-unknown-unknown
+      # The same pinned, checksum-verified binary ci.yml's wasm job installs,
+      # so both jobs build the bundle with one wasm-pack version. `cargo
+      # install` floated to whatever crates.io held that day, and its fallback
+      # dropped `--locked`. Bump the version and the digest in both places.
+      - name: Install wasm-pack (pinned, checksum-verified)
+        env:
+          WASM_PACK_VERSION: '0.13.1'
+          WASM_PACK_SHA256: 'c539d91ccab2591a7e975bcf82c82e1911b03335c80aa83d67ad25ed2ad06539'
+        run: |
+          set -euo pipefail
+          name="wasm-pack-v${WASM_PACK_VERSION}-x86_64-unknown-linux-musl"
+          cd "$RUNNER_TEMP"
+          curl -fsSL --retry 3 -o wasm-pack.tar.gz \
+            "https://github.com/wasm-bindgen/wasm-pack/releases/download/v${WASM_PACK_VERSION}/${name}.tar.gz"
+          echo "${WASM_PACK_SHA256}  wasm-pack.tar.gz" | sha256sum -c -
+          tar -xzf wasm-pack.tar.gz "${name}/wasm-pack"
+          install -D -m 0755 "${name}/wasm-pack" "$HOME/.cargo/bin/wasm-pack"
+          wasm-pack --version
+      - name: Build wellen_wasm bundle (tool/build_web_wasm.dart)
+        run: dart run tool/build_web_wasm.dart
+
+      # Same for the LXT/LXT2 converter, which web_legacy_lxt_open_test drives
+      # end to end through web/wasm/lxt2fst_loader.js.
+      - name: Build lxt2fst bundle (tool/build_lxt2fst_wasm.dart)
+        run: dart run tool/build_lxt2fst_wasm.dart
+
+      # Sanity: the freshly built bundles and the hand-written loaders must be
+      # present before driving.
+      - name: Verify web/wasm bundle is present
+        run: |
+          for f in wellen_wasm_bg.wasm wellen_wasm_loader.js lxt2fst_bg.wasm lxt2fst.js lxt2fst_loader.js; do
+            test -f "web/wasm/$f" || { echo "::error::web/wasm/$f missing"; exit 1; }
+          done
+
+      # Generate the base64-embedded fixture bundle the cross-bridge suite
+      # imports. It is a `*.g.dart` (gitignored, like the other generated
+      # sources), produced deterministically from the committed fixtures +
+      # `.expected.json` companions — so it is rebuilt here each run rather than
+      # committed.
+      - name: Generate web fixture bundle
+        run: dart run tool/generate_web_fixture_bundle.dart
+
+      # The runner starts chromedriver on :4444, runs each web test via
+      # `flutter drive ... -d web-server --browser-name=chrome --headless`,
+      # accumulates pass/fail, and exits non-zero if any file fails.
+      # CHROME_EXECUTABLE comes from the chromedriver step above: the same
+      # system Chrome the driver launches, never setup-chrome's Chromium.
+      - name: Run web integration tests
+        run: tool/run_web_integration_tests.sh ${{ github.event.inputs.tests }}
+
+      - name: Upload per-file logs on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: web-integration-logs
+          path: build/web_integration_test_logs/
+          retention-days: 7
+
+  # ─── Web widget tests (in-process, flutter test --platform chrome) ──────────
+  # These are NOT integration_test/web/* (which need flutter drive). They are
+  # widget/provider tests annotated `@TestOn('browser')` so they compile with
+  # kIsWeb == true and exercise the web-only branches the VM runner can't reach
+  # — chiefly the WASM-load-failure path. No WASM build is needed: the failure
+  # path requires the loader to be ABSENT, which is exactly the bare Chrome
+  # harness's state.
+  widget-web:
+    name: Widget / Web (flutter test --platform chrome)
+    runs-on: ubuntu-latest
+    # Cost guardrail: no job may run unbounded (max observed suite-wide is 29 min).
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_PAT || github.token }}
+
+      - name: Install Chrome
+        id: chrome
+        uses: browser-actions/setup-chrome@c785b87e244131f27c9f19c1a33e2ead956ab7ce # v1.7.3
+        with:
+          chrome-version: stable
+
+      - name: Install Flutter (pinned)
+        id: flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: '3.47.3'
+          cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: |
+            ${{ steps.flutter.outputs.pub-cache-path }}
+            .dart_tool/
+          key: pub-widget-web-${{ hashFiles('pubspec.yaml') }}
+          restore-keys: pub-widget-web-
+
+      # The restored `.dart_tool/` carries build_runner's asset graph, which a
+      # `!` exclusion on the cache path cannot prevent. A graph written before
+      # a source file was deleted — a crux-shared package's file after a pin
+      # bump — fails codegen with `InvalidOutputException … Tried to delete
+      # from package not in the build`, measured on the Pro overlay when
+      # `lib/services/spawn/spawn_guards.dart` was removed here. Dropping the
+      # graph is what actually keeps it out; a cold codegen costs ~13s.
+      - name: Drop the restored build_runner asset graph
+        shell: bash
+        run: rm -rf .dart_tool/build
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Riverpod codegen
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate l10n
+        run: flutter gen-l10n
+
+      - name: Run web widget tests
+        run: tool/run_web_widget_tests.sh
+        env:
+          CHROME_EXECUTABLE: ${{ steps.chrome.outputs.chrome-path }}

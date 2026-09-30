@@ -1,0 +1,153 @@
+{
+  "metadata": {
+    "timescale": { "factor": 1, "unit": "nanoSeconds" },
+    "startTime": 0,
+    "endTime": 100,
+    "date": null,
+    "version": null
+  },
+  "hierarchy": {
+    "rootScopes": [
+      {
+        "name": "top",
+        "type": "module",
+        "path": "top",
+        "childScopes": [],
+        "variables": [
+          { "name": "clk",  "fullPath": "top.clk",  "varType": "wire", "bitWidth": 1, "direction": "unknown" },
+          { "name": "rst",  "fullPath": "top.rst",  "varType": "wire", "bitWidth": 1, "direction": "unknown" },
+          { "name": "data", "fullPath": "top.data", "varType": "wire", "bitWidth": 8, "direction": "unknown" }
+        ]
+      }
+    ]
+  },
+  "signals": {
+    "top.clk": {
+      "allChanges": [
+        { "time":   0, "value": "0" },
+        { "time":  10, "value": "1" },
+        { "time":  20, "value": "0" },
+        { "time":  30, "value": "1" },
+        { "time":  40, "value": "0" },
+        { "time":  50, "value": "1" },
+        { "time":  60, "value": "0" },
+        { "time":  70, "value": "1" },
+        { "time":  80, "value": "0" },
+        { "time":  90, "value": "1" },
+        { "time": 100, "value": "0" }
+      ],
+      "valueAt": [
+        { "time":  -1, "expected": null  },
+        { "time":   0, "expected": "0"   },
+        { "time":   5, "expected": "0"   },
+        { "time":  10, "expected": "1"   },
+        { "time":  15, "expected": "1"   },
+        { "time":  20, "expected": "0"   },
+        { "time":  50, "expected": "1"   },
+        { "time": 100, "expected": "0"   },
+        { "time": 200, "expected": "0"   }
+      ],
+      "changesInRange": [
+        { "start":   0, "end":   0, "expected": [] },
+        { "start":   0, "end":  10, "expected": [{ "time": 0, "value": "0" }] },
+        { "start":   0, "end":  11, "expected": [{ "time": 0, "value": "0" }, { "time": 10, "value": "1" }] },
+        { "start":  10, "end":  20, "expected": [{ "time": 10, "value": "1" }] },
+        { "start":  50, "end":  60, "expected": [{ "time": 50, "value": "1" }] },
+        { "start": 200, "end": 300, "expected": [] },
+        {
+          "start": 0, "end": 101,
+          "expected": [
+            { "time":   0, "value": "0" }, { "time":  10, "value": "1" }, { "time":  20, "value": "0" },
+            { "time":  30, "value": "1" }, { "time":  40, "value": "0" }, { "time":  50, "value": "1" },
+            { "time":  60, "value": "0" }, { "time":  70, "value": "1" }, { "time":  80, "value": "0" },
+            { "time":  90, "value": "1" }, { "time": 100, "value": "0" }
+          ]
+        }
+      ],
+      "nextTransition": [
+        { "afterTime":  -1, "expected": { "time":   0, "value": "0" } },
+        { "afterTime":   0, "expected": { "time":  10, "value": "1" } },
+        { "afterTime":  10, "expected": { "time":  20, "value": "0" } },
+        { "afterTime":  95, "expected": { "time": 100, "value": "0" } },
+        { "afterTime": 100, "expected": null },
+        { "afterTime": 200, "expected": null }
+      ],
+      "prevTransition": [
+        { "beforeTime":   0, "expected": null },
+        { "beforeTime":   1, "expected": { "time":   0, "value": "0" } },
+        { "beforeTime":  10, "expected": { "time":   0, "value": "0" } },
+        { "beforeTime": 100, "expected": { "time":  90, "value": "1" } },
+        { "beforeTime": 200, "expected": { "time": 100, "value": "0" } }
+      ]
+    },
+    "top.rst": {
+      "allChanges": [
+        { "time":  0, "value": "1" },
+        { "time": 30, "value": "0" }
+      ],
+      "valueAt": [
+        { "time":  -1, "expected": null  },
+        { "time":   0, "expected": "1"   },
+        { "time":  15, "expected": "1"   },
+        { "time":  30, "expected": "0"   },
+        { "time": 100, "expected": "0"   }
+      ],
+      "changesInRange": [
+        { "start":  0, "end": 30, "expected": [{ "time": 0, "value": "1" }] },
+        { "start":  0, "end": 31, "expected": [{ "time": 0, "value": "1" }, { "time": 30, "value": "0" }] },
+        { "start": 30, "end": 31, "expected": [{ "time": 30, "value": "0" }] },
+        { "start": 31, "end": 100, "expected": [] }
+      ],
+      "nextTransition": [
+        { "afterTime":  0, "expected": { "time": 30, "value": "0" } },
+        { "afterTime": 30, "expected": null },
+        { "afterTime": 100, "expected": null }
+      ],
+      "prevTransition": [
+        { "beforeTime":  0, "expected": null },
+        { "beforeTime": 30, "expected": { "time":  0, "value": "1" } },
+        { "beforeTime": 100, "expected": { "time": 30, "value": "0" } }
+      ]
+    },
+    "top.data": {
+      "allChanges": [
+        { "time":  0, "value": "00000000" },
+        { "time": 30, "value": "00000001" },
+        { "time": 50, "value": "00000010" },
+        { "time": 90, "value": "11111111" }
+      ],
+      "valueAt": [
+        { "time":  -1, "expected": null         },
+        { "time":   0, "expected": "00000000"   },
+        { "time":  29, "expected": "00000000"   },
+        { "time":  30, "expected": "00000001"   },
+        { "time":  45, "expected": "00000001"   },
+        { "time":  50, "expected": "00000010"   },
+        { "time":  89, "expected": "00000010"   },
+        { "time":  90, "expected": "11111111"   },
+        { "time": 150, "expected": "11111111"   }
+      ],
+      "changesInRange": [
+        { "start":  0, "end": 30, "expected": [{ "time": 0, "value": "00000000" }] },
+        { "start": 30, "end": 50, "expected": [{ "time": 30, "value": "00000001" }] },
+        {
+          "start": 0, "end": 91,
+          "expected": [
+            { "time":  0, "value": "00000000" }, { "time": 30, "value": "00000001" },
+            { "time": 50, "value": "00000010" }, { "time": 90, "value": "11111111" }
+          ]
+        }
+      ],
+      "nextTransition": [
+        { "afterTime":  0, "expected": { "time": 30, "value": "00000001" } },
+        { "afterTime": 50, "expected": { "time": 90, "value": "11111111" } },
+        { "afterTime": 90, "expected": null }
+      ],
+      "prevTransition": [
+        { "beforeTime":   0, "expected": null },
+        { "beforeTime":  90, "expected": { "time": 50, "value": "00000010" } },
+        { "beforeTime": 200, "expected": { "time": 90, "value": "11111111" } }
+      ]
+    }
+  }
+}

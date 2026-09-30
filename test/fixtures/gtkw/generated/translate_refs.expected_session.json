@@ -1,0 +1,71 @@
+{
+  "matchedSignalCount": 5,
+  "groupCount": 1,
+  "markerCount": 0,
+  "unmatchedSignalPaths": [],
+  "canvasBackgroundHex": null,
+  "sourceFilePath": "fixture.vcd",
+  "panOffsetTicks": 0.0,
+  "primaryCursorTime": null,
+  "markers": {},
+  "signals": [
+    {
+      "kind": "signal",
+      "signalRef": "top.clk",
+      "displayName": "clk",
+      "signalPath": "top.clk",
+      "format": "binary",
+      "argbColor": null,
+      "renderAsAnalog": false
+    },
+    {
+      "kind": "signal",
+      "signalRef": "top.data",
+      "displayName": "data",
+      "signalPath": "top.data",
+      "format": "binary",
+      "argbColor": null,
+      "renderAsAnalog": false
+    },
+    {
+      "kind": "signal",
+      "signalRef": "top.rst",
+      "displayName": "rst",
+      "signalPath": "top.rst",
+      "format": "binary",
+      "argbColor": null,
+      "renderAsAnalog": false
+    },
+    {
+      "kind": "signal",
+      "signalRef": "top.cpu.addr",
+      "displayName": "addr",
+      "signalPath": "top.cpu.addr",
+      "format": "binary",
+      "argbColor": null,
+      "renderAsAnalog": false
+    },
+    {
+      "kind": "signal",
+      "signalRef": "top.cpu.dout",
+      "displayName": "dout",
+      "signalPath": "top.cpu.dout",
+      "format": "binary",
+      "argbColor": null,
+      "renderAsAnalog": false
+    },
+    {
+      "kind": "group",
+      "groupName": "Separators and Comments",
+      "children": [
+        {
+          "kind": "separator"
+        },
+        {
+          "kind": "comment",
+          "text": "This is a comment"
+        }
+      ]
+    }
+  ]
+}

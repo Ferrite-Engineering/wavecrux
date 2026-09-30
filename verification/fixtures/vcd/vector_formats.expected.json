@@ -1,0 +1,194 @@
+{
+  "_comment": "VCD identifier codes: bit1=!, nib4=\", byte8=#, word16=$, long32=%, quad64=&, xnib=', znib=(, mixed_xz=)",
+  "metadata": {
+    "timescale": { "factor": 1, "unit": "nanoSeconds" },
+    "startTime": 0,
+    "endTime": 40,
+    "date": null,
+    "version": null
+  },
+  "hierarchy": {
+    "rootScopes": [
+      {
+        "name": "top",
+        "type": "module",
+        "path": "top",
+        "childScopes": [],
+        "variables": [
+          { "name": "bit1",     "fullPath": "top.bit1",     "varType": "wire", "bitWidth": 1,  "direction": "unknown" },
+          { "name": "nib4",     "fullPath": "top.nib4",     "varType": "wire", "bitWidth": 4,  "direction": "unknown" },
+          { "name": "byte8",    "fullPath": "top.byte8",    "varType": "wire", "bitWidth": 8,  "direction": "unknown" },
+          { "name": "word16",   "fullPath": "top.word16",   "varType": "wire", "bitWidth": 16, "direction": "unknown" },
+          { "name": "long32",   "fullPath": "top.long32",   "varType": "wire", "bitWidth": 32, "direction": "unknown" },
+          { "name": "quad64",   "fullPath": "top.quad64",   "varType": "wire", "bitWidth": 64, "direction": "unknown" },
+          { "name": "xnib",     "fullPath": "top.xnib",     "varType": "wire", "bitWidth": 4,  "direction": "unknown" },
+          { "name": "znib",     "fullPath": "top.znib",     "varType": "wire", "bitWidth": 4,  "direction": "unknown" },
+          { "name": "mixed_xz", "fullPath": "top.mixed_xz", "varType": "wire", "bitWidth": 8,  "direction": "unknown" }
+        ]
+      }
+    ]
+  },
+  "signals": {
+    "top.bit1": {
+      "allChanges": [
+        { "time":  0, "value": "0" },
+        { "time": 10, "value": "1" },
+        { "time": 20, "value": "0" },
+        { "time": 30, "value": "1" },
+        { "time": 40, "value": "0" }
+      ],
+      "valueAt": [
+        { "time": -1, "expected": null  },
+        { "time":  0, "expected": "0"   },
+        { "time": 10, "expected": "1"   },
+        { "time": 15, "expected": "1"   },
+        { "time": 20, "expected": "0"   },
+        { "time": 30, "expected": "1"   },
+        { "time": 40, "expected": "0"   },
+        { "time": 99, "expected": "0"   }
+      ],
+      "changesInRange": [
+        { "start":  0, "end": 10, "expected": [{ "time": 0, "value": "0" }] },
+        { "start": 10, "end": 30, "expected": [{ "time": 10, "value": "1" }, { "time": 20, "value": "0" }] },
+        { "start": 40, "end": 41, "expected": [{ "time": 40, "value": "0" }] },
+        { "start": 41, "end": 99, "expected": [] }
+      ],
+      "nextTransition": [
+        { "afterTime":  0, "expected": { "time": 10, "value": "1" } },
+        { "afterTime": 40, "expected": null }
+      ],
+      "prevTransition": [
+        { "beforeTime":  0, "expected": null },
+        { "beforeTime": 10, "expected": { "time": 0, "value": "0" } },
+        { "beforeTime": 99, "expected": { "time": 40, "value": "0" } }
+      ]
+    },
+    "top.nib4": {
+      "allChanges": [
+        { "time":  0, "value": "0000" },
+        { "time": 10, "value": "1111" },
+        { "time": 20, "value": "0000" },
+        { "time": 30, "value": "1010" }
+      ],
+      "valueAt": [
+        { "time":  -1, "expected": null    },
+        { "time":   0, "expected": "0000"  },
+        { "time":  10, "expected": "1111"  },
+        { "time":  25, "expected": "0000"  },
+        { "time":  30, "expected": "1010"  },
+        { "time": 100, "expected": "1010"  }
+      ],
+      "changesInRange": [
+        { "start": 0, "end": 31, "expected": [
+          { "time":  0, "value": "0000" }, { "time": 10, "value": "1111" },
+          { "time": 20, "value": "0000" }, { "time": 30, "value": "1010" }
+        ]}
+      ]
+    },
+    "top.byte8": {
+      "allChanges": [
+        { "time":  0, "value": "00000000" },
+        { "time": 10, "value": "11001010" },
+        { "time": 20, "value": "00000000" },
+        { "time": 30, "value": "10101010" }
+      ],
+      "valueAt": [
+        { "time":  -1, "expected": null         },
+        { "time":   0, "expected": "00000000"   },
+        { "time":  10, "expected": "11001010"   },
+        { "time":  20, "expected": "00000000"   },
+        { "time":  30, "expected": "10101010"   },
+        { "time": 100, "expected": "10101010"   }
+      ],
+      "changesInRange": [
+        { "start": 10, "end": 20, "expected": [{ "time": 10, "value": "11001010" }] }
+      ]
+    },
+    "top.word16": {
+      "allChanges": [
+        { "time":  0, "value": "0000000000000000" },
+        { "time": 10, "value": "0101010101010101" },
+        { "time": 20, "value": "0000000000000000" },
+        { "time": 30, "value": "1111111111111111" }
+      ],
+      "valueAt": [
+        { "time":  0, "expected": "0000000000000000" },
+        { "time": 10, "expected": "0101010101010101" },
+        { "time": 30, "expected": "1111111111111111" }
+      ]
+    },
+    "top.long32": {
+      "allChanges": [
+        { "time":  0, "value": "00000000000000000000000000000000" },
+        { "time": 10, "value": "10101010101010101010101010101010" },
+        { "time": 20, "value": "00000000000000000000000000000000" },
+        { "time": 30, "value": "11111111111111111111111111111111" }
+      ],
+      "valueAt": [
+        { "time":  0, "expected": "00000000000000000000000000000000" },
+        { "time": 10, "expected": "10101010101010101010101010101010" },
+        { "time": 30, "expected": "11111111111111111111111111111111" }
+      ]
+    },
+    "top.quad64": {
+      "allChanges": [
+        { "time":  0, "value": "0000000000000000000000000000000000000000000000000000000000000000" },
+        { "time": 10, "value": "1111111111111111111111111111111111111111111111111111111111111111" },
+        { "time": 20, "value": "0000000000000000000000000000000000000000000000000000000000000000" },
+        { "time": 30, "value": "1010101010101010101010101010101010101010101010101010101010101010" }
+      ],
+      "valueAt": [
+        { "time":  0, "expected": "0000000000000000000000000000000000000000000000000000000000000000" },
+        { "time": 10, "expected": "1111111111111111111111111111111111111111111111111111111111111111" },
+        { "time": 30, "expected": "1010101010101010101010101010101010101010101010101010101010101010" }
+      ]
+    },
+    "top.xnib": {
+      "_comment": "Tests x (unknown) states: all-x, partial-x-high, alternating x0x1",
+      "allChanges": [
+        { "time":  0, "value": "xxxx" },
+        { "time": 10, "value": "0xxx" },
+        { "time": 20, "value": "xxxx" },
+        { "time": 30, "value": "x0x1" }
+      ],
+      "valueAt": [
+        { "time": -1, "expected": null    },
+        { "time":  0, "expected": "xxxx"  },
+        { "time": 10, "expected": "0xxx"  },
+        { "time": 20, "expected": "xxxx"  },
+        { "time": 30, "expected": "x0x1"  },
+        { "time": 99, "expected": "x0x1"  }
+      ]
+    },
+    "top.znib": {
+      "_comment": "Tests z (high-impedance) states: all-z, driven, alternating z0z1",
+      "allChanges": [
+        { "time":  0, "value": "zzzz" },
+        { "time": 10, "value": "0001" },
+        { "time": 20, "value": "zzzz" },
+        { "time": 30, "value": "z0z1" }
+      ],
+      "valueAt": [
+        { "time": -1, "expected": null    },
+        { "time":  0, "expected": "zzzz"  },
+        { "time": 10, "expected": "0001"  },
+        { "time": 20, "expected": "zzzz"  },
+        { "time": 30, "expected": "z0z1"  }
+      ]
+    },
+    "top.mixed_xz": {
+      "_comment": "8-bit bus with both x and z states — low nibble=xxxx/zzzz, mixed",
+      "allChanges": [
+        { "time":  0, "value": "0000xxxx" },
+        { "time": 10, "value": "1111zzzz" },
+        { "time": 20, "value": "0000xxxx" },
+        { "time": 30, "value": "x0x1z0z1" }
+      ],
+      "valueAt": [
+        { "time":  0, "expected": "0000xxxx" },
+        { "time": 10, "expected": "1111zzzz" },
+        { "time": 30, "expected": "x0x1z0z1" }
+      ]
+    }
+  }
+}

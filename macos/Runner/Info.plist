@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIconFile</key>
+	<string></string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>$(PRODUCT_COPYRIGHT)</string>
+	<key>NSMainNibFile</key>
+	<string>MainMenu</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<!-- The suite design manifest, <design>.crux-project. Registered in
+			     all four products by design: opening one in any of them opens
+			     the part that product owns — WaveCrux opens the waveform its
+			     waveform: entry names. The content type is declared below under
+			     UTImportedTypeDeclarations, so Finder and the Open dialog both
+			     recognise the extension. -->
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>crux-project</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>EDACrux Design Manifest</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<!-- Alternate, not the default Owner: no product owns the suite
+			     manifest, and four owners make the winner of a double-click
+			     arbitrary. All four defer, so the file opens in whichever
+			     product the user chose — Get Info -> Open with -> Change All
+			     is how they choose. -->
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>app.edacrux.project</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>vcd</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>Value Change Dump File</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.wavecrux.vcd</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>fst</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>Fast Signal Trace File</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.wavecrux.fst</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>ghw</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>GHDL Waveform File</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.wavecrux.ghw</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>gtkw</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>GTKWave Session File</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.wavecrux.gtkw</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>lxt</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>LXT Legacy Waveform File</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.wavecrux.lxt</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>lxt2</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>LXT2 Legacy Waveform File</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.wavecrux.lxt2</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>wavecrux</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>WaveCrux Session File</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.wavecrux.session</string>
+			</array>
+		</dict>
+		<dict>
+			<!-- The share bundle: a session, the waveform excerpt it refers
+			     to, and a preview, zipped. Registered as an Editor because
+			     opening one restores an editable view, not a read-only
+			     document. -->
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>wavecruxpack</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>WaveCrux Annotated Waveform Pack</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.wavecrux.pack</string>
+			</array>
+		</dict>
+	</array>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<!-- Imported, not exported: the manifest format belongs to the
+			     suite, not to WaveCrux. Declared identically in all four
+			     products. -->
+			<key>UTTypeIdentifier</key>
+			<string>app.edacrux.project</string>
+			<key>UTTypeDescription</key>
+			<string>EDACrux Design Manifest</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.yaml</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>crux-project</string>
+				</array>
+			</dict>
+		</dict>
+		<!-- Imported, not exported: the formats below are other projects'.
+		     VCD is IEEE 1364; FST, the GTKWave save file and the LXT/LXT2
+		     legacy dumps are GTKWave's; GHW is GHDL's. Exporting one would
+		     declare WaveCrux the definer of a format it only reads. What
+		     opens is unchanged — same identifiers, same conformance, same
+		     extensions — and only who declares them moves. -->
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.wavecrux.vcd</string>
+			<key>UTTypeDescription</key>
+			<string>Value Change Dump File</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.plain-text</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<string>vcd</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.wavecrux.fst</string>
+			<key>UTTypeDescription</key>
+			<string>Fast Signal Trace File</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<string>fst</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.wavecrux.ghw</string>
+			<key>UTTypeDescription</key>
+			<string>GHDL Waveform File</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<string>ghw</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.wavecrux.gtkw</string>
+			<key>UTTypeDescription</key>
+			<string>GTKWave Session File</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.plain-text</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<string>gtkw</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.wavecrux.lxt</string>
+			<key>UTTypeDescription</key>
+			<string>LXT Legacy Waveform File</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<string>lxt</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.wavecrux.lxt2</string>
+			<key>UTTypeDescription</key>
+			<string>LXT2 Legacy Waveform File</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<string>lxt2</string>
+			</dict>
+		</dict>
+	</array>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.wavecrux.session</string>
+			<key>UTTypeDescription</key>
+			<string>WaveCrux Session File</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.json</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<string>wavecrux</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.wavecrux.pack</string>
+			<key>UTTypeDescription</key>
+			<string>WaveCrux Annotated Waveform Pack</string>
+			<!-- Conforms to public.zip-archive, which is the truth: a
+			     recipient without WaveCrux can unzip it and read the
+			     README rather than being told the file is unknown. -->
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.zip-archive</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<string>wavecruxpack</string>
+			</dict>
+		</dict>
+	</array>
+</dict>
+</plist>

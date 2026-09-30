@@ -1,0 +1,64 @@
+$version
+	Icarus Verilog
+$end
+$timescale
+	1ps
+$end
+$scope module tb $end
+$scope module uut $end
+$var reg 8 ! cpu_state [7:0] $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+$comment Show the parameter values. $end
+$dumpall
+$end
+#0
+$dumpvars
+bx !
+$end
+#5000
+b1000000 !
+#85000
+b100000 !
+#95000
+b1000 !
+#105000
+b1000000 !
+#125000
+b100000 !
+#135000
+b1000 !
+#145000
+b1000000 !
+#165000
+b100000 !
+#175000
+b10000 !
+#185000
+b1000 !
+#195000
+b1000000 !
+#205000
+b100000 !
+#215000
+b10000 !
+#225000
+b100 !
+#265000
+b1000000 !
+#285000
+b100000 !
+#295000
+b10000 !
+#305000
+b10 !
+#345000
+b1000000 !
+#355000
+b100000 !
+#365000
+b1 !
+#415000
+b1000000 !
+#1235000

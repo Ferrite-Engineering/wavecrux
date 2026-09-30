@@ -1,0 +1,251 @@
+# RV64I — additions on top of RV32I for 64-bit base integer.
+#
+# Loaded *together with* RV32I.toml when XLEN=64 is selected. The shift-
+# immediate redefinitions here use 6-bit shamt[25:20] (vs RV32I's 5-bit
+# shamt[24:20]) and shadow RV32I's slli/srli/srai via JKU "last match wins"
+# semantics in the multi-file Decoder bundle.
+#
+# Schema follows the JKU `instruction-decoder` Rust crate. See
+# assets/decoders/isa/riscv/NOTICE.md.
+set = "RV64I"
+width = 32
+
+[formats]
+names = [
+    "itype_alu64",
+    "itype_shift64",
+    "itype_load64",
+    "stype64",
+    "itype_shiftw",
+    "rtype_word",
+]
+parts = [
+    ["rd", 5, "Register_int"],
+    ["rs1", 5, "Register_int"],
+    ["rs2", 5, "Register_int"],
+    ["imm", 32, "VInt"],
+    ["shamt", 6, "u8"],
+    ["shamt5", 5, "u8"],
+    ["none", 32, "u32"],
+]
+
+[types]
+names = ["t_r64", "t_i64", "t_i64_shift", "t_s64", "t_iw_shift"]
+
+# R-type for *W instructions (opcode 0x3B).
+[[types.t_r64]]
+name = "none"
+top = 31
+bot = 25
+[[types.t_r64]]
+name = "rs2"
+top = 4
+bot = 0
+[[types.t_r64]]
+name = "rs1"
+top = 4
+bot = 0
+[[types.t_r64]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_r64]]
+name = "rd"
+top = 4
+bot = 0
+[[types.t_r64]]
+name = "none"
+top = 6
+bot = 0
+
+# I-type with sign-extended imm[11:0]. Used for ld, lwu, sd-companion, addiw.
+[[types.t_i64]]
+name = "imm"
+top = 11
+bot = 0
+[[types.t_i64]]
+name = "rs1"
+top = 4
+bot = 0
+[[types.t_i64]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_i64]]
+name = "rd"
+top = 4
+bot = 0
+[[types.t_i64]]
+name = "none"
+top = 6
+bot = 0
+
+# I-type 6-bit shamt (RV64I slli/srli/srai redefined).
+# Layout: funct6[31:26] | shamt[25:20] | rs1 | funct3 | rd | opcode
+[[types.t_i64_shift]]
+name = "none"
+top = 31
+bot = 26
+[[types.t_i64_shift]]
+name = "shamt"
+top = 5
+bot = 0
+[[types.t_i64_shift]]
+name = "rs1"
+top = 4
+bot = 0
+[[types.t_i64_shift]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_i64_shift]]
+name = "rd"
+top = 4
+bot = 0
+[[types.t_i64_shift]]
+name = "none"
+top = 6
+bot = 0
+
+# S-type for sd.
+[[types.t_s64]]
+name = "imm"
+top = 11
+bot = 5
+[[types.t_s64]]
+name = "rs2"
+top = 4
+bot = 0
+[[types.t_s64]]
+name = "rs1"
+top = 4
+bot = 0
+[[types.t_s64]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_s64]]
+name = "imm"
+top = 4
+bot = 0
+[[types.t_s64]]
+name = "none"
+top = 6
+bot = 0
+
+# I-type 5-bit shamt for *iw word-shift instructions (slliw/srliw/sraiw).
+[[types.t_iw_shift]]
+name = "none"
+top = 31
+bot = 25
+[[types.t_iw_shift]]
+name = "shamt5"
+top = 4
+bot = 0
+[[types.t_iw_shift]]
+name = "rs1"
+top = 4
+bot = 0
+[[types.t_iw_shift]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_iw_shift]]
+name = "rd"
+top = 4
+bot = 0
+[[types.t_iw_shift]]
+name = "none"
+top = 6
+bot = 0
+
+[mappings]
+names = ["Register_int"]
+Register_int = [
+    "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
+    "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5",
+    "a6", "a7", "s2", "s3", "s4", "s5", "s6", "s7",
+    "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6",
+]
+
+# ── RV64-only loads (ld, lwu) ─────────────────────────────────────────────────
+[itype_load64]
+type = "t_i64"
+[itype_load64.repr]
+default = "$name$ %rd%, %imm%(%rs1%)"
+[itype_load64.instructions.lwu]
+mask = 0x0000707f
+match = 0x00006003
+[itype_load64.instructions.ld]
+mask = 0x0000707f
+match = 0x00003003
+
+# ── RV64-only store (sd) ──────────────────────────────────────────────────────
+[stype64]
+type = "t_s64"
+[stype64.repr]
+default = "$name$ %rs2%, %imm%(%rs1%)"
+[stype64.instructions.sd]
+mask = 0x0000707f
+match = 0x00003023
+
+# ── addiw ─────────────────────────────────────────────────────────────────────
+[itype_alu64]
+type = "t_i64"
+[itype_alu64.repr]
+default = "$name$ %rd%, %rs1%, %imm%"
+[itype_alu64.instructions.addiw]
+mask = 0x0000707f
+match = 0x0000001b
+
+# ── *W shifts: slliw, srliw, sraiw (5-bit shamt, opcode 0x1B) ─────────────────
+[itype_shiftw]
+type = "t_iw_shift"
+[itype_shiftw.repr]
+default = "$name$ %rd%, %rs1%, %shamt5%"
+[itype_shiftw.instructions.slliw]
+mask = 0xfe00707f
+match = 0x0000101b
+[itype_shiftw.instructions.srliw]
+mask = 0xfe00707f
+match = 0x0000501b
+[itype_shiftw.instructions.sraiw]
+mask = 0xfe00707f
+match = 0x4000501b
+
+# ── R-type *W: addw, subw, sllw, srlw, sraw (opcode 0x3B) ─────────────────────
+[rtype_word]
+type = "t_r64"
+[rtype_word.repr]
+default = "$name$ %rd%, %rs1%, %rs2%"
+[rtype_word.instructions.addw]
+mask = 0xfe00707f
+match = 0x0000003b
+[rtype_word.instructions.subw]
+mask = 0xfe00707f
+match = 0x4000003b
+[rtype_word.instructions.sllw]
+mask = 0xfe00707f
+match = 0x0000103b
+[rtype_word.instructions.srlw]
+mask = 0xfe00707f
+match = 0x0000503b
+[rtype_word.instructions.sraw]
+mask = 0xfe00707f
+match = 0x4000503b
+
+# ── Redefined slli/srli/srai with 6-bit shamt (RV64I) ─────────────────────────
+# These shadow the RV32I 5-bit-shamt definitions in a multi-file bundle.
+[itype_shift64]
+type = "t_i64_shift"
+[itype_shift64.repr]
+default = "$name$ %rd%, %rs1%, %shamt%"
+[itype_shift64.instructions.slli]
+mask = 0xfc00707f
+match = 0x00001013
+[itype_shift64.instructions.srli]
+mask = 0xfc00707f
+match = 0x00005013
+[itype_shift64.instructions.srai]
+mask = 0xfc00707f
+match = 0x40005013

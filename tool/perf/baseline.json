@@ -1,0 +1,31 @@
+{
+  "_comment": "Perf regression baseline, ubuntu-latest (GitHub-hosted, noisy). check_baseline.dart fails a metric only when current > its threshold x baseline. We deliberately gate only stable, meaningful-magnitude metrics — open_ms for the VCD fixtures (text parse, hundreds of ms+) and rss_peak_mb — and leave the sub-microsecond value/range queries and the tiny FST open (~36ms, lazy index) as report-only (absent here) since runner jitter dominates them. Fixtures from native/torture_gen --seed 42.",
+  "_baseline_provenance": "Re-captured 2026-09-23 as the MEDIAN of the six weekly scheduled runs 2026-08-19 .. 2026-09-23, replacing single-run figures captured 2026-06-04 (run 26968433952). A single run is a poor baseline on a hosted runner: across those six runs vcd-medium.open_ms ranged 589..1161 ms and vcd-large.open_ms 2251..4287 ms, and the two move TOGETHER (their ratio held near 3.8), which is machine speed varying, not our code.",
+  "_thresholds_rationale": "Measured peak-to-trough over those same six runs: timing metrics swing 1.60x-1.97x, rss_peak_mb holds inside 1.05x. One global multiplier therefore could not be right for both — the old flat 1.5x fired on 2026-09-23 at 1.52x (a false positive: the 490 MB fixture was FASTER that week than the one before) while leaving a genuine 30% memory leak undetectable. Worst observed value/median: open_ms 1.50, culled_p95_us 1.36, rss_peak_mb 1.02. Thresholds are set above those with headroom, so memory is now gated far TIGHTER than before (1.25x, was 1.5x) and wall-clock looser. Reducing the noise itself — best-of-N per fixture rather than a single timed open — is the real fix and is the follow-up; widening the band only stops the false alarms.",
+  "threshold": 1.5,
+  "thresholds": {
+    "open_ms": 2.0,
+    "rss_peak_mb": 1.25,
+    "culled_p95_us": 1.75
+  },
+  "engine": {
+    "vcd-medium": {
+      "_about": "122.7 MB VCD, 10M transitions",
+      "open_ms": 773,
+      "rss_peak_mb": 322.1
+    },
+    "fst-medium": {
+      "_about": "9.6 MB FST, same 10M transitions as vcd-medium (open ~36ms is report-only)",
+      "rss_peak_mb": 311.3
+    },
+    "vcd-large": {
+      "_about": "490.6 MB VCD, 40M transitions",
+      "open_ms": 2921,
+      "rss_peak_mb": 921.5
+    }
+  },
+  "paint": {
+    "1000": { "culled_p95_us": 34601 },
+    "2000": { "culled_p95_us": 35240 }
+  }
+}

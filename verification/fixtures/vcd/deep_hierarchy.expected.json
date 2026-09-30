@@ -1,0 +1,188 @@
+{
+  "_comment": "4-level deep hierarchy with a task scope and duplicate signal names ('clk' appears in both top.cpu.alu and top.mem). Timescale=10ns, endTime=25 ticks (250 ns real time). VCD idcodes: alu.clk=!, alu.result=\", reg0=#, reg1=$, mem.clk=%, mem.addr=&, mem.data='",
+  "metadata": {
+    "timescale": { "factor": 10, "unit": "nanoSeconds" },
+    "startTime": 0,
+    "endTime": 25,
+    "date": null,
+    "version": null
+  },
+  "hierarchy": {
+    "rootScopes": [
+      {
+        "name": "top",
+        "type": "module",
+        "path": "top",
+        "variables": [],
+        "childScopes": [
+          {
+            "name": "cpu",
+            "type": "module",
+            "path": "top.cpu",
+            "variables": [],
+            "childScopes": [
+              {
+                "name": "alu",
+                "type": "module",
+                "path": "top.cpu.alu",
+                "childScopes": [],
+                "variables": [
+                  { "name": "clk",    "fullPath": "top.cpu.alu.clk",    "varType": "wire", "bitWidth": 1, "direction": "unknown" },
+                  { "name": "result", "fullPath": "top.cpu.alu.result", "varType": "wire", "bitWidth": 8, "direction": "unknown" }
+                ]
+              },
+              {
+                "name": "reg_file",
+                "type": "task",
+                "path": "top.cpu.reg_file",
+                "childScopes": [],
+                "variables": [
+                  { "name": "reg0", "fullPath": "top.cpu.reg_file.reg0", "varType": "wire", "bitWidth": 8, "direction": "unknown" },
+                  { "name": "reg1", "fullPath": "top.cpu.reg_file.reg1", "varType": "wire", "bitWidth": 8, "direction": "unknown" }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "mem",
+            "type": "module",
+            "path": "top.mem",
+            "childScopes": [],
+            "variables": [
+              { "name": "clk",  "fullPath": "top.mem.clk",  "varType": "wire", "bitWidth": 1,  "direction": "unknown" },
+              { "name": "addr", "fullPath": "top.mem.addr", "varType": "wire", "bitWidth": 16, "direction": "unknown" },
+              { "name": "data", "fullPath": "top.mem.data", "varType": "wire", "bitWidth": 8,  "direction": "unknown" }
+            ]
+          }
+        ]
+      }
+    ],
+    "totalVariableCount": 7
+  },
+  "signals": {
+    "top.cpu.alu.clk": {
+      "_comment": "Same pattern as top.mem.clk — both toggle at t=0,5,10,15,20,25",
+      "allChanges": [
+        { "time":  0, "value": "0" },
+        { "time":  5, "value": "1" },
+        { "time": 10, "value": "0" },
+        { "time": 15, "value": "1" },
+        { "time": 20, "value": "0" },
+        { "time": 25, "value": "1" }
+      ],
+      "valueAt": [
+        { "time": -1, "expected": null  },
+        { "time":  0, "expected": "0"   },
+        { "time":  5, "expected": "1"   },
+        { "time":  7, "expected": "1"   },
+        { "time": 10, "expected": "0"   },
+        { "time": 25, "expected": "1"   },
+        { "time": 99, "expected": "1"   }
+      ],
+      "changesInRange": [
+        { "start": 0, "end": 26, "expected": [
+          { "time":  0, "value": "0" }, { "time":  5, "value": "1" },
+          { "time": 10, "value": "0" }, { "time": 15, "value": "1" },
+          { "time": 20, "value": "0" }, { "time": 25, "value": "1" }
+        ]},
+        { "start": 5, "end": 15, "expected": [
+          { "time": 5, "value": "1" }, { "time": 10, "value": "0" }
+        ]}
+      ],
+      "nextTransition": [
+        { "afterTime":  0, "expected": { "time":  5, "value": "1" } },
+        { "afterTime": 25, "expected": null }
+      ],
+      "prevTransition": [
+        { "beforeTime":  0, "expected": null },
+        { "beforeTime": 25, "expected": { "time": 20, "value": "0" } }
+      ]
+    },
+    "top.cpu.alu.result": {
+      "allChanges": [
+        { "time":  0, "value": "00000000" },
+        { "time": 10, "value": "00000001" },
+        { "time": 20, "value": "00000010" }
+      ],
+      "valueAt": [
+        { "time":  -1, "expected": null         },
+        { "time":   0, "expected": "00000000"   },
+        { "time":   9, "expected": "00000000"   },
+        { "time":  10, "expected": "00000001"   },
+        { "time":  20, "expected": "00000010"   },
+        { "time": 100, "expected": "00000010"   }
+      ]
+    },
+    "top.cpu.reg_file.reg0": {
+      "allChanges": [
+        { "time":  0, "value": "00000000" },
+        { "time": 10, "value": "00000001" },
+        { "time": 20, "value": "00000011" }
+      ],
+      "valueAt": [
+        { "time":  0, "expected": "00000000" },
+        { "time": 10, "expected": "00000001" },
+        { "time": 20, "expected": "00000011" }
+      ]
+    },
+    "top.cpu.reg_file.reg1": {
+      "allChanges": [
+        { "time":  0, "value": "00000000" },
+        { "time": 10, "value": "00000010" },
+        { "time": 20, "value": "00001000" }
+      ],
+      "valueAt": [
+        { "time":  0, "expected": "00000000" },
+        { "time": 10, "expected": "00000010" },
+        { "time": 20, "expected": "00001000" }
+      ]
+    },
+    "top.mem.clk": {
+      "_comment": "Duplicate signal name 'clk' at a different scope from top.cpu.alu.clk. Same toggle pattern.",
+      "allChanges": [
+        { "time":  0, "value": "0" },
+        { "time":  5, "value": "1" },
+        { "time": 10, "value": "0" },
+        { "time": 15, "value": "1" },
+        { "time": 20, "value": "0" },
+        { "time": 25, "value": "1" }
+      ],
+      "valueAt": [
+        { "time":  0, "expected": "0" },
+        { "time": 15, "expected": "1" },
+        { "time": 25, "expected": "1" }
+      ]
+    },
+    "top.mem.addr": {
+      "_comment": "Only 2 changes: initial 0 then 4 (binary 0000000000000100) at t=15",
+      "allChanges": [
+        { "time":  0, "value": "0000000000000000" },
+        { "time": 15, "value": "0000000000000100" }
+      ],
+      "valueAt": [
+        { "time":  -1, "expected": null                   },
+        { "time":   0, "expected": "0000000000000000"     },
+        { "time":  14, "expected": "0000000000000000"     },
+        { "time":  15, "expected": "0000000000000100"     },
+        { "time": 100, "expected": "0000000000000100"     }
+      ],
+      "changesInRange": [
+        { "start": 0, "end": 15, "expected": [{ "time": 0, "value": "0000000000000000" }] },
+        { "start": 15, "end": 16, "expected": [{ "time": 15, "value": "0000000000000100" }] }
+      ]
+    },
+    "top.mem.data": {
+      "_comment": "Initial 0, then 2 (binary 00000010) at t=20. Shares name 'data' but different from top.data in other fixtures.",
+      "allChanges": [
+        { "time":  0, "value": "00000000" },
+        { "time": 20, "value": "00000010" }
+      ],
+      "valueAt": [
+        { "time":  0, "expected": "00000000" },
+        { "time": 19, "expected": "00000000" },
+        { "time": 20, "expected": "00000010" },
+        { "time": 99, "expected": "00000010" }
+      ]
+    }
+  }
+}

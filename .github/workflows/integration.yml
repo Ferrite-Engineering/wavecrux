@@ -1,0 +1,147 @@
+name: Integration (Linux)
+
+# ─── Trigger configuration ─────────────────────────────────────────────────────
+# Manual-only while we stabilize. Intended to run nightly (not per-commit):
+# the suite runs one integration_test file per `flutter test` invocation
+# (a flutter_tools limitation), so the full sweep is slow.
+on:
+  workflow_dispatch:
+    inputs:
+      subdirs:
+        description: 'Space-separated integration_test subdirs to run (empty = all)'
+        required: false
+        default: ''
+  pull_request:
+  # WEEKLY. The nightly was retired at beta launch (2026-07-12) and left
+  # pull requests as the only automatic trigger, in a repository whose work
+  # lands directly on `main` — so from then until 2026-09-21 this suite never
+  # ran. A desktop suite that nothing runs rots silently. Linux, so cheap:
+  # the 2026-09-21 run took over an hour, inside its 90-minute cap, which is
+  # about $2 a month at one run a week.
+  schedule:
+    - cron: '10 6 * * 3'
+
+concurrency:
+  # Keyed by event as well as ref: a nightly must never be cancelled by a
+  # push, and a push must never be cancelled by a nightly.
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  # Superseded pushes are cancelled outright. `false` on main was the source
+  # of a whole class of phantom failures: a run still QUEUED when a third
+  # push arrives is cancelled by GitHub regardless, and a run whose jobs were
+  # cancelled reports conclusion=failure — not cancelled. So main never did
+  # verify every commit, it just misreported the ones it skipped. Cancelling
+  # is honest, cheaper, and gates the thing that matters: the tip.
+  cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  integration-linux:
+    name: Integration / Linux (xvfb)
+    runs-on: ubuntu-latest
+    # Cost guardrail: no job may run unbounded. The full sweep is one app
+    # build and launch per file, and it grows with the suite: 66-78 minutes a
+    # run in July, 80-81 minutes for 91 files in September. A 90-minute cap
+    # would end the weekly run as a timeout within a few added files, which
+    # reads as red and tests nothing. 120 keeps real headroom; Linux bills at
+    # the base rate, so a run that uses all of it costs well under a dollar.
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_PAT || github.token }}
+
+      # This job builds the Rust wellen_ffi crate plus a Flutter Linux app and
+      # runs all integration files (each triggers Riverpod codegen over ~1300
+      # inputs and a build), which intermittently exhausts the ~14 GB free on
+      # ubuntu-latest — surfacing as "No space left on device" or build_runner's
+      # "Unable to generate build files". Reclaim ~40 GB of preinstalled SDKs the
+      # build never uses. Done with a plain `rm` (no third-party action) for
+      # supply-chain hygiene; the `df` lines make any future disk pressure
+      # visible in the log. None of these paths are used by the Linux desktop
+      # Flutter+Rust build, and the step runs before flutter-action populates the
+      # hosted tool cache (which is deliberately left intact).
+      - name: Free up disk space
+        run: |
+          echo "Disk before cleanup:"; df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /usr/local/share/boost /usr/local/share/powershell || true
+          sudo apt-get clean || true
+          echo "Disk after cleanup:"; df -h /
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable branch head, 2026-09-03
+
+      - name: Cache Rust build artifacts
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            native/wellen_ffi/target
+          key: rust-integ-ubuntu-${{ hashFiles('native/wellen_ffi/Cargo.lock') }}
+          restore-keys: rust-integ-ubuntu-
+
+      # Linux desktop toolchain + headless display. The Linux CMake builds and
+      # bundles libwellen_ffi.so via cargo automatically (it's on the bundle
+      # rpath), so no manual staging is needed — just cargo on PATH (above).
+      - name: Install Linux desktop build deps + xvfb
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ninja-build libgtk-3-dev libsecret-1-dev xvfb
+
+      - name: Install Flutter (pinned)
+        id: flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: '3.47.3'
+          cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: |
+            ${{ steps.flutter.outputs.pub-cache-path }}
+            .dart_tool/
+          key: pub-integ-ubuntu-${{ hashFiles('pubspec.lock') }}
+          restore-keys: pub-integ-ubuntu-
+
+      # The restored `.dart_tool/` carries build_runner's asset graph, which a
+      # `!` exclusion on the cache path cannot prevent. A graph written before
+      # a source file was deleted — a crux-shared package's file after a pin
+      # bump — fails codegen with `InvalidOutputException … Tried to delete
+      # from package not in the build`, measured on the Pro overlay when
+      # `lib/services/spawn/spawn_guards.dart` was removed here. Dropping the
+      # graph is what actually keeps it out; a cold codegen costs ~13s.
+      - name: Drop the restored build_runner asset graph
+        shell: bash
+        run: rm -rf .dart_tool/build
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # integration_test/remote_control/wcp_add_signal_cli_subprocess_test.dart
+      # spawns the real `wavecrux-ctl` CLI as a subprocess (`dart run`), which
+      # needs its own resolved `.dart_tool/` — that nested package's
+      # `.dart_tool/` is gitignored (see ci.yml's "Resolve tool/wavecrux_ctl
+      # deps" step for the same requirement on the Analyze job).
+      - name: Resolve tool/wavecrux_ctl deps
+        run: dart pub get --directory tool/wavecrux_ctl
+
+      - name: Riverpod codegen
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate l10n
+        run: flutter gen-l10n
+
+      # Run integration tests headless under xvfb. --no-clean reuses the build
+      # bundle across files (the per-file clean in the script guards a
+      # macOS-specific flake, not Linux). The runner exits non-zero if any
+      # file fails and prints a per-file summary.
+      - name: Run integration tests (xvfb, -d linux)
+        run: xvfb-run -a --server-args="-screen 0 1920x1080x24" tool/run_integration_tests.sh --no-clean -d linux ${{ github.event.inputs.subdirs }}
+        env:
+          LD_LIBRARY_PATH: ${{ github.workspace }}/native/wellen_ffi/target/release

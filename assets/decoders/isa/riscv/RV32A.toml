@@ -1,0 +1,111 @@
+# RV32A — atomic memory operations (.w width).
+#
+# All opcode 0x2F, funct3 = 0x2 for .w. Schema follows the JKU
+# `instruction-decoder` Rust crate.
+set = "RV32A"
+width = 32
+
+[formats]
+names = ["amo_w", "lr_w"]
+parts = [
+    ["rd", 5, "Register_int"],
+    ["rs1", 5, "Register_int"],
+    ["rs2", 5, "Register_int"],
+    ["none", 32, "u32"],
+]
+
+[types]
+names = ["t_amo", "t_lr"]
+
+# AMO: funct5[31:27] | aq[26] | rl[25] | rs2[24:20] | rs1[19:15] | funct3[14:12] | rd[11:7] | opcode[6:0]
+[[types.t_amo]]
+name = "none"
+top = 31
+bot = 25
+[[types.t_amo]]
+name = "rs2"
+top = 4
+bot = 0
+[[types.t_amo]]
+name = "rs1"
+top = 4
+bot = 0
+[[types.t_amo]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_amo]]
+name = "rd"
+top = 4
+bot = 0
+[[types.t_amo]]
+name = "none"
+top = 6
+bot = 0
+
+# lr: rs2 is hardwired to 0; reserve the slice but show it.
+[[types.t_lr]]
+name = "none"
+top = 31
+bot = 20
+[[types.t_lr]]
+name = "rs1"
+top = 4
+bot = 0
+[[types.t_lr]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_lr]]
+name = "rd"
+top = 4
+bot = 0
+[[types.t_lr]]
+name = "none"
+top = 6
+bot = 0
+
+[mappings]
+names = ["Register_int"]
+Register_int = [
+    "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
+    "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5",
+    "a6", "a7", "s2", "s3", "s4", "s5", "s6", "s7",
+    "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6",
+]
+
+[amo_w]
+type = "t_amo"
+
+[amo_w.repr]
+default = "$name$ %rd%, %rs2%, (%rs1%)"
+
+# Mask aq/rl out (bits 26:25); they do not affect mnemonic.
+[amo_w.instructions."amoswap.w"]
+mask = 0xf800707f
+match = 0x0800202f
+[amo_w.instructions."amoadd.w"]
+mask = 0xf800707f
+match = 0x0000202f
+[amo_w.instructions."amoxor.w"]
+mask = 0xf800707f
+match = 0x2000202f
+[amo_w.instructions."amoand.w"]
+mask = 0xf800707f
+match = 0x6000202f
+[amo_w.instructions."amoor.w"]
+mask = 0xf800707f
+match = 0x4000202f
+[amo_w.instructions."sc.w"]
+mask = 0xf800707f
+match = 0x1800202f
+
+[lr_w]
+type = "t_lr"
+
+[lr_w.repr]
+default = "$name$ %rd%, (%rs1%)"
+
+[lr_w.instructions."lr.w"]
+mask = 0xf9f0707f
+match = 0x1000202f

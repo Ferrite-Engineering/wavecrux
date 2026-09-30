@@ -1,0 +1,56 @@
+name: WavecruxDecoderAbi
+description: >
+  Auto-generated Dart FFI bindings for the user-contributed decoder
+  plugin C ABI declared in `include/wavecrux_decoder.h`.
+  Re-generate with: dart run ffigen --config ffigen_decoder.yaml
+
+output: 'lib/services/decoders/ffi/decoder_abi_bindings.g.dart'
+
+headers:
+  entry-points:
+    - 'include/wavecrux_decoder.h'
+  include-directives:
+    - 'include/wavecrux_decoder.h'
+
+# Only bind symbols that originate from wavecrux_decoder.h.
+functions:
+  include:
+    - 'wavecrux_decoder_.*'
+  symbol-address:
+    include: []
+
+structs:
+  include:
+    - 'WcSample'
+    - 'WcTransaction'
+    - 'WcDecoderDef'
+
+enums:
+  include: []
+
+unnamed-enums:
+  include: []
+
+# Emit the WAVECRUX_DECODER_* / WC_DECODER_* #define constants.
+macros:
+  include:
+    - 'WAVECRUX_DECODER_.*'
+    - 'WC_DECODER_.*'
+
+globals:
+  include: []
+
+typedefs:
+  include:
+    - 'WcDecoderHandle'
+    - 'WcDecoderCreateFn'
+    - 'WcDecoderFeedFn'
+    - 'WcDecoderFlushFn'
+    - 'WcDecoderDestroyFn'
+    - 'WcSample'
+    - 'WcTransaction'
+    - 'WcDecoderDef'
+
+llvm-path:
+  - '/Library/Developer/CommandLineTools/usr/lib'
+  - '/opt/homebrew/opt/llvm/lib'

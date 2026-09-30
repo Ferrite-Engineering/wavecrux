@@ -1,0 +1,150 @@
+{
+  "signalPath": "tb.uut.cpu_state",
+  "startTime": 0,
+  "endTime": 1235001,
+  "totalTransitionCount": 21,
+  "states": [
+    {
+      "id": "1",
+      "label": "1",
+      "entryCount": 1,
+      "firstEntryTime": 365000
+    },
+    {
+      "id": "2",
+      "label": "2",
+      "entryCount": 1,
+      "firstEntryTime": 305000
+    },
+    {
+      "id": "4",
+      "label": "4",
+      "entryCount": 1,
+      "firstEntryTime": 225000
+    },
+    {
+      "id": "8",
+      "label": "8",
+      "entryCount": 3,
+      "firstEntryTime": 95000
+    },
+    {
+      "id": "16",
+      "label": "16",
+      "entryCount": 3,
+      "firstEntryTime": 175000
+    },
+    {
+      "id": "32",
+      "label": "32",
+      "entryCount": 6,
+      "firstEntryTime": 85000
+    },
+    {
+      "id": "64",
+      "label": "64",
+      "entryCount": 7,
+      "firstEntryTime": 5000
+    }
+  ],
+  "transitions": [
+    {
+      "fromId": "16",
+      "toId": "2",
+      "count": 1,
+      "times": [
+        305000
+      ]
+    },
+    {
+      "fromId": "16",
+      "toId": "4",
+      "count": 1,
+      "times": [
+        225000
+      ]
+    },
+    {
+      "fromId": "16",
+      "toId": "8",
+      "count": 1,
+      "times": [
+        185000
+      ]
+    },
+    {
+      "fromId": "1",
+      "toId": "64",
+      "count": 1,
+      "times": [
+        415000
+      ]
+    },
+    {
+      "fromId": "2",
+      "toId": "64",
+      "count": 1,
+      "times": [
+        345000
+      ]
+    },
+    {
+      "fromId": "32",
+      "toId": "1",
+      "count": 1,
+      "times": [
+        365000
+      ]
+    },
+    {
+      "fromId": "32",
+      "toId": "16",
+      "count": 3,
+      "times": [
+        175000,
+        215000,
+        295000
+      ]
+    },
+    {
+      "fromId": "32",
+      "toId": "8",
+      "count": 2,
+      "times": [
+        95000,
+        135000
+      ]
+    },
+    {
+      "fromId": "4",
+      "toId": "64",
+      "count": 1,
+      "times": [
+        265000
+      ]
+    },
+    {
+      "fromId": "64",
+      "toId": "32",
+      "count": 6,
+      "times": [
+        85000,
+        125000,
+        165000,
+        205000,
+        285000,
+        355000
+      ]
+    },
+    {
+      "fromId": "8",
+      "toId": "64",
+      "count": 3,
+      "times": [
+        105000,
+        145000,
+        195000
+      ]
+    }
+  ]
+}

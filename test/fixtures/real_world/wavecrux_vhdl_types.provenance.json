@@ -1,0 +1,17 @@
+{
+  "source_url": "in-house (tool/ghw_fixtures/wavecrux_vhdl_types_tb.vhd)",
+  "source_commit": "",
+  "license": "CC0-1.0",
+  "license_spdx": "CC0-1.0",
+  "simulator": "ghdl",
+  "simulator_version": "6.0.0-llvm",
+  "acquired_date": "2026-06-04",
+  "size_bytes": 2946,
+  "brief_description": "GHDL-emitted GHW from an in-house VHDL-2008 testbench exercising the VHDL-specific richness the GHW format carries and VCD/FST do not: the 9-value std_logic system (incl. 'Z'/'L'/'H'), an enumeration (state_t), integer/natural, unsigned, a std_logic_vector array (mem), and a record (pix). Closes WaveCrux's previously zero GHW coverage. Regenerate via tool/ghw_fixtures/regen.sh.",
+  "anchors": [
+    "root scopes include the VHDL libraries standard, std_logic_1164, numeric_std alongside wavecrux_vhdl_types_tb",
+    "tri is high-impedance ('z') initially then driven '1'; weak is weak-low ('l') then weak-high ('h')",
+    "VHDL array mem flattens to mem.[0..3] (8-bit each); record pix flattens to pix.r/g/b (4-bit each)",
+    "enum state_t is a 2-bit signal cycling IDLE/LOAD/RUN/DONE"
+  ]
+}

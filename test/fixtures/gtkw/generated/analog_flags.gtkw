@@ -1,0 +1,11 @@
+[dumpfile] "fixture.vcd"
+[timestart] 0
+*-19.0 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+@8024
+top.data
+@10424
+top.cpu.addr
+@18024
+top.cpu.dout
+@24
+top.clk

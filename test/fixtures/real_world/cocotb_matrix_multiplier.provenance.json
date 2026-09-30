@@ -1,0 +1,16 @@
+{
+  "source_url": "https://github.com/cocotb/cocotb",
+  "source_commit": "a1a7d211bd5691cd19ea656938fe465c8b19283c",
+  "license": "BSD-3-Clause",
+  "license_spdx": "BSD-3-Clause",
+  "simulator": "iverilog-cocotb",
+  "simulator_version": "13.0 + cocotb 2.0.1",
+  "acquired_date": "2026-05-31",
+  "size_bytes": 37220,
+  "brief_description": "cocotb matrix_multiplier example — a randomized 100×3000-iteration matrix-multiply DUT driven by a Python testbench. 37 KB FST covering wider datapath signals (multi-bit a/b/i/o ports), longer transaction count, and cocotb's auto-injected dump infrastructure. Built via the upstream tests/Makefile with SIM=icarus WAVES=1.",
+  "anchors": [
+    "DUT scope `matrix_multiplier` exists with input/output ports for matrix elements",
+    "trace runs to ~88,700 ns of simulation time",
+    "FST emits cocotb's `cocotb_iverilog_dump` wrapping scope alongside the DUT"
+  ]
+}

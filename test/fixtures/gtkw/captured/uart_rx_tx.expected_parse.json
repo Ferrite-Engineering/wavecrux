@@ -1,0 +1,389 @@
+{
+  "dumpFilePath": "/home/ben/projects/arty/uart/waves.vcd",
+  "timeStart": 29200,
+  "zoomFactor": -13.071849,
+  "primaryMarker": 81110,
+  "canvasBackgroundHex": null,
+  "openScopes": [
+    "tb.",
+    "tb.i_dut."
+  ],
+  "namedMarkers": {},
+  "entries": [
+    {
+      "type": "groupBegin",
+      "name": "Top Level"
+    },
+    {
+      "type": "signal",
+      "path": "tb.bytes[7:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.clk",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.led[3:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.p_bytes[7:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.resetn",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.rgb0[2:0]",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.rgb1[2:0]",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.rgb2[2:0]",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.rgb3[2:0]",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.sw[3:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.uart_rxd",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "groupEnd",
+      "name": "Top Level"
+    },
+    {
+      "type": "groupBegin",
+      "name": "UART RX"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_rx.break",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_rx.clk",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_rx.counter_en",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_rx.counter_rst",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_rx.int_data[7:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_rx.n_recv_state[3:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_rx.recieved_value",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_rx.recv_data[7:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_rx.recv_en",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_rx.recv_state[3:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_rx.recv_valid",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_rx.resetn",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_rx.rx_fall_seen",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_rx.sample_counter[7:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_rx.uart_rxd",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_rx.value_counter[7:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "groupEnd",
+      "name": "UART RX"
+    },
+    {
+      "type": "groupBegin",
+      "name": "UART TX"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_tx.clk",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_tx.counter_en",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_tx.counter_rst",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_tx.n_tx_state[3:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_tx.resetn",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_tx.sample_counter[7:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_tx.tx_busy",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_tx.tx_data[7:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_tx.tx_data_reg[7:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_tx.tx_enable",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_tx.tx_state[3:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "tb.i_dut.i_uart_tx.uart_txd",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "groupEnd",
+      "name": "UART TX"
+    }
+  ]
+}

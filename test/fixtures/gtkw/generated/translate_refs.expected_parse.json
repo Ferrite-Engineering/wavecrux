@@ -1,0 +1,71 @@
+{
+  "dumpFilePath": "fixture.vcd",
+  "timeStart": 0,
+  "zoomFactor": -19.0,
+  "primaryMarker": null,
+  "canvasBackgroundHex": null,
+  "openScopes": [],
+  "namedMarkers": {},
+  "entries": [
+    {
+      "type": "signal",
+      "path": "top.clk",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "top.data",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": "/path/to/sample_filter.txt",
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "top.rst",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "top.cpu.addr",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "top.cpu.dout",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "groupBegin",
+      "name": "Separators and Comments"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "comment",
+      "text": "This is a comment"
+    },
+    {
+      "type": "groupEnd",
+      "name": "Separators and Comments"
+    }
+  ]
+}

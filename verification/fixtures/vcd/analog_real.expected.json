@@ -1,0 +1,100 @@
+{
+  "_comment": "Real-valued ($var real) signals. DartVcdProvider stores values as raw strings from the VCD file. WellenProvider may normalize values (e.g. scientific notation, trailing zeros) — cross-parser tests that fail on real values indicate a normalization difference to investigate.",
+  "metadata": {
+    "timescale": { "factor": 1, "unit": "nanoSeconds" },
+    "startTime": 0,
+    "endTime": 40,
+    "date": null,
+    "version": null
+  },
+  "hierarchy": {
+    "rootScopes": [
+      {
+        "name": "top",
+        "type": "module",
+        "path": "top",
+        "childScopes": [],
+        "variables": [
+          { "name": "voltage",     "fullPath": "top.voltage",     "varType": "real", "bitWidth": null, "direction": "unknown" },
+          { "name": "current",     "fullPath": "top.current",     "varType": "real", "bitWidth": null, "direction": "unknown" },
+          { "name": "temperature", "fullPath": "top.temperature", "varType": "real", "bitWidth": null, "direction": "unknown" }
+        ]
+      }
+    ]
+  },
+  "signals": {
+    "top.voltage": {
+      "_comment": "Values stored as raw strings: '3.14', '-1.5', '0.0', '1e12', '-0.0'. Scientific notation and negative zero are edge cases where parsers may disagree on string representation.",
+      "allChanges": [
+        { "time":  0, "value": "3.14"  },
+        { "time": 10, "value": "-1.5"  },
+        { "time": 20, "value": "0.0"   },
+        { "time": 30, "value": "1e12"  },
+        { "time": 40, "value": "-0.0"  }
+      ],
+      "valueAt": [
+        { "time": -1, "expected": null    },
+        { "time":  0, "expected": "3.14"  },
+        { "time":  5, "expected": "3.14"  },
+        { "time": 10, "expected": "-1.5"  },
+        { "time": 20, "expected": "0.0"   },
+        { "time": 30, "expected": "1e12"  },
+        { "time": 40, "expected": "-0.0"  },
+        { "time": 99, "expected": "-0.0"  }
+      ],
+      "changesInRange": [
+        { "start": 0, "end": 10, "expected": [{ "time": 0, "value": "3.14" }] },
+        {
+          "start": 0, "end": 41,
+          "expected": [
+            { "time":  0, "value": "3.14"  },
+            { "time": 10, "value": "-1.5"  },
+            { "time": 20, "value": "0.0"   },
+            { "time": 30, "value": "1e12"  },
+            { "time": 40, "value": "-0.0"  }
+          ]
+        }
+      ],
+      "nextTransition": [
+        { "afterTime":  0, "expected": { "time": 10, "value": "-1.5" } },
+        { "afterTime": 40, "expected": null }
+      ],
+      "prevTransition": [
+        { "beforeTime":  0, "expected": null },
+        { "beforeTime": 40, "expected": { "time": 30, "value": "1e12" } }
+      ]
+    },
+    "top.current": {
+      "allChanges": [
+        { "time":  0, "value": "0.001"   },
+        { "time": 10, "value": "-0.001"  },
+        { "time": 20, "value": "0.0"     },
+        { "time": 30, "value": "1e-12"   }
+      ],
+      "valueAt": [
+        { "time":  -1, "expected": null       },
+        { "time":   0, "expected": "0.001"    },
+        { "time":  10, "expected": "-0.001"   },
+        { "time":  20, "expected": "0.0"      },
+        { "time":  30, "expected": "1e-12"    },
+        { "time": 100, "expected": "1e-12"    }
+      ]
+    },
+    "top.temperature": {
+      "allChanges": [
+        { "time":  0, "value": "25.0"     },
+        { "time": 10, "value": "-273.15"  },
+        { "time": 20, "value": "0.0"      },
+        { "time": 30, "value": "100.0"    }
+      ],
+      "valueAt": [
+        { "time":  -1, "expected": null       },
+        { "time":   0, "expected": "25.0"     },
+        { "time":  10, "expected": "-273.15"  },
+        { "time":  20, "expected": "0.0"      },
+        { "time":  30, "expected": "100.0"    },
+        { "time": 100, "expected": "100.0"    }
+      ]
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "latest": {
+    "version": "99.0.1",
+    "channel": "stable",
+    "release_date": "2026-09-20",
+    "changelog_url": "https://wavecrux.com/releases/99.0.1",
+    "mandatory": true,
+    "min_supported_version": "1.0.0",
+    "downloads": {
+      "linux_x64": "https://updates.wavecrux.app/99.0.1/wavecrux-99.0.1-linux-x64.tar.gz",
+      "macos_universal": "https://updates.wavecrux.app/99.0.1/WaveCrux-99.0.1.dmg",
+      "windows_x64": "https://updates.wavecrux.app/99.0.1/WaveCrux-99.0.1-Setup.exe"
+    },
+    "checksums": {
+      "linux_x64": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "macos_universal": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "windows_x64": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "server_time": "2026-09-20T12:00:00Z"
+  }
+}

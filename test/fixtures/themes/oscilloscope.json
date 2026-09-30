@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "id": "oscilloscope",
+  "displayName": "Oscilloscope",
+  "brightness": "dark",
+  "tokens": {
+    "canvas": {
+      "background": "#000000",
+      "lane.backgroundOdd": "#000000",
+      "lane.backgroundEven": "#030A03",
+      "lane.divider": "#0F2A0F",
+      "group.header": "#071507",
+      "signal.x.fill": "#FF3300",
+      "signal.x.hatch": "#FF6644",
+      "signal.z.line": "#445544",
+      "signal.scalar.low": "#0A1A0A",
+      "signal.valueLabel": "#00FF41",
+      "cursor.primary": "#00FF41",
+      "cursor.secondary": "#66FF88",
+      "cursor.delta": "#00FF4122",
+      "marker.line": "#66FF88",
+      "marker.flag": "#66FF88",
+      "marker.flagText": "#000000",
+      "ruler.background": "#000000",
+      "ruler.tick": "#1A4A1A",
+      "ruler.tickMajor": "#2A7A2A",
+      "ruler.label": "#00FF41",
+      "ruler.cursorTime": "#00FF41",
+      "selection": "#00FF4122"
+    },
+    "chrome": {
+      "scaffold.background": "#000000",
+      "panel.background": "#020A02",
+      "panel.header.background": "#000000",
+      "panel.header.foreground": "#00FF41",
+      "toolbar.background": "#000000",
+      "toolbar.icon": "#00CC33",
+      "toolbar.iconActive": "#00FF41",
+      "statusBar.background": "#000000",
+      "statusBar.foreground": "#00CC33",
+      "splitter": "#0F2A0F",
+      "splitter.hover": "#00FF41",
+      "tabBar.background": "#020A02",
+      "tabBar.selected": "#00FF41",
+      "tabBar.label": "#00CC33"
+    }
+  }
+}

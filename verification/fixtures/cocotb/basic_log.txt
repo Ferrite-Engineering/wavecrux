@@ -1,0 +1,14 @@
+     0.00ns INFO     cocotb.regression                  running test_basic (1/3)
+     0.00ns INFO     cocotb.test_basic                  Starting basic test
+   100.00ns INFO     cocotb.test_basic                  Applied reset
+   200.00ns DEBUG    cocotb.test_basic                  Read data: 0xDEADBEEF
+   500.00ns WARNING  cocotb.test_basic                  Unexpected value on bus
+   600.00ns ERROR    cocotb.test_basic                  Assertion failed: expected 0xFF got 0x00
+  1000.00ns INFO     cocotb.regression                  test_basic passed
+  1000.00ns INFO     cocotb.regression                  running test_fifo (2/3)
+  1500.00ns INFO     cocotb.test_fifo                   FIFO full condition reached
+  2000.00ns CRITICAL cocotb.test_fifo                   Timeout waiting for FIFO empty
+  2000.00ns INFO     cocotb.regression                  test_fifo failed
+  2000.00ns INFO     cocotb.regression                  running test_edge_cases (3/3)
+  3000.00ns INFO     cocotb.regression                  test_edge_cases passed
+  3000.00ns INFO     cocotb.regression                  3 tests run: 2 passed, 1 failed

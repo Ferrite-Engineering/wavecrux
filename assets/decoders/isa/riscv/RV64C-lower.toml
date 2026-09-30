@@ -1,0 +1,104 @@
+# RV64C — RV64-only additions to RVC (c.ld, c.sd, etc.). "Lower" variant
+# expects 16-bit RVC instructions in the low half of a 32-bit signal.
+#
+# Composes with RV32C-lower.toml. Schema follows the JKU
+# `instruction-decoder` Rust crate: slices tile the word MSB-first and each
+# slice's `top`/`bot` name the bits it occupies in the assembled part value.
+set = "RV64C"
+width = 32
+
+[formats]
+names = ["c_ldsp", "c_sdsp"]
+parts = [
+    ["rd_rs1_n0", 5, "Register_int"],
+    ["rs2_n0", 5, "Register_int"],
+    ["uimm", 32, "VInt", "hex"],
+    ["none", 32, "u32"],
+]
+
+[types]
+names = ["t_c_ldsp", "t_c_sdsp"]
+
+# CI for c.ldsp: funct3[15:13] | uimm[5][12] | rd[11:7] | uimm[4:3|8:6][6:2].
+# Doubleword-scaled: value bits 2:0 are unclaimed, so the offset is in bytes.
+[[types.t_c_ldsp]]
+name = "none"
+top = 31
+bot = 16
+[[types.t_c_ldsp]]
+name = "none"
+top = 15
+bot = 13
+[[types.t_c_ldsp]]
+name = "uimm"
+top = 5
+bot = 5
+[[types.t_c_ldsp]]
+name = "rd_rs1_n0"
+top = 4
+bot = 0
+[[types.t_c_ldsp]]
+name = "uimm"
+top = 4
+bot = 3
+[[types.t_c_ldsp]]
+name = "uimm"
+top = 8
+bot = 6
+[[types.t_c_ldsp]]
+name = "none"
+top = 1
+bot = 0
+
+# CSS for c.sdsp: funct3[15:13] | uimm[5:3|8:6][12:7] | rs2[6:2] | op[1:0].
+[[types.t_c_sdsp]]
+name = "none"
+top = 31
+bot = 16
+[[types.t_c_sdsp]]
+name = "none"
+top = 15
+bot = 13
+[[types.t_c_sdsp]]
+name = "uimm"
+top = 5
+bot = 3
+[[types.t_c_sdsp]]
+name = "uimm"
+top = 8
+bot = 6
+[[types.t_c_sdsp]]
+name = "rs2_n0"
+top = 4
+bot = 0
+[[types.t_c_sdsp]]
+name = "none"
+top = 1
+bot = 0
+
+[mappings]
+names = ["Register_int"]
+Register_int = [
+    "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
+    "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5",
+    "a6", "a7", "s2", "s3", "s4", "s5", "s6", "s7",
+    "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6",
+]
+
+[c_ldsp]
+type = "t_c_ldsp"
+[c_ldsp.repr]
+default = "$name$ %rd_rs1_n0%, %uimm%(sp)"
+[c_ldsp.instructions."c.ldsp"]
+mask = 0xe003
+match = 0x6002
+unsigned = true
+
+[c_sdsp]
+type = "t_c_sdsp"
+[c_sdsp.repr]
+default = "$name$ %rs2_n0%, %uimm%(sp)"
+[c_sdsp.instructions."c.sdsp"]
+mask = 0xe003
+match = 0xe002
+unsigned = true

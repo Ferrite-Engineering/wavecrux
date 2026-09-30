@@ -1,0 +1,329 @@
+name: Mobile CI
+
+# ─── Trigger configuration ─────────────────────────────────────────────────────
+# Weekly, on pull requests, and on demand. The nightly was retired at beta
+# launch; with commits going straight to main, pull_request alone never fired
+# and this workflow sat idle for eleven weeks. Weekly is the floor that keeps
+# the iOS and Android app builds from rotting unseen.
+on:
+  workflow_dispatch:
+  pull_request:
+  schedule:
+    # Monday 08:00 UTC, after the Android emulator run (07:20). Measured cost
+    # ~$1.20/week (iOS ~17 min on macOS, Android ~25 min on Linux).
+    - cron: '0 8 * * 1'
+
+# Cancel in-progress runs for the same ref on PRs, but let main runs complete.
+concurrency:
+  # Keyed by event as well as ref: a nightly must never be cancelled by a
+  # push, and a push must never be cancelled by a nightly.
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  # Superseded pushes are cancelled outright. `false` on main was the source
+  # of a whole class of phantom failures: a run still QUEUED when a third
+  # push arrives is cancelled by GitHub regardless, and a run whose jobs were
+  # cancelled reports conclusion=failure — not cancelled. So main never did
+  # verify every commit, it just misreported the ones it skipped. Cancelling
+  # is honest, cheaper, and gates the thing that matters: the tip.
+  cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # iOS Build & Test
+  #
+  # What this job does:
+  #   1. Builds the wellen_ffi Rust static library for both iOS simulator
+  #      (aarch64-apple-ios-sim) and iOS device (aarch64-apple-ios) targets,
+  #      then packages them as WellenFFI.xcframework.
+  #   2. Also builds the macOS host dylib (cargo build --release) so that
+  #      `flutter test` can load it via DynamicLibrary.open() at test runtime.
+  #      (On iOS the app uses DynamicLibrary.process() over the statically linked
+  #      lib, which is verified by the `flutter build ios` step below.)
+  #   3. Runs the full `flutter test` suite on the macOS host Dart VM, with
+  #      DYLD_LIBRARY_PATH pointing at the host dylib so FFI integration tests
+  #      (cross-parser validation, Section 8.9 Layer 1) resolve correctly.
+  #   4. Runs `flutter build ios --no-codesign --simulator` to verify that the
+  #      entire iOS simulator build — Dart → native, Xcode, CocoaPods, XCFramework
+  #      link — compiles cleanly without a signing certificate.
+  #
+  # Rust iOS cross-compilation (aarch64-apple-ios / aarch64-apple-ios-sim) can
+  # only be verified on macOS because it requires the iOS SDK from Xcode.
+  # Android cross-compilation is verified in the `rust` job in ci.yml (Ubuntu).
+  # ─────────────────────────────────────────────────────────────────────────────
+  ios-build:
+    name: iOS / Build & Test
+    runs-on: macos-latest
+    # Cost guardrail: no job may run unbounded (max observed suite-wide is 29 min).
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          submodules: recursive
+          # Token for the crux-shared submodule checkout. A pull request from a
+          # fork receives no secrets, so the workflow token stands in — the
+          # submodule is a public repository and needs no extra scope.
+          token: ${{ secrets.SUBMODULE_PAT || github.token }}
+
+      # Install Rust with the two iOS targets we need:
+      #   aarch64-apple-ios     → physical device (linked into XCFramework)
+      #   aarch64-apple-ios-sim → simulator (arm64 slice for M-series Macs)
+      - name: Install Rust (stable) with iOS targets
+        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable branch head, 2026-09-03
+        with:
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim
+
+      - name: Cache Rust build artifacts
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            native/wellen_ffi/target
+          key: rust-macos-ios-${{ hashFiles('native/wellen_ffi/Cargo.lock') }}
+          restore-keys: rust-macos-ios-
+
+      # Build the macOS host dylib first — used by `flutter test` below.
+      - name: Build macOS host dylib (for flutter test FFI)
+        working-directory: native/wellen_ffi
+        run: cargo build --release
+
+      # Cross-compile static libs for both iOS slices.
+      - name: Build iOS device static lib (aarch64-apple-ios)
+        working-directory: native/wellen_ffi
+        run: cargo build --release --target aarch64-apple-ios
+
+      - name: Build iOS simulator static lib (aarch64-apple-ios-sim)
+        working-directory: native/wellen_ffi
+        run: cargo build --release --target aarch64-apple-ios-sim
+
+      # Package both slices into a single XCFramework that CocoaPods can consume.
+      # Mirrors scripts/build_ios.sh without the pod install tail.
+      - name: Assemble WellenFFI.xcframework
+        working-directory: native/wellen_ffi
+        run: |
+          rm -rf WellenFFI.xcframework
+          mkdir -p include
+          cp wellen_ffi.h include/
+          xcodebuild -create-xcframework \
+            -library target/aarch64-apple-ios/release/libwellen_ffi.a \
+            -headers include \
+            -library target/aarch64-apple-ios-sim/release/libwellen_ffi.a \
+            -headers include \
+            -output WellenFFI.xcframework
+
+      - name: Install Flutter (pinned)
+        id: flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: '3.47.3'
+          cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: |
+            ${{ steps.flutter.outputs.pub-cache-path }}
+            .dart_tool/
+          key: pub-macos-latest-${{ hashFiles('pubspec.lock') }}
+          restore-keys: pub-macos-latest-
+
+      # The restored `.dart_tool/` carries build_runner's asset graph, which a
+      # `!` exclusion on the cache path cannot prevent. A graph written before
+      # a source file was deleted — a crux-shared package's file after a pin
+      # bump — fails codegen with `InvalidOutputException … Tried to delete
+      # from package not in the build`, measured on the Pro overlay when
+      # `lib/services/spawn/spawn_guards.dart` was removed here. Dropping the
+      # graph is what actually keeps it out; a cold codegen costs ~13s.
+      - name: Drop the restored build_runner asset graph
+        shell: bash
+        run: rm -rf .dart_tool/build
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Riverpod codegen
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate l10n
+        run: flutter gen-l10n
+
+      # Unit and widget tests run on the macOS host Dart VM.
+      # DYLD_LIBRARY_PATH lets DynamicLibrary.open('libwellen_ffi.dylib') resolve
+      # at test time (Platform.isMacOS path in _openNativeLibrary()).
+      - name: Run tests (macOS host, DYLD_LIBRARY_PATH for FFI)
+        run: flutter test --reporter github
+        env:
+          DYLD_LIBRARY_PATH: ${{ github.workspace }}/native/wellen_ffi/target/release
+
+      # NOTE: no `pod install`. The iOS Runner migrated off CocoaPods to Swift
+      # Package Manager (Flutter 3.44); it links the Rust lib via the local
+      # Swift package at native/wellen_ffi (XCLocalSwiftPackageReference →
+      # .binaryTarget WellenFFI.xcframework, assembled above). `flutter build
+      # ios` resolves the SPM dependency automatically — there is no Podfile.
+      - name: Build iOS simulator (no codesign)
+        run: flutter build ios --no-codesign --simulator
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Android Build & Test
+  #
+  # What this job does:
+  #   1. Installs the Android SDK and NDK r28c (28.2.13676358) — the exact NDK
+  #      version declared in android/app/build.gradle.kts.
+  #   2. Cross-compiles wellen_ffi to x86_64-linux-android (the emulator ABI)
+  #      and stages the resulting .so into android/app/src/main/jniLibs/x86_64/
+  #      so that Gradle can package it into the APK without running Rust itself.
+  #   3. Runs the full `flutter test` suite on the Linux host Dart VM with
+  #      LD_LIBRARY_PATH pointing at the host .so for FFI integration tests.
+  #   4. Runs `flutter build apk --debug --target-platform android-x64` to verify
+  #      the complete Android APK build (Dart → DEX, Gradle, native .so bundling).
+  # ─────────────────────────────────────────────────────────────────────────────
+  android-build:
+    name: Android / Build & Test
+    runs-on: ubuntu-latest
+    # Cost guardrail: no job may run unbounded (max observed suite-wide is 29 min).
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          submodules: recursive
+          # Token for the crux-shared submodule checkout. A pull request from a
+          # fork receives no secrets, so the workflow token stands in — the
+          # submodule is a public repository and needs no extra scope.
+          token: ${{ secrets.SUBMODULE_PAT || github.token }}
+
+      # Flutter's Android build requires Java 17.
+      - name: Setup Java 17
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Install Android command-line tools and accept all SDK licenses.
+      # Sets ANDROID_SDK_ROOT and ANDROID_HOME env vars for subsequent steps.
+      # `packages` overrides the action's default of `tools platform-tools`:
+      # the legacy `tools` package is gone from Google's repository, and
+      # asking for it makes sdkmanager exit 1.
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
+        with:
+          packages: platform-tools
+
+      # Install the platform, build tools, and NDK that build.gradle.kts declares.
+      # NDK is placed at $ANDROID_SDK_ROOT/ndk/28.2.13676358/ — Gradle finds it
+      # there automatically when ndkVersion matches the directory name.
+      - name: Install Android SDK components and NDK
+        run: |
+          sdkmanager \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "ndk;28.2.13676358"
+          NDK="$ANDROID_SDK_ROOT/ndk/28.2.13676358"
+          echo "ANDROID_NDK_HOME=$NDK" >> "$GITHUB_ENV"
+          # Set the Cargo linker here (as a real env var) rather than via an
+          # env-context expression in a later step — referencing a var that is
+          # populated dynamically through GITHUB_ENV trips a "context access
+          # might be invalid" lint in the Actions language server.
+          LINKER="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android24-clang"
+          echo "CARGO_TARGET_X86_64_LINUX_ANDROID_LINKER=$LINKER" >> "$GITHUB_ENV"
+
+      # Only the x86_64 Rust target is needed for the emulator ABI build.
+      # The full three-ABI cross-compilation verification is in the `rust` job in ci.yml.
+      - name: Install Rust (stable) with x86_64 Android target
+        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable branch head, 2026-09-03
+        with:
+          targets: x86_64-linux-android
+
+      - name: Cache Rust build artifacts
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            native/wellen_ffi/target
+          key: rust-ubuntu-android-${{ hashFiles('native/wellen_ffi/Cargo.lock') }}
+          restore-keys: rust-ubuntu-android-
+
+      # Build the Linux host .so first — used by `flutter test` below via LD_LIBRARY_PATH.
+      - name: Build Linux host library (for flutter test FFI)
+        working-directory: native/wellen_ffi
+        run: cargo build --release
+
+      # Cross-compile the Rust library for the Android emulator (x86_64).
+      # The NDK clang wrapper is the linker Cargo needs; both ANDROID_NDK_HOME
+      # and CARGO_TARGET_X86_64_LINUX_ANDROID_LINKER are exported into the job
+      # env by the "Install Android SDK components and NDK" step above.
+      - name: Build x86_64-linux-android library (emulator ABI)
+        working-directory: native/wellen_ffi
+        run: cargo build --release --target x86_64-linux-android
+
+      # Place the .so where Gradle expects it.  flutter build apk --target-platform
+      # android-x64 will package only the x86_64 ABI, so only this slice is needed.
+      - name: Stage .so into jniLibs (x86_64 / emulator)
+        run: |
+          mkdir -p android/app/src/main/jniLibs/x86_64
+          cp native/wellen_ffi/target/x86_64-linux-android/release/libwellen_ffi.so \
+             android/app/src/main/jniLibs/x86_64/libwellen_ffi.so
+
+      - name: Cache Gradle wrapper and caches
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('**/*.gradle.kts', '**/gradle-wrapper.properties') }}
+          restore-keys: gradle-
+
+      - name: Install Flutter (pinned)
+        id: flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: '3.47.3'
+          cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: |
+            ${{ steps.flutter.outputs.pub-cache-path }}
+            .dart_tool/
+          key: pub-ubuntu-latest-${{ hashFiles('pubspec.lock') }}
+          restore-keys: pub-ubuntu-latest-
+
+      # The restored `.dart_tool/` carries build_runner's asset graph, which a
+      # `!` exclusion on the cache path cannot prevent. A graph written before
+      # a source file was deleted — a crux-shared package's file after a pin
+      # bump — fails codegen with `InvalidOutputException … Tried to delete
+      # from package not in the build`, measured on the Pro overlay when
+      # `lib/services/spawn/spawn_guards.dart` was removed here. Dropping the
+      # graph is what actually keeps it out; a cold codegen costs ~13s.
+      - name: Drop the restored build_runner asset graph
+        shell: bash
+        run: rm -rf .dart_tool/build
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Riverpod codegen
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate l10n
+        run: flutter gen-l10n
+
+      # Unit and widget tests run on the Linux host Dart VM.
+      # LD_LIBRARY_PATH lets DynamicLibrary.open('libwellen_ffi.so') resolve
+      # at test time (Platform.isLinux path in _openNativeLibrary()).
+      - name: Run tests (Linux host, LD_LIBRARY_PATH for FFI)
+        run: flutter test --reporter github
+        env:
+          LD_LIBRARY_PATH: ${{ github.workspace }}/native/wellen_ffi/target/release
+
+      # Build a debug APK for the x86_64 ABI only (matches the .so staged above).
+      # This verifies the complete Android build: Dart → DEX, Gradle, ProGuard, .so packaging.
+      - name: Build Android APK (debug, x86_64 emulator)
+        run: flutter build apk --debug --target-platform android-x64

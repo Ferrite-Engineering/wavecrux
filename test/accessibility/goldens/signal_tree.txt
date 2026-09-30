@@ -1,0 +1,19 @@
+# Signal tree, from the search field
+Tab: [Signal hierarchy. Up and Down move between rows, Right and Left expand and collapse scopes, and Enter adds a signal to the viewer. grouping] axi4lite_tb button collapsed 2 signals
+Right: axi4lite_tb button expanded 2 signals
+Down: ACLK button
+Down: ARADDR, [31:0] button
+Enter: ARADDR, [31:0] button selected
+  announced: ARADDR added to the viewer
+Shift+F10: [Popup menu grouping] Add to Viewer button
+Down: Copy Signal Path button
+Escape: [Browser dock Signals grouping] [Signal browser Signal Tree grouping] [Signal hierarchy. Up and Down move between rows, Right and Left expand and collapse scopes, and Enter adds a signal to the viewer. grouping] ARADDR, [31:0] button selected
+Up: ACLK button
+Shift+Down: ARADDR, [31:0] button selected
+Menu: [Popup menu grouping] Add to Viewer button
+Down: Add 2 Selected to Viewer button
+Enter: [Browser dock Signals grouping] [Signal browser Signal Tree grouping] [Signal hierarchy. Up and Down move between rows, Right and Left expand and collapse scopes, and Enter adds a signal to the viewer. grouping] ARADDR, [31:0] button selected
+  announced: 1 signal added to the viewer
+Left: axi4lite_tb button expanded 2 signals
+Left: axi4lite_tb button collapsed 2 signals
+Tab: Waveform viewer. 2 signals. Primary cursor at —. grouping

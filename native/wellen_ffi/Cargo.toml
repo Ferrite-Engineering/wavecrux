@@ -1,0 +1,23 @@
+[package]
+name = "wellen_ffi"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+# cdylib  → .so / .dylib / .dll for Linux, macOS, Windows
+# staticlib → .a for iOS (dynamic loading is disallowed on iOS)
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+wellen = "0.24"
+
+# The LXT/LXT2 → FST converter. Linked in (see `src/lib.rs`) so this one
+# library also exports the `lxt2fst_*` C ABI: every platform already builds,
+# bundles, signs and loads libwellen_ffi, so the converter ships wherever the
+# parser does, with no second artefact per platform.
+lxt2fst = { path = "../lxt2fst" }
+
+[patch.crates-io]
+# lxt2fst's FST writer is a vendored, patched fst-writer. `[patch]` applies only
+# at the root of a build, so this entry must mirror native/lxt2fst/Cargo.toml's.
+fst-writer = { path = "../vendor/fst-writer" }

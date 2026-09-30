@@ -1,0 +1,74 @@
+# RV64M — *W word-width multiply/divide.
+#
+# All R-type, opcode 0x3B, funct7 = 0x01. Composes with RV32M.toml in a
+# multi-file bundle. Schema follows the JKU `instruction-decoder` Rust crate.
+set = "RV64M"
+width = 32
+
+[formats]
+names = ["rtype_mw"]
+parts = [
+    ["rd", 5, "Register_int"],
+    ["rs1", 5, "Register_int"],
+    ["rs2", 5, "Register_int"],
+    ["none", 32, "u32"],
+]
+
+[types]
+names = ["t_r_mw"]
+
+[[types.t_r_mw]]
+name = "none"
+top = 31
+bot = 25
+[[types.t_r_mw]]
+name = "rs2"
+top = 4
+bot = 0
+[[types.t_r_mw]]
+name = "rs1"
+top = 4
+bot = 0
+[[types.t_r_mw]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_r_mw]]
+name = "rd"
+top = 4
+bot = 0
+[[types.t_r_mw]]
+name = "none"
+top = 6
+bot = 0
+
+[mappings]
+names = ["Register_int"]
+Register_int = [
+    "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
+    "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5",
+    "a6", "a7", "s2", "s3", "s4", "s5", "s6", "s7",
+    "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6",
+]
+
+[rtype_mw]
+type = "t_r_mw"
+
+[rtype_mw.repr]
+default = "$name$ %rd%, %rs1%, %rs2%"
+
+[rtype_mw.instructions.mulw]
+mask = 0xfe00707f
+match = 0x0200003b
+[rtype_mw.instructions.divw]
+mask = 0xfe00707f
+match = 0x0200403b
+[rtype_mw.instructions.divuw]
+mask = 0xfe00707f
+match = 0x0200503b
+[rtype_mw.instructions.remw]
+mask = 0xfe00707f
+match = 0x0200603b
+[rtype_mw.instructions.remuw]
+mask = 0xfe00707f
+match = 0x0200703b

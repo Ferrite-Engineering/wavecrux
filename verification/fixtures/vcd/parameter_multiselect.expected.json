@@ -1,0 +1,76 @@
+{
+  "metadata": {
+    "timescale": { "factor": 1, "unit": "nanoSeconds" },
+    "startTime": 0,
+    "endTime": 40,
+    "date": null,
+    "version": null
+  },
+  "hierarchy": {
+    "rootScopes": [
+      {
+        "name": "top",
+        "type": "module",
+        "path": "top",
+        "childScopes": [
+          {
+            "name": "spi",
+            "type": "module",
+            "path": "top.spi",
+            "childScopes": [],
+            "variables": [
+              { "name": "sclk", "fullPath": "top.spi.sclk", "varType": "wire", "bitWidth": 1, "direction": "unknown" },
+              { "name": "mosi", "fullPath": "top.spi.mosi", "varType": "wire", "bitWidth": 1, "direction": "unknown" },
+              { "name": "miso", "fullPath": "top.spi.miso", "varType": "wire", "bitWidth": 1, "direction": "unknown" },
+              { "name": "cs",   "fullPath": "top.spi.cs",   "varType": "wire", "bitWidth": 1, "direction": "unknown" }
+            ]
+          }
+        ],
+        "variables": [
+          { "name": "WIDTH",    "fullPath": "top.WIDTH",    "varType": "parameter", "bitWidth": 8,  "direction": "unknown" },
+          { "name": "DEPTH",    "fullPath": "top.DEPTH",    "varType": "parameter", "bitWidth": 16, "direction": "unknown" },
+          { "name": "freq_mhz", "fullPath": "top.freq_mhz", "varType": "real",      "bitWidth": null, "direction": "unknown" }
+        ]
+      }
+    ]
+  },
+  "parameterValues": {
+    "comment": "Expected inline hierarchy-tree badges (unsigned decimal at t=0). freq_mhz is a plain real signal, NOT a parameter — it must show no badge.",
+    "top.WIDTH": "8",
+    "top.DEPTH": "32",
+    "top.freq_mhz": null
+  },
+  "signals": {
+    "top.WIDTH": {
+      "allChanges": [
+        { "time": 0, "value": "00001000" }
+      ],
+      "valueAt": [
+        { "time": 0, "expected": "00001000" },
+        { "time": 40, "expected": "00001000" }
+      ]
+    },
+    "top.DEPTH": {
+      "allChanges": [
+        { "time": 0, "value": "0000000000100000" }
+      ],
+      "valueAt": [
+        { "time": 0, "expected": "0000000000100000" }
+      ]
+    },
+    "top.spi.sclk": {
+      "allChanges": [
+        { "time": 0, "value": "0" },
+        { "time": 10, "value": "1" },
+        { "time": 20, "value": "0" },
+        { "time": 30, "value": "1" },
+        { "time": 40, "value": "0" }
+      ],
+      "valueAt": [
+        { "time": 0, "expected": "0" },
+        { "time": 15, "expected": "1" },
+        { "time": 40, "expected": "0" }
+      ]
+    }
+  }
+}

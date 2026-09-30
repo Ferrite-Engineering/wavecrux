@@ -1,0 +1,85 @@
+$timescale 1 ns $end
+$scope module top $end
+$var wire 1 ! clk $end
+$var wire 1 " enable $end
+$var wire 8 # data_out $end
+$var wire 1 $ status $end
+$var wire 8 % addr $end
+$var wire 1 & clean_sig $end
+$upscope $end
+$enddefinitions $end
+$dumpvars
+0!
+1"
+b00000000 #
+0$
+b00010000 %
+1&
+$end
+#10
+1!
+#20
+0!
+b00000001 #
+#30
+1!
+#40
+0!
+b00000010 #
+#50
+1!
+#60
+0!
+b00010001 %
+#70
+1!
+#80
+0!
+b00000011 #
+0&
+#90
+1!
+#100
+0!
+#110
+1!
+#120
+0!
+#130
+1!
+#140
+0!
+#150
+1!
+#160
+0!
+#170
+1!
+#180
+0!
+#190
+1!
+#200
+0!
+bxxxxxxxx #
+x$
+#210
+1!
+#220
+0!
+#230
+1!
+#240
+0!
+#250
+1!
+#260
+0!
+#270
+1!
+#280
+0!
+#290
+1!
+#300
+0!

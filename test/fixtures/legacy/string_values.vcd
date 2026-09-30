@@ -1,0 +1,28 @@
+$timescale 1 ns $end
+$scope module top $end
+$var string 1 ! state $end
+$var string 1 " msg $end
+$var string 1 # code $end
+$upscope $end
+$enddefinitions $end
+$dumpvars
+sIDLE !
+sboot "
+sOK #
+$end
+#10
+sFETCH !
+#20
+sDECODE !
+sready "
+#30
+sEXECUTE !
+serror_code=0x2A #
+#40
+sWRITEBACK !
+shalt "
+#50
+sIDLE !
+#60
+sv1.2-rc #
+#60

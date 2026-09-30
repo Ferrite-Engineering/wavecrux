@@ -1,0 +1,311 @@
+# RV32C — compressed (16-bit) instruction extension, "lower" variant.
+#
+# 16-bit RVC instructions sit in the low 16 bits of a 32-bit instruction word
+# read from the waveform; the high 16 bits are don't-care (filler). This is
+# the right TOML to load when the bound instruction signal is 32 bits wide.
+# Use width=16 versions when the signal is natively 16 bits.
+#
+# Schema follows the JKU `instruction-decoder` Rust crate: slices tile the
+# word MSB-first in listed order, and each slice's `top`/`bot` name the bits
+# it occupies in the assembled part *value*. RVC immediates are heavily
+# scrambled, which is exactly what that indirection is for — each fragment
+# says where it belongs and the implicit `imm[0] = 0` needs no scaling field.
+#
+# Coverage is the representative subset for launch — c.addi, c.li, c.mv,
+# c.j, c.nop, c.add, c.beqz, c.bnez, c.lwsp, c.swsp. The full RVC set
+# follows the same schema.
+set = "RV32C"
+width = 32
+
+[formats]
+names = ["c_ci", "c_cr", "c_cj", "c_cb", "c_css", "c_zero"]
+parts = [
+    ["rd_rs1_n0", 5, "Register_int"],
+    ["rs2_n0", 5, "Register_int"],
+    ["rs1_p", 3, "Register_int_c"],
+    ["imm", 32, "VInt"],
+    ["uimm", 32, "VInt", "hex"],
+    ["none", 32, "u32"],
+]
+
+[types]
+names = ["t_c_ci", "t_c_cr", "t_c_cj", "t_c_cb", "t_c_lwsp", "t_c_swsp", "t_c_zero"]
+
+# CI-type (c.addi, c.li): funct3[15:13] | imm[5][12] | rd_rs1[11:7]
+#   | imm[4:0][6:2] | op[1:0]. 6-bit signed immediate.
+# The leading 16-bit filler covers the don't-care high half of the word.
+[[types.t_c_ci]]
+name = "none"
+top = 31
+bot = 16
+[[types.t_c_ci]]
+name = "none"
+top = 15
+bot = 13
+[[types.t_c_ci]]
+name = "imm"
+top = 5
+bot = 5
+[[types.t_c_ci]]
+name = "rd_rs1_n0"
+top = 4
+bot = 0
+[[types.t_c_ci]]
+name = "imm"
+top = 4
+bot = 0
+[[types.t_c_ci]]
+name = "none"
+top = 1
+bot = 0
+
+# CR-type (c.mv, c.add, c.jr, c.jalr): funct4[15:12] | rd_rs1[11:7] | rs2[6:2] | op[1:0]
+[[types.t_c_cr]]
+name = "none"
+top = 31
+bot = 16
+[[types.t_c_cr]]
+name = "none"
+top = 15
+bot = 12
+[[types.t_c_cr]]
+name = "rd_rs1_n0"
+top = 4
+bot = 0
+[[types.t_c_cr]]
+name = "rs2_n0"
+top = 4
+bot = 0
+[[types.t_c_cr]]
+name = "none"
+top = 1
+bot = 0
+
+# CJ-type (c.j): funct3[15:13] | imm[11|4|9:8|10|6|7|3:1|5][12:2] | op[1:0].
+# 12-bit signed byte offset; value bit 0 is claimed by no slice and so reads
+# back as zero, which is the architectural ×2 scaling.
+[[types.t_c_cj]]
+name = "none"
+top = 31
+bot = 16
+[[types.t_c_cj]]
+name = "none"
+top = 15
+bot = 13
+[[types.t_c_cj]]
+name = "imm"
+top = 11
+bot = 11
+[[types.t_c_cj]]
+name = "imm"
+top = 4
+bot = 4
+[[types.t_c_cj]]
+name = "imm"
+top = 9
+bot = 8
+[[types.t_c_cj]]
+name = "imm"
+top = 10
+bot = 10
+[[types.t_c_cj]]
+name = "imm"
+top = 6
+bot = 6
+[[types.t_c_cj]]
+name = "imm"
+top = 7
+bot = 7
+[[types.t_c_cj]]
+name = "imm"
+top = 3
+bot = 1
+[[types.t_c_cj]]
+name = "imm"
+top = 5
+bot = 5
+[[types.t_c_cj]]
+name = "none"
+top = 1
+bot = 0
+
+# CB-type (c.beqz, c.bnez): funct3[15:13] | imm[8|4:3][12:10] | rs1'[9:7]
+#   | imm[7:6|2:1|5][6:2] | op[1:0]. 9-bit signed byte offset, bit 0 zero.
+[[types.t_c_cb]]
+name = "none"
+top = 31
+bot = 16
+[[types.t_c_cb]]
+name = "none"
+top = 15
+bot = 13
+[[types.t_c_cb]]
+name = "imm"
+top = 8
+bot = 8
+[[types.t_c_cb]]
+name = "imm"
+top = 4
+bot = 3
+[[types.t_c_cb]]
+name = "rs1_p"
+top = 2
+bot = 0
+[[types.t_c_cb]]
+name = "imm"
+top = 7
+bot = 6
+[[types.t_c_cb]]
+name = "imm"
+top = 2
+bot = 1
+[[types.t_c_cb]]
+name = "imm"
+top = 5
+bot = 5
+[[types.t_c_cb]]
+name = "none"
+top = 1
+bot = 0
+
+# CSS-type for c.swsp: funct3[15:13] | uimm[5:2|7:6][12:7] | rs2[6:2] | op[1:0].
+# Word-scaled: value bits 1:0 are unclaimed, so the offset is a byte offset.
+[[types.t_c_swsp]]
+name = "none"
+top = 31
+bot = 16
+[[types.t_c_swsp]]
+name = "none"
+top = 15
+bot = 13
+[[types.t_c_swsp]]
+name = "uimm"
+top = 5
+bot = 2
+[[types.t_c_swsp]]
+name = "uimm"
+top = 7
+bot = 6
+[[types.t_c_swsp]]
+name = "rs2_n0"
+top = 4
+bot = 0
+[[types.t_c_swsp]]
+name = "none"
+top = 1
+bot = 0
+
+# CI for c.lwsp: funct3[15:13] | uimm[5][12] | rd[11:7] | uimm[4:2|7:6][6:2].
+[[types.t_c_lwsp]]
+name = "none"
+top = 31
+bot = 16
+[[types.t_c_lwsp]]
+name = "none"
+top = 15
+bot = 13
+[[types.t_c_lwsp]]
+name = "uimm"
+top = 5
+bot = 5
+[[types.t_c_lwsp]]
+name = "rd_rs1_n0"
+top = 4
+bot = 0
+[[types.t_c_lwsp]]
+name = "uimm"
+top = 4
+bot = 2
+[[types.t_c_lwsp]]
+name = "uimm"
+top = 7
+bot = 6
+[[types.t_c_lwsp]]
+name = "none"
+top = 1
+bot = 0
+
+# c.nop: full match, no operands.
+[[types.t_c_zero]]
+name = "none"
+top = 31
+bot = 0
+
+[mappings]
+names = ["Register_int", "Register_int_c"]
+Register_int = [
+    "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
+    "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5",
+    "a6", "a7", "s2", "s3", "s4", "s5", "s6", "s7",
+    "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6",
+]
+# Compressed register encoding maps 3 bits to x8..x15.
+Register_int_c = [
+    "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5",
+]
+
+# ── CI: c.addi, c.li ──────────────────────────────────────────────────────────
+[c_ci]
+type = "t_c_ci"
+[c_ci.repr]
+default = "$name$ %rd_rs1_n0%, %imm%"
+[c_ci.instructions."c.addi"]
+mask = 0xe003
+match = 0x0001
+[c_ci.instructions."c.li"]
+mask = 0xe003
+match = 0x4001
+
+# ── CR: c.mv, c.add ───────────────────────────────────────────────────────────
+[c_cr]
+type = "t_c_cr"
+[c_cr.repr]
+default = "$name$ %rd_rs1_n0%, %rs2_n0%"
+[c_cr.instructions."c.mv"]
+mask = 0xf003
+match = 0x8002
+[c_cr.instructions."c.add"]
+mask = 0xf003
+match = 0x9002
+
+# ── CJ: c.j ───────────────────────────────────────────────────────────────────
+[c_cj]
+type = "t_c_cj"
+[c_cj.repr]
+default = "$name$ %imm%"
+[c_cj.instructions."c.j"]
+mask = 0xe003
+match = 0xa001
+
+# ── CB: c.beqz, c.bnez ────────────────────────────────────────────────────────
+[c_cb]
+type = "t_c_cb"
+[c_cb.repr]
+default = "$name$ %rs1_p%, %imm%"
+[c_cb.instructions."c.beqz"]
+mask = 0xe003
+match = 0xc001
+[c_cb.instructions."c.bnez"]
+mask = 0xe003
+match = 0xe001
+
+# ── CSS / CI variants for stack-pointer-relative load/store ───────────────────
+[c_css]
+type = "t_c_swsp"
+[c_css.repr]
+default = "$name$ %rs2_n0%, %uimm%(sp)"
+[c_css.instructions."c.swsp"]
+mask = 0xe003
+match = 0xc002
+unsigned = true
+
+# Note: c.lwsp is omitted from this representative subset.
+
+# ── c.nop ─────────────────────────────────────────────────────────────────────
+[c_zero]
+type = "t_c_zero"
+[c_zero.repr]
+default = "$name$"
+[c_zero.instructions."c.nop"]
+mask = 0xffff
+match = 0x0001

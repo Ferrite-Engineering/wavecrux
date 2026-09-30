@@ -1,0 +1,45 @@
+name: WellenFfi
+description: >
+  Auto-generated Dart FFI bindings for the wellen_ffi Rust crate.
+  Re-generate with: dart run ffigen --config ffigen.yaml
+
+output: 'lib/native/bindings/wellen_ffi_bindings.dart'
+
+headers:
+  entry-points:
+    - 'native/wellen_ffi/wellen_ffi.h'
+  include-directives:
+    - 'native/wellen_ffi/wellen_ffi.h'
+
+# Only bind symbols that originate from wellen_ffi.h.
+functions:
+  include:
+    - 'wellen_.*'
+  symbol-address:
+    include: []
+
+structs:
+  include:
+    - 'WellenHandle'
+
+enums:
+  include: []
+
+unnamed-enums:
+  include: []
+
+# Emit the WELLEN_SCOPE_* / WELLEN_VAR_* / WELLEN_DIR_* #define constants.
+macros:
+  include:
+    - 'WELLEN_.*'
+
+globals:
+  include: []
+
+typedefs:
+  include:
+    - 'WellenHandle'
+
+llvm-path:
+  - '/Library/Developer/CommandLineTools/usr/lib'
+  - '/opt/homebrew/opt/llvm/lib'

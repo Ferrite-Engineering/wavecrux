@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "high-contrast-dark",
+  "displayName": "High Contrast Dark",
+  "brightness": "dark",
+  "tokens": {
+    "canvas": {
+      "background": "#000000",
+      "lane.backgroundOdd": "#000000",
+      "lane.backgroundEven": "#0D0D0D",
+      "lane.divider": "#444444",
+      "group.header": "#1A1A1A",
+      "signal.x.fill": "#FF0000",
+      "signal.x.hatch": "#FF6666",
+      "signal.z.line": "#AAAAAA",
+      "signal.scalar.low": "#333333",
+      "signal.valueLabel": "#FFFFFF",
+      "cursor.primary": "#FFFF00",
+      "cursor.secondary": "#00FFFF",
+      "cursor.delta": "#FFFF0044",
+      "marker.line": "#00FFFF",
+      "marker.flag": "#00FFFF",
+      "marker.flagText": "#000000",
+      "ruler.background": "#000000",
+      "ruler.tick": "#666666",
+      "ruler.tickMajor": "#AAAAAA",
+      "ruler.label": "#FFFFFF",
+      "ruler.cursorTime": "#FFFF00",
+      "selection": "#FFFFFF44"
+    }
+  }
+}

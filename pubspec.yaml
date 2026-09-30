@@ -1,0 +1,339 @@
+name: wavecrux
+description: "A waveform viewer for silicon development"
+publish_to: 'none'
+version: 1.0.0+10
+license: Apache-2.0
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  # Used by the Stage widget bundle reader/writer
+  # (lib/features/stage/bundle/) to read and write `.wcrux-widget`
+  # zip-style bundles. The bundle loader is part of the open-core Stage
+  # widget SDK capability (free — see ARCHITECTURE §10).
+  archive: ^4.0.0
+  # Stable mergeSort for the signal-tree natural sort (List.sort is
+  # unstable; gate-level twins with identical names must keep dump order).
+  collection: ^1.19.0
+  # Accessibility workarounds: CruxSlider for every slider that lives in a
+  # dialog (a plain Slider there serializes a semantics node the desktop
+  # accessibility bridge rejects, freezing the native tree).
+  crux_a11y:
+    path: ./crux-shared/packages/crux_a11y
+  # Cross-suite About dialog widget (CruxAboutDialog). WaveCrux's
+  # WaveCruxAboutDialog is a thin builder that maps wavecrux providers
+  # (branding, build info, edition) onto this shared surface.
+  crux_about_dialog:
+    path: ./crux-shared/packages/crux_about_dialog
+  # About-box extension-point data shapes (ApplicationBranding,
+  # ApplicationBuildInfo, ApplicationEdition) consumed by crux_about_dialog.
+  crux_app_info:
+    path: ./crux-shared/packages/crux_app_info
+  # Cross-suite async primitives. Every trailing debounce here (the signal-tree
+  # search, the canvas's scroll-settle load, the cocotb keyword filter, the
+  # collaboration and cross-probe mirrors, the autosaves) is its `Debouncer`,
+  # so the four products coalesce input one way rather than one Timer each.
+  crux_async:
+    path: ./crux-shared/packages/crux_async
+  # The audit envelope. `AuditSeverity` is named directly where the autosave
+  # records at `debug` so it lands only at `verbosity: verbose`, rather than
+  # borrowed transitively through crux_license.
+  crux_audit:
+    path: ./crux-shared/packages/crux_audit
+  # Cross-suite command palette widget (CommandPalette<T extends CruxAction>).
+  # WaveCrux's CommandPaletteDialog is a thin Consumer wrapper that reads
+  # wavecrux providers, applies wavecrux-specific filtering, and delegates
+  # to this generic widget.
+  crux_command_palette:
+    path: ./crux-shared/packages/crux_command_palette
+  # Cross-suite Crux eXchange Protocol (CXP) bindings — peer cross-probe
+  # gossip layer. WaveCrux's `WaveCruxCxpServer` is the open-core consumer;
+  # the package supplies the v1 message types,
+  # `LocalCxpServer` transport, `CxpDiscovery` manifest watcher, and the
+  # `NameResolver` seam. CXP is orthogonal to WCP (the existing external
+  # driver protocol) — they coexist on distinct ports. Specification:
+  # https://edacrux.app/cxp
+  crux_cxp:
+    path: ./crux-shared/packages/crux_cxp
+  # Shared docked cross-probe panel (CrossProbePanel + CrossProbePanelController)
+  # adopted by all four products. WaveCrux's
+  # old modal Cross-Probe dialog is retired in favour of this docked panel.
+  crux_cxp_ui:
+    path: ./crux-shared/packages/crux_cxp_ui
+  # Cross-suite VSCode-style tabbed dock for CruxIdeLayout regions.
+  crux_dock:
+    path: ./crux-shared/packages/crux_dock
+  # Cross-suite first-launch EULA acceptance — the agreement text generated
+  # from the executed document, a store that records which VERSION was accepted
+  # (so a changed agreement re-prompts, per EULA 2.3), and the blocking gate.
+  # Mounted outside TelemetryConsentGate: the telemetry disclosure asks consent
+  # for a term the EULA defines, so it cannot come first. WaveCrux supplies a
+  # storage adapter and its quit path; the agreement itself is not localized.
+  crux_eula:
+    path: ./crux-shared/packages/crux_eula
+  # File-system watcher with debounced events. Lifted from this repo into
+  # the cross-suite `crux_shared` package. Consumed via a git submodule at `./crux-shared/` to keep wavecrux
+  # standalone-buildable.
+  crux_file_watcher:
+    path: ./crux-shared/packages/crux_file_watcher
+  # Cross-suite dockable IDE-layout shell (CruxIdeLayout). The per-tab IDE
+  # chrome in ViewerScreen is a thin adapter that projects each tab's
+  # PanelLayoutState (with phone force-hide + 120dp center floor) onto the
+  # shared widget.
+  crux_ide_layout:
+    path: ./crux-shared/packages/crux_ide_layout
+  # Best-effort platform file-manager reveal for the tab context menu
+  # (io builds only; the web build ships a stub shim).
+  crux_io:
+    path: ./crux-shared/packages/crux_io
+  # Cross-suite in-app beta issue reporter — diagnostic-log ring buffer,
+  # structured category collection, screenshot capture, markdown report
+  # builder, and the pre-filled GitHub new-issue dialog. WaveCrux's in-tree
+  # issue-reporter service/dialog/log-buffer were retired in favor of this
+  # package; a WavecruxIssueReporterStrings adapter + a session-context
+  # override bridge it to the wavecrux L10N and workspace.
+  crux_issue_reporter:
+    path: ./crux-shared/packages/crux_issue_reporter
+  # Cross-suite customizable keyboard-binding core:
+  # platform-neutral KeyBinding/KeymapCodec/KeyBindingResolver, conflict
+  # detection, and label formatting — all generic over CruxAction. WaveCrux's
+  # in-tree key_binding / keymap_codec / shortcut_label were retired in favor
+  # of this package; the notifier, store, and editor widgets consume it.
+  crux_keybindings:
+    path: ./crux-shared/packages/crux_keybindings
+  # Cross-suite license tier vocabulary, beta-period gating, Riverpod
+  # licenseTier/betaPeriod providers, and TierBadge / EducationalBadge
+  # widgets. WaveCrux's open-core in-tree primitives (LicenseTier,
+  # FeatureGate, kBetaPeriod, licenseTierProvider, TierBadge,
+  # EducationalBadge) were retired in favor of this package; a small
+  # WaveCruxLicenseBadgeStrings adapter bridges the package widgets to
+  # the wavecrux L10N.
+  crux_license:
+    path: ./crux-shared/packages/crux_license
+  # AppImage first-run desktop self-integration (Linux/Wayland): writes the
+  # host-side .desktop + hicolor icons so GNOME/Ubuntu matches the running
+  # window's app_id to its dock icon. maybeIntegrateDesktopEntry is called in
+  # bootstrap(); it is inert off Linux and off AppImage.
+  crux_linux_integration:
+    path: ./crux-shared/packages/crux_linux_integration
+  # Cross-suite desktop menu bar: one declarative CruxMenuLayout rendered as
+  # the native macOS PlatformMenuBar or the in-window VS Code-style menu bar on
+  # Windows/Linux, with shared separator grouping, platform-idiomatic
+  # About/Settings/Quit placement, and the native key-equivalent guard.
+  crux_menu_bar:
+    path: ./crux-shared/packages/crux_menu_bar
+  crux_policy:
+    path: ./crux-shared/packages/crux_policy
+  # The `<design>.crux-project` suite design manifest — one checked-in pointer file
+  # naming a design's dump, sources, lint project and regression config, so a
+  # user opens one file instead of four across the suite.
+  crux_project:
+    path: ./crux-shared/packages/crux_project
+  # Cross-suite credential storage. WaveCrux stores exactly one secret — the
+  # user's BYO AI provider API key — through this package rather than an
+  # app-local `flutter_secure_storage` wrapper: a credential surface is shared
+  # infrastructure, never an app-local copy. The macOS file-based-keychain
+  # configuration WaveCrux had learned the hard way lives in this package,
+  # where all four products get it.
+  crux_secrets:
+    path: ./crux-shared/packages/crux_secrets
+  # Cross-suite settings infrastructure (CoreSettings + SettingsService<T>).
+  # Wavecrux's AppSettings composes CoreSettings via has-a and adds its
+  # wavecrux-specific fields; SettingsService consumes the generic via a
+  # WaveCruxSettingsCodec that delegates the shared portion to
+  # CoreSettingsCodec.
+  crux_settings:
+    path: ./crux-shared/packages/crux_settings
+  # Cross-suite Settings panel shell — master-detail layout + grouped-row
+  # widgets. WaveCrux supplies its own category list + dialog/route chrome.
+  crux_settings_ui:
+    path: ./crux-shared/packages/crux_settings_ui
+  # Cross-suite action infrastructure (ActionCategory enum + CruxAction
+  # abstract interface). WaveCrux's ShortcutAction enum implements
+  # CruxAction; the labels, default bindings, Intent class, and menu
+  # filters stay in WaveCrux because they're L10N- / dispatch-coupled.
+  crux_shortcut_action:
+    path: ./crux-shared/packages/crux_shortcut_action
+  # Cross-suite live statistics strip. The package was extracted from
+  # WaveCrux's own statistics strip when SimCrux and NetCrux became consumers;
+  # WaveCrux now reads from the extraction instead of its ancestor copy, so
+  # the four products' ambient monitors render identically. WaveCrux's
+  # disclosure stays in the status bar (per-tab, persisted), hence
+  # `showDisclosure: false` — see ARCHITECTURE.md §8.8.
+  crux_stats_strip:
+    path: ./crux-shared/packages/crux_stats_strip
+  # Cross-suite bottom status bar. WaveCrux is the canonical reference:
+  # the viewer StatusBar composes CruxStatusBar for its chrome (height,
+  # typography, surface/border) and contributes its own segments, panel
+  # chevrons, stats toggle, and the statusBarTrailingWidgetsProvider slot.
+  crux_status_bar:
+    path: ./crux-shared/packages/crux_status_bar
+  # Cross-suite anonymous usage-statistics pipeline — event model, capped
+  # JSON-Lines disk queue, coalescing batcher matching the ingestion Worker's
+  # payload contract, the never-throwing ingest client, the
+  # kBetaPeriod x TELEMETRY_DEV x consent gate, and both consent surfaces.
+  # WaveCrux's in-tree telemetry service/queue/batcher/consent UI were retired
+  # in favor of this package; a WavecruxTelemetryConfig + a storage adapter +
+  # a WavecruxTelemetryStrings adapter bridge it. What stayed here is the event
+  # catalog, the instrumentation call sites, and the DeviceClass -> form_factor
+  # derivation.
+  crux_telemetry:
+    path: ./crux-shared/packages/crux_telemetry
+  # Cross-suite named-token color theming infrastructure (CruxColorTheme,
+  # ThemeRegistry, ThemePackCodec/Service, Riverpod cruxColorThemeProvider,
+  # CruxThemeExtension). WaveCrux registers its `canvas` and `chrome`
+  # token categories at boot via registerWaveCruxThemeTokens() and exposes
+  # the canvas tokens through the WaveCruxThemeAccessors extension, so the
+  # renderer keeps its `theme.canvasFoo` call shape; chrome tokens reach the
+  # Material theme through crux_theme's applyChromeTokens.
+  crux_theme:
+    path: ./crux-shared/packages/crux_theme
+  # Cross-suite application toolbar: one geometry token set, one button, one
+  # divider, one overflow strategy, plus the split-button, morphing run/stop,
+  # and badge affordances every product shares.
+  crux_toolbar:
+    path: ./crux-shared/packages/crux_toolbar
+  # Cross-suite update-check mechanism — version-manifest model, HTTP fetch
+  # service, the Riverpod notifier driving launch/periodic/manual checks, and
+  # the dismissible update banner. WaveCrux's in-tree update service/providers/
+  # widgets were retired in favor of this package; a WavecruxUpdateConfig (with
+  # the App Store / Play Store targets and checkOnMobile) + a WavecruxUpdate
+  # Strings adapter bridge it. WaveCrux is the reference mobile consumer of the
+  # appStoreUri/playStoreUri/checkOnMobile config fields.
+  crux_updates:
+    path: ./crux-shared/packages/crux_updates
+  # Cross-suite VS Code-style frameless window chrome (custom title bar,
+  # left-aligned mnemonic menu bar, caption buttons) drawn over window_manager
+  # on Windows/Linux. Promoted from WaveCrux's own features/window_chrome +
+  # features/menu_bar mnemonic widgets so all four products share one model.
+  crux_window_chrome:
+    path: ./crux-shared/packages/crux_window_chrome
+  # Cross-suite workspace + multi-tab + split-pane infrastructure.
+  # WaveCrux is the reference adopter: the package's generic Workspace<P>,
+  # WorkspaceService<P>, WorkspaceNotifier<P>, PaneHost<P>, ViewerTabBar<P>,
+  # and EmptyCanvasState replace WaveCrux's local equivalents. WaveCrux
+  # supplies a WaveCruxTabPayload value type + WaveCruxWorkspaceCodec.
+  crux_workspace:
+    path: ./crux-shared/packages/crux_workspace
+  # SHA-256 for the decoder-plugin allowlist — approved plugins are named by
+  # content hash in the signed policy file.
+  #
+  # HASHING, NOT ENCRYPTION. `test/static/no_bundled_encryption_test.dart`
+  # refuses a cipher here and allows `crypto` (SHA/HMAC) by name for exactly
+  # this reason: hashing is not encryption, so it adds no export-control
+  # classification to the shipped app. It was already
+  # resolved transitively; this makes a real consumer explicit.
+  crypto: ^3.0.7
+  # Native file drops onto the desktop window (macOS, Windows, Linux). Only
+  # `DesktopFileDropTarget` imports it, and only mounts it on a native desktop
+  # host: the browser keeps `WebDropZone`, and mobile never builds the target.
+  # Apache-2.0.
+  desktop_drop: ^0.8.4
+  ffi: ^2.1.0
+  # PINNED, not caret-ranged, and **do not migrate to 12.0.0** — it is broken on
+  # macOS. 12.0.0 split the plugin into federated platform packages and, in the
+  # split, lost the macOS Dart implementation: `file_picker_darwin` 1.0.0 has one
+  # Dart class serving two native handlers that speak different protocols. It
+  # sends the iOS names (the *file type* — `custom`, `any`, `image`) while
+  # `MacOSFilePickerHandler.swift` switches on the *operation* (`pickFiles`,
+  # `saveFile`, `getDirectoryPath`). Every call therefore returns
+  # `FlutterMethodNotImplemented`, which reaches Dart as:
+  #
+  #   MissingPluginException(No implementation found for method custom on
+  #   channel miguelruivo.flutter.plugins.filepicker)
+  #
+  # Open, save and pick-directory are all dead on macOS; only `clear` survives.
+  # Linux (pure Dart), Windows (`windows_file_picker`) and iOS are unaffected,
+  # which is why CI stayed green — the suite has no macOS UI test that opens a
+  # file, and that gap is the reason this shipped.
+  #
+  # 12.0.0-beta.7 is the last version that works: it has a *separate*
+  # `lib/src/platform/macos/file_picker_macos.dart` that speaks the macOS
+  # protocol. It is a prerelease, hence the exact pin.
+  #
+  # Revisit only when a `file_picker_darwin` newer than 1.0.0 publishes with the
+  # macOS Dart implementation restored. Verify by opening a file in a real macOS
+  # build before believing it — a green analyze and a green test suite both
+  # passed while this was broken.
+  file_picker: 12.0.0-beta.7
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  flutter_riverpod: ^3.3.2
+  go_router: ^17.3.0
+  http: ^1.2.0
+  logging: ^1.3.0  # ring-buffer log capture for the Beta Issue Reporter
+  meta: ^1.18.0  # pinned to 1.18.0 by flutter_test (1.18.2 latest blocked by SDK)
+  package_info_plus: ^10.1.0
+  panes: ^1.3.0
+  path: ^1.9.0
+  path_provider: ^2.1.0
+  # Stage widget animation runtime — Rive is the sole supported animation
+  # library (see ARCHITECTURE §10 Extension Points).
+  # The Stage widget SDK exposes a library-agnostic
+  # `StageWidgetAnimationController` interface so a future addition would
+  # be a one-implementation change, not an SDK refactor.
+  rive: ^0.14.8
+  riverpod_annotation: ^4.0.3
+  shared_preferences: ^2.2.0
+  toml: ^0.18.0
+  url_launcher: ^6.3.0
+  uuid: ^4.5.3
+  web: ^1.1.0
+  # Frameless custom title bar on Windows/Linux (VS Code-style chrome: app
+  # logo + inline menus + custom min/maximize/close caption buttons).
+  # Desktop-only; macOS keeps its native hidden title bar + top-of-screen
+  # system menu. See features/window_chrome/.
+  window_manager: ^0.5.0
+  # Required by the Stage widget SDK's manifest parser (lib/features/stage/sdk/manifest/)
+  # which reads `.wcrux-widget` bundle manifests and the in-tree YAML files
+  # authors write alongside Rive assets. The SDK lives in open-core (the
+  # capability is free — see ARCHITECTURE §10 Extension Points) so its
+  # parser dependency lives here too.
+  yaml: ^3.1.2
+
+dev_dependencies:
+  # Resolved-AST source of the per-tab scope-leak scanner
+  # (test/static/per_tab_provider_scope_leak_test.dart). Pinned below 13,
+  # which requires Dart 3.13; 12.1.0 is already the transitively resolved
+  # version, so this pin does not move the lockfile.
+  analyzer: '>=12.1.0 <13.0.0'
+  build_runner: ^2.4.12
+  fake_async: ^1.3.1
+  ffigen: ^20.1.1
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+  mocktail: ^1.0.4
+  plugin_platform_interface: ^2.1.8
+  riverpod_generator: ^4.0.4
+  very_good_analysis: ^10.2.0
+
+flutter:
+  generate: true
+  uses-material-design: true
+  assets:
+    - assets/branding/
+    - assets/images/
+    - assets/decoders/isa/riscv/
+    # Bundled sample waveform for the Welcome screen's "Open Sample Waveform"
+    # button. A first-run user — especially on mobile, where producing a VCD
+    # on-device is impossible — needs something to open before the app can
+    # demonstrate anything. Copied from
+    # `verification/fixtures/protocol/multi/all5_basic.vcd` (generated, not
+    # captured, so it carries no third-party license obligation); exercises
+    # all five Open Core decoders at once. Keep the two in sync — the copy is
+    # asserted by `test/services/samples/sample_waveform_service_test.dart`.
+    - assets/samples/all5_basic.vcd
+    # Open-core Rive reference widget — Tachometer.
+    # `manifest.yaml` documents the editor contract;
+    # `runtime/tachometer.riv` is the asset the renderer loads via
+    # rootBundle; `tachometer.wcrux-widget` is the packaged bundle that
+    # serves as a template for community widget authors.
+    - assets/stage/widgets/rive/manifest.yaml
+    - assets/stage/widgets/rive/runtime/tachometer.riv
+    - assets/stage/widgets/rive/tachometer.wcrux-widget
+

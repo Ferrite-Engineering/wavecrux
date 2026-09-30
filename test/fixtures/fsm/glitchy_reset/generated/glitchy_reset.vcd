@@ -1,0 +1,20 @@
+$timescale 1ns $end
+$scope module tb $end
+$var wire 3  !  STATE $end
+$upscope $end
+$enddefinitions $end
+$dumpvars
+bxxx !
+$end
+#10
+b000 !
+#20
+b001 !
+#30
+bxxx !
+#40
+b010 !
+#50
+b011 !
+#60
+b000 !

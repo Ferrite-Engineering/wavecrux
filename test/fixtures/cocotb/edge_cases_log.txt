@@ -1,0 +1,17 @@
+     0.00ns INFO     cocotb.regression                  running test_unicode (1/2)
+    10.00ns INFO     cocotb.test_unicode                Hello 世界 — résumé café
+    20.00ns DEBUG    cocotb.test_unicode                Emoji message: ✓ ✗
+    50.00ns ERROR    cocotb.test_unicode                Traceback (most recent call last):
+  File "/path/to/test.py", line 42, in test_unicode
+    assert signal.value == expected
+AssertionError: expected 0xFF got 0x00
+   100.00ns INFO     cocotb.regression                  test_unicode failed
+   100.00ns INFO     cocotb.regression                  running test_no_timestamp (2/2)
+INFO     cocotb.test_no_timestamp           Banner line without a timestamp
+   200.00ns INFO     cocotb.test_no_timestamp           Normal entry
+WARN     cocotb.test_no_timestamp           Old-style WARN alias accepted
+  1500us INFO     cocotb.test_no_timestamp           Microsecond timestamp
+     2ms INFO     cocotb.test_no_timestamp           Millisecond timestamp
+  500     INFO     cocotb.test_no_timestamp           Integer-only tick timestamp
+  3000.00ns INFO     cocotb.regression                  test_no_timestamp passed
+  3000.00ns INFO     cocotb.regression                  2 tests run: 1 passed, 1 failed

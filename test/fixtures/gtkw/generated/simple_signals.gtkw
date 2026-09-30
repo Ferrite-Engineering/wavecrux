@@ -1,0 +1,9 @@
+[dumpfile] "fixture.vcd"
+[timestart] 0
+*-19.499983 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] top
+@28
+top.clk
+top.rst
+@8
+top.data

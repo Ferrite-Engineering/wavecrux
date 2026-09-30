@@ -1,0 +1,16 @@
+{
+  "source_url": "https://github.com/YosysHQ/yosys",
+  "source_commit": "e56c6a954ce26b6263dedd8a9f853a468b925c83",
+  "license": "ISC",
+  "license_spdx": "ISC",
+  "simulator": "yosys-sim",
+  "simulator_version": "unknown",
+  "acquired_date": "2026-05-31",
+  "size_bytes": 168,
+  "brief_description": "Yosys's own simple_assign.vcd test fixture (`tests/sim/`). 168-byte trace from Yosys's internal simulation engine, distinct in metadata shape from iverilog/Verilator output (`$version Yosys $end`, no `$date`). Exercises the parser's micro-fixture path — minimum-viable VCD header with two single-bit signals.",
+  "anchors": [
+    "scope `simple_assign` exists",
+    "two single-bit variables `in` and `out`",
+    "trace ends after #10 with both signals at 0"
+  ]
+}

@@ -1,0 +1,844 @@
+name: CI
+
+# ─── Trigger configuration ─────────────────────────────────────────────────────
+# Manual-only while we stabilize CI. Re-enable push/PR triggers once green.
+# Work lands directly on `main` under the auto-push convention, so `main` needs
+# the push trigger to be defended at all. With dispatch + PR only, formatting
+# drift accumulated on `main` unnoticed (viewer_screen.dart and
+# bottom_dock_test.dart were both unformatted on 2026-07-30 and nothing ran).
+#
+# Cost control (macOS bills at a 10x multiplier): the push trigger runs the
+# LINUX SLICE ONLY. Pull requests and dispatch keep the full platform matrix,
+# and the weekly/bi-weekly platform suites keep their own schedules.
+on:
+  workflow_dispatch:        # Manual trigger via GitHub UI "Run workflow" button
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    # The full three-platform matrix, once a week.
+    #
+    # The nightly was retired at beta launch (2026-07-12), which was the right
+    # call on cost — but the `test` and `build-desktop` matrices below still
+    # collapse to Linux on push. With no schedule left, the only trigger that
+    # ran macOS or Windows was `pull_request`, and work here lands directly on
+    # `main`. So those legs had not actually run since July. This restores the
+    # coverage at 1/7th of the old price rather than leaving the split to mean
+    # "never". Sunday, staggered off 05:00 so the whole suite does not contend
+    # for the org's concurrent-job cap in the same minute.
+    - cron: '40 5 * * 0'
+
+# Cancel in-progress runs for the same ref on PRs, but let main runs complete.
+concurrency:
+  # Keyed by event as well as ref: a nightly must never be cancelled by a
+  # push, and a push must never be cancelled by a nightly.
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  # Superseded pushes are cancelled outright. `false` on main was the source
+  # of a whole class of phantom failures: a run still QUEUED when a third
+  # push arrives is cancelled by GitHub regardless, and a run whose jobs were
+  # cancelled reports conclusion=failure — not cancelled. So main never did
+  # verify every commit, it just misreported the ones it skipped. Cancelling
+  # is honest, cheaper, and gates the thing that matters: the tip.
+  cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Dart static analysis — zero warnings policy.
+  # Gates all PR merges along with the `test` job.
+  # ─────────────────────────────────────────────────────────────────────────────
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    # Cost guardrail: no job may run unbounded (max observed suite-wide is 29 min).
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          submodules: recursive
+          # Token for the crux-shared submodule checkout. A pull request from a
+          # fork receives no secrets, so the workflow token stands in — the
+          # submodule is a public repository and needs no extra scope.
+          token: ${{ secrets.SUBMODULE_PAT || github.token }}
+
+      # Runs before the Flutter install: it is pure Python, so a missing header
+      # fails in seconds rather than after a toolchain download. The script is
+      # shared -- it lives in crux-shared and every repo in the suite calls the
+      # same one, so the header contract cannot drift between repos.
+      - name: SPDX headers (Apache-2.0)
+        run: python3 crux-shared/tool/spdx-headers.py --check .
+
+      # Engine binaries are NOT distributed -- every engine is spawned as a
+      # separate process. That is what keeps Apache-2.0 product code clear of
+      # GHDL's and Icarus's GPL-2.0 terms, and the bundling infrastructure
+      # already exists, so the invariant needs a gate rather than a comment.
+      - name: No bundled engine binaries
+        run: python3 crux-shared/tool/no-bundled-engines.py --check .
+
+      - name: Install Flutter (pinned)
+        id: flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          # Flutter is PINNED, not tracked. `channel: stable` alone re-resolves on
+          # every run, so 3.44.8 -> 3.44.9 on 2026-08-06 turned new analyzer lints
+          # (sort_pub_dependencies, unused_element) into red CI across five repos at
+          # once, including repos with no commits that day. Bumping this is a
+          # deliberate, reviewable commit; keep every workflow in the suite on the
+          # same version, and bump the dev machines to match.
+          flutter-version: '3.47.3'
+          cache: true
+
+      # `.dart_tool/build/` is build_runner's asset graph, and a restored one
+      # still lists the sources of an older checkout: build_runner aborts when
+      # a source in a dependency package (a crux-shared package after a pin
+      # bump) has since been deleted. It cannot be kept out of the cache — see
+      # the step below — so every workflow that caches `.dart_tool/` deletes it
+      # after the restore.
+      - name: Cache pub dependencies
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          # `.dart_tool/` is cached whole, build_runner's incremental asset
+          # graph included: a `!.dart_tool/build` exclusion here does
+          # nothing, because actions/cache hands tar the directory and tar
+          # recurses into it. One was written here and did not work. The
+          # graph is dropped after the restore instead, by the step below.
+          # The pub cache is the expensive part and is what this step is for.
+          path: |
+            ${{ steps.flutter.outputs.pub-cache-path }}
+            .dart_tool/
+          key: pub-ubuntu-latest-${{ hashFiles('pubspec.lock') }}
+          restore-keys: pub-ubuntu-latest-
+
+      # The restored `.dart_tool/` carries build_runner's asset graph, which a
+      # `!` exclusion on the cache path cannot prevent. A graph written before
+      # a source file was deleted — a crux-shared package's file after a pin
+      # bump — fails codegen with `InvalidOutputException … Tried to delete
+      # from package not in the build`, measured on the Pro overlay when
+      # `lib/services/spawn/spawn_guards.dart` was removed here. Dropping the
+      # graph is what actually keeps it out; a cold codegen costs ~13s.
+      - name: Drop the restored build_runner asset graph
+        shell: bash
+        run: rm -rf .dart_tool/build
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Third-party attribution. The narrative sections of NOTICES are
+      # hand-written; this checks only the generated inventory block, which
+      # exists because window_manager shipped for months without an entry
+      # anywhere in the file. Must run AFTER `pub get`: the classifier reads
+      # each package's LICENSE out of the pub cache, and an empty cache would
+      # classify everything as UNKNOWN.
+      - name: NOTICES lists every resolved package
+        run: python3 crux-shared/tool/notices-inventory.py --check .
+
+      - name: Riverpod codegen
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate l10n
+        run: flutter gen-l10n
+
+      # The web cross-bridge integration test imports a gitignored generated
+      # bundle (`integration_test/web/web_fixture_bundle.g.dart`) produced by a
+      # standalone tool, not build_runner. `flutter analyze` covers the whole
+      # tree, so the file must exist or analysis fails with
+      # uri_has_not_been_generated / undefined_identifier (kWebFixtures).
+      - name: Generate web fixture bundle
+        run: dart run tool/generate_web_fixture_bundle.dart
+
+      # `flutter analyze` at the repo root still READS nested package
+      # `analysis_options.yaml` files (even though `tool/**` is excluded from
+      # analysis), so it must resolve their `include:` package URIs.
+      # `tool/wavecrux_ctl` includes `package:lints/recommended.yaml`; without
+      # its package_config (its `.dart_tool/` is gitignored and not cached
+      # here) the analyzer emits a "package resolution error" that
+      # `--fatal-warnings` turns into a failure — intermittently, depending on
+      # the cached Flutter SDK's analyzer strictness. Resolve it
+      # deterministically so Analyze never depends on that state.
+      - name: Resolve tool/wavecrux_ctl deps (for nested analysis_options)
+        run: dart pub get --directory tool/wavecrux_ctl
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos --fatal-warnings
+
+      # Enforce the tall-style dart formatter on the repo's own sources only
+      # (never the crux-shared submodule, which has its own format-check job).
+      - name: Check formatting
+        # git ls-files lists only committed sources — excludes gitignored
+        # generated files (*.g.dart, l10n) and the crux-shared submodule.
+        run: git ls-files -z '*.dart' | xargs -0 -r dart format --output=none --set-exit-if-changed
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Flutter tests — Linux, macOS, Windows.
+  # Builds the Rust native library on each platform so FFI integration tests
+  # (cross-parser validation, Section 8.9 Layer 1) can load libwellen_ffi at
+  # runtime via DynamicLibrary.open().
+  # ─────────────────────────────────────────────────────────────────────────────
+  test:
+    name: Test / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    # 90, not the suite's usual 45.
+    #
+    # The 45 was derived from a sample of SUCCESSFUL runs, and this job's
+    # Windows leg had never completed successfully — it was absent from the
+    # very data used to size its own cap. This repo has 10071 tests and the
+    # Windows leg is the slowest in the suite: 40 min on 2026-08-09 while
+    # failing early, then killed at exactly 45 min once the failure was fixed
+    # and it ran the whole thing. A timed-out job reports `cancelled`, so it
+    # read as a mysterious cancellation rather than "your cap is too low".
+    #
+    # Linux and macOS finish this job in ~24 min and are unaffected;
+    # timeout-minutes is per job, so the matrix shares one number. 90 still
+    # bounds a genuine hang far below the 6 h Actions ceiling, which is what
+    # the cap is actually for.
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        # Linux-only on push (the frequent trigger); all three platforms on
+        # PR / dispatch. macOS is billed at 10x and this repo's macOS spend was
+        # $110 in July, so the full matrix on every commit to `main` is what
+        # would turn a push trigger expensive. The `A && x || y` form is
+        # Actions' ternary: both branches are non-empty arrays, so the `&&`
+        # result is never falsy.
+        os: ${{ github.event_name == 'push' && fromJSON('["ubuntu-latest"]') || fromJSON('["ubuntu-latest","macos-latest","windows-latest"]') }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          submodules: recursive
+          # Token for the crux-shared submodule checkout. A pull request from a
+          # fork receives no secrets, so the workflow token stands in — the
+          # submodule is a public repository and needs no extra scope.
+          token: ${{ secrets.SUBMODULE_PAT || github.token }}
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable branch head, 2026-09-03
+
+      - name: Cache Rust build artifacts
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            native/wellen_ffi/target
+          key: rust-${{ matrix.os }}-${{ hashFiles('native/wellen_ffi/Cargo.lock') }}
+          restore-keys: rust-${{ matrix.os }}-
+
+      # Every Dart suite that opens a waveform loads this library, and so does
+      # the LXT/LXT2 converter (wellen_ffi links native/lxt2fst). Those suites
+      # call requireWellenFfiLibrary (test/helpers/wellen_ffi_library_gate.dart),
+      # which skips locally without the library but fails under CI=true, so a
+      # missing build here turns red rather than quietly skipping coverage.
+      - name: Build native library (Rust)
+        working-directory: native/wellen_ffi
+        run: cargo build --release
+
+      # On Windows, DynamicLibrary.open('wellen_ffi.dll') searches the CWD.
+      - name: Stage DLL (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Copy-Item native\wellen_ffi\target\release\wellen_ffi.dll .
+
+      # NOTE: We intentionally do NOT put MSVC cl.exe on PATH here. Doing so
+      # makes the FFI decoder-plugin loader tests actually run on Windows, but
+      # they then fail on real Windows-porting gaps in the C test fixtures
+      # (DLL symbol export + temp-dir cleanup of a locked DLL). Those tests
+      # therefore skip on Windows for now and remain fully covered on
+      # Linux/macOS. See test/services/decoders/ffi/ffi_decoder_loader_test.dart
+      # (TODO: Windows plugin-fixture port) before re-enabling cl.exe.
+
+      - name: Install Flutter (pinned)
+        id: flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: '3.47.3'
+          cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          # `.dart_tool/` is cached whole, build_runner's incremental asset
+          # graph included: a `!.dart_tool/build` exclusion here does
+          # nothing, because actions/cache hands tar the directory and tar
+          # recurses into it. One was written here and did not work. The
+          # graph is dropped after the restore instead, by the step below.
+          # The pub cache is the expensive part and is what this step is for.
+          path: |
+            ${{ steps.flutter.outputs.pub-cache-path }}
+            .dart_tool/
+          key: pub-${{ matrix.os }}-${{ hashFiles('pubspec.lock') }}
+          restore-keys: pub-${{ matrix.os }}-
+
+      # The restored `.dart_tool/` carries build_runner's asset graph, which a
+      # `!` exclusion on the cache path cannot prevent. A graph written before
+      # a source file was deleted — a crux-shared package's file after a pin
+      # bump — fails codegen with `InvalidOutputException … Tried to delete
+      # from package not in the build`, measured on the Pro overlay when
+      # `lib/services/spawn/spawn_guards.dart` was removed here. Dropping the
+      # graph is what actually keeps it out; a cold codegen costs ~13s.
+      - name: Drop the restored build_runner asset graph
+        shell: bash
+        run: rm -rf .dart_tool/build
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Riverpod codegen
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate l10n
+        run: flutter gen-l10n
+
+      # LD_LIBRARY_PATH / DYLD_LIBRARY_PATH tells the OS loader where to find
+      # libwellen_ffi.so / .dylib when DynamicLibrary.open() is called in tests.
+      - name: Run tests (Linux)
+        if: runner.os == 'Linux'
+        run: flutter test --reporter github --file-reporter json:build/test-results.json
+        env:
+          LD_LIBRARY_PATH: ${{ github.workspace }}/native/wellen_ffi/target/release
+
+      # A narrowed glob, a lost test directory or a mass skip leaves every
+      # remaining test green, so only the count notices. Parsed from the JSON
+      # report, never from console text: Actions sets CI=true, which colours
+      # the console even into a pipe, and a grep for the summary line then
+      # matches nothing and fails a green suite. A test that prints something
+      # shaped like a summary line fools a grep as well.
+      #
+      # Two numbers, because an engine or service that goes missing does not
+      # shrink the run, it converts runs into skips: MIN_TESTS is the floor on
+      # tests that ran, MAX_SKIPPED the ceiling on tests that skipped.
+      # Raise MIN_TESTS as tests land; lower it only in the commit that
+      # deletes tests on purpose, and say why there.
+      # Linux only: the counts are per platform, and Linux is the leg every
+      # push runs.
+      #
+      # Measured 2026-09-21 on this runner (run 35665702750, commit
+      # 44574de39653681c4b931bd726c129100742de00): 11271 ran, 8 skipped. The
+      # floor is that less 0.5% (11214) -- lowered by exactly 61, the same
+      # commit, deliberately: var_type_test.dart / scope_type_test.dart
+      # carried 61 tests that only asserted `isNotNull` on an enum constant,
+      # which cannot fail. They were deleted; each file keeps its real
+      # assertions (value count, distinctness, equality). 11153 is the floor.
+      - name: Test count did not shrink
+        if: runner.os == 'Linux'
+        env:
+          TEST_REPORT: build/test-results.json
+          MIN_TESTS: '11153'
+          MAX_SKIPPED: '20'
+        run: |
+          python3 - "$TEST_REPORT" <<'PY'
+          import json, os, sys
+          floor, ceiling = int(os.environ["MIN_TESTS"]), int(os.environ["MAX_SKIPPED"])
+          names, reasons, skipped, ran, done = {}, {}, [], 0, None
+          try:
+              lines = open(sys.argv[1], encoding="utf-8").read().splitlines()
+          except OSError as err:
+              sys.exit(f"::error::no JSON test report at {sys.argv[1]} ({err})")
+          for line in lines:
+              if not line.startswith("{"):
+                  continue
+              e = json.loads(line)
+              kind = e.get("type")
+              if kind == "testStart":
+                  t = e["test"]
+                  names[t["id"]] = t["name"]
+                  reasons[t["id"]] = t.get("metadata", {}).get("skipReason") or ""
+              elif kind == "print" and e.get("messageType") == "skip":
+                  reasons[e["testID"]] = e["message"]
+              elif kind == "testDone" and not e["hidden"]:
+                  if e["skipped"]:
+                      skipped.append(e["testID"])
+                  else:
+                      ran += 1
+              elif kind == "done":
+                  done = e
+          print(f"{ran} tests ran (floor {floor}), {len(skipped)} skipped (ceiling {ceiling})")
+          for tid in skipped:
+              print(f"  skipped: {names.get(tid, tid)} -- {reasons.get(tid, '')}")
+          if done is None:
+              sys.exit("::error::the JSON report has no 'done' event; the run did not finish")
+          if ran < floor:
+              sys.exit(f"::error::{ran} tests ran, below the floor of {floor}. A narrowed glob, a lost test directory or a mass skip does this. If tests were deleted on purpose, lower MIN_TESTS in the same commit.")
+          if len(skipped) > ceiling:
+              sys.exit(f"::error::{len(skipped)} tests skipped, above the ceiling of {ceiling}. The list above says why; an engine or service that stopped being installed shows up here first.")
+          PY
+
+      - name: Run tests (macOS)
+        if: runner.os == 'macOS'
+        run: flutter test --reporter github
+        env:
+          DYLD_LIBRARY_PATH: ${{ github.workspace }}/native/wellen_ffi/target/release
+
+      - name: Run tests (Windows)
+        if: runner.os == 'Windows'
+        run: flutter test --reporter github
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Rust quality gates — formatting, Clippy (deny warnings), unit tests.
+  # Linux only; no need to triple-run pure Rust checks.
+  # ─────────────────────────────────────────────────────────────────────────────
+  rust:
+    name: Rust
+    runs-on: ubuntu-latest
+    # Cost guardrail: no job may run unbounded (max observed suite-wide is 29 min).
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          submodules: recursive
+          # Token for the crux-shared submodule checkout. A pull request from a
+          # fork receives no secrets, so the workflow token stands in — the
+          # submodule is a public repository and needs no extra scope.
+          token: ${{ secrets.SUBMODULE_PAT || github.token }}
+
+      - name: Install Rust (stable) with rustfmt + clippy
+        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable branch head, 2026-09-03
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Rust build artifacts
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            native/wellen_ffi/target
+          key: rust-ubuntu-latest-${{ hashFiles('native/wellen_ffi/Cargo.lock') }}
+          restore-keys: rust-ubuntu-latest-
+
+      - name: Check formatting
+        working-directory: native/wellen_ffi
+
+        run: cargo fmt -- --check
+      - name: Clippy (deny warnings)
+        working-directory: native/wellen_ffi
+        run: cargo clippy -- -D warnings
+
+      - name: Clean debug build (avoid stale cache)
+        working-directory: native/wellen_ffi
+        run: cargo clean --profile dev
+
+      - name: Rust tests
+        working-directory: native/wellen_ffi
+        run: cargo test
+
+      # ── lxt2fst (LXT/LXT2 → FST converter) ──────────────────────────
+      # Same fmt + clippy + test gates as wellen_ffi so the legacy-
+      # format converter receives identical Rust-quality enforcement.
+      - name: lxt2fst — Check formatting
+        working-directory: native/lxt2fst
+        run: cargo fmt -- --check
+      - name: lxt2fst — Clippy (deny warnings)
+        working-directory: native/lxt2fst
+        run: cargo clippy --all-targets -- -D warnings
+      - name: lxt2fst — Rust tests
+        working-directory: native/lxt2fst
+        run: cargo test
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Rust Android cross-compilation — verify all three Android ABI targets compile.
+  # Runs on Ubuntu (macOS required for iOS targets; those are in mobile.yml).
+  # Uses nttld/setup-ndk to get the NDK linker without the full Android SDK.
+  # cargo fmt / clippy / test still run on the host above; these steps only
+  # verify that the crate compiles for Android without errors.
+  # ─────────────────────────────────────────────────────────────────────────────
+      - name: Setup Android NDK (for cross-compilation linker)
+        id: ndk
+        uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779 # v1.6.0
+        with:
+          ndk-version: r28c
+          add-to-path: true
+          link-to-sdk: false
+
+      - name: Add Android Rust targets
+        run: rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
+
+      - name: Verify Android cross-compilation (all three ABIs)
+        working-directory: native/wellen_ffi
+        env:
+          CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER: ${{ steps.ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang
+          CARGO_TARGET_ARMV7_LINUX_ANDROIDEABI_LINKER: ${{ steps.ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi24-clang
+          CARGO_TARGET_X86_64_LINUX_ANDROID_LINKER: ${{ steps.ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android24-clang
+        run: |
+          cargo build --target aarch64-linux-android
+          cargo build --target armv7-linux-androideabi
+          cargo build --target x86_64-linux-android
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # wellen_wasm — compile the wellen Rust crate to WebAssembly via wasm-pack
+  # so the Flutter Web build can decode VCD/FST/GHW. Bundle-size gate guards
+  # regressions; raw output is uploaded so the web build job can consume it.
+  # ─────────────────────────────────────────────────────────────────────────────
+  wasm:
+    name: Rust → WebAssembly (wellen_wasm)
+    runs-on: ubuntu-latest
+    # Cost guardrail: no job may run unbounded (max observed suite-wide is 29 min).
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          submodules: recursive
+          # Token for the crux-shared submodule checkout. A pull request from a
+          # fork receives no secrets, so the workflow token stands in — the
+          # submodule is a public repository and needs no extra scope.
+          token: ${{ secrets.SUBMODULE_PAT || github.token }}
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable branch head, 2026-09-03
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Rust build artifacts (wasm)
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            native/wellen_wasm/target
+            native/lxt2fst/target
+          key: rust-wasm-ubuntu-latest-${{ hashFiles('native/wellen_wasm/Cargo.toml', 'native/lxt2fst/Cargo.toml') }}
+          restore-keys: rust-wasm-ubuntu-latest-
+
+      # A pinned release binary, checked against a recorded SHA-256 before it
+      # runs — not `curl … | sh`, which executes whatever the installer URL
+      # serves that day. 0.13.1 is the version that installer was handing out.
+      # The digest was computed from the release asset (GitHub records none for
+      # this release) and matched on both the current and the legacy download
+      # URL. Bump the version and the digest together.
+      - name: Install wasm-pack (pinned, checksum-verified)
+        env:
+          WASM_PACK_VERSION: '0.13.1'
+          WASM_PACK_SHA256: 'c539d91ccab2591a7e975bcf82c82e1911b03335c80aa83d67ad25ed2ad06539'
+        run: |
+          set -euo pipefail
+          name="wasm-pack-v${WASM_PACK_VERSION}-x86_64-unknown-linux-musl"
+          cd "$RUNNER_TEMP"
+          curl -fsSL --retry 3 -o wasm-pack.tar.gz \
+            "https://github.com/wasm-bindgen/wasm-pack/releases/download/v${WASM_PACK_VERSION}/${name}.tar.gz"
+          echo "${WASM_PACK_SHA256}  wasm-pack.tar.gz" | sha256sum -c -
+          tar -xzf wasm-pack.tar.gz "${name}/wasm-pack"
+          install -D -m 0755 "${name}/wasm-pack" "$HOME/.cargo/bin/wasm-pack"
+          wasm-pack --version
+
+      - name: Install Flutter (pinned)
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: '3.47.3'
+          cache: true
+
+      # The build tool is a Dart program (`dart run tool/...`) and needs package
+      # resolution (.dart_tool/package_config.json) before it can run.
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build wellen_wasm + bundle-size gate
+        run: dart run tool/build_web_wasm.dart
+
+      # ── lxt2fst — same wasm-pack pipeline + 400 KiB
+      # gzipped budget. Built into the same web/wasm/ folder so the
+      # build-web job picks it up alongside wellen_wasm.
+      - name: Build lxt2fst wasm + bundle-size gate
+        run: dart run tool/build_lxt2fst_wasm.dart
+
+      - name: Upload web/wasm artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wellen-wasm-pkg
+          path: web/wasm/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Release builds — Linux, macOS, Windows.
+  # Informational: not required for PR merge, but surfaces build breakage early.
+  # Artifacts retained for 7 days for manual download/smoke-testing.
+  # ─────────────────────────────────────────────────────────────────────────────
+  build-desktop:
+    name: Build / ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    # Cost guardrail: no job may run unbounded (max observed suite-wide is 29 min).
+    timeout-minutes: 45
+    needs: [analyze, test]
+    strategy:
+      fail-fast: false
+      matrix:
+        # Same push-vs-everything-else split as `test` above: a release build
+        # per platform on every commit to `main` is the single most expensive
+        # thing this workflow could do. Linux still proves the build compiles.
+        include: ${{ github.event_name == 'push' && fromJSON('[{"os":"ubuntu-latest","target":"linux"}]') || fromJSON('[{"os":"ubuntu-latest","target":"linux"},{"os":"macos-latest","target":"macos"},{"os":"windows-latest","target":"windows"}]') }}
+
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          submodules: recursive
+          # Token for the crux-shared submodule checkout. A pull request from a
+          # fork receives no secrets, so the workflow token stands in — the
+          # submodule is a public repository and needs no extra scope.
+          token: ${{ secrets.SUBMODULE_PAT || github.token }}
+
+      - name: Install Linux build dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ninja-build libgtk-3-dev libsecret-1-dev
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable branch head, 2026-09-03
+
+      - name: Cache Rust build artifacts
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            native/wellen_ffi/target
+          key: rust-${{ matrix.os }}-${{ hashFiles('native/wellen_ffi/Cargo.lock') }}
+          restore-keys: rust-${{ matrix.os }}-
+
+      - name: Build native library (Rust)
+        working-directory: native/wellen_ffi
+        run: cargo build --release
+
+      - name: Install Flutter (pinned)
+        id: flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: '3.47.3'
+          cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          # `.dart_tool/` is cached whole, build_runner's incremental asset
+          # graph included: a `!.dart_tool/build` exclusion here does
+          # nothing, because actions/cache hands tar the directory and tar
+          # recurses into it. One was written here and did not work. The
+          # graph is dropped after the restore instead, by the step below.
+          # The pub cache is the expensive part and is what this step is for.
+          path: |
+            ${{ steps.flutter.outputs.pub-cache-path }}
+            .dart_tool/
+          key: pub-${{ matrix.os }}-${{ hashFiles('pubspec.lock') }}
+          restore-keys: pub-${{ matrix.os }}-
+
+      # The restored `.dart_tool/` carries build_runner's asset graph, which a
+      # `!` exclusion on the cache path cannot prevent. A graph written before
+      # a source file was deleted — a crux-shared package's file after a pin
+      # bump — fails codegen with `InvalidOutputException … Tried to delete
+      # from package not in the build`, measured on the Pro overlay when
+      # `lib/services/spawn/spawn_guards.dart` was removed here. Dropping the
+      # graph is what actually keeps it out; a cold codegen costs ~13s.
+      - name: Drop the restored build_runner asset graph
+        shell: bash
+        run: rm -rf .dart_tool/build
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Riverpod codegen
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate l10n
+        run: flutter gen-l10n
+
+      - name: Build ${{ matrix.target }} (release)
+        run: flutter build ${{ matrix.target }} --release
+
+      # The shipped bundle, not just the cargo output, must carry the LXT/LXT2
+      # converter: every platform bundles libwellen_ffi, and Dart resolves the
+      # lxt2fst_* symbols from it. A bundle without them fails every LXT open.
+      - name: Verify the bundled native library exports the LXT converter (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          so=build/linux/x64/release/bundle/lib/libwellen_ffi.so
+          nm -D --defined-only "$so" | grep -w lxt2fst_convert
+          nm -D --defined-only "$so" | grep -w wellen_open
+
+      - name: Verify the bundled native library exports the LXT converter (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          dylib="$(ls build/macos/Build/Products/Release/*.app/Contents/Frameworks/libwellen_ffi.dylib)"
+          nm -gU "$dylib" | grep -w _lxt2fst_convert
+          nm -gU "$dylib" | grep -w _wellen_open
+
+      - name: Verify the bundled native library exports the LXT converter (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $dll = 'build\windows\x64\runner\Release\wellen_ffi.dll'
+          $text = [Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes($dll))
+          foreach ($symbol in 'lxt2fst_convert', 'wellen_open') {
+            if (-not $text.Contains($symbol)) { throw "$dll does not export $symbol" }
+            Write-Output "$dll exports $symbol"
+          }
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wavecrux-${{ matrix.target }}
+          path: build/${{ matrix.target }}/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Flutter Web release build. Depends on the `wasm` job so the wellen_wasm
+  # artifacts are baked into web/wasm/ before `flutter build web` runs.
+  # ─────────────────────────────────────────────────────────────────────────────
+  build-web:
+    name: Build / web
+    runs-on: ubuntu-latest
+    # Cost guardrail: no job may run unbounded (max observed suite-wide is 29 min).
+    timeout-minutes: 45
+    needs: [analyze, test, wasm]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          submodules: recursive
+          # Token for the crux-shared submodule checkout. A pull request from a
+          # fork receives no secrets, so the workflow token stands in — the
+          # submodule is a public repository and needs no extra scope.
+          token: ${{ secrets.SUBMODULE_PAT || github.token }}
+
+      - name: Download wellen_wasm artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: wellen-wasm-pkg
+          path: web/wasm/
+
+      - name: Install Flutter (pinned)
+        id: flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: '3.47.3'
+          cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          # `.dart_tool/` is cached whole, build_runner's incremental asset
+          # graph included: a `!.dart_tool/build` exclusion here does
+          # nothing, because actions/cache hands tar the directory and tar
+          # recurses into it. One was written here and did not work. The
+          # graph is dropped after the restore instead, by the step below.
+          # The pub cache is the expensive part and is what this step is for.
+          path: |
+            ${{ steps.flutter.outputs.pub-cache-path }}
+            .dart_tool/
+          key: pub-web-${{ hashFiles('pubspec.lock') }}
+          restore-keys: pub-web-
+
+      # The restored `.dart_tool/` carries build_runner's asset graph, which a
+      # `!` exclusion on the cache path cannot prevent. A graph written before
+      # a source file was deleted — a crux-shared package's file after a pin
+      # bump — fails codegen with `InvalidOutputException … Tried to delete
+      # from package not in the build`, measured on the Pro overlay when
+      # `lib/services/spawn/spawn_guards.dart` was removed here. Dropping the
+      # graph is what actually keeps it out; a cold codegen costs ~13s.
+      - name: Drop the restored build_runner asset graph
+        shell: bash
+        run: rm -rf .dart_tool/build
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Riverpod codegen
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate l10n
+        run: flutter gen-l10n
+
+      - name: Build web (release)
+        run: flutter build web --release
+
+      - name: Upload web artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wavecrux-web
+          path: build/web/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # GTKWave reference comparison (ARCHITECTURE.md §8.9, Layer 3) — cross-check
+  # the committed FST mirrors against an independent reader from the GTKWave
+  # family (fst2vcd). NON-BLOCKING: continue-on-error so a discrepancy surfaces
+  # as a warning while it is investigated, then promote to blocking once the
+  # signal is trusted. Linux-only (GTKWave is apt-installable there).
+  # ─────────────────────────────────────────────────────────────────────────────
+  gtkwave-reference:
+    name: GTKWave reference comparison (non-blocking)
+    runs-on: ubuntu-latest
+    # Cost guardrail: no job may run unbounded (max observed suite-wide is 29 min).
+    timeout-minutes: 45
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - name: Install GTKWave (provides fst2vcd / vcd2fst)
+        run: sudo apt-get update && sudo apt-get install -y gtkwave
+
+      - name: Cross-check committed FST mirrors against GTKWave's reader
+        run: tool/gtkwave_reference_compare.sh
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Supply chain — SBOM, licence gate, advisory sweep (audit D-04).
+  #
+  # Runs on the same triggers as `analyze` rather than on a schedule, because
+  # the failure it prevents arrives *with a pubspec change*: somebody adds a
+  # dependency, it resolves a copyleft transitive, and nothing says so until
+  # the repository is already public. Catching that in the PR that introduces
+  # it is the whole point.
+  #
+  # The SBOM is uploaded as an artifact rather than committed. It changes on
+  # every dependency bump and nobody reviews it in a diff; what people
+  # actually want is "what shipped in the build I have", which is what an
+  # artifact attached to the run answers.
+  # ─────────────────────────────────────────────────────────────────────────────
+  supply-chain:
+    name: Supply chain
+    runs-on: ubuntu-latest
+    # Cost guardrail: no job may run unbounded.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_PAT || github.token }}
+
+      - name: Install Flutter (pinned)
+        id: flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          # Same pin as every other job in the suite — see `analyze`.
+          flutter-version: '3.47.3'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Licence gate
+        # Fails the build on copyleft, or on a licence the classifier cannot
+        # identify. Dev dependencies are reported and not gated: they never
+        # ship, so they carry no obligation on the artifact.
+        run: python3 crux-shared/tool/supply-chain.py --check-licences --tier open-core
+
+      - name: SBOM (CycloneDX)
+        run: python3 crux-shared/tool/supply-chain.py --sbom build/sbom.json
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sbom-wavecrux
+          path: build/sbom.json
+          retention-days: 90
+
+      - name: Advisories (osv.dev)
+        # Deliberately not `continue-on-error`. The script itself returns zero
+        # when osv.dev is unreachable — a gate that goes red because somebody
+        # else's service is down teaches people to ignore it — so a red here
+        # means a real advisory against a package that ships.
+        run: python3 crux-shared/tool/supply-chain.py --check-advisories

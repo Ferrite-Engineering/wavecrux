@@ -1,0 +1,139 @@
+name: Coverage
+
+# ─── Trigger configuration ─────────────────────────────────────────────────────
+# Code-coverage floor gate. Coverage is the unit+widget suite with --coverage
+# (the same tests CI already runs, plus instrumentation), so it is cheap and
+# runs on every nightly. Re-enable push/PR once green so a PR that drops
+# coverage is caught before merge. One platform only — coverage is identical
+# across OSes (same Dart), so Linux (cheapest) is sufficient.
+#
+# The floor (MIN_COVERAGE) is a ratchet: set to the current baseline and raised
+# as tests are added; the build fails if coverage falls below it. Generated code
+# (build_runner *.g.dart, generated l10n) is excluded by tool/coverage.sh.
+on:
+  workflow_dispatch:
+  pull_request:
+  # Daily. The nightly was retired at beta launch (2026-07-12), which left
+  # pull requests and dispatch as the only triggers in a repository whose
+  # work lands directly on `main`; the last run before this schedule was on
+  # 2026-07-12. Not per push: a push already runs the full suite in ci.yml,
+  # and this job is the slowest thing in the repo. Measured 2026-09-22:
+  # 86.2% against the floor of 84.
+  schedule:
+    - cron: '55 3 * * *'
+
+concurrency:
+  # Keyed by event as well as ref: a nightly must never be cancelled by a
+  # push, and a push must never be cancelled by a nightly.
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  # Superseded pushes are cancelled outright. `false` on main was the source
+  # of a whole class of phantom failures: a run still QUEUED when a third
+  # push arrives is cancelled by GitHub regardless, and a run whose jobs were
+  # cancelled reports conclusion=failure — not cancelled. So main never did
+  # verify every commit, it just misreported the ones it skipped. Cancelling
+  # is honest, cheaper, and gates the thing that matters: the tip.
+  cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    name: Coverage (line %, generated excluded)
+    runs-on: ubuntu-latest
+    # Cost guardrail: no job may run unbounded. The coverage step alone took
+    # 40 minutes on 2026-09-21 (25 in August; the suite keeps growing), so 45
+    # was a timeout waiting to happen. Linux-only, so the cap is cheap.
+    timeout-minutes: 60
+    env:
+      # Ratchet floor — raise as coverage improves. The build fails below this.
+      #
+      # RE-BASELINED 2026-08-18. The old 80 was set against a figure this gate
+      # never actually produced: tool/coverage.sh had two bugs that together
+      # meant it measured UNFILTERED coverage while reporting it as filtered,
+      # so generated code — including 1,739 ARB keys' worth of generated
+      # localizations — sat in the denominator. Both are fixed there now.
+      #
+      # Measured 86.2% on this runner 2026-09-22 (run 35673402096, commit
+      # 44574de39653681c4b931bd726c129100742de00, dispatched fresh since the
+      # daily schedule's last run was 43 commits stale). Floor set a couple
+      # of points below to absorb platform/measurement variance.
+      MIN_COVERAGE: '84'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_PAT || github.token }}
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable branch head, 2026-09-03
+
+      - name: Cache Rust build artifacts
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            native/wellen_ffi/target
+          key: rust-coverage-${{ hashFiles('native/wellen_ffi/Cargo.lock') }}
+          restore-keys: rust-coverage-
+
+      # FFI cross-parser tests load libwellen_ffi.so via LD_LIBRARY_PATH below.
+      - name: Build native library (Rust)
+        working-directory: native/wellen_ffi
+        run: cargo build --release
+
+      - name: Install lcov
+        run: sudo apt-get update -y && sudo apt-get install -y lcov
+
+      - name: Install Flutter (pinned)
+        id: flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: '3.47.3'
+          cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: |
+            ${{ steps.flutter.outputs.pub-cache-path }}
+            .dart_tool/
+          key: pub-coverage-${{ hashFiles('pubspec.lock') }}
+          restore-keys: pub-coverage-
+
+      # The restored `.dart_tool/` carries build_runner's asset graph, which a
+      # `!` exclusion on the cache path cannot prevent. A graph written before
+      # a source file was deleted — a crux-shared package's file after a pin
+      # bump — fails codegen with `InvalidOutputException … Tried to delete
+      # from package not in the build`, measured on the Pro overlay when
+      # `lib/services/spawn/spawn_guards.dart` was removed here. Dropping the
+      # graph is what actually keeps it out; a cold codegen costs ~13s.
+      - name: Drop the restored build_runner asset graph
+        shell: bash
+        run: rm -rf .dart_tool/build
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Riverpod codegen
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate l10n
+        run: flutter gen-l10n
+
+      - name: Test with coverage + floor gate
+        run: |
+          chmod +x tool/coverage.sh
+          tool/coverage.sh
+        env:
+          LD_LIBRARY_PATH: ${{ github.workspace }}/native/wellen_ffi/target/release
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-lcov
+          path: coverage/lcov.filtered.info
+          if-no-files-found: ignore

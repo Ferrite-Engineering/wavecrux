@@ -1,0 +1,108 @@
+# RV64A — atomic memory operations (.d width).
+#
+# All opcode 0x2F, funct3 = 0x3 for .d. Composes with RV32A.toml in a
+# multi-file bundle. Schema follows the JKU `instruction-decoder` Rust crate.
+set = "RV64A"
+width = 32
+
+[formats]
+names = ["amo_d", "lr_d"]
+parts = [
+    ["rd", 5, "Register_int"],
+    ["rs1", 5, "Register_int"],
+    ["rs2", 5, "Register_int"],
+    ["none", 32, "u32"],
+]
+
+[types]
+names = ["t_amo_d", "t_lr_d"]
+
+[[types.t_amo_d]]
+name = "none"
+top = 31
+bot = 25
+[[types.t_amo_d]]
+name = "rs2"
+top = 4
+bot = 0
+[[types.t_amo_d]]
+name = "rs1"
+top = 4
+bot = 0
+[[types.t_amo_d]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_amo_d]]
+name = "rd"
+top = 4
+bot = 0
+[[types.t_amo_d]]
+name = "none"
+top = 6
+bot = 0
+
+[[types.t_lr_d]]
+name = "none"
+top = 31
+bot = 20
+[[types.t_lr_d]]
+name = "rs1"
+top = 4
+bot = 0
+[[types.t_lr_d]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_lr_d]]
+name = "rd"
+top = 4
+bot = 0
+[[types.t_lr_d]]
+name = "none"
+top = 6
+bot = 0
+
+[mappings]
+names = ["Register_int"]
+Register_int = [
+    "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
+    "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5",
+    "a6", "a7", "s2", "s3", "s4", "s5", "s6", "s7",
+    "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6",
+]
+
+[amo_d]
+type = "t_amo_d"
+
+[amo_d.repr]
+default = "$name$ %rd%, %rs2%, (%rs1%)"
+
+[amo_d.instructions."amoswap.d"]
+mask = 0xf800707f
+match = 0x0800302f
+[amo_d.instructions."amoadd.d"]
+mask = 0xf800707f
+match = 0x0000302f
+[amo_d.instructions."amoxor.d"]
+mask = 0xf800707f
+match = 0x2000302f
+[amo_d.instructions."amoand.d"]
+mask = 0xf800707f
+match = 0x6000302f
+[amo_d.instructions."amoor.d"]
+mask = 0xf800707f
+match = 0x4000302f
+[amo_d.instructions."sc.d"]
+mask = 0xf800707f
+match = 0x1800302f
+
+[lr_d]
+type = "t_lr_d"
+
+[lr_d.repr]
+default = "$name$ %rd%, (%rs1%)"
+
+[lr_d.instructions."lr.d"]
+mask = 0xf9f0707f
+match = 0x1000302f

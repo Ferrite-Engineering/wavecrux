@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="WaveCrux — A modern, high-performance waveform viewer for hardware engineers. Opens VCD, FST, GHW, LXT and LXT2 waveforms and .wavecruxpack bundles in the browser.">
+  <meta name="theme-color" content="#1a1a2e">
+
+  <!-- Open Graph / social preview -->
+  <meta property="og:title" content="WaveCrux">
+  <meta property="og:description" content="Modern waveform viewer for hardware engineers">
+  <meta property="og:type" content="website">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="WaveCrux">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>WaveCrux</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    /* Loading indicator shown while Flutter initializes */
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background-color: #1a1a2e;
+    }
+
+    #flutter-loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: #1a1a2e;
+      color: #e0e0e0;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+      font-size: 14px;
+      gap: 20px;
+      z-index: 9999;
+      transition: opacity 0.3s ease;
+    }
+
+    #flutter-loading.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .wavecrux-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(0, 230, 118, 0.2);
+      border-top-color: #00e676;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Loading splash displayed until Flutter renders its first frame -->
+  <div id="flutter-loading">
+    <div class="wavecrux-spinner"></div>
+    <span>WaveCrux</span>
+  </div>
+
+  <script>
+    // Hide the loading indicator once Flutter signals it is ready.
+    window.addEventListener('flutter-first-frame', function () {
+      const loader = document.getElementById('flutter-loading');
+      if (loader) {
+        loader.classList.add('hidden');
+        setTimeout(function () { loader.remove(); }, 400);
+      }
+    });
+  </script>
+
+  <!--
+    wellen_wasm loader. Registers `globalThis.waveCruxWellen`,
+    the wellen Rust crate compiled to WebAssembly, which parses every
+    waveform the browser opens (VCD, FST, GHW, and LXT/LXT2 once converted).
+    There is no fallback parser: if this script cannot register the loader
+    or the wasm fails to load (a browser without ES-module or WebAssembly
+    support, a CSP that blocks wasm), a file open fails with the
+    "WebAssembly is required" message.
+  -->
+  <script type="module" src="wasm/wellen_wasm_loader.js"></script>
+
+  <!--
+    lxt2fst loader. Registers `globalThis.waveCruxLxt2Fst`, the
+    LXT/LXT2 → FST converter compiled to WebAssembly. The converter itself is
+    fetched lazily, on the first LXT/LXT2 open, so this tag costs other
+    visitors only the few-KB loader script.
+  -->
+  <script type="module" src="wasm/lxt2fst_loader.js"></script>
+
+  <!--
+    First-party page-view beacon (analytics.js): one cookieless page view per
+    application load, under the `wavecrux-app` site slug. See the file for what
+    it sends and what it does not store.
+  -->
+  <script src="analytics.js" defer></script>
+
+  <!--
+    You can customize the "flutter_bootstrap.js" script.
+    This is useful to provide a custom configuration to the Flutter loader
+    or to give the user feedback during the initialization process.
+
+    For more details:
+    * https://docs.flutter.dev/platform-integration/web/initialization
+  -->
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

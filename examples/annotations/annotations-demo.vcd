@@ -1,0 +1,65 @@
+$date
+  WaveCrux annotation demo fixture
+$end
+$version
+  hand-authored for the waveform annotations example
+$end
+$comment
+  A deliberately tiny handshake trace for exercising waveform annotations.
+
+  Identifier codes are assigned in ascending ASCII order matching declaration
+  order (! " # $ %), because the backend numbers signalRefs by identifier-code
+  order rather than declaration order — the committed session's refs only line
+  up with the names if those two orders agree.
+
+  `bus` holds 8'ha3 across tick 500, which is the value the demo session's
+  annotations were witnessed against. Change that value (edit the `b10100011 $`
+  line at #400 to any other pattern) and reopen the session: the annotation
+  anchored to `top.bus` will render DRIFTED, which is the whole point of the
+  witness mechanism.
+
+  `spare` is deliberately NOT in the demo session's displayed signal list, so
+  the annotation anchored to it exercises the orphan path.
+$end
+$timescale 1 ns $end
+$scope module top $end
+$var wire 1 ! clk $end
+$var wire 1 " req $end
+$var wire 1 # ack $end
+$var wire 8 $ bus $end
+$var wire 1 % spare $end
+$upscope $end
+$enddefinitions $end
+
+#0
+0!
+0"
+0#
+b0 $
+0%
+#100
+1!
+#200
+0!
+1"
+#300
+1!
+#400
+0!
+b10100011 $
+#500
+1!
+1#
+#600
+0!
+#700
+1!
+0"
+0#
+#800
+0!
+1%
+#900
+1!
+#1000
+0!

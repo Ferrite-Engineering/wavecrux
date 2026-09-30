@@ -1,0 +1,22 @@
+# Android upload-key config for signed release AABs (open-core WaveCrux).
+#
+# Copy to android/key.properties (gitignored) and fill in real values. The
+# .jks keystore itself MUST live OUTSIDE the repo and be backed up — losing it
+# (without Play App Signing enrollment) means you can never update the app.
+#
+# Create the upload keystore once:
+#   keytool -genkeypair -v -keystore "$HOME/keys/ferrite-wavecrux-upload.jks" \
+#     -alias upload -keyalg RSA -keysize 2048 -validity 10000 \
+#     -dname "CN=Ferrite Engineering LLC, O=Ferrite Engineering LLC, C=US"
+#
+# macOS note: the stub /usr/bin/keytool errors with "Unable to locate a Java
+# Runtime" when no standalone JDK is installed. Use the JDK bundled with Android
+# Studio (the one Flutter already uses) instead:
+#   "/Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/keytool" -genkeypair ...
+# (or add "$JAVA_HOME/bin" to PATH with JAVA_HOME=/Applications/Android Studio.app/Contents/jbr/Contents/Home)
+#
+# storeFile is an ABSOLUTE path to that .jks.
+storePassword=CHANGE_ME
+keyPassword=CHANGE_ME
+keyAlias=upload
+storeFile=/Users/you/keys/ferrite-wavecrux-upload.jks

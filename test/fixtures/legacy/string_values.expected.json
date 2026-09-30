@@ -1,0 +1,778 @@
+{
+  "_comment": "VCD $var string signals (s-prefixed value changes). LXT2 encodes string values distinctly from vectors; this fixture pins that path. String values avoid embedded whitespace (the VCD value token is whitespace-delimited).",
+  "metadata": {
+    "timescale": {
+      "factor": 1,
+      "unit": "nanoSeconds"
+    },
+    "startTime": 0,
+    "endTime": 60,
+    "date": null,
+    "version": null
+  },
+  "hierarchy": {
+    "rootScopes": [
+      {
+        "name": "top",
+        "type": "module",
+        "path": "top",
+        "childScopes": [],
+        "variables": [
+          {
+            "name": "state",
+            "fullPath": "top.state",
+            "varType": "string",
+            "bitWidth": null,
+            "direction": "unknown"
+          },
+          {
+            "name": "msg",
+            "fullPath": "top.msg",
+            "varType": "string",
+            "bitWidth": null,
+            "direction": "unknown"
+          },
+          {
+            "name": "code",
+            "fullPath": "top.code",
+            "varType": "string",
+            "bitWidth": null,
+            "direction": "unknown"
+          }
+        ]
+      }
+    ]
+  },
+  "signals": {
+    "top.state": {
+      "allChanges": [
+        {
+          "time": 0,
+          "value": "IDLE"
+        },
+        {
+          "time": 10,
+          "value": "FETCH"
+        },
+        {
+          "time": 20,
+          "value": "DECODE"
+        },
+        {
+          "time": 30,
+          "value": "EXECUTE"
+        },
+        {
+          "time": 40,
+          "value": "WRITEBACK"
+        },
+        {
+          "time": 50,
+          "value": "IDLE"
+        }
+      ],
+      "valueAt": [
+        {
+          "time": -1,
+          "expected": null
+        },
+        {
+          "time": 0,
+          "expected": "IDLE"
+        },
+        {
+          "time": 1,
+          "expected": "IDLE"
+        },
+        {
+          "time": 9,
+          "expected": "IDLE"
+        },
+        {
+          "time": 10,
+          "expected": "FETCH"
+        },
+        {
+          "time": 11,
+          "expected": "FETCH"
+        },
+        {
+          "time": 19,
+          "expected": "FETCH"
+        },
+        {
+          "time": 20,
+          "expected": "DECODE"
+        },
+        {
+          "time": 21,
+          "expected": "DECODE"
+        },
+        {
+          "time": 29,
+          "expected": "DECODE"
+        },
+        {
+          "time": 30,
+          "expected": "EXECUTE"
+        },
+        {
+          "time": 31,
+          "expected": "EXECUTE"
+        },
+        {
+          "time": 39,
+          "expected": "EXECUTE"
+        },
+        {
+          "time": 40,
+          "expected": "WRITEBACK"
+        },
+        {
+          "time": 41,
+          "expected": "WRITEBACK"
+        },
+        {
+          "time": 49,
+          "expected": "WRITEBACK"
+        },
+        {
+          "time": 50,
+          "expected": "IDLE"
+        },
+        {
+          "time": 51,
+          "expected": "IDLE"
+        },
+        {
+          "time": 60,
+          "expected": "IDLE"
+        },
+        {
+          "time": 110,
+          "expected": "IDLE"
+        }
+      ],
+      "changesInRange": [
+        {
+          "start": 0,
+          "end": 0,
+          "expected": []
+        },
+        {
+          "start": 0,
+          "end": 10,
+          "expected": [
+            {
+              "time": 0,
+              "value": "IDLE"
+            }
+          ]
+        },
+        {
+          "start": 10,
+          "end": 20,
+          "expected": [
+            {
+              "time": 10,
+              "value": "FETCH"
+            }
+          ]
+        },
+        {
+          "start": 20,
+          "end": 30,
+          "expected": [
+            {
+              "time": 20,
+              "value": "DECODE"
+            }
+          ]
+        },
+        {
+          "start": 30,
+          "end": 40,
+          "expected": [
+            {
+              "time": 30,
+              "value": "EXECUTE"
+            }
+          ]
+        },
+        {
+          "start": 40,
+          "end": 50,
+          "expected": [
+            {
+              "time": 40,
+              "value": "WRITEBACK"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 61,
+          "expected": [
+            {
+              "time": 0,
+              "value": "IDLE"
+            },
+            {
+              "time": 10,
+              "value": "FETCH"
+            },
+            {
+              "time": 20,
+              "value": "DECODE"
+            },
+            {
+              "time": 30,
+              "value": "EXECUTE"
+            },
+            {
+              "time": 40,
+              "value": "WRITEBACK"
+            },
+            {
+              "time": 50,
+              "value": "IDLE"
+            }
+          ]
+        },
+        {
+          "start": 61,
+          "end": 160,
+          "expected": []
+        }
+      ],
+      "nextTransition": [
+        {
+          "afterTime": -1,
+          "expected": {
+            "time": 0,
+            "value": "IDLE"
+          }
+        },
+        {
+          "afterTime": 0,
+          "expected": {
+            "time": 10,
+            "value": "FETCH"
+          }
+        },
+        {
+          "afterTime": 10,
+          "expected": {
+            "time": 20,
+            "value": "DECODE"
+          }
+        },
+        {
+          "afterTime": 20,
+          "expected": {
+            "time": 30,
+            "value": "EXECUTE"
+          }
+        },
+        {
+          "afterTime": 30,
+          "expected": {
+            "time": 40,
+            "value": "WRITEBACK"
+          }
+        },
+        {
+          "afterTime": 40,
+          "expected": {
+            "time": 50,
+            "value": "IDLE"
+          }
+        },
+        {
+          "afterTime": 50,
+          "expected": null
+        },
+        {
+          "afterTime": 60,
+          "expected": null
+        },
+        {
+          "afterTime": 110,
+          "expected": null
+        }
+      ],
+      "prevTransition": [
+        {
+          "beforeTime": 0,
+          "expected": null
+        },
+        {
+          "beforeTime": 1,
+          "expected": {
+            "time": 0,
+            "value": "IDLE"
+          }
+        },
+        {
+          "beforeTime": 10,
+          "expected": {
+            "time": 0,
+            "value": "IDLE"
+          }
+        },
+        {
+          "beforeTime": 11,
+          "expected": {
+            "time": 10,
+            "value": "FETCH"
+          }
+        },
+        {
+          "beforeTime": 20,
+          "expected": {
+            "time": 10,
+            "value": "FETCH"
+          }
+        },
+        {
+          "beforeTime": 21,
+          "expected": {
+            "time": 20,
+            "value": "DECODE"
+          }
+        },
+        {
+          "beforeTime": 30,
+          "expected": {
+            "time": 20,
+            "value": "DECODE"
+          }
+        },
+        {
+          "beforeTime": 31,
+          "expected": {
+            "time": 30,
+            "value": "EXECUTE"
+          }
+        },
+        {
+          "beforeTime": 40,
+          "expected": {
+            "time": 30,
+            "value": "EXECUTE"
+          }
+        },
+        {
+          "beforeTime": 41,
+          "expected": {
+            "time": 40,
+            "value": "WRITEBACK"
+          }
+        },
+        {
+          "beforeTime": 50,
+          "expected": {
+            "time": 40,
+            "value": "WRITEBACK"
+          }
+        },
+        {
+          "beforeTime": 51,
+          "expected": {
+            "time": 50,
+            "value": "IDLE"
+          }
+        },
+        {
+          "beforeTime": 110,
+          "expected": {
+            "time": 50,
+            "value": "IDLE"
+          }
+        }
+      ]
+    },
+    "top.msg": {
+      "allChanges": [
+        {
+          "time": 0,
+          "value": "boot"
+        },
+        {
+          "time": 20,
+          "value": "ready"
+        },
+        {
+          "time": 40,
+          "value": "halt"
+        }
+      ],
+      "valueAt": [
+        {
+          "time": -1,
+          "expected": null
+        },
+        {
+          "time": 0,
+          "expected": "boot"
+        },
+        {
+          "time": 1,
+          "expected": "boot"
+        },
+        {
+          "time": 19,
+          "expected": "boot"
+        },
+        {
+          "time": 20,
+          "expected": "ready"
+        },
+        {
+          "time": 21,
+          "expected": "ready"
+        },
+        {
+          "time": 39,
+          "expected": "ready"
+        },
+        {
+          "time": 40,
+          "expected": "halt"
+        },
+        {
+          "time": 41,
+          "expected": "halt"
+        },
+        {
+          "time": 60,
+          "expected": "halt"
+        },
+        {
+          "time": 110,
+          "expected": "halt"
+        }
+      ],
+      "changesInRange": [
+        {
+          "start": 0,
+          "end": 0,
+          "expected": []
+        },
+        {
+          "start": 0,
+          "end": 20,
+          "expected": [
+            {
+              "time": 0,
+              "value": "boot"
+            }
+          ]
+        },
+        {
+          "start": 20,
+          "end": 40,
+          "expected": [
+            {
+              "time": 20,
+              "value": "ready"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 61,
+          "expected": [
+            {
+              "time": 0,
+              "value": "boot"
+            },
+            {
+              "time": 20,
+              "value": "ready"
+            },
+            {
+              "time": 40,
+              "value": "halt"
+            }
+          ]
+        },
+        {
+          "start": 61,
+          "end": 160,
+          "expected": []
+        }
+      ],
+      "nextTransition": [
+        {
+          "afterTime": -1,
+          "expected": {
+            "time": 0,
+            "value": "boot"
+          }
+        },
+        {
+          "afterTime": 0,
+          "expected": {
+            "time": 20,
+            "value": "ready"
+          }
+        },
+        {
+          "afterTime": 20,
+          "expected": {
+            "time": 40,
+            "value": "halt"
+          }
+        },
+        {
+          "afterTime": 40,
+          "expected": null
+        },
+        {
+          "afterTime": 60,
+          "expected": null
+        },
+        {
+          "afterTime": 110,
+          "expected": null
+        }
+      ],
+      "prevTransition": [
+        {
+          "beforeTime": 0,
+          "expected": null
+        },
+        {
+          "beforeTime": 1,
+          "expected": {
+            "time": 0,
+            "value": "boot"
+          }
+        },
+        {
+          "beforeTime": 20,
+          "expected": {
+            "time": 0,
+            "value": "boot"
+          }
+        },
+        {
+          "beforeTime": 21,
+          "expected": {
+            "time": 20,
+            "value": "ready"
+          }
+        },
+        {
+          "beforeTime": 40,
+          "expected": {
+            "time": 20,
+            "value": "ready"
+          }
+        },
+        {
+          "beforeTime": 41,
+          "expected": {
+            "time": 40,
+            "value": "halt"
+          }
+        },
+        {
+          "beforeTime": 110,
+          "expected": {
+            "time": 40,
+            "value": "halt"
+          }
+        }
+      ]
+    },
+    "top.code": {
+      "allChanges": [
+        {
+          "time": 0,
+          "value": "OK"
+        },
+        {
+          "time": 30,
+          "value": "error_code=0x2A"
+        },
+        {
+          "time": 60,
+          "value": "v1.2-rc"
+        }
+      ],
+      "valueAt": [
+        {
+          "time": -1,
+          "expected": null
+        },
+        {
+          "time": 0,
+          "expected": "OK"
+        },
+        {
+          "time": 1,
+          "expected": "OK"
+        },
+        {
+          "time": 29,
+          "expected": "OK"
+        },
+        {
+          "time": 30,
+          "expected": "error_code=0x2A"
+        },
+        {
+          "time": 31,
+          "expected": "error_code=0x2A"
+        },
+        {
+          "time": 59,
+          "expected": "error_code=0x2A"
+        },
+        {
+          "time": 60,
+          "expected": "v1.2-rc"
+        },
+        {
+          "time": 61,
+          "expected": "v1.2-rc"
+        },
+        {
+          "time": 110,
+          "expected": "v1.2-rc"
+        }
+      ],
+      "changesInRange": [
+        {
+          "start": 0,
+          "end": 0,
+          "expected": []
+        },
+        {
+          "start": 0,
+          "end": 30,
+          "expected": [
+            {
+              "time": 0,
+              "value": "OK"
+            }
+          ]
+        },
+        {
+          "start": 30,
+          "end": 60,
+          "expected": [
+            {
+              "time": 30,
+              "value": "error_code=0x2A"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 61,
+          "expected": [
+            {
+              "time": 0,
+              "value": "OK"
+            },
+            {
+              "time": 30,
+              "value": "error_code=0x2A"
+            },
+            {
+              "time": 60,
+              "value": "v1.2-rc"
+            }
+          ]
+        },
+        {
+          "start": 61,
+          "end": 160,
+          "expected": []
+        }
+      ],
+      "nextTransition": [
+        {
+          "afterTime": -1,
+          "expected": {
+            "time": 0,
+            "value": "OK"
+          }
+        },
+        {
+          "afterTime": 0,
+          "expected": {
+            "time": 30,
+            "value": "error_code=0x2A"
+          }
+        },
+        {
+          "afterTime": 30,
+          "expected": {
+            "time": 60,
+            "value": "v1.2-rc"
+          }
+        },
+        {
+          "afterTime": 60,
+          "expected": null
+        },
+        {
+          "afterTime": 110,
+          "expected": null
+        }
+      ],
+      "prevTransition": [
+        {
+          "beforeTime": 0,
+          "expected": null
+        },
+        {
+          "beforeTime": 1,
+          "expected": {
+            "time": 0,
+            "value": "OK"
+          }
+        },
+        {
+          "beforeTime": 30,
+          "expected": {
+            "time": 0,
+            "value": "OK"
+          }
+        },
+        {
+          "beforeTime": 31,
+          "expected": {
+            "time": 30,
+            "value": "error_code=0x2A"
+          }
+        },
+        {
+          "beforeTime": 60,
+          "expected": {
+            "time": 30,
+            "value": "error_code=0x2A"
+          }
+        },
+        {
+          "beforeTime": 61,
+          "expected": {
+            "time": 60,
+            "value": "v1.2-rc"
+          }
+        },
+        {
+          "beforeTime": 110,
+          "expected": {
+            "time": 60,
+            "value": "v1.2-rc"
+          }
+        }
+      ]
+    }
+  }
+}

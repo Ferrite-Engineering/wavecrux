@@ -1,0 +1,213 @@
+# RV32F — single-precision floating point.
+#
+# Schema follows the JKU `instruction-decoder` Rust crate. Coverage is the
+# representative subset for launch — flw/fsw, fadd/fsub/fmul/fdiv/fsqrt,
+# fmin/fmax, fcvt.w.s. The full RV32F set follows the same schema and may
+# be extended without code changes.
+set = "RV32F"
+width = 32
+
+[formats]
+names = ["fp_load", "fp_store", "fp_rrr", "fp_rr", "fp_minmax"]
+parts = [
+    ["rd_int", 5, "Register_int"],
+    ["rd_fp", 5, "Register_float"],
+    ["rs1_int", 5, "Register_int"],
+    ["rs1_fp", 5, "Register_float"],
+    ["rs2_fp", 5, "Register_float"],
+    ["imm", 32, "VInt"],
+    ["none", 32, "u32"],
+]
+
+[types]
+names = ["t_fl", "t_fs", "t_fp_rrr", "t_fp_rr", "t_fp_minmax"]
+
+# flw rd_fp, imm(rs1_int) — I-type with FP rd and integer rs1.
+[[types.t_fl]]
+name = "imm"
+top = 11
+bot = 0
+[[types.t_fl]]
+name = "rs1_int"
+top = 4
+bot = 0
+[[types.t_fl]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_fl]]
+name = "rd_fp"
+top = 4
+bot = 0
+[[types.t_fl]]
+name = "none"
+top = 6
+bot = 0
+
+# fsw rs2_fp, imm(rs1_int) — S-type with FP rs2 and integer rs1.
+[[types.t_fs]]
+name = "imm"
+top = 11
+bot = 5
+[[types.t_fs]]
+name = "rs2_fp"
+top = 4
+bot = 0
+[[types.t_fs]]
+name = "rs1_int"
+top = 4
+bot = 0
+[[types.t_fs]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_fs]]
+name = "imm"
+top = 4
+bot = 0
+[[types.t_fs]]
+name = "none"
+top = 6
+bot = 0
+
+# Three-register FP: fadd.s, fsub.s, fmul.s, fdiv.s. rm bits ignored.
+[[types.t_fp_rrr]]
+name = "none"
+top = 31
+bot = 25
+[[types.t_fp_rrr]]
+name = "rs2_fp"
+top = 4
+bot = 0
+[[types.t_fp_rrr]]
+name = "rs1_fp"
+top = 4
+bot = 0
+[[types.t_fp_rrr]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_fp_rrr]]
+name = "rd_fp"
+top = 4
+bot = 0
+[[types.t_fp_rrr]]
+name = "none"
+top = 6
+bot = 0
+
+# Two-register FP: fsqrt.s and fcvt.w.s — rs2 field hardwired to a fixed value
+# but we render only rs1 and rd.
+[[types.t_fp_rr]]
+name = "none"
+top = 31
+bot = 20
+[[types.t_fp_rr]]
+name = "rs1_fp"
+top = 4
+bot = 0
+[[types.t_fp_rr]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_fp_rr]]
+name = "rd_fp"
+top = 4
+bot = 0
+[[types.t_fp_rr]]
+name = "none"
+top = 6
+bot = 0
+
+# Min/max use funct3 to select; same operand layout as t_fp_rrr.
+[[types.t_fp_minmax]]
+name = "none"
+top = 31
+bot = 25
+[[types.t_fp_minmax]]
+name = "rs2_fp"
+top = 4
+bot = 0
+[[types.t_fp_minmax]]
+name = "rs1_fp"
+top = 4
+bot = 0
+[[types.t_fp_minmax]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_fp_minmax]]
+name = "rd_fp"
+top = 4
+bot = 0
+[[types.t_fp_minmax]]
+name = "none"
+top = 6
+bot = 0
+
+[mappings]
+names = ["Register_int", "Register_float"]
+Register_int = [
+    "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
+    "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5",
+    "a6", "a7", "s2", "s3", "s4", "s5", "s6", "s7",
+    "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6",
+]
+Register_float = [
+    "ft0", "ft1", "ft2", "ft3", "ft4", "ft5", "ft6", "ft7",
+    "fs0", "fs1", "fa0", "fa1", "fa2", "fa3", "fa4", "fa5",
+    "fa6", "fa7", "fs2", "fs3", "fs4", "fs5", "fs6", "fs7",
+    "fs8", "fs9", "fs10", "fs11", "ft8", "ft9", "ft10", "ft11",
+]
+
+[fp_load]
+type = "t_fl"
+[fp_load.repr]
+default = "$name$ %rd_fp%, %imm%(%rs1_int%)"
+[fp_load.instructions."flw"]
+mask = 0x0000707f
+match = 0x00002007
+
+[fp_store]
+type = "t_fs"
+[fp_store.repr]
+default = "$name$ %rs2_fp%, %imm%(%rs1_int%)"
+[fp_store.instructions."fsw"]
+mask = 0x0000707f
+match = 0x00002027
+
+[fp_rrr]
+type = "t_fp_rrr"
+[fp_rrr.repr]
+default = "$name$ %rd_fp%, %rs1_fp%, %rs2_fp%"
+[fp_rrr.instructions."fadd.s"]
+mask = 0xfe00007f
+match = 0x00000053
+[fp_rrr.instructions."fsub.s"]
+mask = 0xfe00007f
+match = 0x08000053
+[fp_rrr.instructions."fmul.s"]
+mask = 0xfe00007f
+match = 0x10000053
+[fp_rrr.instructions."fdiv.s"]
+mask = 0xfe00007f
+match = 0x18000053
+
+[fp_rr]
+type = "t_fp_rr"
+[fp_rr.repr]
+default = "$name$ %rd_fp%, %rs1_fp%"
+[fp_rr.instructions."fsqrt.s"]
+mask = 0xfff0007f
+match = 0x58000053
+
+[fp_minmax]
+type = "t_fp_minmax"
+[fp_minmax.repr]
+default = "$name$ %rd_fp%, %rs1_fp%, %rs2_fp%"
+[fp_minmax.instructions."fmin.s"]
+mask = 0xfe00707f
+match = 0x28000053
+[fp_minmax.instructions."fmax.s"]
+mask = 0xfe00707f
+match = 0x28001053

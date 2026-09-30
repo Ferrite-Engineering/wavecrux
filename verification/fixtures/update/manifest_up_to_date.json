@@ -1,0 +1,17 @@
+{
+  "latest": {
+    "version": "0.0.1",
+    "channel": "stable",
+    "release_date": "2020-01-01",
+    "changelog_url": "https://wavecrux.com/releases/0.0.1",
+    "mandatory": false,
+    "min_supported_version": "0.0.1",
+    "downloads": {
+      "macos_universal": "https://updates.wavecrux.app/0.0.1/WaveCrux-0.0.1.dmg"
+    },
+    "checksums": {
+      "macos_universal": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "server_time": "2026-09-15T12:00:00Z"
+  }
+}

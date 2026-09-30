@@ -1,0 +1,16 @@
+{
+  "source_url": "https://github.com/cocotb/cocotb",
+  "source_commit": "a1a7d211bd5691cd19ea656938fe465c8b19283c",
+  "license": "BSD-3-Clause",
+  "license_spdx": "BSD-3-Clause",
+  "simulator": "iverilog-cocotb",
+  "simulator_version": "13.0 + cocotb 2.0.1",
+  "acquired_date": "2026-05-31",
+  "size_bytes": 611,
+  "brief_description": "cocotb 2.0.1 + iverilog 13.0 running the upstream `examples/simple_dff` testbench (a Python-driven D-flip-flop test). FST emitted via cocotb's WAVES=1 + iverilog `-fst`. Distinct from a pure-iverilog VCD in that the trace carries cocotb's auto-injected `cocotb_iverilog_dump` scope alongside the DUT. Exercises the cocotb simulator-origin axis.",
+  "anchors": [
+    "scope `dff` exists with D/Q/clk/d signals",
+    "FST header is dated 2026-05-31",
+    "trace ends at ~115,000 ns of simulation time"
+  ]
+}

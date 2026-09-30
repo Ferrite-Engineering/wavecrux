@@ -1,0 +1,22 @@
+{
+  // Cloudflare Workers Static Assets host for the OPEN-CORE WaveCrux web app
+  // (the Flutter web build). Same model as the marketing site (wavecrux-site),
+  // a separate Worker on its own subdomain. Deployed via scripts/deploy_web.sh.
+  "name": "wavecrux-app",
+  "compatibility_date": "2025-06-01",
+  "assets": {
+    // The Flutter web build output. Built by `flutter build web --release`
+    // (see scripts/deploy_web.sh) before `wrangler deploy`. Gitignored.
+    "directory": "build/web",
+    // Flutter web is a single-page app: serve index.html for unknown routes so
+    // deep links / go_router paths resolve client-side instead of 404ing.
+    "not_found_handling": "single-page-application"
+  },
+  // Provision app.wavecrux.app as a custom domain on first deploy. Requires the
+  // wavecrux.app zone to be on this Cloudflare account (it hosts the marketing
+  // site). No COOP/COEP headers needed — open-core web uses single-threaded
+  // WASM by design.
+  "routes": [
+    { "pattern": "app.wavecrux.app", "custom_domain": true }
+  ]
+}

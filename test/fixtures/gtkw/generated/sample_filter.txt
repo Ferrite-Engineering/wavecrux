@@ -1,0 +1,6 @@
+# GTKWave translate filter file
+# Maps integer values to human-readable labels
+0 IDLE
+1 RUNNING
+2 HALTED
+3 ERROR

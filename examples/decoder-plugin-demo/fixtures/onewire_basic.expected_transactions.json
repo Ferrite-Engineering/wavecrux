@@ -1,0 +1,41 @@
+[
+  {
+    "startTime": 100000000000,
+    "endTime": 580000000000,
+    "label": "RESET",
+    "fields": {
+      "kind": "reset"
+    },
+    "isError": false
+  },
+  {
+    "startTime": 630000000000,
+    "endTime": 750000000000,
+    "label": "PRESENCE",
+    "fields": {
+      "kind": "presence",
+      "valid": "true"
+    },
+    "isError": false
+  },
+  {
+    "startTime": 810000000000,
+    "endTime": 1360000000000,
+    "label": "BYTE 0x33",
+    "fields": {
+      "value": "0x33",
+      "bits": "8"
+    },
+    "isError": false
+  },
+  {
+    "startTime": 1430000000000,
+    "endTime": 1980000000000,
+    "label": "BYTE 0x28",
+    "fields": {
+      "value": "0x28",
+      "bits": "8"
+    },
+    "isError": false
+  }
+]

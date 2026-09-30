@@ -1,0 +1,5 @@
+tags:
+  integration:
+    description: >
+      Tests that require external resources (native wellen library, real VCD
+      files on disk). Run with: flutter test --tags integration

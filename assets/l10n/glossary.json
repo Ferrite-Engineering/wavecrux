@@ -1,0 +1,69 @@
+{
+  "version": "1.1",
+  "description": "Terminology mapping for WaveCrux localization. Auto-generated from .claude/instructions.md. suite_wide_terms apply to every Crux app (2026-07-18 rulings).",
+  "terms": {
+    "waveform": { "en": "waveform", "zh": "波形", "ja": "波形", "ko": "파형" },
+    "signal": { "en": "signal", "zh": "信号", "ja": "信号", "ko": "신호" },
+    "transition_edge": { "en": "transition", "zh": "跳变", "ja": "トランジション", "ko": "트랜지션" },
+    "conversion_format": { "en": "conversion", "zh": "转换", "ja": "変換", "ko": "변환" },
+    "group": { "en": "group", "zh": "组", "ja": "グループ", "ko": "그룹" },
+    "comment": { "en": "comment", "zh": "注释", "ja": "コメント", "ko": "주석" },
+    "lane": { "en": "lane", "zh": "信号行", "ja": "信号行", "ko": "신호 행" },
+    "decoder": { "en": "decoder", "zh": "解码器", "ja": "デコーダー", "ko": "디코더" },
+    "glitch": { "en": "glitch", "zh": "毛刺", "ja": "グリッチ", "ko": "글리치" },
+    "glitch_point": { "en": "glitch point", "zh": "毛刺点", "ja": "グリッチ箇所", "ko": "글리치 지점" },
+    "toggle_rate": { "en": "toggle rate", "zh": "翻转率", "ja": "トグルレート", "ko": "토글 레이트" },
+    "stuck_at_reset": { "en": "stuck at reset", "zh": "复位卡住", "ja": "リセットから復帰せず", "ko": "리셋 후 멈춤" },
+    "process_filter": { "en": "process filter", "zh": "外部命令过滤", "ja": "プロセスフィルタ", "ko": "프로세스 필터" },
+    "translate_filter": { "en": "translate filter", "zh": "翻译过滤器", "ja": "翻訳フィルタ", "ko": "번역 필터" },
+    "scope_hierarchy": { "en": "scope (hierarchy)", "zh": "作用域", "ja": "スコープ", "ko": "스코프" },
+    "scope_time": { "en": "scope (time range)", "zh": "范围", "ja": "範囲", "ko": "범위" },
+    "panel": { "en": "panel", "zh": "面板", "ja": "パネル", "ko": "패널" },
+    "pane": { "en": "pane", "zh": "窗格", "ja": "ペイン", "ko": "창" },
+    "cursor": { "en": "cursor", "zh": "光标", "ja": "カーソル", "ko": "커서" },
+    "marker": { "en": "marker", "zh": "标记", "ja": "マーカー", "ko": "마커" },
+    "hierarchy_depth": { "en": "hierarchy depth", "zh": "层次深度", "ja": "階層の深さ", "ko": "계층 깊이" },
+    "timescale": { "en": "timescale", "zh": "时间刻度", "ja": "タイムスケール", "ko": "타임스케일" }
+  },
+  "suite_wide_terms": {
+    "description": "Identical renderings required in every Crux app (core + Pro overlays). App-local glossaries may add terms but never override these.",
+    "cross_probe": { "en": "cross-probe", "zh": "交叉探测", "ja": "クロスプローブ", "ko": "교차 프로브" },
+    "remote_control": { "en": "Remote Control", "zh": "远程控制", "ja": "リモートコントロール", "ko": "원격 제어" },
+    "waiver": { "en": "waiver", "zh": "豁免", "ja": "ウェイバー", "ko": "면제" },
+    "workspace": { "en": "workspace", "zh": "工作区", "ja": "ワークスペース", "ko": "워크스페이스" },
+    "preset": { "en": "preset", "zh": "预设", "ja": "プリセット", "ko": "프리셋" },
+    "editor": { "en": "editor", "zh": "编辑器", "ja": "エディター", "ko": "에디터" },
+    "viewer": { "en": "viewer", "zh": "查看器", "ja": "ビューアー", "ko": "뷰어" },
+    "open_core_edition": { "en": "open-core", "zh": "开放核心版", "ja": "オープンコア", "ko": "오픈 코어" },
+    "command_palette": { "en": "command palette", "zh": "命令面板", "ja": "コマンドパレット", "ko": "명령 팔레트" },
+    "custom": { "en": "custom", "zh": "自定义", "ja": "カスタム", "ko": "사용자 정의" },
+    "clock": { "en": "clock", "zh": "时钟", "ja": "クロック", "ko": "클럭" }
+  },
+  "acronyms": {
+    "description": "Never translate these values",
+    "list": [
+      "VCD", "FST", "GHW", "LXT", "LXT2", "FSDB", "PCAP", "CSV", "JSON",
+      "XML", "YAML", "HTML", "SVG", "PNG", "RGB", "LED", "LCD", "OLED",
+      "FSM", "RTL", "API", "SDK", "ABI", "CLI", "GUI", "WASM", "TCP", "UDP",
+      "HTTP", "JSON-RPC", "CXP", "WCP", "SPI", "I2C", "I²C", "UART", "AXI",
+      "AXI4", "AXI4-Lite", "APB", "AHB", "AHB-Lite", "Wishbone", "JTAG",
+      "MDIO", "CAN", "CAN-FD", "USB", "PCIe", "Ethernet", "MII", "RMII",
+      "GMII", "RGMII", "AXIS", "RISC-V", "RV32", "RV64", "Cocotb", "GTKWave",
+      "Synopsys"
+    ]
+  },
+  "brands": {
+    "description": "Product / brand names — never translate, always Latin script (2026-07-18 ruling; 'Stage' never becomes 舞台 / ステージ / 스테이지)",
+    "list": [
+      "WaveCrux", "NetCrux", "LintCrux", "SimCrux", "EDACrux",
+      "Ferrite Engineering", "Stage", "Stage Pro", "Rive",
+      "Yosys", "Verible", "Verilator", "svlint", "GHDL", "Icarus Verilog",
+      "FuseSoC", "Vivado", "Quartus"
+    ]
+  },
+  "pluralization_rules": {
+    "zh": { "singular": "=1{1个%s}", "plural": "other{{count}个%s}" },
+    "ja": { "singular": "=1{1%s}", "plural": "other{{count}%s}" },
+    "ko": { "singular": "=1{1개 %s}", "plural": "other{{count}개 %s}" }
+  }
+}

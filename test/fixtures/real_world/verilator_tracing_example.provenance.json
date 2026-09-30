@@ -1,0 +1,16 @@
+{
+  "source_url": "https://github.com/verilator/verilator",
+  "source_commit": "72ed55b1809146959af3a93623248a8e7cf016f4",
+  "license": "CC0-1.0",
+  "license_spdx": "CC0-1.0",
+  "simulator": "verilator",
+  "simulator_version": "5.048",
+  "acquired_date": "2026-05-31",
+  "size_bytes": 847,
+  "brief_description": "Verilator's stock examples/make_tracing_c output. Tiny FST (847 bytes) covering top, sub modules with mixed-width signals (2/40/70-bit), a 32-bit counter, and reset_l. Built locally with --trace-fst patched into the example Makefile. Exercises the tiny-trace edge of the parser plus Verilator's FST writer.",
+  "anchors": [
+    "scope `TOP` exists with `clk`, `reset_l`, `out_small`, `out_quad`, `out_wide` (70 bit) variables",
+    "scope `TOP.top.sub` exists with a `count_c` 32-bit counter",
+    "the file is ≤1 KB — a stress-test for FST headers with negligible body"
+  ]
+}

@@ -1,0 +1,1070 @@
+WaveCrux open-core third-party attributions
+============================================
+
+WaveCrux is licensed under the Apache License, Version 2.0 (see LICENSE).
+This file lists third-party software that ships in or with WaveCrux source
+and binary distributions, together with the license terms under which each
+component is redistributed.
+
+Notes:
+- Flutter SDK and Dart SDK packages bundled by the Flutter toolchain
+  (`flutter`, `flutter_localizations`, `flutter_test`, `sky_engine`,
+  `flutter_web_plugins`, etc.) are not enumerated individually here. They
+  are governed by the Flutter and Dart project licenses; see
+  https://flutter.dev/ and https://dart.dev/ for their respective notices.
+- Dual-licensed Rust crates (Apache-2.0 OR MIT) are redistributed under
+  the MIT terms below.
+- Versions below are the RESOLVED versions from `pubspec.lock` and from
+  `cargo tree --edges normal` in `native/wellen_ffi/`, not the version
+  constraints in `pubspec.yaml`/`Cargo.toml`. Regenerated 2026-07-31
+  against wavecrux 0.4.0+4, Flutter SDK 3.44.8, Dart SDK 3.12.2.
+  **Re-verified 2026-09-13**, both halves:
+  - Dart — every version checked against `pubspec.lock`; eight corrected.
+  - Rust — all 38 crates resolved by `cargo metadata --filter-platform <host>`
+    over normal (non-dev, non-build) edges checked against this file. Four
+    were absent and were added (`serde`, `serde_core`, `serde_derive`,
+    `memchr`); three `+spec-N` build-metadata suffixes were restored. The
+    result is zero absent and zero drifted.
+
+
+--------------------------------------------------------------------------
+1. Rust waveform engine: wellen
+--------------------------------------------------------------------------
+
+Component: wellen
+Version:   0.24.0
+Role:      Core VCD/FST/GHW parser and signal-storage engine. Wrapped via
+           the `wellen_ffi` crate in `native/wellen_ffi/` for desktop and
+           mobile, and via `native/wellen_wasm/` for the web build.
+License:   BSD-3-Clause
+Upstream:  https://github.com/ekiwi/wellen
+Author:    Kevin Laeufer (project lead) and contributors
+
+Verbatim license text:
+
+    BSD 3-Clause License
+
+    Copyright (c) 2023-2024, The Regents of the University of California
+    Copyright (c) 2024-2025, Cornell University
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice, this
+      list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+    * Neither the name of the copyright holder nor the names of its
+      contributors may be used to endorse or promote products derived from
+      this software without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+    FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+    DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+    SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+    OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+--------------------------------------------------------------------------
+2. Rust FST reader/writer: fst-reader and fst-writer
+--------------------------------------------------------------------------
+
+Component: fst-reader
+Version:   0.16.6
+Role:      FST (Fast Signal Trace) reader used by `wellen`.
+License:   BSD-3-Clause
+Upstream:  https://github.com/ekiwi/fst-reader
+
+Component: fst-writer
+Version:   0.3.1, MODIFIED (vendored at `native/vendor/fst-writer/`)
+Role:      FST writer used by `native/lxt2fst/` for the LXT/LXT2 → FST
+           conversion path, and by `native/torture_gen/` (dev-only fixture
+           generator, which uses the unmodified crates.io release). Sibling
+           crate to `fst-reader`, authored by the same project and
+           intentionally non-GPL, which keeps the LXT conversion path
+           clean-room. Ships in the desktop/mobile native library (lxt2fst is
+           linked into `wellen_ffi`) and in the web build's lxt2fst wasm.
+Changes:   One public constructor added in `src/writer.rs`,
+           `FstHeaderWriter::new`, which writes to any `Write + Seek` sink so
+           the web build (no filesystem on wasm32) can produce an FST in
+           memory. `open_fst` delegates to it unchanged. All other files are
+           as published; see `native/vendor/fst-writer/Cargo.toml`.
+Copyright: Copyright (c) 2024, Cornell University
+License:   BSD-3-Clause
+Upstream:  https://github.com/ekiwi/fst-writer
+
+Verbatim license text (both crates, differing only in copyright year and
+holder — fst-writer's line is given above):
+
+    BSD 3-Clause License
+
+    Copyright (c) 2023, The Regents of the University of California
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice, this
+      list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+    * Neither the name of the copyright holder nor the names of its
+      contributors may be used to endorse or promote products derived from
+      this software without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+    ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+    LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+    CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
+
+
+--------------------------------------------------------------------------
+3. Rive and the native runtime it downloads
+--------------------------------------------------------------------------
+
+3.1 rive / rive_native (MIT)
+
+  Component: rive
+  Version:   0.14.8
+  Role:      Renders the animated stage widgets in `assets/stage/widgets/`
+             (the welcome-screen ambient animations).
+  License:   MIT
+  Upstream:  https://github.com/rive-app/rive-flutter
+  Copyright: (c) 2020 Rive
+
+  Component: rive_native
+  Version:   0.1.8
+  Role:      Native rendering backend for `rive`; the Rive C++ runtime.
+  License:   MIT
+  Upstream:  https://github.com/rive-app/rive-flutter
+  Copyright: (c) 2024 Rive
+
+3.2 Prebuilt native artifacts — a build-time download that ships
+
+  `rive_native` does NOT ship its native libraries inside the pub package.
+  Its `bin/setup.dart` downloads a per-platform artifact archive at build
+  time from
+
+      https://rive-flutter-artifacts.rive.app/rive_native_versions/
+        <version>/rive_native_artifacts_<platform>.zip
+
+  (a `--build-libraries` flag exists to compile from the vendored
+  `runtime/` sources instead; WaveCrux uses the default download path).
+  The resulting library is linked into WaveCrux's desktop and mobile
+  application bundles, and a WASM build serves the same role on web. It
+  therefore ships in every WaveCrux distribution that includes the stage
+  widgets.
+
+  Those artifacts embed third-party C/C++ libraries. Rive renames their
+  symbols to avoid collisions (see
+  `runtime/dependencies/rive_harfbuzz_renames.h`, `rive_png_renames.h`,
+  `rive_libjpeg_renames.h`, `rive_yoga_renames.h`), so the embedded
+  libraries are not obvious from a plain symbol dump.
+
+  Confirmed present by string and symbol inspection of the shipped
+  `android/src/main/jniLibs/arm64-v8a/librive_native.so`:
+
+    HarfBuzz    — MIT ("Old MIT" license)
+                  https://github.com/harfbuzz/harfbuzz
+                  Present as `rive_`-prefixed renames (`rive_OT`,
+                  `rive_CFF`, `rive__hb_CrapPool`).
+    SheenBidi   — Apache-2.0
+                  https://github.com/Tehreer/SheenBidi
+                  Present as the `SBAlgorithm*` public API.
+    libpng      — PNG Reference Library License v2 (SPDX: libpng-2.0)
+                  http://www.libpng.org/pub/png/libpng.html
+    zlib        — Zlib license
+                  https://zlib.net/
+    Yoga        — MIT (Meta Platforms, Inc.)
+                  https://github.com/facebook/yoga
+
+  Referenced by the vendored premake build scripts under
+  `runtime/dependencies/` but NOT confirmed present in the inspected
+  artifact — they may be excluded by the shipping build configuration:
+
+    libjpeg     — IJG License          (premake5_libjpeg_v2.lua)
+    libwebp     — BSD-3-Clause         (premake5_libwebp_v2.lua)
+    miniaudio   — MIT-0 or public domain (premake5_miniaudio_v2.lua)
+    GLFW        — Zlib                 (premake5_glfw_v2.lua)
+    microprofile / Optick — profiling tooling, editor/dev builds only
+
+  **Verification gap.** The `rive_native` pub package ships only Rive's own
+  MIT LICENSE (plus `runtime/LICENSE`, also MIT). Neither carries license
+  text for the embedded HarfBuzz, SheenBidi, libpng, zlib, or Yoga code,
+  and the downloaded artifact archives carry no license manifest. The
+  identifications above are taken from each project's own well-established
+  upstream terms plus direct inspection of the binary — NOT from a license
+  file present in the distributed artifact. All are permissive and none
+  are copyleft, but the attribution obligations of libpng, zlib, HarfBuzz,
+  SheenBidi, and Yoga attach to WaveCrux's binary distribution. See §16.
+
+
+--------------------------------------------------------------------------
+4. Cross-suite first-party packages (crux-shared)
+--------------------------------------------------------------------------
+
+The `crux_*` packages consumed via `path:` from the `crux-shared` Git
+submodule are first-party Ferrite Engineering code under the same Apache
+License 2.0 as this repository. §18 lists each one at its resolved version.
+
+
+--------------------------------------------------------------------------
+5. Dart packages by the Dart project authors (BSD-3-Clause)
+--------------------------------------------------------------------------
+
+The following packages are authored by the Dart project authors and
+distributed under a common BSD-3-Clause license. They are listed
+together because they share an identical license text differing only in
+the copyright year.
+
+Components and versions:
+  - _fe_analyzer_shared  99.0.0    - meta                  1.19.0
+  - analyzer             12.1.0    - mime                  2.0.0
+  - args                 2.7.0     - objective_c           9.4.1
+  - async                2.13.1    - package_config        2.2.0
+  - boolean_selector     2.1.2     - path                  1.9.1
+  - characters           1.4.1     - platform              3.1.6
+  - cli_config           0.2.0     - pool                  1.5.2
+  - code_assets          1.2.1     - pub_semver            2.2.0
+  - collection           1.19.1    - record_use            0.6.0
+  - convert              3.1.2     - shelf                 1.4.2
+  - coverage             1.15.1    - shelf_packages_handler 3.0.2
+  - crypto               3.0.7     - shelf_static          1.1.3
+  - ffi                  2.2.0     - shelf_web_socket      3.0.0
+  - file                 7.0.1     - source_map_stack_trace 2.1.2
+  - fixnum               1.1.1     - source_maps           0.10.13
+  - frontend_server_client 4.0.0   - source_span           1.10.2
+  - glob                 2.1.3     - stack_trace           1.12.1
+  - graphs               2.3.2     - stream_channel        2.1.4
+  - hooks                2.0.2     - string_scanner        1.4.1
+  - http                 1.6.0     - term_glyph            1.2.2
+  - http_multi_server    3.2.2     - test                  1.31.1
+  - http_parser          4.1.2     - test_api              0.7.12
+  - intl                 0.20.3    - test_core             0.6.18
+  - io                   1.0.5     - typed_data            1.4.0
+  - jni                  1.0.0     - vm_service            15.2.0
+  - jni_flutter          1.0.1     - watcher               1.2.1
+  - json_annotation      4.12.0    - web                   1.1.1
+  - leak_tracker         11.0.2    - web_socket            1.0.1
+  - leak_tracker_flutter_testing 3.0.10
+  - leak_tracker_testing 3.0.2     - web_socket_channel    3.0.3
+  - logging              1.3.0
+  - matcher              0.12.20
+
+License: BSD-3-Clause
+Upstream: https://github.com/dart-lang
+
+Representative verbatim license text (from the `path` package; the
+copyright year varies per package, e.g. 2014, 2019, 2023):
+
+    Copyright 2014, the Dart project authors.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are
+    met:
+
+        * Redistributions of source code must retain the above copyright
+          notice, this list of conditions and the following disclaimer.
+        * Redistributions in binary form must reproduce the above
+          copyright notice, this list of conditions and the following
+          disclaimer in the documentation and/or other materials provided
+          with the distribution.
+        * Neither the name of Google LLC nor the names of its
+          contributors may be used to endorse or promote products derived
+          from this software without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+    A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+    OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+    SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+    LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+    DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+--------------------------------------------------------------------------
+6. Flutter-team-authored Dart packages (BSD-3-Clause)
+--------------------------------------------------------------------------
+
+The following packages are authored by the Flutter Authors and
+distributed under a common BSD-3-Clause license.
+
+Components and versions:
+  - cross_file             0.3.5+4  https://pub.dev/packages/cross_file
+  - flutter_plugin_android_lifecycle 2.0.35
+  - go_router              17.3.0   https://pub.dev/packages/go_router
+  - path_provider          2.1.6    https://pub.dev/packages/path_provider
+  - path_provider_android  2.3.1
+  - path_provider_foundation 2.6.0
+  - path_provider_linux    2.2.1
+  - path_provider_windows  2.3.0
+  - path_provider_platform_interface 2.1.3
+  - plugin_platform_interface 2.1.8
+  - shared_preferences     2.5.5    https://pub.dev/packages/shared_preferences
+  - shared_preferences_android 2.4.26
+  - shared_preferences_foundation 2.5.6
+  - shared_preferences_linux 2.4.1
+  - shared_preferences_web 2.4.3
+  - shared_preferences_windows 2.4.1
+  - shared_preferences_platform_interface 2.4.2
+  - url_launcher           6.3.2    https://pub.dev/packages/url_launcher
+  - url_launcher_android   6.3.32
+  - url_launcher_ios       6.4.1
+  - url_launcher_linux     3.2.2
+  - url_launcher_macos     3.2.5
+  - url_launcher_web       2.4.3
+  - url_launcher_windows   3.1.5
+  - url_launcher_platform_interface 2.3.2
+  - xdg_directories        1.1.0
+
+License: BSD-3-Clause
+Upstream: https://github.com/flutter
+
+Representative verbatim license text:
+
+    Copyright 2013 The Flutter Authors. All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without modification,
+    are permitted provided that the following conditions are met:
+
+        * Redistributions of source code must retain the above copyright
+          notice, this list of conditions and the following disclaimer.
+        * Redistributions in binary form must reproduce the above
+          copyright notice, this list of conditions and the following
+          disclaimer in the documentation and/or other materials provided
+          with the distribution.
+        * Neither the name of Google Inc. nor the names of its
+          contributors may be used to endorse or promote products derived
+          from this software without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+    A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+    OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+    SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+    LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+    DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+--------------------------------------------------------------------------
+7. Other BSD-3-Clause Dart packages
+--------------------------------------------------------------------------
+
+Same BSD-3-Clause terms as §5/§6; different copyright holders.
+
+  - flutter_secure_storage             10.3.1  Copyright 2017 German Saprykin
+  - flutter_secure_storage_darwin      0.3.2   Copyright 2025 Julian Steenbakker
+  - flutter_secure_storage_linux       3.0.1   Copyright 2017 German Saprykin
+  - flutter_secure_storage_platform_interface 2.0.1  Copyright 2017 German Saprykin
+  - flutter_secure_storage_web         2.1.1   Copyright 2017 German Saprykin
+  - flutter_secure_storage_windows     4.2.2   Copyright 2017 German Saprykin
+  - package_info_plus                  10.1.0  Copyright 2017 The Chromium Authors
+  - package_info_plus_platform_interface 4.1.0 Copyright 2017 The Chromium Authors
+  - win32                              6.3.0   Copyright (c) 2024, Halil Durmus
+  - ffi_leak_tracker                   0.1.2   Copyright (c) 2026, Halil Durmus
+  - vector_math                        2.4.2   Copyright 2015, Google Inc.
+  - webkit_inspection_protocol         1.2.1   Copyright 2013, Google Inc.
+
+
+--------------------------------------------------------------------------
+8. MIT-licensed Dart packages
+--------------------------------------------------------------------------
+
+  - archive          4.0.9              Copyright (c) 2013-2021 Brendan Duncan
+  - file_picker      12.0.0-beta.7      Copyright (c) 2018 Miguel Ruivo
+  - flutter_riverpod 3.3.2              Copyright (c) 2020 Remi Rousselet
+  - riverpod         3.3.2              Copyright (c) 2020 Remi Rousselet
+  - riverpod_annotation 4.0.3           Copyright (c) 2020 Remi Rousselet
+  - state_notifier   1.0.0              Copyright (c) 2020 Remi Rousselet
+  - panes            1.3.0              Copyright (c) 2025 Simon
+  - petitparser      7.0.2              Copyright (c) 2006-2024 Lukas Renggli
+  - posix            6.5.0              Copyright (c) 2020 Brett Sutton
+  - rive             0.14.8             Copyright (c) 2020 Rive        (see §3)
+  - rive_native      0.1.8              Copyright (c) 2024 Rive        (see §3)
+  - screen_retriever 0.2.1              Copyright (c) 2022-2024 LiJianying
+  - screen_retriever_linux             0.2.1   (same)
+  - screen_retriever_macos             0.2.1   (same)
+  - screen_retriever_platform_interface 0.2.1  (same)
+  - screen_retriever_windows           0.2.1   (same)
+  - toml             0.18.0             Copyright (c) 2015-2024 Justin Andresen
+  - universal_platform 1.1.0            Copyright (c) 2019 gskinner.com
+  - uuid             4.5.3              Copyright (c) 2021 Yulian Kuncheff
+  - window_manager   0.5.1              Copyright (c) 2022-present LiJianying
+  - xml              6.6.1              Copyright (c) 2006-2025 Lukas Renggli
+  - yaml             3.1.3              Copyright (c) 2014, the Dart project authors
+
+  - node_preamble    2.0.2   (test tooling only)
+      Copyright (c) 2015 Michael Bullington. NOTE: this package's LICENSE
+      file contains TWO grants — its own MIT license, plus a BSD-3-Clause
+      grant covering embedded Google-authored preamble code. Both are
+      reproduced in that file.
+
+The MIT License (verbatim):
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to use, copy, modify, merge, publish,
+    distribute, sublicense, and/or sell copies of the Software, and to
+    permit persons to whom the Software is furnished to do so, subject to
+    the following conditions:
+
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+--------------------------------------------------------------------------
+9. Apache-2.0-licensed Dart packages
+--------------------------------------------------------------------------
+
+Same terms as this repository's own LICENSE.
+
+  - material_color_utilities  0.13.0  Copyright 2021 Google LLC
+  - desktop_drop              0.8.4   Mixin Network (no copyright line in
+                                      its LICENSE). Native file drops onto
+                                      the desktop window; its macOS, Windows
+                                      and Linux plugins ship in the desktop
+                                      apps.
+  - clock                     1.1.2   (transitive; test/tooling)
+  - fake_async                1.3.3   (transitive; test only)
+
+
+--------------------------------------------------------------------------
+10. Mozilla Public License 2.0 — dbus
+--------------------------------------------------------------------------
+
+Component: dbus
+Version:   0.7.14
+Role:      Transitive dependency of `file_picker` and `desktop_drop` on
+           Linux; provides the D-Bus client used by the portal-based file
+           dialogs and by portal file transfers dropped onto the window.
+License:   MPL-2.0
+Upstream:  https://github.com/canonical/dbus.dart
+
+MPL-2.0 is a file-level copyleft. WaveCrux does not modify `dbus`; it is
+consumed unmodified from pub.dev as a Dart source package. Under MPL-2.0
+§3.2, distributing the unmodified Covered Software in executable form
+requires that recipients be informed of the license and told how to obtain
+the source. This notice, plus the package's public availability at
+https://pub.dev/packages/dbus, is the mechanism used.
+
+The full MPL-2.0 text is at https://mozilla.org/MPL/2.0/ and ships in the
+package as `~/.pub-cache/hosted/pub.dev/dbus-0.7.14/LICENSE`.
+
+
+--------------------------------------------------------------------------
+11. Rust transitive dependencies (Apache-2.0 OR MIT — redistributed under MIT)
+--------------------------------------------------------------------------
+
+The following Rust crates are dual-licensed under Apache-2.0 OR MIT.
+WaveCrux redistributes them under the MIT terms reproduced in §8. Each
+crate's individual upstream copyright line is preserved.
+
+From `native/wellen_ffi/` (desktop and mobile):
+  - libc                 0.2.185   https://github.com/rust-lang/libc
+  - thiserror            2.0.18    https://github.com/dtolnay/thiserror
+  - thiserror-impl       2.0.18    https://github.com/dtolnay/thiserror
+  - rayon                1.12.0    https://github.com/rayon-rs/rayon
+  - rayon-core           1.13.0    https://github.com/rayon-rs/rayon
+  - crossbeam-utils      0.8.21    https://github.com/crossbeam-rs/crossbeam
+  - crossbeam-deque      0.8.6     https://github.com/crossbeam-rs/crossbeam
+  - crossbeam-epoch      0.9.18    https://github.com/crossbeam-rs/crossbeam
+  - memmap2              0.9.10    https://github.com/RazrFalcon/memmap2-rs
+  - num_enum             0.7.6     https://github.com/illicitonion/num_enum
+  - num_enum_derive      0.7.6     https://github.com/illicitonion/num_enum
+  - indexmap             2.14.0    https://github.com/indexmap-rs/indexmap
+  - hashbrown            0.17.0    https://github.com/rust-lang/hashbrown
+  - equivalent           1.0.2     https://github.com/indexmap-rs/equivalent
+  - leb128               0.2.5     https://github.com/gimli-rs/leb128
+  - rustc-hash           2.1.2     https://github.com/rust-lang-nursery/rustc-hash
+  - smallvec             1.15.1    https://github.com/servo/rust-smallvec
+  - either               1.15.0    https://github.com/rayon-rs/either
+  - rustversion          1.0.22    https://github.com/dtolnay/rustversion
+  - proc-macro2          1.0.106   https://github.com/dtolnay/proc-macro2
+  - quote                1.0.45    https://github.com/dtolnay/quote
+  - syn                  2.0.117   https://github.com/dtolnay/syn
+  - unicode-ident        1.0.24    https://github.com/dtolnay/unicode-ident
+  - proc-macro-crate     3.5.0     https://github.com/bkchr/proc-macro-crate
+  - serde                1.0.228   https://github.com/serde-rs/serde
+  - serde_core           1.0.228   https://github.com/serde-rs/serde
+  - serde_derive         1.0.228   https://github.com/serde-rs/serde
+  - toml_edit            0.25.11+spec-1.1.0  https://github.com/toml-rs/toml
+  - toml_datetime        1.1.1+spec-1.1.0  https://github.com/toml-rs/toml
+  - toml_parser          1.1.2+spec-1.1.0  https://github.com/toml-rs/toml
+  - adler2               2.0.1     https://github.com/oyvindln/adler2
+  - flate2               1.1.10    https://github.com/rust-lang/flate2-rs
+  - crc32fast            1.5.2     https://github.com/srijs/rust-crc32fast
+  - cfg-if               1.0.4     https://github.com/rust-lang/cfg-if
+  (flate2, crc32fast and cfg-if arrive through `native/lxt2fst/`, which
+  `wellen_ffi` links so the one native library carries the LXT/LXT2
+  converter.)
+
+Additionally from `native/lxt2fst/` and `native/wellen_wasm/` as built for
+the web (both ship in the web build):
+  - flate2               1.x       https://github.com/rust-lang/flate2-rs
+  - wasm-bindgen         0.2.x     https://github.com/rustwasm/wasm-bindgen
+  - js-sys               0.3.x     https://github.com/rustwasm/wasm-bindgen
+  - console_error_panic_hook 0.1.x https://github.com/rustwasm/console_error_panic_hook
+
+And from `native/torture_gen/` (dev-only fixture generator; does NOT ship):
+  - clap                 4.x       https://github.com/clap-rs/clap
+  - rand                 0.8.x     https://github.com/rust-random/rand
+  - rand_chacha          0.3.x     https://github.com/rust-random/rand
+
+Per-crate copyright lines (from each crate's LICENSE-MIT):
+
+    libc                 — Copyright (c) The Rust Project Developers
+    thiserror            — Copyright (c) David Tolnay
+    thiserror-impl       — Copyright (c) David Tolnay
+    rayon                — Copyright (c) 2010 The Rust Project Developers
+    rayon-core           — Copyright (c) 2010 The Rust Project Developers
+    crossbeam-utils      — Copyright (c) 2019 The Crossbeam Project Developers
+    crossbeam-deque      — Copyright (c) 2019 The Crossbeam Project Developers
+    crossbeam-epoch      — Copyright (c) 2019 The Crossbeam Project Developers
+    memmap2              — Copyright (c) 2020 Yevhenii Reizner;
+                           Copyright (c) 2015 Dan Burkert
+    num_enum             — Copyright (c) Daniel Wagner-Hall and contributors
+    num_enum_derive      — Copyright (c) Daniel Wagner-Hall and contributors
+    indexmap             — Copyright (c) 2016--2017
+    hashbrown            — Copyright (c) 2016 Amanieu d'Antras
+    equivalent           — Copyright (c) 2016--2023
+    leb128               — Copyright (c) 2015 The Rust Project Developers
+    rustc-hash           — Copyright (c) The Rust Project Contributors
+    smallvec             — Copyright (c) 2018 The Servo Project Developers
+    either               — Copyright (c) 2015
+    rustversion          — Copyright (c) David Tolnay
+    proc-macro2          — Copyright (c) 2014 Alex Crichton
+    quote                — Copyright (c) 2016 The Rust Project Developers
+    syn                  — Copyright (c) 2018 David Tolnay
+    unicode-ident        — Copyright (c) 2015 The Rust Project Developers
+    proc-macro-crate     — Copyright (c) 2019 Bastian Köcher
+    toml_edit            — Copyright (c) 2017 Andronik Ordian and Ed Page
+    toml_datetime        — Copyright (c) 2017 Andronik Ordian and Ed Page
+    toml_parser          — Copyright (c) 2017 Andronik Ordian and Ed Page
+    adler2               — Copyright (c) 2017 Jonas Schievink and contributors
+    flate2               — Copyright (c) 2014 Alex Crichton
+    crc32fast            — Copyright (c) 2018 Sam Rijs, Alex Crichton and
+                           contributors
+    cfg-if               — Copyright (c) 2014 Alex Crichton
+    wasm-bindgen         — Copyright (c) 2014 Alex Crichton
+    js-sys               — Copyright (c) 2014 Alex Crichton
+    console_error_panic_hook — Copyright (c) 2018 Nick Fitzgerald
+    clap                 — Copyright (c) Individual contributors
+    rand                 — Copyright 2018 Developers of the Rand project
+    rand_chacha          — Copyright 2018 Developers of the Rand project
+
+
+--------------------------------------------------------------------------
+12. Rust transitive dependencies (single-license MIT)
+--------------------------------------------------------------------------
+
+Full MIT text as reproduced in §8.
+
+  - lz4_flex   0.13.0   Copyright (c) 2020 Pascal Seitz
+                        https://github.com/PSeitz/lz4_flex
+  - lz4_flex   0.11.6   (same project and notice; used by fst-writer)
+  - simd-adler32 0.3.10 Copyright (c) 2021 Marvin Countryman
+                        https://github.com/mcountryman/simd-adler32
+  - twox-hash  2.1.2    Copyright (c) 2015 Jake Goulding
+                        https://github.com/shepmaster/twox-hash
+  - winnow     1.0.1    Copyright (c) 2015-2024 Geoffroy Couprie
+                        https://github.com/winnow-rs/winnow
+
+Also redistributed under MIT, though dual-licensed as `Unlicense OR MIT`
+rather than the Apache-2.0 pair above:
+
+  - memchr     2.8.0    Copyright (c) 2015 Andrew Gallant
+                        https://github.com/BurntSushi/memchr
+
+
+--------------------------------------------------------------------------
+13. Rust transitive dependency: miniz_oxide (MIT OR Apache-2.0 OR Zlib)
+--------------------------------------------------------------------------
+
+Component: miniz_oxide
+Version:   0.9.1; also 0.8.9
+Role:      DEFLATE/zlib decompression used by `wellen`/`fst-reader` and by
+           `flate2` (0.9.1), and compression used by `fst-writer` (0.8.9).
+License:   MIT (chosen for redistribution; tri-licensed under MIT,
+           Apache-2.0, and Zlib)
+Upstream:  https://github.com/Frommi/miniz_oxide
+
+    MIT License
+
+    Copyright 2013-2014 RAD Game Tools and Valve Software
+    Copyright 2010-2014 Rich Geldreich and Tenacious Software LLC
+    Copyright 2016-2024 Frommi <frommi@github>
+    Copyright 2017 Oyvind Lervik <oyvindln@github>
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to
+    deal in the Software without restriction, including without limitation the
+    rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+    sell copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+
+
+--------------------------------------------------------------------------
+14. RISC-V instruction-decoder TOML schema
+--------------------------------------------------------------------------
+
+Component: instruction-decoder TOML schema
+Origin:    Johannes Kepler University (JKU) Linz, Austria
+Upstream:  https://github.com/ics-jku/instruction-decoder
+License:   MIT
+Role:      The TOML schema (six top-level keys, slice-based instruction
+           encoding, mask/match dispatch, mapping-based register names,
+           `%name%`/`$name$` repr templating) used by the files in
+           `assets/decoders/isa/riscv/` is the schema designed and published
+           by the JKU instruction-decoder Rust crate. WaveCrux's RISC-V
+           decoder reuses this schema verbatim so that `.toml` files
+           authored for either tool are interchangeable.
+
+           The TOML *files* in `assets/decoders/isa/riscv/` are hand-authored
+           by the WaveCrux project against that schema; the JKU files are
+           not redistributed in this repository. See
+           `assets/decoders/isa/riscv/NOTICE.md` for the per-directory
+           attribution that accompanies the schema.
+
+    MIT License
+
+    Copyright (c) 2024 Johannes Kepler University Linz
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+
+
+--------------------------------------------------------------------------
+15. Formerly vendored: TestSamples/FastWaveBackend — REMOVED 2026-07-31
+--------------------------------------------------------------------------
+
+This section is retained as a record. The directory it describes is no
+longer in the working tree; it remains in git history (see below).
+
+What it was:
+
+  Location:  `TestSamples/FastWaveBackend/` — 55 tracked files, ~39 MB
+  Upstream:  https://git.joyofhardware.com/Yehowshua/FastWaveBackend
+  Copyright: Copyright (2023) Yehowshua Immanuel
+
+FastWaveBackend is the Rust VCD-parsing backend that preceded `wellen` as
+the engine behind the Surfer waveform viewer; its own README records that
+work on it stopped in January 2024 in favour of `wellen`. It entered this
+repository as an orphaned git submodule (gitlink `bbe5435f`, with no
+matching `.gitmodules` entry) and was flattened into tracked files by
+commit `d26b8c21`, "chore: add FastWaveBackend test samples".
+
+The contents were TWO separable things under DIFFERENT terms — an earlier
+revision of this file wrongly described the whole directory as GPL-3.0:
+
+  1. FastWaveBackend's own Rust source (~140 KB; `src/`, `examples/`,
+     `tests/*.rs`, `Cargo.toml`) — genuinely GPL-3.0, with an additional
+     grant to the author in `LICENSE-YEHOWSHUA`.
+
+  2. A ~36 MB VCD corpus (33 files under `tests/vcd-files/`) spanning 17
+     simulators — NOT FastWaveBackend's work to license. Its own
+     `tests/vcd-files/sources.csv` recorded that every trace but one was
+     harvested from a different third-party GitHub repository (~40 repos
+     in total); only the Amaranth file was locally simulated. Those files
+     therefore carried NO stated license — a weaker position than a plain
+     GPL conflict, because there was nothing to comply with.
+
+Why it was removed rather than kept:
+
+  - Nothing in the repository referenced it. No Dart, YAML, shell, TOML,
+    Cargo, or CI file named it; it was in no Cargo workspace, was never
+    built or linked, and contributed nothing to any artifact. Three
+    documents mentioned it prose-only; those were updated in the same
+    commit.
+  - It conflicted with this project's own written fixture policy.
+    `test/fixtures/real_world/README.md` states "GPL/AGPL/proprietary
+    files are excluded by policy" and requires every committed fixture to
+    carry a `.provenance.json` sidecar naming an allow-listed license
+    (MIT, BSD-2/3-Clause, Apache-2.0, ISC, CC0-1.0, public domain). The
+    static guardrail `test/static/real_world_fixture_provenance_test.dart`
+    enforces exactly that — but is scoped to
+    `const _zooDir = 'test/fixtures/real_world'`, which is why this
+    directory survived it.
+  - The coverage was already rebuilt properly. The `real_world/` zoo
+    spans the same vendor matrix (VCS, Xcelium/ncsim, Verilator, Icarus,
+    Aldec, GTKWave, GHDL, cocotb, Yosys) with full provenance sidecars.
+
+Note on history: `git rm` removes the files from the working tree, not
+from prior commits. The GPL-3.0 source and the unlicensed corpus remain
+reachable in this repository's history at and before `d26b8c21`. If the
+open-source flip requires that they not be present in the published
+history at all, that needs a history rewrite (e.g. `git filter-repo`),
+which is a separate and more disruptive operation. See §16.4.
+
+
+--------------------------------------------------------------------------
+16. Open items / not independently verified
+--------------------------------------------------------------------------
+
+These are recorded rather than guessed. Resolve them before the public
+open-source flip.
+
+16.1 Copyright holder. The copyright holder is **Ferrite Engineering
+     LLC**; `LICENSE` reads `Copyright 2026 Ferrite Engineering LLC`,
+     matching NetCrux, SimCrux, and LintCrux.
+
+16.2 crux-shared licensing. Resolved: the `crux-shared` submodule
+     that supplies every `crux_*` package in §4 now carries its own
+     LICENSE, NOTICES, TRADEMARK.md, CONTRIBUTING.md and SECURITY.md.
+     It is Apache-2.0, and flips public at the same moment the open
+     cores do.
+
+16.3 Rive native artifact contents are binary-verified, not
+     manifest-verified. §3.2 identifies HarfBuzz, SheenBidi, libpng, zlib,
+     and Yoga inside the shipped `librive_native` artifact by string and
+     symbol inspection. The artifact ships no license manifest, and the
+     `rive_native` package carries only Rive's own MIT license. The
+     libjpeg / libwebp / miniaudio / GLFW entries are inferred from the
+     vendored premake scripts and were NOT confirmed present. Before the
+     open-source flip, either confirm the exact set with Rive upstream or
+     inspect each per-platform artifact directly, and ship the
+     corresponding license texts alongside the app.
+
+16.4 FastWaveBackend — working tree resolved, history still open.
+     `TestSamples/FastWaveBackend/` was deleted on 2026-07-31; see §15
+     for the full record and the corrected two-part licensing analysis.
+     Two follow-ups remain open:
+
+     (a) The files are still reachable in git history at and before
+         commit `d26b8c21`. Decide before the open-source flip whether
+         the published history must be clean of them, which would
+         require a history rewrite.
+
+     (b) The provenance guardrail
+         `test/static/real_world_fixture_provenance_test.dart` is scoped
+         to `test/fixtures/real_world` only. That narrow scope is why
+         this directory was never caught. Consider widening it to walk
+         every committed waveform file in the repository, so an
+         unprovenanced or non-allow-listed fixture cannot reappear
+         somewhere the guardrail does not look.
+
+16.5 wavecrux-sigrok-bridge is a separate GPLv3+ repository. The sigrok
+     protocol-decoder bridge is NOT part of this repository and is not
+     bundled into any WaveCrux release. It is an independent GPLv3+
+     plugin that a user may choose to install, communicating with
+     WaveCrux only across the documented C ABI in
+     `include/wavecrux_decoder.h`. Its own attributions (libsigrokdecode
+     GPL-3.0-or-later, CPython PSF-2.0) live in that repository's NOTICES.
+     Nothing in this file covers it.
+
+16.6 Stage widget assets. The `.riv` files under `assets/stage/widgets/`
+     are commissioned first-party artwork, not third-party open source.
+     They carry no external attribution obligation.
+
+16.7 Trademark. Apache 2.0 covers the code, not the "WaveCrux" name. Use
+     of the name and marks is covered by TRADEMARK.md.
+
+
+--------------------------------------------------------------------------
+17. Refresh procedure
+--------------------------------------------------------------------------
+
+To refresh this file after dependency upgrades:
+
+    # Flutter / Dart — note --no-dev, and use the RESOLVED versions printed
+    flutter pub get
+    flutter pub deps --no-dev --style=compact
+
+    # Rust — one tree per shipping crate
+    cargo tree --edges normal --manifest-path native/wellen_ffi/Cargo.toml
+    cargo tree --edges normal --manifest-path native/wellen_wasm/Cargo.toml
+    cargo tree --edges normal --manifest-path native/lxt2fst/Cargo.toml
+
+For each new or upgraded dependency, locate its license file (typically
+`LICENSE`, `LICENSE-MIT`, `LICENSE-APACHE`) under
+`~/.pub-cache/hosted/pub.dev/<name>-<version>/` for Dart packages or
+`~/.cargo/registry/src/*/<name>-<version>/` for Rust crates, and either add
+a new section here or extend the relevant existing section.
+
+Watch for two classes of trap that this file has already hit once:
+
+  - A package's LICENSE file may contain MORE THAN ONE grant (see
+    `node_preamble` in §8). Read the whole file, not the first line.
+  - A package may DOWNLOAD prebuilt native binaries at build time that
+    embed third-party code its own LICENSE never mentions (see
+    `rive_native` in §3.2). Check for `hook/build.dart`, `bin/setup.dart`,
+    and vendored `dependencies/` directories.
+
+-- BEGIN GENERATED INVENTORY --
+
+--------------------------------------------------------------------------
+18. Complete resolved inventory
+--------------------------------------------------------------------------
+
+Every package in pubspec.lock, with the licence its own
+LICENSE file matches. Generated: do not hand-edit inside the
+markers, and do not use it to replace the narrative sections
+above -- a package that needs explaining still needs an entry
+there.
+
+Some entries are development-only and are never redistributed
+in a product binary. They are listed anyway: `pub deps` marks
+only direct dev dependencies as such, so the shipped subset
+cannot be computed exactly, and over-listing is the safe side
+of an attribution question.
+
+  Apache-2.0 7,  BSD-3-Clause 118,  MIT 28,  MPL-2.0 1,  SDK 41
+
+  _fe_analyzer_shared                          99.0.0           BSD-3-Clause
+  analyzer                                     12.1.0           BSD-3-Clause
+  analyzer_buffer                              0.3.4            MIT
+  archive                                      4.3.0            MIT
+  args                                         2.7.0            BSD-3-Clause
+  async                                        2.13.1           BSD-3-Clause
+  boolean_selector                             2.1.2            BSD-3-Clause
+  build                                        4.0.7            BSD-3-Clause
+  build_config                                 1.3.3            BSD-3-Clause
+  build_daemon                                 4.1.6            BSD-3-Clause
+  build_runner                                 2.15.1           BSD-3-Clause
+  built_collection                             5.1.1            BSD-3-Clause
+  built_value                                  8.13.0           BSD-3-Clause
+  characters                                   1.4.1            BSD-3-Clause
+  checked_yaml                                 2.0.4            BSD-3-Clause
+  cli_config                                   0.2.0            BSD-3-Clause
+  cli_util                                     0.4.2            BSD-3-Clause
+  clock                                        1.1.3            Apache-2.0
+  code_assets                                  2.0.0            BSD-3-Clause
+  code_builder                                 4.12.0           BSD-3-Clause
+  collection                                   1.19.1           BSD-3-Clause
+  convert                                      3.1.2            BSD-3-Clause
+  coverage                                     1.15.1           BSD-3-Clause
+  cross_file                                   0.3.5+5          BSD-3-Clause
+  crux_a11y                                    0.2.0            SDK
+  crux_about_dialog                            0.1.0            SDK
+  crux_app_info                                0.0.1            SDK
+  crux_async                                   0.1.0            SDK
+  crux_audit                                   0.1.0            SDK
+  crux_command_palette                         0.0.2            SDK
+  crux_cxp                                     0.8.0            SDK
+  crux_cxp_ui                                  0.1.0            SDK
+  crux_dock                                    0.1.1            SDK
+  crux_eula                                    0.1.0            SDK
+  crux_file_watcher                            0.0.1            SDK
+  crux_ide_layout                              0.3.0            SDK
+  crux_io                                      0.3.0            SDK
+  crux_issue_reporter                          0.1.0            SDK
+  crux_keybindings                             0.3.0            SDK
+  crux_license                                 0.13.0           SDK
+  crux_linux_integration                       0.1.0            SDK
+  crux_menu_bar                                0.1.0            SDK
+  crux_policy                                  0.1.0            SDK
+  crux_project                                 0.1.1            SDK
+  crux_secrets                                 0.1.0            SDK
+  crux_settings                                0.0.1            SDK
+  crux_settings_ui                             0.2.0            SDK
+  crux_shortcut_action                         0.0.1            SDK
+  crux_signing                                 0.1.0            SDK
+  crux_stats_strip                             0.1.0            SDK
+  crux_status_bar                              0.1.0            SDK
+  crux_telemetry                               0.5.0            SDK
+  crux_theme                                   0.3.0            SDK
+  crux_toolbar                                 0.1.0            SDK
+  crux_updates                                 0.1.0            SDK
+  crux_window_chrome                           0.2.0            SDK
+  crux_workspace                               0.10.0           SDK
+  crypto                                       3.0.7            BSD-3-Clause
+  dart_style                                   3.1.8            BSD-3-Clause
+  dbus                                         0.7.15           MPL-2.0
+  desktop_drop                                 0.8.4            Apache-2.0
+  fake_async                                   1.3.3            Apache-2.0
+  ffi                                          2.2.0            BSD-3-Clause
+  ffi_leak_tracker                             0.1.2            BSD-3-Clause
+  ffigen                                       20.1.1           BSD-3-Clause
+  file                                         7.0.1            BSD-3-Clause
+  file_picker                                  12.0.0-beta.7    MIT
+  fixnum                                       1.1.1            BSD-3-Clause
+  flutter                                      0.0.0            SDK
+  flutter_driver                               0.0.0            SDK
+  flutter_localizations                        0.0.0            SDK
+  flutter_plugin_android_lifecycle             2.0.35           BSD-3-Clause
+  flutter_riverpod                             3.3.2            MIT
+  flutter_secure_storage                       10.3.4           BSD-3-Clause
+  flutter_secure_storage_darwin                0.3.2            BSD-3-Clause
+  flutter_secure_storage_linux                 3.0.3            BSD-3-Clause
+  flutter_secure_storage_platform_interface    2.1.0            BSD-3-Clause
+  flutter_secure_storage_web                   2.1.1            BSD-3-Clause
+  flutter_secure_storage_windows               4.2.2            BSD-3-Clause
+  flutter_test                                 0.0.0            SDK
+  flutter_web_plugins                          0.0.0            SDK
+  freezed_annotation                           3.1.0            MIT
+  frontend_server_client                       4.0.0            BSD-3-Clause
+  fuchsia_remote_debug_protocol                0.0.0            SDK
+  glob                                         2.2.0            BSD-3-Clause
+  go_router                                    17.5.0           BSD-3-Clause
+  graphs                                       2.3.2            BSD-3-Clause
+  hooks                                        2.2.0            BSD-3-Clause
+  http                                         1.6.0            BSD-3-Clause
+  http_multi_server                            3.2.2            BSD-3-Clause
+  http_parser                                  4.1.2            BSD-3-Clause
+  integration_test                             0.0.0            SDK
+  intl                                         0.20.3           BSD-3-Clause
+  io                                           1.1.0            BSD-3-Clause
+  jni                                          1.0.3            BSD-3-Clause
+  jni_flutter                                  1.0.3            BSD-3-Clause
+  jni_util                                     1.0.0            BSD-3-Clause
+  json_annotation                              4.12.0           BSD-3-Clause
+  leak_tracker                                 11.0.2           BSD-3-Clause
+  leak_tracker_flutter_testing                 3.0.10           BSD-3-Clause
+  leak_tracker_testing                         3.0.2            BSD-3-Clause
+  logging                                      1.3.0            BSD-3-Clause
+  matcher                                      0.12.20          BSD-3-Clause
+  material_color_utilities                     0.13.0           Apache-2.0
+  meta                                         1.19.0           BSD-3-Clause
+  mime                                         2.1.0            BSD-3-Clause
+  mockito                                      5.6.4            Apache-2.0
+  mocktail                                     1.0.5            MIT
+  node_preamble                                2.0.2            BSD-3-Clause
+  objective_c                                  9.6.0            BSD-3-Clause
+  package_config                               2.2.0            BSD-3-Clause
+  package_info_plus                            10.2.1           BSD-3-Clause
+  package_info_plus_platform_interface         4.1.0            BSD-3-Clause
+  panes                                        1.3.0            MIT
+  path                                         1.9.1            BSD-3-Clause
+  path_provider                                2.1.6            BSD-3-Clause
+  path_provider_android                        2.3.1            BSD-3-Clause
+  path_provider_foundation                     2.6.0            BSD-3-Clause
+  path_provider_linux                          2.2.2            BSD-3-Clause
+  path_provider_platform_interface             2.1.3            BSD-3-Clause
+  path_provider_windows                        2.3.0            BSD-3-Clause
+  petitparser                                  7.0.2            MIT
+  platform                                     3.2.0            BSD-3-Clause
+  plugin_platform_interface                    2.1.8            BSD-3-Clause
+  pool                                         1.5.3            BSD-3-Clause
+  posix                                        6.5.2            MIT
+  process                                      5.0.6            BSD-3-Clause
+  pub_semver                                   2.2.1            BSD-3-Clause
+  pubspec_parse                                1.6.0            BSD-3-Clause
+  quiver                                       3.2.2            Apache-2.0
+  record_use                                   1.1.1            BSD-3-Clause
+  rive                                         0.14.11          MIT
+  rive_native                                  0.1.11           MIT
+  riverpod                                     3.3.2            MIT
+  riverpod_analyzer_utils                      1.0.0-dev.10     MIT
+  riverpod_annotation                          4.0.3            MIT
+  riverpod_generator                           4.0.4            MIT
+  screen_retriever                             0.2.2            MIT
+  screen_retriever_linux                       0.2.2            MIT
+  screen_retriever_macos                       0.2.2            MIT
+  screen_retriever_platform_interface          0.2.2            MIT
+  screen_retriever_windows                     0.2.2            MIT
+  shared_preferences                           2.5.5            BSD-3-Clause
+  shared_preferences_android                   2.4.28           BSD-3-Clause
+  shared_preferences_foundation                2.5.7            BSD-3-Clause
+  shared_preferences_linux                     2.4.1            BSD-3-Clause
+  shared_preferences_platform_interface        2.4.2            BSD-3-Clause
+  shared_preferences_web                       2.4.3            BSD-3-Clause
+  shared_preferences_windows                   2.4.1            BSD-3-Clause
+  shelf                                        1.4.2            BSD-3-Clause
+  shelf_packages_handler                       3.0.2            BSD-3-Clause
+  shelf_static                                 1.1.3            BSD-3-Clause
+  shelf_web_socket                             3.0.0            BSD-3-Clause
+  sky_engine                                   0.0.0            SDK
+  source_gen                                   4.2.4            BSD-3-Clause
+  source_map_stack_trace                       2.1.2            BSD-3-Clause
+  source_maps                                  0.10.14          BSD-3-Clause
+  source_span                                  1.10.2           BSD-3-Clause
+  stack_trace                                  1.12.2           BSD-3-Clause
+  state_notifier                               1.0.0            MIT
+  stream_channel                               2.1.4            BSD-3-Clause
+  stream_transform                             2.1.2            BSD-3-Clause
+  string_scanner                               1.4.1            BSD-3-Clause
+  sync_http                                    0.3.1            BSD-3-Clause
+  term_glyph                                   1.2.2            BSD-3-Clause
+  test                                         1.31.1           BSD-3-Clause
+  test_api                                     0.7.12           BSD-3-Clause
+  test_core                                    0.6.18           BSD-3-Clause
+  toml                                         0.18.0           MIT
+  typed_data                                   1.4.0            BSD-3-Clause
+  universal_platform                           1.1.0            MIT
+  url_launcher                                 6.3.2            BSD-3-Clause
+  url_launcher_android                         6.3.33           BSD-3-Clause
+  url_launcher_ios                             6.4.2            BSD-3-Clause
+  url_launcher_linux                           3.2.3            BSD-3-Clause
+  url_launcher_macos                           3.2.6            BSD-3-Clause
+  url_launcher_platform_interface              2.3.2            BSD-3-Clause
+  url_launcher_web                             2.4.3            BSD-3-Clause
+  url_launcher_windows                         3.1.6            BSD-3-Clause
+  uuid                                         4.6.0            MIT
+  vector_math                                  2.4.2            BSD-3-Clause
+  very_good_analysis                           10.3.0           MIT
+  vm_service                                   15.3.0           BSD-3-Clause
+  watcher                                      1.2.1            BSD-3-Clause
+  web                                          1.1.1            BSD-3-Clause
+  web_socket                                   1.0.1            BSD-3-Clause
+  web_socket_channel                           3.0.3            BSD-3-Clause
+  webdriver                                    3.2.0            Apache-2.0
+  webkit_inspection_protocol                   1.2.1            BSD-3-Clause
+  win32                                        6.4.0            BSD-3-Clause
+  window_manager                               0.5.2            MIT
+  xdg_directories                              1.1.0            BSD-3-Clause
+  xml                                          7.0.1            MIT
+  yaml                                         3.1.4            MIT
+  yaml_edit                                    2.2.4            BSD-3-Clause
+
+-- END GENERATED INVENTORY --
+
+End of NOTICES.

@@ -1,0 +1,112 @@
+{
+  "dumpFilePath": "generated/BubbleFifo.vcd",
+  "timeStart": 0,
+  "zoomFactor": -2.432238,
+  "primaryMarker": null,
+  "canvasBackgroundHex": null,
+  "openScopes": [
+    "BubbleFifo."
+  ],
+  "namedMarkers": {},
+  "entries": [
+    {
+      "type": "signal",
+      "path": "BubbleFifo.clk",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "BubbleFifo.io_enq_din[7:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "BubbleFifo.io_enq_full",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "BubbleFifo.io_enq_write",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "BubbleFifo.io_deq_empty",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "BubbleFifo.io_deq_read",
+      "format": "binary",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "BubbleFifo.FifoRegister.dataReg[7:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "BubbleFifo.FifoRegister_1.dataReg[7:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "BubbleFifo.FifoRegister_2.dataReg[7:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "BubbleFifo.FifoRegister_3.dataReg[7:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "BubbleFifo.io_deq_dout[7:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    }
+  ]
+}

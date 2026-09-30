@@ -1,0 +1,243 @@
+{
+  "version": 4,
+  "sourceFilePath": "bus-review.vcd",
+  "signals": [
+    {
+      "kind": "signal",
+      "id": "c620b64c-0",
+      "ref": "0",
+      "path": "tb.dut.clk",
+      "name": "clk",
+      "format": "binary",
+      "height": 28.0
+    },
+    {
+      "kind": "signal",
+      "id": "c620b64c-1",
+      "ref": "1",
+      "path": "tb.dut.rst_n",
+      "name": "rst_n",
+      "format": "binary",
+      "height": 28.0
+    },
+    {
+      "kind": "signal",
+      "id": "c620b64c-2",
+      "ref": "2",
+      "path": "tb.dut.req",
+      "name": "req",
+      "format": "binary",
+      "height": 28.0
+    },
+    {
+      "kind": "signal",
+      "id": "c620b64c-3",
+      "ref": "3",
+      "path": "tb.dut.gnt",
+      "name": "gnt",
+      "format": "binary",
+      "height": 28.0
+    },
+    {
+      "kind": "signal",
+      "id": "c620b64c-4",
+      "ref": "4",
+      "path": "tb.dut.state",
+      "name": "state",
+      "format": "binary",
+      "height": 28.0
+    },
+    {
+      "kind": "signal",
+      "id": "c620b64c-5",
+      "ref": "5",
+      "path": "tb.dut.addr",
+      "name": "addr",
+      "format": "hexadecimal",
+      "height": 28.0
+    },
+    {
+      "kind": "signal",
+      "id": "c620b64c-6",
+      "ref": "6",
+      "path": "tb.dut.wdata",
+      "name": "wdata",
+      "format": "hexadecimal",
+      "height": 28.0
+    },
+    {
+      "kind": "signal",
+      "id": "c620b64c-7",
+      "ref": "7",
+      "path": "tb.dut.wr_en",
+      "name": "wr_en",
+      "format": "binary",
+      "height": 28.0
+    },
+    {
+      "kind": "signal",
+      "id": "c620b64c-8",
+      "ref": "8",
+      "path": "tb.dut.fifo_wr",
+      "name": "fifo_wr",
+      "format": "binary",
+      "height": 28.0
+    },
+    {
+      "kind": "signal",
+      "id": "c620b64c-9",
+      "ref": "9",
+      "path": "tb.dut.fifo_count",
+      "name": "fifo_count",
+      "format": "hexadecimal",
+      "height": 28.0
+    },
+    {
+      "kind": "signal",
+      "id": "c620b64c-10",
+      "ref": "10",
+      "path": "tb.dut.fifo_full",
+      "name": "fifo_full",
+      "format": "binary",
+      "height": 28.0
+    },
+    {
+      "kind": "signal",
+      "id": "c620b64c-11",
+      "ref": "11",
+      "path": "tb.dut.overflow",
+      "name": "overflow",
+      "format": "binary",
+      "height": 28.0
+    }
+  ],
+  "cursor": {
+    "primary": 230,
+    "secondary": 250
+  },
+  "markers": {
+    "a": 80,
+    "b": 250
+  },
+  "view": {
+    "ticksPerPixel": 0.5,
+    "panOffsetTicks": 0.0,
+    "scrollOffset": 0.0
+  },
+  "panels": {
+    "signalTree": true,
+    "valueColumn": true,
+    "transactionView": true,
+    "stageView": false,
+    "statisticsStrip": false,
+    "cocotbLogPanel": false,
+    "annotationsPanel": true,
+    "rtlSource": false,
+    "bottomDockTab": "annotations"
+  },
+  "signalTreeState": {
+    "expanded": [
+      "tb",
+      "tb.dut"
+    ]
+  },
+  "translateFilters": {},
+  "stage": {
+    "panels": []
+  },
+  "activeTheme": "wavecrux-dark",
+  "annotations": [
+    {
+      "id": "rev-gnt-latency",
+      "shape": "callout",
+      "anchor": {
+        "kind": "point",
+        "time": 70,
+        "rowId": "tb.dut.gnt"
+      },
+      "text": "gnt is registered off req — one cycle of arbitration latency, by design.",
+      "author": "D. Whitfield",
+      "createdAt": "2026-08-16T14:02:00.000Z",
+      "labelDx": 40.0,
+      "labelDy": 60.0,
+      "witness": {
+        "bits": "1"
+      }
+    },
+    {
+      "id": "rev-burst-window",
+      "shape": "band",
+      "anchor": {
+        "kind": "range",
+        "start": 80,
+        "end": 260
+      },
+      "text": "write burst — 18 beats driven",
+      "author": "D. Whitfield",
+      "createdAt": "2026-08-16T14:04:00.000Z"
+    },
+    {
+      "id": "rev-full-late",
+      "shape": "callout",
+      "anchor": {
+        "kind": "point",
+        "time": 230,
+        "rowId": "tb.dut.fifo_full"
+      },
+      "text": "fifo_full asserts at count 16, but wr_en came from the previous cycle.",
+      "author": "D. Whitfield",
+      "createdAt": "2026-08-16T14:06:00.000Z",
+      "labelDx": -300.0,
+      "labelDy": 50.0,
+      "witness": {
+        "bits": "1"
+      }
+    },
+    {
+      "id": "rev-stray-write",
+      "shape": "arrow",
+      "anchor": {
+        "kind": "point",
+        "time": 240,
+        "rowId": "tb.dut.fifo_wr"
+      },
+      "author": "D. Whitfield",
+      "createdAt": "2026-08-16T14:07:00.000Z",
+      "labelDx": -60.0,
+      "labelDy": -70.0,
+      "witness": {
+        "bits": "1"
+      }
+    },
+    {
+      "id": "rev-overflow",
+      "shape": "callout",
+      "anchor": {
+        "kind": "point",
+        "time": 250,
+        "rowId": "tb.dut.overflow"
+      },
+      "text": "Two beats land after full. Fix: drive wr_en from almost_full in u_fifo_ctrl.",
+      "author": "D. Whitfield",
+      "createdAt": "2026-08-16T14:09:00.000Z",
+      "labelDx": 40.0,
+      "labelDy": 30.0,
+      "witness": {
+        "bits": "1"
+      }
+    },
+    {
+      "id": "rev-drain-ok",
+      "shape": "band",
+      "anchor": {
+        "kind": "range",
+        "start": 270,
+        "end": 430,
+        "rowId": "tb.dut.fifo_count"
+      },
+      "text": "drain is correct",
+      "author": "D. Whitfield",
+      "createdAt": "2026-08-16T14:11:00.000Z"
+    }
+  ]
+}

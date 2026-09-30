@@ -1,0 +1,51 @@
+$timescale 10 ns $end
+$scope module top $end
+$scope module cpu $end
+$scope module alu $end
+$var wire  1 ! clk    $end
+$var wire  8 " result $end
+$upscope $end
+$scope task reg_file $end
+$var wire  8 # reg0   $end
+$var wire  8 $ reg1   $end
+$upscope $end
+$upscope $end
+$scope module mem $end
+$var wire  1 % clk    $end
+$var wire 16 & addr   $end
+$var wire  8 ' data   $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+$dumpvars
+0!
+b00000000 "
+b00000000 #
+b00000000 $
+0%
+b0000000000000000 &
+b00000000 '
+$end
+#5
+1!
+1%
+#10
+0!
+b00000001 "
+b00000001 #
+b00000010 $
+0%
+#15
+1!
+1%
+b0000000000000100 &
+#20
+0!
+b00000010 "
+b00000011 #
+b00001000 $
+0%
+b00000010 '
+#25
+1!
+1%

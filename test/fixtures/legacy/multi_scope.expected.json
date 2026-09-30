@@ -1,0 +1,1816 @@
+{
+  "_comment": "Nested hierarchy (top.cpu.alu, top.cpu.regfile) exercising scope-walk and full-path resolution.",
+  "metadata": {
+    "timescale": {
+      "factor": 1,
+      "unit": "nanoSeconds"
+    },
+    "startTime": 0,
+    "endTime": 100,
+    "date": null,
+    "version": null
+  },
+  "hierarchy": {
+    "rootScopes": [
+      {
+        "name": "top",
+        "type": "module",
+        "path": "top",
+        "childScopes": [
+          {
+            "name": "cpu",
+            "type": "module",
+            "path": "top.cpu",
+            "childScopes": [
+              {
+                "name": "alu",
+                "type": "module",
+                "path": "top.cpu.alu",
+                "childScopes": [],
+                "variables": [
+                  {
+                    "name": "result",
+                    "fullPath": "top.cpu.alu.result",
+                    "varType": "reg",
+                    "bitWidth": 16,
+                    "direction": "unknown"
+                  },
+                  {
+                    "name": "zero",
+                    "fullPath": "top.cpu.alu.zero",
+                    "varType": "wire",
+                    "bitWidth": 1,
+                    "direction": "unknown"
+                  }
+                ]
+              },
+              {
+                "name": "regfile",
+                "type": "module",
+                "path": "top.cpu.regfile",
+                "childScopes": [],
+                "variables": [
+                  {
+                    "name": "we",
+                    "fullPath": "top.cpu.regfile.we",
+                    "varType": "wire",
+                    "bitWidth": 1,
+                    "direction": "unknown"
+                  },
+                  {
+                    "name": "r0",
+                    "fullPath": "top.cpu.regfile.r0",
+                    "varType": "reg",
+                    "bitWidth": 32,
+                    "direction": "unknown"
+                  },
+                  {
+                    "name": "r1",
+                    "fullPath": "top.cpu.regfile.r1",
+                    "varType": "reg",
+                    "bitWidth": 32,
+                    "direction": "unknown"
+                  }
+                ]
+              }
+            ],
+            "variables": [
+              {
+                "name": "reset",
+                "fullPath": "top.cpu.reset",
+                "varType": "reg",
+                "bitWidth": 1,
+                "direction": "unknown"
+              }
+            ]
+          }
+        ],
+        "variables": [
+          {
+            "name": "clk",
+            "fullPath": "top.clk",
+            "varType": "wire",
+            "bitWidth": 1,
+            "direction": "unknown"
+          }
+        ]
+      }
+    ]
+  },
+  "signals": {
+    "top.clk": {
+      "allChanges": [
+        {
+          "time": 0,
+          "value": "0"
+        },
+        {
+          "time": 10,
+          "value": "1"
+        },
+        {
+          "time": 20,
+          "value": "0"
+        },
+        {
+          "time": 30,
+          "value": "1"
+        },
+        {
+          "time": 40,
+          "value": "0"
+        },
+        {
+          "time": 50,
+          "value": "1"
+        },
+        {
+          "time": 60,
+          "value": "0"
+        },
+        {
+          "time": 70,
+          "value": "1"
+        },
+        {
+          "time": 80,
+          "value": "0"
+        },
+        {
+          "time": 90,
+          "value": "1"
+        },
+        {
+          "time": 100,
+          "value": "0"
+        }
+      ],
+      "valueAt": [
+        {
+          "time": -1,
+          "expected": null
+        },
+        {
+          "time": 0,
+          "expected": "0"
+        },
+        {
+          "time": 1,
+          "expected": "0"
+        },
+        {
+          "time": 9,
+          "expected": "0"
+        },
+        {
+          "time": 10,
+          "expected": "1"
+        },
+        {
+          "time": 11,
+          "expected": "1"
+        },
+        {
+          "time": 19,
+          "expected": "1"
+        },
+        {
+          "time": 20,
+          "expected": "0"
+        },
+        {
+          "time": 21,
+          "expected": "0"
+        },
+        {
+          "time": 29,
+          "expected": "0"
+        },
+        {
+          "time": 30,
+          "expected": "1"
+        },
+        {
+          "time": 31,
+          "expected": "1"
+        },
+        {
+          "time": 39,
+          "expected": "1"
+        },
+        {
+          "time": 40,
+          "expected": "0"
+        },
+        {
+          "time": 41,
+          "expected": "0"
+        },
+        {
+          "time": 49,
+          "expected": "0"
+        },
+        {
+          "time": 50,
+          "expected": "1"
+        },
+        {
+          "time": 51,
+          "expected": "1"
+        },
+        {
+          "time": 59,
+          "expected": "1"
+        },
+        {
+          "time": 60,
+          "expected": "0"
+        },
+        {
+          "time": 61,
+          "expected": "0"
+        },
+        {
+          "time": 69,
+          "expected": "0"
+        },
+        {
+          "time": 70,
+          "expected": "1"
+        },
+        {
+          "time": 71,
+          "expected": "1"
+        },
+        {
+          "time": 79,
+          "expected": "1"
+        },
+        {
+          "time": 80,
+          "expected": "0"
+        },
+        {
+          "time": 81,
+          "expected": "0"
+        },
+        {
+          "time": 89,
+          "expected": "0"
+        },
+        {
+          "time": 90,
+          "expected": "1"
+        },
+        {
+          "time": 91,
+          "expected": "1"
+        },
+        {
+          "time": 99,
+          "expected": "1"
+        },
+        {
+          "time": 100,
+          "expected": "0"
+        },
+        {
+          "time": 101,
+          "expected": "0"
+        },
+        {
+          "time": 150,
+          "expected": "0"
+        }
+      ],
+      "changesInRange": [
+        {
+          "start": 0,
+          "end": 0,
+          "expected": []
+        },
+        {
+          "start": 0,
+          "end": 10,
+          "expected": [
+            {
+              "time": 0,
+              "value": "0"
+            }
+          ]
+        },
+        {
+          "start": 10,
+          "end": 20,
+          "expected": [
+            {
+              "time": 10,
+              "value": "1"
+            }
+          ]
+        },
+        {
+          "start": 20,
+          "end": 30,
+          "expected": [
+            {
+              "time": 20,
+              "value": "0"
+            }
+          ]
+        },
+        {
+          "start": 30,
+          "end": 40,
+          "expected": [
+            {
+              "time": 30,
+              "value": "1"
+            }
+          ]
+        },
+        {
+          "start": 40,
+          "end": 50,
+          "expected": [
+            {
+              "time": 40,
+              "value": "0"
+            }
+          ]
+        },
+        {
+          "start": 50,
+          "end": 60,
+          "expected": [
+            {
+              "time": 50,
+              "value": "1"
+            }
+          ]
+        },
+        {
+          "start": 60,
+          "end": 70,
+          "expected": [
+            {
+              "time": 60,
+              "value": "0"
+            }
+          ]
+        },
+        {
+          "start": 70,
+          "end": 80,
+          "expected": [
+            {
+              "time": 70,
+              "value": "1"
+            }
+          ]
+        },
+        {
+          "start": 80,
+          "end": 90,
+          "expected": [
+            {
+              "time": 80,
+              "value": "0"
+            }
+          ]
+        },
+        {
+          "start": 90,
+          "end": 100,
+          "expected": [
+            {
+              "time": 90,
+              "value": "1"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 101,
+          "expected": [
+            {
+              "time": 0,
+              "value": "0"
+            },
+            {
+              "time": 10,
+              "value": "1"
+            },
+            {
+              "time": 20,
+              "value": "0"
+            },
+            {
+              "time": 30,
+              "value": "1"
+            },
+            {
+              "time": 40,
+              "value": "0"
+            },
+            {
+              "time": 50,
+              "value": "1"
+            },
+            {
+              "time": 60,
+              "value": "0"
+            },
+            {
+              "time": 70,
+              "value": "1"
+            },
+            {
+              "time": 80,
+              "value": "0"
+            },
+            {
+              "time": 90,
+              "value": "1"
+            },
+            {
+              "time": 100,
+              "value": "0"
+            }
+          ]
+        },
+        {
+          "start": 101,
+          "end": 200,
+          "expected": []
+        }
+      ],
+      "nextTransition": [
+        {
+          "afterTime": -1,
+          "expected": {
+            "time": 0,
+            "value": "0"
+          }
+        },
+        {
+          "afterTime": 0,
+          "expected": {
+            "time": 10,
+            "value": "1"
+          }
+        },
+        {
+          "afterTime": 10,
+          "expected": {
+            "time": 20,
+            "value": "0"
+          }
+        },
+        {
+          "afterTime": 20,
+          "expected": {
+            "time": 30,
+            "value": "1"
+          }
+        },
+        {
+          "afterTime": 30,
+          "expected": {
+            "time": 40,
+            "value": "0"
+          }
+        },
+        {
+          "afterTime": 40,
+          "expected": {
+            "time": 50,
+            "value": "1"
+          }
+        },
+        {
+          "afterTime": 50,
+          "expected": {
+            "time": 60,
+            "value": "0"
+          }
+        },
+        {
+          "afterTime": 60,
+          "expected": {
+            "time": 70,
+            "value": "1"
+          }
+        },
+        {
+          "afterTime": 70,
+          "expected": {
+            "time": 80,
+            "value": "0"
+          }
+        },
+        {
+          "afterTime": 80,
+          "expected": {
+            "time": 90,
+            "value": "1"
+          }
+        },
+        {
+          "afterTime": 90,
+          "expected": {
+            "time": 100,
+            "value": "0"
+          }
+        },
+        {
+          "afterTime": 100,
+          "expected": null
+        },
+        {
+          "afterTime": 150,
+          "expected": null
+        }
+      ],
+      "prevTransition": [
+        {
+          "beforeTime": 0,
+          "expected": null
+        },
+        {
+          "beforeTime": 1,
+          "expected": {
+            "time": 0,
+            "value": "0"
+          }
+        },
+        {
+          "beforeTime": 10,
+          "expected": {
+            "time": 0,
+            "value": "0"
+          }
+        },
+        {
+          "beforeTime": 11,
+          "expected": {
+            "time": 10,
+            "value": "1"
+          }
+        },
+        {
+          "beforeTime": 20,
+          "expected": {
+            "time": 10,
+            "value": "1"
+          }
+        },
+        {
+          "beforeTime": 21,
+          "expected": {
+            "time": 20,
+            "value": "0"
+          }
+        },
+        {
+          "beforeTime": 30,
+          "expected": {
+            "time": 20,
+            "value": "0"
+          }
+        },
+        {
+          "beforeTime": 31,
+          "expected": {
+            "time": 30,
+            "value": "1"
+          }
+        },
+        {
+          "beforeTime": 40,
+          "expected": {
+            "time": 30,
+            "value": "1"
+          }
+        },
+        {
+          "beforeTime": 41,
+          "expected": {
+            "time": 40,
+            "value": "0"
+          }
+        },
+        {
+          "beforeTime": 50,
+          "expected": {
+            "time": 40,
+            "value": "0"
+          }
+        },
+        {
+          "beforeTime": 51,
+          "expected": {
+            "time": 50,
+            "value": "1"
+          }
+        },
+        {
+          "beforeTime": 60,
+          "expected": {
+            "time": 50,
+            "value": "1"
+          }
+        },
+        {
+          "beforeTime": 61,
+          "expected": {
+            "time": 60,
+            "value": "0"
+          }
+        },
+        {
+          "beforeTime": 70,
+          "expected": {
+            "time": 60,
+            "value": "0"
+          }
+        },
+        {
+          "beforeTime": 71,
+          "expected": {
+            "time": 70,
+            "value": "1"
+          }
+        },
+        {
+          "beforeTime": 80,
+          "expected": {
+            "time": 70,
+            "value": "1"
+          }
+        },
+        {
+          "beforeTime": 81,
+          "expected": {
+            "time": 80,
+            "value": "0"
+          }
+        },
+        {
+          "beforeTime": 90,
+          "expected": {
+            "time": 80,
+            "value": "0"
+          }
+        },
+        {
+          "beforeTime": 91,
+          "expected": {
+            "time": 90,
+            "value": "1"
+          }
+        },
+        {
+          "beforeTime": 100,
+          "expected": {
+            "time": 90,
+            "value": "1"
+          }
+        },
+        {
+          "beforeTime": 101,
+          "expected": {
+            "time": 100,
+            "value": "0"
+          }
+        },
+        {
+          "beforeTime": 150,
+          "expected": {
+            "time": 100,
+            "value": "0"
+          }
+        }
+      ]
+    },
+    "top.cpu.reset": {
+      "allChanges": [
+        {
+          "time": 0,
+          "value": "1"
+        },
+        {
+          "time": 30,
+          "value": "0"
+        }
+      ],
+      "valueAt": [
+        {
+          "time": -1,
+          "expected": null
+        },
+        {
+          "time": 0,
+          "expected": "1"
+        },
+        {
+          "time": 1,
+          "expected": "1"
+        },
+        {
+          "time": 29,
+          "expected": "1"
+        },
+        {
+          "time": 30,
+          "expected": "0"
+        },
+        {
+          "time": 31,
+          "expected": "0"
+        },
+        {
+          "time": 100,
+          "expected": "0"
+        },
+        {
+          "time": 150,
+          "expected": "0"
+        }
+      ],
+      "changesInRange": [
+        {
+          "start": 0,
+          "end": 0,
+          "expected": []
+        },
+        {
+          "start": 0,
+          "end": 30,
+          "expected": [
+            {
+              "time": 0,
+              "value": "1"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 101,
+          "expected": [
+            {
+              "time": 0,
+              "value": "1"
+            },
+            {
+              "time": 30,
+              "value": "0"
+            }
+          ]
+        },
+        {
+          "start": 101,
+          "end": 200,
+          "expected": []
+        }
+      ],
+      "nextTransition": [
+        {
+          "afterTime": -1,
+          "expected": {
+            "time": 0,
+            "value": "1"
+          }
+        },
+        {
+          "afterTime": 0,
+          "expected": {
+            "time": 30,
+            "value": "0"
+          }
+        },
+        {
+          "afterTime": 30,
+          "expected": null
+        },
+        {
+          "afterTime": 100,
+          "expected": null
+        },
+        {
+          "afterTime": 150,
+          "expected": null
+        }
+      ],
+      "prevTransition": [
+        {
+          "beforeTime": 0,
+          "expected": null
+        },
+        {
+          "beforeTime": 1,
+          "expected": {
+            "time": 0,
+            "value": "1"
+          }
+        },
+        {
+          "beforeTime": 30,
+          "expected": {
+            "time": 0,
+            "value": "1"
+          }
+        },
+        {
+          "beforeTime": 31,
+          "expected": {
+            "time": 30,
+            "value": "0"
+          }
+        },
+        {
+          "beforeTime": 150,
+          "expected": {
+            "time": 30,
+            "value": "0"
+          }
+        }
+      ]
+    },
+    "top.cpu.alu.result": {
+      "allChanges": [
+        {
+          "time": 0,
+          "value": "0000000000000000"
+        },
+        {
+          "time": 30,
+          "value": "0000000011111111"
+        },
+        {
+          "time": 50,
+          "value": "0001001000110100"
+        },
+        {
+          "time": 90,
+          "value": "1111111111111111"
+        }
+      ],
+      "valueAt": [
+        {
+          "time": -1,
+          "expected": null
+        },
+        {
+          "time": 0,
+          "expected": "0000000000000000"
+        },
+        {
+          "time": 1,
+          "expected": "0000000000000000"
+        },
+        {
+          "time": 29,
+          "expected": "0000000000000000"
+        },
+        {
+          "time": 30,
+          "expected": "0000000011111111"
+        },
+        {
+          "time": 31,
+          "expected": "0000000011111111"
+        },
+        {
+          "time": 49,
+          "expected": "0000000011111111"
+        },
+        {
+          "time": 50,
+          "expected": "0001001000110100"
+        },
+        {
+          "time": 51,
+          "expected": "0001001000110100"
+        },
+        {
+          "time": 89,
+          "expected": "0001001000110100"
+        },
+        {
+          "time": 90,
+          "expected": "1111111111111111"
+        },
+        {
+          "time": 91,
+          "expected": "1111111111111111"
+        },
+        {
+          "time": 100,
+          "expected": "1111111111111111"
+        },
+        {
+          "time": 150,
+          "expected": "1111111111111111"
+        }
+      ],
+      "changesInRange": [
+        {
+          "start": 0,
+          "end": 0,
+          "expected": []
+        },
+        {
+          "start": 0,
+          "end": 30,
+          "expected": [
+            {
+              "time": 0,
+              "value": "0000000000000000"
+            }
+          ]
+        },
+        {
+          "start": 30,
+          "end": 50,
+          "expected": [
+            {
+              "time": 30,
+              "value": "0000000011111111"
+            }
+          ]
+        },
+        {
+          "start": 50,
+          "end": 90,
+          "expected": [
+            {
+              "time": 50,
+              "value": "0001001000110100"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 101,
+          "expected": [
+            {
+              "time": 0,
+              "value": "0000000000000000"
+            },
+            {
+              "time": 30,
+              "value": "0000000011111111"
+            },
+            {
+              "time": 50,
+              "value": "0001001000110100"
+            },
+            {
+              "time": 90,
+              "value": "1111111111111111"
+            }
+          ]
+        },
+        {
+          "start": 101,
+          "end": 200,
+          "expected": []
+        }
+      ],
+      "nextTransition": [
+        {
+          "afterTime": -1,
+          "expected": {
+            "time": 0,
+            "value": "0000000000000000"
+          }
+        },
+        {
+          "afterTime": 0,
+          "expected": {
+            "time": 30,
+            "value": "0000000011111111"
+          }
+        },
+        {
+          "afterTime": 30,
+          "expected": {
+            "time": 50,
+            "value": "0001001000110100"
+          }
+        },
+        {
+          "afterTime": 50,
+          "expected": {
+            "time": 90,
+            "value": "1111111111111111"
+          }
+        },
+        {
+          "afterTime": 90,
+          "expected": null
+        },
+        {
+          "afterTime": 100,
+          "expected": null
+        },
+        {
+          "afterTime": 150,
+          "expected": null
+        }
+      ],
+      "prevTransition": [
+        {
+          "beforeTime": 0,
+          "expected": null
+        },
+        {
+          "beforeTime": 1,
+          "expected": {
+            "time": 0,
+            "value": "0000000000000000"
+          }
+        },
+        {
+          "beforeTime": 30,
+          "expected": {
+            "time": 0,
+            "value": "0000000000000000"
+          }
+        },
+        {
+          "beforeTime": 31,
+          "expected": {
+            "time": 30,
+            "value": "0000000011111111"
+          }
+        },
+        {
+          "beforeTime": 50,
+          "expected": {
+            "time": 30,
+            "value": "0000000011111111"
+          }
+        },
+        {
+          "beforeTime": 51,
+          "expected": {
+            "time": 50,
+            "value": "0001001000110100"
+          }
+        },
+        {
+          "beforeTime": 90,
+          "expected": {
+            "time": 50,
+            "value": "0001001000110100"
+          }
+        },
+        {
+          "beforeTime": 91,
+          "expected": {
+            "time": 90,
+            "value": "1111111111111111"
+          }
+        },
+        {
+          "beforeTime": 150,
+          "expected": {
+            "time": 90,
+            "value": "1111111111111111"
+          }
+        }
+      ]
+    },
+    "top.cpu.alu.zero": {
+      "allChanges": [
+        {
+          "time": 0,
+          "value": "1"
+        },
+        {
+          "time": 30,
+          "value": "0"
+        },
+        {
+          "time": 90,
+          "value": "1"
+        }
+      ],
+      "valueAt": [
+        {
+          "time": -1,
+          "expected": null
+        },
+        {
+          "time": 0,
+          "expected": "1"
+        },
+        {
+          "time": 1,
+          "expected": "1"
+        },
+        {
+          "time": 29,
+          "expected": "1"
+        },
+        {
+          "time": 30,
+          "expected": "0"
+        },
+        {
+          "time": 31,
+          "expected": "0"
+        },
+        {
+          "time": 89,
+          "expected": "0"
+        },
+        {
+          "time": 90,
+          "expected": "1"
+        },
+        {
+          "time": 91,
+          "expected": "1"
+        },
+        {
+          "time": 100,
+          "expected": "1"
+        },
+        {
+          "time": 150,
+          "expected": "1"
+        }
+      ],
+      "changesInRange": [
+        {
+          "start": 0,
+          "end": 0,
+          "expected": []
+        },
+        {
+          "start": 0,
+          "end": 30,
+          "expected": [
+            {
+              "time": 0,
+              "value": "1"
+            }
+          ]
+        },
+        {
+          "start": 30,
+          "end": 90,
+          "expected": [
+            {
+              "time": 30,
+              "value": "0"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 101,
+          "expected": [
+            {
+              "time": 0,
+              "value": "1"
+            },
+            {
+              "time": 30,
+              "value": "0"
+            },
+            {
+              "time": 90,
+              "value": "1"
+            }
+          ]
+        },
+        {
+          "start": 101,
+          "end": 200,
+          "expected": []
+        }
+      ],
+      "nextTransition": [
+        {
+          "afterTime": -1,
+          "expected": {
+            "time": 0,
+            "value": "1"
+          }
+        },
+        {
+          "afterTime": 0,
+          "expected": {
+            "time": 30,
+            "value": "0"
+          }
+        },
+        {
+          "afterTime": 30,
+          "expected": {
+            "time": 90,
+            "value": "1"
+          }
+        },
+        {
+          "afterTime": 90,
+          "expected": null
+        },
+        {
+          "afterTime": 100,
+          "expected": null
+        },
+        {
+          "afterTime": 150,
+          "expected": null
+        }
+      ],
+      "prevTransition": [
+        {
+          "beforeTime": 0,
+          "expected": null
+        },
+        {
+          "beforeTime": 1,
+          "expected": {
+            "time": 0,
+            "value": "1"
+          }
+        },
+        {
+          "beforeTime": 30,
+          "expected": {
+            "time": 0,
+            "value": "1"
+          }
+        },
+        {
+          "beforeTime": 31,
+          "expected": {
+            "time": 30,
+            "value": "0"
+          }
+        },
+        {
+          "beforeTime": 90,
+          "expected": {
+            "time": 30,
+            "value": "0"
+          }
+        },
+        {
+          "beforeTime": 91,
+          "expected": {
+            "time": 90,
+            "value": "1"
+          }
+        },
+        {
+          "beforeTime": 150,
+          "expected": {
+            "time": 90,
+            "value": "1"
+          }
+        }
+      ]
+    },
+    "top.cpu.regfile.we": {
+      "allChanges": [
+        {
+          "time": 0,
+          "value": "0"
+        },
+        {
+          "time": 40,
+          "value": "1"
+        },
+        {
+          "time": 70,
+          "value": "0"
+        }
+      ],
+      "valueAt": [
+        {
+          "time": -1,
+          "expected": null
+        },
+        {
+          "time": 0,
+          "expected": "0"
+        },
+        {
+          "time": 1,
+          "expected": "0"
+        },
+        {
+          "time": 39,
+          "expected": "0"
+        },
+        {
+          "time": 40,
+          "expected": "1"
+        },
+        {
+          "time": 41,
+          "expected": "1"
+        },
+        {
+          "time": 69,
+          "expected": "1"
+        },
+        {
+          "time": 70,
+          "expected": "0"
+        },
+        {
+          "time": 71,
+          "expected": "0"
+        },
+        {
+          "time": 100,
+          "expected": "0"
+        },
+        {
+          "time": 150,
+          "expected": "0"
+        }
+      ],
+      "changesInRange": [
+        {
+          "start": 0,
+          "end": 0,
+          "expected": []
+        },
+        {
+          "start": 0,
+          "end": 40,
+          "expected": [
+            {
+              "time": 0,
+              "value": "0"
+            }
+          ]
+        },
+        {
+          "start": 40,
+          "end": 70,
+          "expected": [
+            {
+              "time": 40,
+              "value": "1"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 101,
+          "expected": [
+            {
+              "time": 0,
+              "value": "0"
+            },
+            {
+              "time": 40,
+              "value": "1"
+            },
+            {
+              "time": 70,
+              "value": "0"
+            }
+          ]
+        },
+        {
+          "start": 101,
+          "end": 200,
+          "expected": []
+        }
+      ],
+      "nextTransition": [
+        {
+          "afterTime": -1,
+          "expected": {
+            "time": 0,
+            "value": "0"
+          }
+        },
+        {
+          "afterTime": 0,
+          "expected": {
+            "time": 40,
+            "value": "1"
+          }
+        },
+        {
+          "afterTime": 40,
+          "expected": {
+            "time": 70,
+            "value": "0"
+          }
+        },
+        {
+          "afterTime": 70,
+          "expected": null
+        },
+        {
+          "afterTime": 100,
+          "expected": null
+        },
+        {
+          "afterTime": 150,
+          "expected": null
+        }
+      ],
+      "prevTransition": [
+        {
+          "beforeTime": 0,
+          "expected": null
+        },
+        {
+          "beforeTime": 1,
+          "expected": {
+            "time": 0,
+            "value": "0"
+          }
+        },
+        {
+          "beforeTime": 40,
+          "expected": {
+            "time": 0,
+            "value": "0"
+          }
+        },
+        {
+          "beforeTime": 41,
+          "expected": {
+            "time": 40,
+            "value": "1"
+          }
+        },
+        {
+          "beforeTime": 70,
+          "expected": {
+            "time": 40,
+            "value": "1"
+          }
+        },
+        {
+          "beforeTime": 71,
+          "expected": {
+            "time": 70,
+            "value": "0"
+          }
+        },
+        {
+          "beforeTime": 150,
+          "expected": {
+            "time": 70,
+            "value": "0"
+          }
+        }
+      ]
+    },
+    "top.cpu.regfile.r0": {
+      "allChanges": [
+        {
+          "time": 0,
+          "value": "00000000000000000000000000000000"
+        },
+        {
+          "time": 40,
+          "value": "11011110101011011011111011101111"
+        },
+        {
+          "time": 70,
+          "value": "00000000000000000000000000000001"
+        }
+      ],
+      "valueAt": [
+        {
+          "time": -1,
+          "expected": null
+        },
+        {
+          "time": 0,
+          "expected": "00000000000000000000000000000000"
+        },
+        {
+          "time": 1,
+          "expected": "00000000000000000000000000000000"
+        },
+        {
+          "time": 39,
+          "expected": "00000000000000000000000000000000"
+        },
+        {
+          "time": 40,
+          "expected": "11011110101011011011111011101111"
+        },
+        {
+          "time": 41,
+          "expected": "11011110101011011011111011101111"
+        },
+        {
+          "time": 69,
+          "expected": "11011110101011011011111011101111"
+        },
+        {
+          "time": 70,
+          "expected": "00000000000000000000000000000001"
+        },
+        {
+          "time": 71,
+          "expected": "00000000000000000000000000000001"
+        },
+        {
+          "time": 100,
+          "expected": "00000000000000000000000000000001"
+        },
+        {
+          "time": 150,
+          "expected": "00000000000000000000000000000001"
+        }
+      ],
+      "changesInRange": [
+        {
+          "start": 0,
+          "end": 0,
+          "expected": []
+        },
+        {
+          "start": 0,
+          "end": 40,
+          "expected": [
+            {
+              "time": 0,
+              "value": "00000000000000000000000000000000"
+            }
+          ]
+        },
+        {
+          "start": 40,
+          "end": 70,
+          "expected": [
+            {
+              "time": 40,
+              "value": "11011110101011011011111011101111"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 101,
+          "expected": [
+            {
+              "time": 0,
+              "value": "00000000000000000000000000000000"
+            },
+            {
+              "time": 40,
+              "value": "11011110101011011011111011101111"
+            },
+            {
+              "time": 70,
+              "value": "00000000000000000000000000000001"
+            }
+          ]
+        },
+        {
+          "start": 101,
+          "end": 200,
+          "expected": []
+        }
+      ],
+      "nextTransition": [
+        {
+          "afterTime": -1,
+          "expected": {
+            "time": 0,
+            "value": "00000000000000000000000000000000"
+          }
+        },
+        {
+          "afterTime": 0,
+          "expected": {
+            "time": 40,
+            "value": "11011110101011011011111011101111"
+          }
+        },
+        {
+          "afterTime": 40,
+          "expected": {
+            "time": 70,
+            "value": "00000000000000000000000000000001"
+          }
+        },
+        {
+          "afterTime": 70,
+          "expected": null
+        },
+        {
+          "afterTime": 100,
+          "expected": null
+        },
+        {
+          "afterTime": 150,
+          "expected": null
+        }
+      ],
+      "prevTransition": [
+        {
+          "beforeTime": 0,
+          "expected": null
+        },
+        {
+          "beforeTime": 1,
+          "expected": {
+            "time": 0,
+            "value": "00000000000000000000000000000000"
+          }
+        },
+        {
+          "beforeTime": 40,
+          "expected": {
+            "time": 0,
+            "value": "00000000000000000000000000000000"
+          }
+        },
+        {
+          "beforeTime": 41,
+          "expected": {
+            "time": 40,
+            "value": "11011110101011011011111011101111"
+          }
+        },
+        {
+          "beforeTime": 70,
+          "expected": {
+            "time": 40,
+            "value": "11011110101011011011111011101111"
+          }
+        },
+        {
+          "beforeTime": 71,
+          "expected": {
+            "time": 70,
+            "value": "00000000000000000000000000000001"
+          }
+        },
+        {
+          "beforeTime": 150,
+          "expected": {
+            "time": 70,
+            "value": "00000000000000000000000000000001"
+          }
+        }
+      ]
+    },
+    "top.cpu.regfile.r1": {
+      "allChanges": [
+        {
+          "time": 0,
+          "value": "00000000000000000000000000000000"
+        },
+        {
+          "time": 40,
+          "value": "11001010111111101011101010111110"
+        }
+      ],
+      "valueAt": [
+        {
+          "time": -1,
+          "expected": null
+        },
+        {
+          "time": 0,
+          "expected": "00000000000000000000000000000000"
+        },
+        {
+          "time": 1,
+          "expected": "00000000000000000000000000000000"
+        },
+        {
+          "time": 39,
+          "expected": "00000000000000000000000000000000"
+        },
+        {
+          "time": 40,
+          "expected": "11001010111111101011101010111110"
+        },
+        {
+          "time": 41,
+          "expected": "11001010111111101011101010111110"
+        },
+        {
+          "time": 100,
+          "expected": "11001010111111101011101010111110"
+        },
+        {
+          "time": 150,
+          "expected": "11001010111111101011101010111110"
+        }
+      ],
+      "changesInRange": [
+        {
+          "start": 0,
+          "end": 0,
+          "expected": []
+        },
+        {
+          "start": 0,
+          "end": 40,
+          "expected": [
+            {
+              "time": 0,
+              "value": "00000000000000000000000000000000"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 101,
+          "expected": [
+            {
+              "time": 0,
+              "value": "00000000000000000000000000000000"
+            },
+            {
+              "time": 40,
+              "value": "11001010111111101011101010111110"
+            }
+          ]
+        },
+        {
+          "start": 101,
+          "end": 200,
+          "expected": []
+        }
+      ],
+      "nextTransition": [
+        {
+          "afterTime": -1,
+          "expected": {
+            "time": 0,
+            "value": "00000000000000000000000000000000"
+          }
+        },
+        {
+          "afterTime": 0,
+          "expected": {
+            "time": 40,
+            "value": "11001010111111101011101010111110"
+          }
+        },
+        {
+          "afterTime": 40,
+          "expected": null
+        },
+        {
+          "afterTime": 100,
+          "expected": null
+        },
+        {
+          "afterTime": 150,
+          "expected": null
+        }
+      ],
+      "prevTransition": [
+        {
+          "beforeTime": 0,
+          "expected": null
+        },
+        {
+          "beforeTime": 1,
+          "expected": {
+            "time": 0,
+            "value": "00000000000000000000000000000000"
+          }
+        },
+        {
+          "beforeTime": 40,
+          "expected": {
+            "time": 0,
+            "value": "00000000000000000000000000000000"
+          }
+        },
+        {
+          "beforeTime": 41,
+          "expected": {
+            "time": 40,
+            "value": "11001010111111101011101010111110"
+          }
+        },
+        {
+          "beforeTime": 150,
+          "expected": {
+            "time": 40,
+            "value": "11001010111111101011101010111110"
+          }
+        }
+      ]
+    }
+  }
+}

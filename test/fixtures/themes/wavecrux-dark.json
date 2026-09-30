@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "wavecrux-dark",
+  "displayName": "WaveCrux Dark",
+  "brightness": "dark",
+  "tokens": {
+    "canvas": {
+      "background": "#1A1A1A",
+      "lane.backgroundOdd": "#1A1A1A",
+      "lane.backgroundEven": "#1F1F1F",
+      "lane.divider": "#2D2D2D",
+      "group.header": "#252525",
+      "signal.x.fill": "#FF2222",
+      "signal.x.hatch": "#FF4444",
+      "signal.z.line": "#888888",
+      "signal.scalar.low": "#444444",
+      "signal.valueLabel": "#E0E0E0",
+      "cursor.primary": "#FFFF00",
+      "cursor.secondary": "#FF8000",
+      "cursor.delta": "#FFFF0066",
+      "marker.line": "#44AAFF",
+      "marker.flag": "#44AAFF",
+      "marker.flagText": "#000000",
+      "ruler.background": "#141414",
+      "ruler.tick": "#666666",
+      "ruler.tickMajor": "#999999",
+      "ruler.label": "#CCCCCC",
+      "ruler.cursorTime": "#FFFF00",
+      "selection": "#FFFFFF22"
+    }
+  }
+}

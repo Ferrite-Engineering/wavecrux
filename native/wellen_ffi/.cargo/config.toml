@@ -1,0 +1,45 @@
+# Cargo configuration for wellen_ffi cross-compilation.
+#
+# ── Android cross-compilation ──────────────────────────────────────────────────
+#
+# Android targets require the NDK LLVM linker wrappers. Use scripts/build_android.sh
+# from the repository root — it detects the NDK automatically and sets the required
+# CARGO_TARGET_*_LINKER environment variables before invoking cargo.
+#
+# To build manually, export these variables (adjust NDK path and host tag):
+#
+#   NDK_BIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin"
+#   export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$NDK_BIN/aarch64-linux-android24-clang"
+#   export CARGO_TARGET_ARMV7_LINUX_ANDROIDEABI_LINKER="$NDK_BIN/armv7a-linux-androideabi24-clang"
+#   export CARGO_TARGET_X86_64_LINUX_ANDROID_LINKER="$NDK_BIN/x86_64-linux-android24-clang"
+#
+# Supported Android targets and their jniLibs ABI directories:
+#   aarch64-linux-android    →  android/app/src/main/jniLibs/arm64-v8a/
+#   armv7-linux-androideabi  →  android/app/src/main/jniLibs/armeabi-v7a/
+#   x86_64-linux-android     →  android/app/src/main/jniLibs/x86_64/
+#
+# ── iOS cross-compilation ──────────────────────────────────────────────────────
+#
+# iOS uses a static library (.a) bundled into an XCFramework. Run scripts/build_ios.sh
+# from the repository root. No special Cargo configuration is required — Xcode
+# provides the clang toolchain automatically.
+#
+# Supported iOS targets:
+#   aarch64-apple-ios        →  WellenFFI.xcframework (device slice)
+#   aarch64-apple-ios-sim    →  WellenFFI.xcframework (simulator slice)
+#
+# ── Desktop builds ────────────────────────────────────────────────────────────
+#
+# Linux, macOS, and Windows desktop builds use the host system toolchain.
+# Run `cargo build --release` from the native/wellen_ffi directory.
+# scripts/build_macos.sh produces a universal (Intel + Apple Silicon) dylib.
+
+[profile.release-mobile]
+# Size-optimized release profile for mobile .so files.
+# Use with: cargo build --profile release-mobile
+# This keeps the default release profile unchanged for desktop builds.
+inherits = "release"
+opt-level = "z"      # Minimize binary size (trades some throughput for smaller .so)
+lto = true           # Link-time optimization — reduces size and improves inlining
+codegen-units = 1    # Single codegen unit for maximum LTO effectiveness
+strip = "debuginfo"  # Strip debug info; keep exported symbols (wellen_* FFI functions)

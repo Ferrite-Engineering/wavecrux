@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "id": "solarized-dark",
+  "displayName": "Solarized Dark",
+  "brightness": "dark",
+  "tokens": {
+    "canvas": {
+      "background": "#002B36",
+      "lane.backgroundOdd": "#002B36",
+      "lane.backgroundEven": "#073642",
+      "lane.divider": "#0A4652",
+      "group.header": "#073642",
+      "signal.x.fill": "#DC322F",
+      "signal.x.hatch": "#FF4444",
+      "signal.z.line": "#586E75",
+      "signal.scalar.low": "#073642",
+      "signal.valueLabel": "#EEE8D5",
+      "cursor.primary": "#B58900",
+      "cursor.secondary": "#CB4B16",
+      "cursor.delta": "#B5890033",
+      "marker.line": "#268BD2",
+      "marker.flag": "#268BD2",
+      "marker.flagText": "#002B36",
+      "ruler.background": "#073642",
+      "ruler.tick": "#586E75",
+      "ruler.tickMajor": "#839496",
+      "ruler.label": "#93A1A1",
+      "ruler.cursorTime": "#B58900",
+      "selection": "#268BD222"
+    },
+    "chrome": {
+      "scaffold.background": "#002B36",
+      "panel.background": "#073642",
+      "panel.header.background": "#002B36",
+      "panel.header.foreground": "#93A1A1",
+      "toolbar.background": "#002B36",
+      "toolbar.icon": "#839496",
+      "toolbar.iconActive": "#93A1A1",
+      "statusBar.background": "#073642",
+      "statusBar.foreground": "#93A1A1",
+      "splitter": "#0A4652",
+      "splitter.hover": "#268BD2",
+      "tabBar.background": "#073642",
+      "tabBar.selected": "#268BD2",
+      "tabBar.label": "#93A1A1"
+    }
+  }
+}

@@ -1,0 +1,486 @@
+# RV32I — base 32-bit integer instruction set.
+#
+# Schema follows the JKU `instruction-decoder` Rust crate
+# (https://github.com/ics-jku/instruction-decoder, MIT). Files written for the
+# JKU loader load in WaveCrux unmodified; files written here load in Surfer
+# unmodified. See assets/decoders/isa/riscv/NOTICE.md for attribution.
+#
+# Slices in each [[types.<name>]] block tile the 32-bit instruction word
+# MSB-first in listed order: each slice consumes `top - bot + 1` bits from a
+# running cursor, so a slice never states where in the *word* it sits.
+# `top`/`bot` state where the extracted bits land in the named part's
+# *value*; same-name slices are OR'd in at their own offsets, and any value
+# bit no slice claims stays zero. That is how RISC-V's implicit `imm[0] = 0`
+# on branch and jump offsets is expressed with no scaling field in the
+# schema. For `name = "none"` filler only the width matters.
+set = "RV32I"
+width = 32
+
+[formats]
+names = [
+    "rtype",
+    "itype_alu",
+    "itype_shift",
+    "itype_load",
+    "itype_jalr",
+    "stype",
+    "btype",
+    "utype",
+    "jtype",
+    "system",
+    "fence",
+]
+parts = [
+    ["rd", 5, "Register_int"],
+    ["rs1", 5, "Register_int"],
+    ["rs2", 5, "Register_int"],
+    ["imm", 32, "VInt"],
+    ["uimm", 32, "VInt", "hex"],
+    ["shamt", 5, "u8"],
+    ["pred", 4, "u8"],
+    ["succ", 4, "u8"],
+    ["none", 32, "u32"],
+]
+
+# ── types: value-position slice layouts, MSB-first across the word ────────────
+
+[types]
+names = ["t_r", "t_i", "t_i_shift", "t_s", "t_b", "t_u", "t_j", "t_system", "t_fence"]
+
+# R-type: funct7[31:25] | rs2[24:20] | rs1[19:15] | funct3[14:12] | rd[11:7] | opcode[6:0]
+[[types.t_r]]
+name = "none"
+top = 31
+bot = 25
+[[types.t_r]]
+name = "rs2"
+top = 4
+bot = 0
+[[types.t_r]]
+name = "rs1"
+top = 4
+bot = 0
+[[types.t_r]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_r]]
+name = "rd"
+top = 4
+bot = 0
+[[types.t_r]]
+name = "none"
+top = 6
+bot = 0
+
+# I-type: imm[11:0][31:20] | rs1[19:15] | funct3[14:12] | rd[11:7] | opcode[6:0]
+# imm is a VInt, so it sign-extends from its assembled 12-bit width.
+[[types.t_i]]
+name = "imm"
+top = 11
+bot = 0
+[[types.t_i]]
+name = "rs1"
+top = 4
+bot = 0
+[[types.t_i]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_i]]
+name = "rd"
+top = 4
+bot = 0
+[[types.t_i]]
+name = "none"
+top = 6
+bot = 0
+
+# I-type shift (RV32I): funct7[31:25] | shamt[24:20] | rs1 | funct3 | rd | opcode
+[[types.t_i_shift]]
+name = "none"
+top = 31
+bot = 25
+[[types.t_i_shift]]
+name = "shamt"
+top = 4
+bot = 0
+[[types.t_i_shift]]
+name = "rs1"
+top = 4
+bot = 0
+[[types.t_i_shift]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_i_shift]]
+name = "rd"
+top = 4
+bot = 0
+[[types.t_i_shift]]
+name = "none"
+top = 6
+bot = 0
+
+# S-type: imm[11:5][31:25] | rs2 | rs1 | funct3 | imm[4:0][11:7] | opcode
+[[types.t_s]]
+name = "imm"
+top = 11
+bot = 5
+[[types.t_s]]
+name = "rs2"
+top = 4
+bot = 0
+[[types.t_s]]
+name = "rs1"
+top = 4
+bot = 0
+[[types.t_s]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_s]]
+name = "imm"
+top = 4
+bot = 0
+[[types.t_s]]
+name = "none"
+top = 6
+bot = 0
+
+# B-type: imm[12][31] | imm[10:5][30:25] | rs2 | rs1 | funct3 | imm[4:1][11:8]
+#   | imm[11][7] | opcode
+# The immediate is a 13-bit signed byte offset whose bit 0 is architecturally
+# zero (branch targets are 2-byte aligned). No slice claims value bit 0, so it
+# reads back as zero — the ×2 scaling is the layout, not a decoder rule.
+[[types.t_b]]
+name = "imm"
+top = 12
+bot = 12
+[[types.t_b]]
+name = "imm"
+top = 10
+bot = 5
+[[types.t_b]]
+name = "rs2"
+top = 4
+bot = 0
+[[types.t_b]]
+name = "rs1"
+top = 4
+bot = 0
+[[types.t_b]]
+name = "none"
+top = 14
+bot = 12
+[[types.t_b]]
+name = "imm"
+top = 4
+bot = 1
+[[types.t_b]]
+name = "imm"
+top = 11
+bot = 11
+[[types.t_b]]
+name = "none"
+top = 6
+bot = 0
+
+# U-type: imm[31:12][31:12] | rd | opcode
+# The 20 bits are rendered as-is (hex); lui/auipc declare `unsigned = true`.
+[[types.t_u]]
+name = "uimm"
+top = 19
+bot = 0
+[[types.t_u]]
+name = "rd"
+top = 4
+bot = 0
+[[types.t_u]]
+name = "none"
+top = 6
+bot = 0
+
+# J-type: imm[20][31] | imm[10:1][30:21] | imm[11][20] | imm[19:12][19:12]
+#   | rd | opcode
+# 21-bit signed byte offset; value bit 0 is unclaimed and therefore zero.
+[[types.t_j]]
+name = "imm"
+top = 20
+bot = 20
+[[types.t_j]]
+name = "imm"
+top = 10
+bot = 1
+[[types.t_j]]
+name = "imm"
+top = 11
+bot = 11
+[[types.t_j]]
+name = "imm"
+top = 19
+bot = 12
+[[types.t_j]]
+name = "rd"
+top = 4
+bot = 0
+[[types.t_j]]
+name = "none"
+top = 6
+bot = 0
+
+# System: ecall/ebreak — full 32-bit fixed encoding, no operands.
+[[types.t_system]]
+name = "none"
+top = 31
+bot = 0
+
+# fence: 4-bit pred[27:24] and 4-bit succ[23:20], rest zero.
+[[types.t_fence]]
+name = "none"
+top = 31
+bot = 28
+[[types.t_fence]]
+name = "pred"
+top = 3
+bot = 0
+[[types.t_fence]]
+name = "succ"
+top = 3
+bot = 0
+[[types.t_fence]]
+name = "none"
+top = 19
+bot = 0
+
+# ── mappings: register ABI names ──────────────────────────────────────────────
+
+[mappings]
+names = ["Register_int"]
+Register_int = [
+    "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
+    "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5",
+    "a6", "a7", "s2", "s3", "s4", "s5", "s6", "s7",
+    "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6",
+]
+
+# ── R-type instructions (opcode 0x33) ─────────────────────────────────────────
+
+[rtype]
+type = "t_r"
+
+[rtype.repr]
+default = "$name$ %rd%, %rs1%, %rs2%"
+
+[rtype.instructions.add]
+mask = 0xfe00707f
+match = 0x00000033
+[rtype.instructions.sub]
+mask = 0xfe00707f
+match = 0x40000033
+[rtype.instructions.sll]
+mask = 0xfe00707f
+match = 0x00001033
+[rtype.instructions.slt]
+mask = 0xfe00707f
+match = 0x00002033
+[rtype.instructions.sltu]
+mask = 0xfe00707f
+match = 0x00003033
+[rtype.instructions.xor]
+mask = 0xfe00707f
+match = 0x00004033
+[rtype.instructions.srl]
+mask = 0xfe00707f
+match = 0x00005033
+[rtype.instructions.sra]
+mask = 0xfe00707f
+match = 0x40005033
+[rtype.instructions.or]
+mask = 0xfe00707f
+match = 0x00006033
+[rtype.instructions.and]
+mask = 0xfe00707f
+match = 0x00007033
+
+# ── I-type ALU (opcode 0x13, non-shift funct3) ────────────────────────────────
+
+[itype_alu]
+type = "t_i"
+
+[itype_alu.repr]
+default = "$name$ %rd%, %rs1%, %imm%"
+
+[itype_alu.instructions.addi]
+mask = 0x0000707f
+match = 0x00000013
+[itype_alu.instructions.slti]
+mask = 0x0000707f
+match = 0x00002013
+[itype_alu.instructions.sltiu]
+mask = 0x0000707f
+match = 0x00003013
+[itype_alu.instructions.xori]
+mask = 0x0000707f
+match = 0x00004013
+[itype_alu.instructions.ori]
+mask = 0x0000707f
+match = 0x00006013
+[itype_alu.instructions.andi]
+mask = 0x0000707f
+match = 0x00007013
+
+# ── I-type shifts (opcode 0x13, funct3 001 / 101) ─────────────────────────────
+
+[itype_shift]
+type = "t_i_shift"
+
+[itype_shift.repr]
+default = "$name$ %rd%, %rs1%, %shamt%"
+
+[itype_shift.instructions.slli]
+mask = 0xfe00707f
+match = 0x00001013
+[itype_shift.instructions.srli]
+mask = 0xfe00707f
+match = 0x00005013
+[itype_shift.instructions.srai]
+mask = 0xfe00707f
+match = 0x40005013
+
+# ── I-type loads (opcode 0x03) ────────────────────────────────────────────────
+
+[itype_load]
+type = "t_i"
+
+[itype_load.repr]
+default = "$name$ %rd%, %imm%(%rs1%)"
+
+[itype_load.instructions.lb]
+mask = 0x0000707f
+match = 0x00000003
+[itype_load.instructions.lh]
+mask = 0x0000707f
+match = 0x00001003
+[itype_load.instructions.lw]
+mask = 0x0000707f
+match = 0x00002003
+[itype_load.instructions.lbu]
+mask = 0x0000707f
+match = 0x00004003
+[itype_load.instructions.lhu]
+mask = 0x0000707f
+match = 0x00005003
+
+# ── jalr (opcode 0x67, funct3 0) ──────────────────────────────────────────────
+
+[itype_jalr]
+type = "t_i"
+
+[itype_jalr.repr]
+default = "$name$ %rd%, %imm%(%rs1%)"
+
+[itype_jalr.instructions.jalr]
+mask = 0x0000707f
+match = 0x00000067
+
+# ── S-type stores (opcode 0x23) ───────────────────────────────────────────────
+
+[stype]
+type = "t_s"
+
+[stype.repr]
+default = "$name$ %rs2%, %imm%(%rs1%)"
+
+[stype.instructions.sb]
+mask = 0x0000707f
+match = 0x00000023
+[stype.instructions.sh]
+mask = 0x0000707f
+match = 0x00001023
+[stype.instructions.sw]
+mask = 0x0000707f
+match = 0x00002023
+
+# ── B-type branches (opcode 0x63) ─────────────────────────────────────────────
+
+[btype]
+type = "t_b"
+
+[btype.repr]
+default = "$name$ %rs1%, %rs2%, %imm%"
+
+[btype.instructions.beq]
+mask = 0x0000707f
+match = 0x00000063
+[btype.instructions.bne]
+mask = 0x0000707f
+match = 0x00001063
+[btype.instructions.blt]
+mask = 0x0000707f
+match = 0x00004063
+[btype.instructions.bge]
+mask = 0x0000707f
+match = 0x00005063
+[btype.instructions.bltu]
+mask = 0x0000707f
+match = 0x00006063
+[btype.instructions.bgeu]
+mask = 0x0000707f
+match = 0x00007063
+
+# ── U-type (lui = 0x37, auipc = 0x17) ─────────────────────────────────────────
+
+[utype]
+type = "t_u"
+
+[utype.repr]
+default = "$name$ %rd%, %uimm%"
+
+[utype.instructions.lui]
+mask = 0x0000007f
+match = 0x00000037
+unsigned = true
+[utype.instructions.auipc]
+mask = 0x0000007f
+match = 0x00000017
+unsigned = true
+
+# ── J-type (jal = 0x6F) ───────────────────────────────────────────────────────
+
+[jtype]
+type = "t_j"
+
+[jtype.repr]
+default = "$name$ %rd%, %imm%"
+
+[jtype.instructions.jal]
+mask = 0x0000007f
+match = 0x0000006f
+
+# ── System (ecall, ebreak) ────────────────────────────────────────────────────
+
+[system]
+type = "t_system"
+
+[system.repr]
+default = "$name$"
+
+[system.instructions.ecall]
+mask = 0xffffffff
+match = 0x00000073
+[system.instructions.ebreak]
+mask = 0xffffffff
+match = 0x00100073
+
+# ── Fence (opcode 0x0F) ───────────────────────────────────────────────────────
+
+[fence]
+type = "t_fence"
+
+[fence.repr]
+default = "$name$"
+
+[fence.instructions.fence]
+mask = 0x0000707f
+match = 0x0000000f

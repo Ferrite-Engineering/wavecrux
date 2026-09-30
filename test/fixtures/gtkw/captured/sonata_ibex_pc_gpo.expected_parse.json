@@ -1,0 +1,46 @@
+{
+  "dumpFilePath": "./sim.fst",
+  "timeStart": 5093,
+  "zoomFactor": -7.0,
+  "primaryMarker": 3723,
+  "canvasBackgroundHex": null,
+  "openScopes": [
+    "TOP.",
+    "TOP.top_verilator.",
+    "TOP.top_verilator.u_sonata_system.",
+    "TOP.top_verilator.u_sonata_system.u_top_tracing.",
+    "TOP.top_verilator.u_sonata_system.u_top_tracing.u_ibex_top.",
+    "TOP.top_verilator.u_sonata_system.u_top_tracing.u_ibex_top.u_ibex_core.",
+    "TOP.top_verilator.u_sonata_system.u_top_tracing.u_ibex_top.u_ibex_core.wb_stage_i."
+  ],
+  "namedMarkers": {},
+  "entries": [
+    {
+      "type": "signal",
+      "path": "TOP.top_verilator.u_sonata_system.clk_sys_i",
+      "format": "binary",
+      "colorArgb": 4294923605,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "TOP.top_verilator.u_sonata_system.gp_o[23:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "TOP.top_verilator.u_sonata_system.u_top_tracing.u_ibex_top.u_ibex_core.wb_stage_i.pc_wb_o[31:0]",
+      "format": "hexadecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    }
+  ]
+}

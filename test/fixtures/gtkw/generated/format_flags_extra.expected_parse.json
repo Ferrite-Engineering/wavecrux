@@ -1,0 +1,47 @@
+{
+  "dumpFilePath": "fixture.vcd",
+  "timeStart": 0,
+  "zoomFactor": -19.0,
+  "primaryMarker": null,
+  "canvasBackgroundHex": null,
+  "openScopes": [],
+  "namedMarkers": {},
+  "entries": [
+    {
+      "type": "signal",
+      "path": "top.data",
+      "format": "ascii",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "top.cpu.addr",
+      "format": "signedDecimal",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "top.cpu.dout",
+      "format": "grayCode",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    },
+    {
+      "type": "signal",
+      "path": "top.clk",
+      "format": "grayCode",
+      "colorArgb": null,
+      "translateFilterPath": null,
+      "renderAsAnalog": false,
+      "analogInterpolation": "stepHold"
+    }
+  ]
+}

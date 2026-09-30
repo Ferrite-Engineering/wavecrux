@@ -1,0 +1,16 @@
+# Flutter-related
+**/Flutter/ephemeral/
+**/Pods/
+# NOTE: macos/Podfile is intentionally COMMITTED (not ignored). The macOS
+# target is on Swift Package Manager for most plugins, but `screen_retriever_macos`
+# is still CocoaPods-only, so Flutter keeps a Podfile and the Runner project keeps
+# its `[CP] Embed Pods Frameworks` phase. On a clean CI checkout the cached
+# `.dart_tool` makes `flutter pub get` skip regenerating the Podfile, so without
+# the committed file `flutter build macos` reaches Xcode with no Pods integration
+# (empty ${PODS_ROOT}) and fails loading the Pods xcfilelists. Committing it (as
+# Podfile.lock already is) keeps the macOS release build green. Do not re-ignore
+# it until every macOS plugin has adopted SPM.
+
+# Xcode-related
+**/dgph
+**/xcuserdata/

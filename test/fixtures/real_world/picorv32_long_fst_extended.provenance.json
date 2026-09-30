@@ -1,0 +1,16 @@
+{
+  "source_url": "https://github.com/YosysHQ/picorv32",
+  "source_commit": "87c89acc18994c8cf9a2311e871818e87d304568",
+  "license": "ISC",
+  "license_spdx": "ISC",
+  "simulator": "iverilog",
+  "simulator_version": "13.0",
+  "acquired_date": "2026-05-31",
+  "size_bytes": 536750,
+  "brief_description": "Extended-run PicoRV32 ez testbench — 50,000 clock cycles instead of the stock 1,000 — captured as VCD then converted to FST via vcd2fst. Raw VCD was 14.3 MB; FST compression brings it to 537 KB. Provides the medium-scale event-count axis: hundreds of thousands of value updates across the picorv32 core's full hierarchy. Built locally with a one-line patch to repeat-count + vcd2fst.",
+  "anchors": [
+    "scope `testbench.uut` is the picorv32 core (deep hierarchy)",
+    "memory address 0x3fc holds the loop counter incrementing on each iteration",
+    "trace ends at simulation time 501,000,000 ps (~501 us)"
+  ]
+}

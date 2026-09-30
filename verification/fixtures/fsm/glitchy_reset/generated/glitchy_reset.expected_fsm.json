@@ -1,0 +1,58 @@
+{
+  "signalPath": "tb.STATE",
+  "startTime": 0,
+  "endTime": 61,
+  "totalTransitionCount": 3,
+  "states": [
+    {
+      "id": "0",
+      "label": "0",
+      "entryCount": 2,
+      "firstEntryTime": 10
+    },
+    {
+      "id": "1",
+      "label": "1",
+      "entryCount": 1,
+      "firstEntryTime": 20
+    },
+    {
+      "id": "2",
+      "label": "2",
+      "entryCount": 1,
+      "firstEntryTime": 40
+    },
+    {
+      "id": "3",
+      "label": "3",
+      "entryCount": 1,
+      "firstEntryTime": 50
+    }
+  ],
+  "transitions": [
+    {
+      "fromId": "0",
+      "toId": "1",
+      "count": 1,
+      "times": [
+        20
+      ]
+    },
+    {
+      "fromId": "2",
+      "toId": "3",
+      "count": 1,
+      "times": [
+        50
+      ]
+    },
+    {
+      "fromId": "3",
+      "toId": "0",
+      "count": 1,
+      "times": [
+        60
+      ]
+    }
+  ]
+}

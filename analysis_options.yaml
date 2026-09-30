@@ -1,0 +1,45 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  # Dart's strict language modes.
+  #
+  # very_good_analysis is a lint-rule package — it does not turn these on, so
+  # until now implicit dynamic downcasts typechecked throughout a codebase that
+  # parses a lot of untyped JSON and YAML: session documents, workspace files,
+  # pack manifests, CXP messages, update manifests.
+  #
+  # Measured before enabling rather than assumed: all three modes across all
+  # nine targets produced ZERO findings. The gap the audit flagged was real,
+  # but the discipline was already being kept by hand, so making it mechanical
+  # cost nothing.
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  exclude:
+    - lib/generated/**
+    - lib/l10n/generated/**
+    - lib/native/bindings/**
+    - '**/*.g.dart'
+    # crux-shared is a nested submodule with its own analysis_options and
+    # its own CI. Don't audit other repos' source as a side-effect of
+    # pinning them as submodules. Mirrors the Pro overlay's exclude of this
+    # repository when it is consumed as a submodule.
+    - crux-shared/**
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
+
+linter:
+  rules:
+    # Deferred: class-level docs cover intent; member-level added incrementally.
+    public_member_api_docs: false
+    # Line length: 80 chars is too strict for complex FFI/doc lines; enforced
+    # by dartfmt in CI instead.
+    lines_longer_than_80_chars: false
+    # Doc comment cross-refs across files are valid in IDEs; no need to flag.
+    comment_references: false

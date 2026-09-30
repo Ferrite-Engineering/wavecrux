@@ -1,0 +1,4000 @@
+{
+  "metadata": {
+    "timescale": {
+      "factor": 1,
+      "unit": "nanoSeconds"
+    },
+    "startTime": 0,
+    "endTime": 380,
+    "date": null,
+    "version": null
+  },
+  "hierarchy": {
+    "rootScopes": [
+      {
+        "name": "top",
+        "type": "module",
+        "path": "top",
+        "childScopes": [],
+        "variables": [
+          {
+            "name": "bit1",
+            "fullPath": "top.bit1",
+            "varType": "wire",
+            "bitWidth": 1,
+            "direction": "unknown"
+          },
+          {
+            "name": "nib4",
+            "fullPath": "top.nib4",
+            "varType": "wire",
+            "bitWidth": 4,
+            "direction": "unknown"
+          },
+          {
+            "name": "byte8",
+            "fullPath": "top.byte8",
+            "varType": "wire",
+            "bitWidth": 8,
+            "direction": "unknown"
+          },
+          {
+            "name": "word16",
+            "fullPath": "top.word16",
+            "varType": "wire",
+            "bitWidth": 16,
+            "direction": "unknown"
+          },
+          {
+            "name": "long32",
+            "fullPath": "top.long32",
+            "varType": "wire",
+            "bitWidth": 32,
+            "direction": "unknown"
+          },
+          {
+            "name": "quad64",
+            "fullPath": "top.quad64",
+            "varType": "wire",
+            "bitWidth": 64,
+            "direction": "unknown"
+          },
+          {
+            "name": "xnib",
+            "fullPath": "top.xnib",
+            "varType": "wire",
+            "bitWidth": 4,
+            "direction": "unknown"
+          },
+          {
+            "name": "znib",
+            "fullPath": "top.znib",
+            "varType": "wire",
+            "bitWidth": 4,
+            "direction": "unknown"
+          },
+          {
+            "name": "mixed_xz",
+            "fullPath": "top.mixed_xz",
+            "varType": "wire",
+            "bitWidth": 8,
+            "direction": "unknown"
+          }
+        ]
+      }
+    ]
+  },
+  "signals": {
+    "top.bit1": {
+      "allChanges": [
+        {
+          "time": 0,
+          "value": "0"
+        },
+        {
+          "time": 10,
+          "value": "1"
+        },
+        {
+          "time": 20,
+          "value": "0"
+        },
+        {
+          "time": 30,
+          "value": "1"
+        },
+        {
+          "time": 40,
+          "value": "0"
+        }
+      ],
+      "valueAt": [
+        {
+          "time": -1,
+          "expected": null
+        },
+        {
+          "time": 0,
+          "expected": "0"
+        },
+        {
+          "time": 5,
+          "expected": "0"
+        },
+        {
+          "time": 9,
+          "expected": "0"
+        },
+        {
+          "time": 10,
+          "expected": "1"
+        },
+        {
+          "time": 15,
+          "expected": "1"
+        },
+        {
+          "time": 19,
+          "expected": "1"
+        },
+        {
+          "time": 20,
+          "expected": "0"
+        },
+        {
+          "time": 25,
+          "expected": "0"
+        },
+        {
+          "time": 29,
+          "expected": "0"
+        },
+        {
+          "time": 30,
+          "expected": "1"
+        },
+        {
+          "time": 35,
+          "expected": "1"
+        },
+        {
+          "time": 39,
+          "expected": "1"
+        },
+        {
+          "time": 40,
+          "expected": "0"
+        },
+        {
+          "time": 210,
+          "expected": "0"
+        },
+        {
+          "time": 380,
+          "expected": "0"
+        },
+        {
+          "time": 381,
+          "expected": "0"
+        },
+        {
+          "time": 761,
+          "expected": "0"
+        }
+      ],
+      "changesInRange": [
+        {
+          "start": 0,
+          "end": 0,
+          "expected": []
+        },
+        {
+          "start": 0,
+          "end": 381,
+          "expected": [
+            {
+              "time": 0,
+              "value": "0"
+            },
+            {
+              "time": 10,
+              "value": "1"
+            },
+            {
+              "time": 20,
+              "value": "0"
+            },
+            {
+              "time": 30,
+              "value": "1"
+            },
+            {
+              "time": 40,
+              "value": "0"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 11,
+          "expected": [
+            {
+              "time": 0,
+              "value": "0"
+            },
+            {
+              "time": 10,
+              "value": "1"
+            }
+          ]
+        },
+        {
+          "start": 10,
+          "end": 21,
+          "expected": [
+            {
+              "time": 10,
+              "value": "1"
+            },
+            {
+              "time": 20,
+              "value": "0"
+            }
+          ]
+        },
+        {
+          "start": 20,
+          "end": 31,
+          "expected": [
+            {
+              "time": 20,
+              "value": "0"
+            },
+            {
+              "time": 30,
+              "value": "1"
+            }
+          ]
+        },
+        {
+          "start": 30,
+          "end": 41,
+          "expected": [
+            {
+              "time": 30,
+              "value": "1"
+            },
+            {
+              "time": 40,
+              "value": "0"
+            }
+          ]
+        },
+        {
+          "start": 40,
+          "end": 381,
+          "expected": [
+            {
+              "time": 40,
+              "value": "0"
+            }
+          ]
+        }
+      ],
+      "nextTransition": [
+        {
+          "afterTime": -1,
+          "expected": {
+            "time": 0,
+            "value": "0"
+          }
+        },
+        {
+          "afterTime": 0,
+          "expected": {
+            "time": 10,
+            "value": "1"
+          }
+        },
+        {
+          "afterTime": 10,
+          "expected": {
+            "time": 20,
+            "value": "0"
+          }
+        },
+        {
+          "afterTime": 20,
+          "expected": {
+            "time": 30,
+            "value": "1"
+          }
+        },
+        {
+          "afterTime": 30,
+          "expected": {
+            "time": 40,
+            "value": "0"
+          }
+        },
+        {
+          "afterTime": 40,
+          "expected": null
+        },
+        {
+          "afterTime": 380,
+          "expected": null
+        },
+        {
+          "afterTime": 381,
+          "expected": null
+        }
+      ],
+      "prevTransition": [
+        {
+          "beforeTime": -1,
+          "expected": null
+        },
+        {
+          "beforeTime": 0,
+          "expected": null
+        },
+        {
+          "beforeTime": 10,
+          "expected": {
+            "time": 0,
+            "value": "0"
+          }
+        },
+        {
+          "beforeTime": 20,
+          "expected": {
+            "time": 10,
+            "value": "1"
+          }
+        },
+        {
+          "beforeTime": 30,
+          "expected": {
+            "time": 20,
+            "value": "0"
+          }
+        },
+        {
+          "beforeTime": 40,
+          "expected": {
+            "time": 30,
+            "value": "1"
+          }
+        },
+        {
+          "beforeTime": 380,
+          "expected": {
+            "time": 40,
+            "value": "0"
+          }
+        },
+        {
+          "beforeTime": 381,
+          "expected": {
+            "time": 40,
+            "value": "0"
+          }
+        }
+      ]
+    },
+    "top.nib4": {
+      "allChanges": [
+        {
+          "time": 0,
+          "value": "0000"
+        },
+        {
+          "time": 10,
+          "value": "1111"
+        },
+        {
+          "time": 20,
+          "value": "0000"
+        },
+        {
+          "time": 30,
+          "value": "1010"
+        },
+        {
+          "time": 250,
+          "value": "0001"
+        },
+        {
+          "time": 260,
+          "value": "0011"
+        },
+        {
+          "time": 270,
+          "value": "0010"
+        },
+        {
+          "time": 280,
+          "value": "0110"
+        },
+        {
+          "time": 290,
+          "value": "0111"
+        },
+        {
+          "time": 300,
+          "value": "0101"
+        },
+        {
+          "time": 310,
+          "value": "0100"
+        },
+        {
+          "time": 320,
+          "value": "1100"
+        },
+        {
+          "time": 330,
+          "value": "1101"
+        },
+        {
+          "time": 340,
+          "value": "1110"
+        },
+        {
+          "time": 350,
+          "value": "1011"
+        },
+        {
+          "time": 360,
+          "value": "1001"
+        },
+        {
+          "time": 370,
+          "value": "1000"
+        }
+      ],
+      "valueAt": [
+        {
+          "time": -1,
+          "expected": null
+        },
+        {
+          "time": 0,
+          "expected": "0000"
+        },
+        {
+          "time": 5,
+          "expected": "0000"
+        },
+        {
+          "time": 9,
+          "expected": "0000"
+        },
+        {
+          "time": 10,
+          "expected": "1111"
+        },
+        {
+          "time": 15,
+          "expected": "1111"
+        },
+        {
+          "time": 19,
+          "expected": "1111"
+        },
+        {
+          "time": 20,
+          "expected": "0000"
+        },
+        {
+          "time": 25,
+          "expected": "0000"
+        },
+        {
+          "time": 29,
+          "expected": "0000"
+        },
+        {
+          "time": 30,
+          "expected": "1010"
+        },
+        {
+          "time": 140,
+          "expected": "1010"
+        },
+        {
+          "time": 249,
+          "expected": "1010"
+        },
+        {
+          "time": 250,
+          "expected": "0001"
+        },
+        {
+          "time": 255,
+          "expected": "0001"
+        },
+        {
+          "time": 259,
+          "expected": "0001"
+        },
+        {
+          "time": 260,
+          "expected": "0011"
+        },
+        {
+          "time": 265,
+          "expected": "0011"
+        },
+        {
+          "time": 269,
+          "expected": "0011"
+        },
+        {
+          "time": 270,
+          "expected": "0010"
+        },
+        {
+          "time": 275,
+          "expected": "0010"
+        },
+        {
+          "time": 279,
+          "expected": "0010"
+        },
+        {
+          "time": 280,
+          "expected": "0110"
+        },
+        {
+          "time": 285,
+          "expected": "0110"
+        },
+        {
+          "time": 289,
+          "expected": "0110"
+        },
+        {
+          "time": 290,
+          "expected": "0111"
+        },
+        {
+          "time": 295,
+          "expected": "0111"
+        },
+        {
+          "time": 299,
+          "expected": "0111"
+        },
+        {
+          "time": 300,
+          "expected": "0101"
+        },
+        {
+          "time": 305,
+          "expected": "0101"
+        },
+        {
+          "time": 309,
+          "expected": "0101"
+        },
+        {
+          "time": 310,
+          "expected": "0100"
+        },
+        {
+          "time": 315,
+          "expected": "0100"
+        },
+        {
+          "time": 319,
+          "expected": "0100"
+        },
+        {
+          "time": 320,
+          "expected": "1100"
+        },
+        {
+          "time": 325,
+          "expected": "1100"
+        },
+        {
+          "time": 329,
+          "expected": "1100"
+        },
+        {
+          "time": 330,
+          "expected": "1101"
+        },
+        {
+          "time": 335,
+          "expected": "1101"
+        },
+        {
+          "time": 339,
+          "expected": "1101"
+        },
+        {
+          "time": 340,
+          "expected": "1110"
+        },
+        {
+          "time": 345,
+          "expected": "1110"
+        },
+        {
+          "time": 349,
+          "expected": "1110"
+        },
+        {
+          "time": 350,
+          "expected": "1011"
+        },
+        {
+          "time": 355,
+          "expected": "1011"
+        },
+        {
+          "time": 359,
+          "expected": "1011"
+        },
+        {
+          "time": 360,
+          "expected": "1001"
+        },
+        {
+          "time": 365,
+          "expected": "1001"
+        },
+        {
+          "time": 369,
+          "expected": "1001"
+        },
+        {
+          "time": 370,
+          "expected": "1000"
+        },
+        {
+          "time": 375,
+          "expected": "1000"
+        },
+        {
+          "time": 380,
+          "expected": "1000"
+        },
+        {
+          "time": 381,
+          "expected": "1000"
+        },
+        {
+          "time": 761,
+          "expected": "1000"
+        }
+      ],
+      "changesInRange": [
+        {
+          "start": 0,
+          "end": 0,
+          "expected": []
+        },
+        {
+          "start": 0,
+          "end": 381,
+          "expected": [
+            {
+              "time": 0,
+              "value": "0000"
+            },
+            {
+              "time": 10,
+              "value": "1111"
+            },
+            {
+              "time": 20,
+              "value": "0000"
+            },
+            {
+              "time": 30,
+              "value": "1010"
+            },
+            {
+              "time": 250,
+              "value": "0001"
+            },
+            {
+              "time": 260,
+              "value": "0011"
+            },
+            {
+              "time": 270,
+              "value": "0010"
+            },
+            {
+              "time": 280,
+              "value": "0110"
+            },
+            {
+              "time": 290,
+              "value": "0111"
+            },
+            {
+              "time": 300,
+              "value": "0101"
+            },
+            {
+              "time": 310,
+              "value": "0100"
+            },
+            {
+              "time": 320,
+              "value": "1100"
+            },
+            {
+              "time": 330,
+              "value": "1101"
+            },
+            {
+              "time": 340,
+              "value": "1110"
+            },
+            {
+              "time": 350,
+              "value": "1011"
+            },
+            {
+              "time": 360,
+              "value": "1001"
+            },
+            {
+              "time": 370,
+              "value": "1000"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 11,
+          "expected": [
+            {
+              "time": 0,
+              "value": "0000"
+            },
+            {
+              "time": 10,
+              "value": "1111"
+            }
+          ]
+        },
+        {
+          "start": 10,
+          "end": 21,
+          "expected": [
+            {
+              "time": 10,
+              "value": "1111"
+            },
+            {
+              "time": 20,
+              "value": "0000"
+            }
+          ]
+        },
+        {
+          "start": 20,
+          "end": 31,
+          "expected": [
+            {
+              "time": 20,
+              "value": "0000"
+            },
+            {
+              "time": 30,
+              "value": "1010"
+            }
+          ]
+        },
+        {
+          "start": 30,
+          "end": 251,
+          "expected": [
+            {
+              "time": 30,
+              "value": "1010"
+            },
+            {
+              "time": 250,
+              "value": "0001"
+            }
+          ]
+        },
+        {
+          "start": 250,
+          "end": 261,
+          "expected": [
+            {
+              "time": 250,
+              "value": "0001"
+            },
+            {
+              "time": 260,
+              "value": "0011"
+            }
+          ]
+        },
+        {
+          "start": 260,
+          "end": 271,
+          "expected": [
+            {
+              "time": 260,
+              "value": "0011"
+            },
+            {
+              "time": 270,
+              "value": "0010"
+            }
+          ]
+        },
+        {
+          "start": 270,
+          "end": 281,
+          "expected": [
+            {
+              "time": 270,
+              "value": "0010"
+            },
+            {
+              "time": 280,
+              "value": "0110"
+            }
+          ]
+        },
+        {
+          "start": 280,
+          "end": 291,
+          "expected": [
+            {
+              "time": 280,
+              "value": "0110"
+            },
+            {
+              "time": 290,
+              "value": "0111"
+            }
+          ]
+        },
+        {
+          "start": 290,
+          "end": 301,
+          "expected": [
+            {
+              "time": 290,
+              "value": "0111"
+            },
+            {
+              "time": 300,
+              "value": "0101"
+            }
+          ]
+        },
+        {
+          "start": 300,
+          "end": 311,
+          "expected": [
+            {
+              "time": 300,
+              "value": "0101"
+            },
+            {
+              "time": 310,
+              "value": "0100"
+            }
+          ]
+        },
+        {
+          "start": 310,
+          "end": 321,
+          "expected": [
+            {
+              "time": 310,
+              "value": "0100"
+            },
+            {
+              "time": 320,
+              "value": "1100"
+            }
+          ]
+        },
+        {
+          "start": 320,
+          "end": 331,
+          "expected": [
+            {
+              "time": 320,
+              "value": "1100"
+            },
+            {
+              "time": 330,
+              "value": "1101"
+            }
+          ]
+        },
+        {
+          "start": 330,
+          "end": 341,
+          "expected": [
+            {
+              "time": 330,
+              "value": "1101"
+            },
+            {
+              "time": 340,
+              "value": "1110"
+            }
+          ]
+        },
+        {
+          "start": 340,
+          "end": 351,
+          "expected": [
+            {
+              "time": 340,
+              "value": "1110"
+            },
+            {
+              "time": 350,
+              "value": "1011"
+            }
+          ]
+        },
+        {
+          "start": 350,
+          "end": 361,
+          "expected": [
+            {
+              "time": 350,
+              "value": "1011"
+            },
+            {
+              "time": 360,
+              "value": "1001"
+            }
+          ]
+        },
+        {
+          "start": 360,
+          "end": 371,
+          "expected": [
+            {
+              "time": 360,
+              "value": "1001"
+            },
+            {
+              "time": 370,
+              "value": "1000"
+            }
+          ]
+        },
+        {
+          "start": 370,
+          "end": 381,
+          "expected": [
+            {
+              "time": 370,
+              "value": "1000"
+            }
+          ]
+        }
+      ],
+      "nextTransition": [
+        {
+          "afterTime": -1,
+          "expected": {
+            "time": 0,
+            "value": "0000"
+          }
+        },
+        {
+          "afterTime": 0,
+          "expected": {
+            "time": 10,
+            "value": "1111"
+          }
+        },
+        {
+          "afterTime": 10,
+          "expected": {
+            "time": 20,
+            "value": "0000"
+          }
+        },
+        {
+          "afterTime": 20,
+          "expected": {
+            "time": 30,
+            "value": "1010"
+          }
+        },
+        {
+          "afterTime": 30,
+          "expected": {
+            "time": 250,
+            "value": "0001"
+          }
+        },
+        {
+          "afterTime": 250,
+          "expected": {
+            "time": 260,
+            "value": "0011"
+          }
+        },
+        {
+          "afterTime": 260,
+          "expected": {
+            "time": 270,
+            "value": "0010"
+          }
+        },
+        {
+          "afterTime": 270,
+          "expected": {
+            "time": 280,
+            "value": "0110"
+          }
+        },
+        {
+          "afterTime": 280,
+          "expected": {
+            "time": 290,
+            "value": "0111"
+          }
+        },
+        {
+          "afterTime": 290,
+          "expected": {
+            "time": 300,
+            "value": "0101"
+          }
+        },
+        {
+          "afterTime": 300,
+          "expected": {
+            "time": 310,
+            "value": "0100"
+          }
+        },
+        {
+          "afterTime": 310,
+          "expected": {
+            "time": 320,
+            "value": "1100"
+          }
+        },
+        {
+          "afterTime": 320,
+          "expected": {
+            "time": 330,
+            "value": "1101"
+          }
+        },
+        {
+          "afterTime": 330,
+          "expected": {
+            "time": 340,
+            "value": "1110"
+          }
+        },
+        {
+          "afterTime": 340,
+          "expected": {
+            "time": 350,
+            "value": "1011"
+          }
+        },
+        {
+          "afterTime": 350,
+          "expected": {
+            "time": 360,
+            "value": "1001"
+          }
+        },
+        {
+          "afterTime": 360,
+          "expected": {
+            "time": 370,
+            "value": "1000"
+          }
+        },
+        {
+          "afterTime": 370,
+          "expected": null
+        },
+        {
+          "afterTime": 380,
+          "expected": null
+        },
+        {
+          "afterTime": 381,
+          "expected": null
+        }
+      ],
+      "prevTransition": [
+        {
+          "beforeTime": -1,
+          "expected": null
+        },
+        {
+          "beforeTime": 0,
+          "expected": null
+        },
+        {
+          "beforeTime": 10,
+          "expected": {
+            "time": 0,
+            "value": "0000"
+          }
+        },
+        {
+          "beforeTime": 20,
+          "expected": {
+            "time": 10,
+            "value": "1111"
+          }
+        },
+        {
+          "beforeTime": 30,
+          "expected": {
+            "time": 20,
+            "value": "0000"
+          }
+        },
+        {
+          "beforeTime": 250,
+          "expected": {
+            "time": 30,
+            "value": "1010"
+          }
+        },
+        {
+          "beforeTime": 260,
+          "expected": {
+            "time": 250,
+            "value": "0001"
+          }
+        },
+        {
+          "beforeTime": 270,
+          "expected": {
+            "time": 260,
+            "value": "0011"
+          }
+        },
+        {
+          "beforeTime": 280,
+          "expected": {
+            "time": 270,
+            "value": "0010"
+          }
+        },
+        {
+          "beforeTime": 290,
+          "expected": {
+            "time": 280,
+            "value": "0110"
+          }
+        },
+        {
+          "beforeTime": 300,
+          "expected": {
+            "time": 290,
+            "value": "0111"
+          }
+        },
+        {
+          "beforeTime": 310,
+          "expected": {
+            "time": 300,
+            "value": "0101"
+          }
+        },
+        {
+          "beforeTime": 320,
+          "expected": {
+            "time": 310,
+            "value": "0100"
+          }
+        },
+        {
+          "beforeTime": 330,
+          "expected": {
+            "time": 320,
+            "value": "1100"
+          }
+        },
+        {
+          "beforeTime": 340,
+          "expected": {
+            "time": 330,
+            "value": "1101"
+          }
+        },
+        {
+          "beforeTime": 350,
+          "expected": {
+            "time": 340,
+            "value": "1110"
+          }
+        },
+        {
+          "beforeTime": 360,
+          "expected": {
+            "time": 350,
+            "value": "1011"
+          }
+        },
+        {
+          "beforeTime": 370,
+          "expected": {
+            "time": 360,
+            "value": "1001"
+          }
+        },
+        {
+          "beforeTime": 380,
+          "expected": {
+            "time": 370,
+            "value": "1000"
+          }
+        },
+        {
+          "beforeTime": 381,
+          "expected": {
+            "time": 370,
+            "value": "1000"
+          }
+        }
+      ]
+    },
+    "top.byte8": {
+      "allChanges": [
+        {
+          "time": 0,
+          "value": "00000000"
+        },
+        {
+          "time": 10,
+          "value": "11001010"
+        },
+        {
+          "time": 20,
+          "value": "00000000"
+        },
+        {
+          "time": 30,
+          "value": "10101010"
+        },
+        {
+          "time": 50,
+          "value": "11111111"
+        },
+        {
+          "time": 60,
+          "value": "10000000"
+        },
+        {
+          "time": 70,
+          "value": "01111111"
+        },
+        {
+          "time": 80,
+          "value": "01000001"
+        },
+        {
+          "time": 90,
+          "value": "00000111"
+        },
+        {
+          "time": 190,
+          "value": "00000001"
+        },
+        {
+          "time": 200,
+          "value": "10000001"
+        },
+        {
+          "time": 210,
+          "value": "10000000"
+        },
+        {
+          "time": 220,
+          "value": "00000010"
+        },
+        {
+          "time": 380,
+          "value": "xxxx0000"
+        }
+      ],
+      "valueAt": [
+        {
+          "time": -1,
+          "expected": null
+        },
+        {
+          "time": 0,
+          "expected": "00000000"
+        },
+        {
+          "time": 5,
+          "expected": "00000000"
+        },
+        {
+          "time": 9,
+          "expected": "00000000"
+        },
+        {
+          "time": 10,
+          "expected": "11001010"
+        },
+        {
+          "time": 15,
+          "expected": "11001010"
+        },
+        {
+          "time": 19,
+          "expected": "11001010"
+        },
+        {
+          "time": 20,
+          "expected": "00000000"
+        },
+        {
+          "time": 25,
+          "expected": "00000000"
+        },
+        {
+          "time": 29,
+          "expected": "00000000"
+        },
+        {
+          "time": 30,
+          "expected": "10101010"
+        },
+        {
+          "time": 40,
+          "expected": "10101010"
+        },
+        {
+          "time": 49,
+          "expected": "10101010"
+        },
+        {
+          "time": 50,
+          "expected": "11111111"
+        },
+        {
+          "time": 55,
+          "expected": "11111111"
+        },
+        {
+          "time": 59,
+          "expected": "11111111"
+        },
+        {
+          "time": 60,
+          "expected": "10000000"
+        },
+        {
+          "time": 65,
+          "expected": "10000000"
+        },
+        {
+          "time": 69,
+          "expected": "10000000"
+        },
+        {
+          "time": 70,
+          "expected": "01111111"
+        },
+        {
+          "time": 75,
+          "expected": "01111111"
+        },
+        {
+          "time": 79,
+          "expected": "01111111"
+        },
+        {
+          "time": 80,
+          "expected": "01000001"
+        },
+        {
+          "time": 85,
+          "expected": "01000001"
+        },
+        {
+          "time": 89,
+          "expected": "01000001"
+        },
+        {
+          "time": 90,
+          "expected": "00000111"
+        },
+        {
+          "time": 140,
+          "expected": "00000111"
+        },
+        {
+          "time": 189,
+          "expected": "00000111"
+        },
+        {
+          "time": 190,
+          "expected": "00000001"
+        },
+        {
+          "time": 195,
+          "expected": "00000001"
+        },
+        {
+          "time": 199,
+          "expected": "00000001"
+        },
+        {
+          "time": 200,
+          "expected": "10000001"
+        },
+        {
+          "time": 205,
+          "expected": "10000001"
+        },
+        {
+          "time": 209,
+          "expected": "10000001"
+        },
+        {
+          "time": 210,
+          "expected": "10000000"
+        },
+        {
+          "time": 215,
+          "expected": "10000000"
+        },
+        {
+          "time": 219,
+          "expected": "10000000"
+        },
+        {
+          "time": 220,
+          "expected": "00000010"
+        },
+        {
+          "time": 300,
+          "expected": "00000010"
+        },
+        {
+          "time": 379,
+          "expected": "00000010"
+        },
+        {
+          "time": 380,
+          "expected": "xxxx0000"
+        },
+        {
+          "time": 381,
+          "expected": "xxxx0000"
+        },
+        {
+          "time": 761,
+          "expected": "xxxx0000"
+        }
+      ],
+      "changesInRange": [
+        {
+          "start": 0,
+          "end": 0,
+          "expected": []
+        },
+        {
+          "start": 0,
+          "end": 381,
+          "expected": [
+            {
+              "time": 0,
+              "value": "00000000"
+            },
+            {
+              "time": 10,
+              "value": "11001010"
+            },
+            {
+              "time": 20,
+              "value": "00000000"
+            },
+            {
+              "time": 30,
+              "value": "10101010"
+            },
+            {
+              "time": 50,
+              "value": "11111111"
+            },
+            {
+              "time": 60,
+              "value": "10000000"
+            },
+            {
+              "time": 70,
+              "value": "01111111"
+            },
+            {
+              "time": 80,
+              "value": "01000001"
+            },
+            {
+              "time": 90,
+              "value": "00000111"
+            },
+            {
+              "time": 190,
+              "value": "00000001"
+            },
+            {
+              "time": 200,
+              "value": "10000001"
+            },
+            {
+              "time": 210,
+              "value": "10000000"
+            },
+            {
+              "time": 220,
+              "value": "00000010"
+            },
+            {
+              "time": 380,
+              "value": "xxxx0000"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 11,
+          "expected": [
+            {
+              "time": 0,
+              "value": "00000000"
+            },
+            {
+              "time": 10,
+              "value": "11001010"
+            }
+          ]
+        },
+        {
+          "start": 10,
+          "end": 21,
+          "expected": [
+            {
+              "time": 10,
+              "value": "11001010"
+            },
+            {
+              "time": 20,
+              "value": "00000000"
+            }
+          ]
+        },
+        {
+          "start": 20,
+          "end": 31,
+          "expected": [
+            {
+              "time": 20,
+              "value": "00000000"
+            },
+            {
+              "time": 30,
+              "value": "10101010"
+            }
+          ]
+        },
+        {
+          "start": 30,
+          "end": 51,
+          "expected": [
+            {
+              "time": 30,
+              "value": "10101010"
+            },
+            {
+              "time": 50,
+              "value": "11111111"
+            }
+          ]
+        },
+        {
+          "start": 50,
+          "end": 61,
+          "expected": [
+            {
+              "time": 50,
+              "value": "11111111"
+            },
+            {
+              "time": 60,
+              "value": "10000000"
+            }
+          ]
+        },
+        {
+          "start": 60,
+          "end": 71,
+          "expected": [
+            {
+              "time": 60,
+              "value": "10000000"
+            },
+            {
+              "time": 70,
+              "value": "01111111"
+            }
+          ]
+        },
+        {
+          "start": 70,
+          "end": 81,
+          "expected": [
+            {
+              "time": 70,
+              "value": "01111111"
+            },
+            {
+              "time": 80,
+              "value": "01000001"
+            }
+          ]
+        },
+        {
+          "start": 80,
+          "end": 91,
+          "expected": [
+            {
+              "time": 80,
+              "value": "01000001"
+            },
+            {
+              "time": 90,
+              "value": "00000111"
+            }
+          ]
+        },
+        {
+          "start": 90,
+          "end": 191,
+          "expected": [
+            {
+              "time": 90,
+              "value": "00000111"
+            },
+            {
+              "time": 190,
+              "value": "00000001"
+            }
+          ]
+        },
+        {
+          "start": 190,
+          "end": 201,
+          "expected": [
+            {
+              "time": 190,
+              "value": "00000001"
+            },
+            {
+              "time": 200,
+              "value": "10000001"
+            }
+          ]
+        },
+        {
+          "start": 200,
+          "end": 211,
+          "expected": [
+            {
+              "time": 200,
+              "value": "10000001"
+            },
+            {
+              "time": 210,
+              "value": "10000000"
+            }
+          ]
+        },
+        {
+          "start": 210,
+          "end": 221,
+          "expected": [
+            {
+              "time": 210,
+              "value": "10000000"
+            },
+            {
+              "time": 220,
+              "value": "00000010"
+            }
+          ]
+        },
+        {
+          "start": 220,
+          "end": 381,
+          "expected": [
+            {
+              "time": 220,
+              "value": "00000010"
+            },
+            {
+              "time": 380,
+              "value": "xxxx0000"
+            }
+          ]
+        },
+        {
+          "start": 380,
+          "end": 381,
+          "expected": [
+            {
+              "time": 380,
+              "value": "xxxx0000"
+            }
+          ]
+        }
+      ],
+      "nextTransition": [
+        {
+          "afterTime": -1,
+          "expected": {
+            "time": 0,
+            "value": "00000000"
+          }
+        },
+        {
+          "afterTime": 0,
+          "expected": {
+            "time": 10,
+            "value": "11001010"
+          }
+        },
+        {
+          "afterTime": 10,
+          "expected": {
+            "time": 20,
+            "value": "00000000"
+          }
+        },
+        {
+          "afterTime": 20,
+          "expected": {
+            "time": 30,
+            "value": "10101010"
+          }
+        },
+        {
+          "afterTime": 30,
+          "expected": {
+            "time": 50,
+            "value": "11111111"
+          }
+        },
+        {
+          "afterTime": 50,
+          "expected": {
+            "time": 60,
+            "value": "10000000"
+          }
+        },
+        {
+          "afterTime": 60,
+          "expected": {
+            "time": 70,
+            "value": "01111111"
+          }
+        },
+        {
+          "afterTime": 70,
+          "expected": {
+            "time": 80,
+            "value": "01000001"
+          }
+        },
+        {
+          "afterTime": 80,
+          "expected": {
+            "time": 90,
+            "value": "00000111"
+          }
+        },
+        {
+          "afterTime": 90,
+          "expected": {
+            "time": 190,
+            "value": "00000001"
+          }
+        },
+        {
+          "afterTime": 190,
+          "expected": {
+            "time": 200,
+            "value": "10000001"
+          }
+        },
+        {
+          "afterTime": 200,
+          "expected": {
+            "time": 210,
+            "value": "10000000"
+          }
+        },
+        {
+          "afterTime": 210,
+          "expected": {
+            "time": 220,
+            "value": "00000010"
+          }
+        },
+        {
+          "afterTime": 220,
+          "expected": {
+            "time": 380,
+            "value": "xxxx0000"
+          }
+        },
+        {
+          "afterTime": 380,
+          "expected": null
+        },
+        {
+          "afterTime": 381,
+          "expected": null
+        }
+      ],
+      "prevTransition": [
+        {
+          "beforeTime": -1,
+          "expected": null
+        },
+        {
+          "beforeTime": 0,
+          "expected": null
+        },
+        {
+          "beforeTime": 10,
+          "expected": {
+            "time": 0,
+            "value": "00000000"
+          }
+        },
+        {
+          "beforeTime": 20,
+          "expected": {
+            "time": 10,
+            "value": "11001010"
+          }
+        },
+        {
+          "beforeTime": 30,
+          "expected": {
+            "time": 20,
+            "value": "00000000"
+          }
+        },
+        {
+          "beforeTime": 50,
+          "expected": {
+            "time": 30,
+            "value": "10101010"
+          }
+        },
+        {
+          "beforeTime": 60,
+          "expected": {
+            "time": 50,
+            "value": "11111111"
+          }
+        },
+        {
+          "beforeTime": 70,
+          "expected": {
+            "time": 60,
+            "value": "10000000"
+          }
+        },
+        {
+          "beforeTime": 80,
+          "expected": {
+            "time": 70,
+            "value": "01111111"
+          }
+        },
+        {
+          "beforeTime": 90,
+          "expected": {
+            "time": 80,
+            "value": "01000001"
+          }
+        },
+        {
+          "beforeTime": 190,
+          "expected": {
+            "time": 90,
+            "value": "00000111"
+          }
+        },
+        {
+          "beforeTime": 200,
+          "expected": {
+            "time": 190,
+            "value": "00000001"
+          }
+        },
+        {
+          "beforeTime": 210,
+          "expected": {
+            "time": 200,
+            "value": "10000001"
+          }
+        },
+        {
+          "beforeTime": 220,
+          "expected": {
+            "time": 210,
+            "value": "10000000"
+          }
+        },
+        {
+          "beforeTime": 380,
+          "expected": {
+            "time": 220,
+            "value": "00000010"
+          }
+        },
+        {
+          "beforeTime": 381,
+          "expected": {
+            "time": 380,
+            "value": "xxxx0000"
+          }
+        }
+      ]
+    },
+    "top.word16": {
+      "allChanges": [
+        {
+          "time": 0,
+          "value": "0000000000000000"
+        },
+        {
+          "time": 10,
+          "value": "0101010101010101"
+        },
+        {
+          "time": 20,
+          "value": "0000000000000000"
+        },
+        {
+          "time": 30,
+          "value": "1111111111111111"
+        },
+        {
+          "time": 170,
+          "value": "0000000100000000"
+        },
+        {
+          "time": 180,
+          "value": "0100000000000000"
+        },
+        {
+          "time": 240,
+          "value": "xxxxxxxxxxxxxxxx"
+        }
+      ],
+      "valueAt": [
+        {
+          "time": -1,
+          "expected": null
+        },
+        {
+          "time": 0,
+          "expected": "0000000000000000"
+        },
+        {
+          "time": 5,
+          "expected": "0000000000000000"
+        },
+        {
+          "time": 9,
+          "expected": "0000000000000000"
+        },
+        {
+          "time": 10,
+          "expected": "0101010101010101"
+        },
+        {
+          "time": 15,
+          "expected": "0101010101010101"
+        },
+        {
+          "time": 19,
+          "expected": "0101010101010101"
+        },
+        {
+          "time": 20,
+          "expected": "0000000000000000"
+        },
+        {
+          "time": 25,
+          "expected": "0000000000000000"
+        },
+        {
+          "time": 29,
+          "expected": "0000000000000000"
+        },
+        {
+          "time": 30,
+          "expected": "1111111111111111"
+        },
+        {
+          "time": 100,
+          "expected": "1111111111111111"
+        },
+        {
+          "time": 169,
+          "expected": "1111111111111111"
+        },
+        {
+          "time": 170,
+          "expected": "0000000100000000"
+        },
+        {
+          "time": 175,
+          "expected": "0000000100000000"
+        },
+        {
+          "time": 179,
+          "expected": "0000000100000000"
+        },
+        {
+          "time": 180,
+          "expected": "0100000000000000"
+        },
+        {
+          "time": 210,
+          "expected": "0100000000000000"
+        },
+        {
+          "time": 239,
+          "expected": "0100000000000000"
+        },
+        {
+          "time": 240,
+          "expected": "xxxxxxxxxxxxxxxx"
+        },
+        {
+          "time": 310,
+          "expected": "xxxxxxxxxxxxxxxx"
+        },
+        {
+          "time": 380,
+          "expected": "xxxxxxxxxxxxxxxx"
+        },
+        {
+          "time": 381,
+          "expected": "xxxxxxxxxxxxxxxx"
+        },
+        {
+          "time": 761,
+          "expected": "xxxxxxxxxxxxxxxx"
+        }
+      ],
+      "changesInRange": [
+        {
+          "start": 0,
+          "end": 0,
+          "expected": []
+        },
+        {
+          "start": 0,
+          "end": 381,
+          "expected": [
+            {
+              "time": 0,
+              "value": "0000000000000000"
+            },
+            {
+              "time": 10,
+              "value": "0101010101010101"
+            },
+            {
+              "time": 20,
+              "value": "0000000000000000"
+            },
+            {
+              "time": 30,
+              "value": "1111111111111111"
+            },
+            {
+              "time": 170,
+              "value": "0000000100000000"
+            },
+            {
+              "time": 180,
+              "value": "0100000000000000"
+            },
+            {
+              "time": 240,
+              "value": "xxxxxxxxxxxxxxxx"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 11,
+          "expected": [
+            {
+              "time": 0,
+              "value": "0000000000000000"
+            },
+            {
+              "time": 10,
+              "value": "0101010101010101"
+            }
+          ]
+        },
+        {
+          "start": 10,
+          "end": 21,
+          "expected": [
+            {
+              "time": 10,
+              "value": "0101010101010101"
+            },
+            {
+              "time": 20,
+              "value": "0000000000000000"
+            }
+          ]
+        },
+        {
+          "start": 20,
+          "end": 31,
+          "expected": [
+            {
+              "time": 20,
+              "value": "0000000000000000"
+            },
+            {
+              "time": 30,
+              "value": "1111111111111111"
+            }
+          ]
+        },
+        {
+          "start": 30,
+          "end": 171,
+          "expected": [
+            {
+              "time": 30,
+              "value": "1111111111111111"
+            },
+            {
+              "time": 170,
+              "value": "0000000100000000"
+            }
+          ]
+        },
+        {
+          "start": 170,
+          "end": 181,
+          "expected": [
+            {
+              "time": 170,
+              "value": "0000000100000000"
+            },
+            {
+              "time": 180,
+              "value": "0100000000000000"
+            }
+          ]
+        },
+        {
+          "start": 180,
+          "end": 241,
+          "expected": [
+            {
+              "time": 180,
+              "value": "0100000000000000"
+            },
+            {
+              "time": 240,
+              "value": "xxxxxxxxxxxxxxxx"
+            }
+          ]
+        },
+        {
+          "start": 240,
+          "end": 381,
+          "expected": [
+            {
+              "time": 240,
+              "value": "xxxxxxxxxxxxxxxx"
+            }
+          ]
+        }
+      ],
+      "nextTransition": [
+        {
+          "afterTime": -1,
+          "expected": {
+            "time": 0,
+            "value": "0000000000000000"
+          }
+        },
+        {
+          "afterTime": 0,
+          "expected": {
+            "time": 10,
+            "value": "0101010101010101"
+          }
+        },
+        {
+          "afterTime": 10,
+          "expected": {
+            "time": 20,
+            "value": "0000000000000000"
+          }
+        },
+        {
+          "afterTime": 20,
+          "expected": {
+            "time": 30,
+            "value": "1111111111111111"
+          }
+        },
+        {
+          "afterTime": 30,
+          "expected": {
+            "time": 170,
+            "value": "0000000100000000"
+          }
+        },
+        {
+          "afterTime": 170,
+          "expected": {
+            "time": 180,
+            "value": "0100000000000000"
+          }
+        },
+        {
+          "afterTime": 180,
+          "expected": {
+            "time": 240,
+            "value": "xxxxxxxxxxxxxxxx"
+          }
+        },
+        {
+          "afterTime": 240,
+          "expected": null
+        },
+        {
+          "afterTime": 380,
+          "expected": null
+        },
+        {
+          "afterTime": 381,
+          "expected": null
+        }
+      ],
+      "prevTransition": [
+        {
+          "beforeTime": -1,
+          "expected": null
+        },
+        {
+          "beforeTime": 0,
+          "expected": null
+        },
+        {
+          "beforeTime": 10,
+          "expected": {
+            "time": 0,
+            "value": "0000000000000000"
+          }
+        },
+        {
+          "beforeTime": 20,
+          "expected": {
+            "time": 10,
+            "value": "0101010101010101"
+          }
+        },
+        {
+          "beforeTime": 30,
+          "expected": {
+            "time": 20,
+            "value": "0000000000000000"
+          }
+        },
+        {
+          "beforeTime": 170,
+          "expected": {
+            "time": 30,
+            "value": "1111111111111111"
+          }
+        },
+        {
+          "beforeTime": 180,
+          "expected": {
+            "time": 170,
+            "value": "0000000100000000"
+          }
+        },
+        {
+          "beforeTime": 240,
+          "expected": {
+            "time": 180,
+            "value": "0100000000000000"
+          }
+        },
+        {
+          "beforeTime": 380,
+          "expected": {
+            "time": 240,
+            "value": "xxxxxxxxxxxxxxxx"
+          }
+        },
+        {
+          "beforeTime": 381,
+          "expected": {
+            "time": 240,
+            "value": "xxxxxxxxxxxxxxxx"
+          }
+        }
+      ]
+    },
+    "top.long32": {
+      "allChanges": [
+        {
+          "time": 0,
+          "value": "00000000000000000000000000000000"
+        },
+        {
+          "time": 10,
+          "value": "10101010101010101010101010101010"
+        },
+        {
+          "time": 20,
+          "value": "00000000000000000000000000000000"
+        },
+        {
+          "time": 30,
+          "value": "11111111111111111111111111111111"
+        },
+        {
+          "time": 100,
+          "value": "01010111010000010101011001000101"
+        },
+        {
+          "time": 110,
+          "value": "00111111100000000000000000000000"
+        },
+        {
+          "time": 120,
+          "value": "10111111100000000000000000000000"
+        },
+        {
+          "time": 130,
+          "value": "01111111100000000000000000000000"
+        },
+        {
+          "time": 140,
+          "value": "11111111100000000000000000000000"
+        },
+        {
+          "time": 150,
+          "value": "01111111110000000000000000000000"
+        },
+        {
+          "time": 230,
+          "value": "xxxx000000000000000000000000xxxx"
+        }
+      ],
+      "valueAt": [
+        {
+          "time": -1,
+          "expected": null
+        },
+        {
+          "time": 0,
+          "expected": "00000000000000000000000000000000"
+        },
+        {
+          "time": 5,
+          "expected": "00000000000000000000000000000000"
+        },
+        {
+          "time": 9,
+          "expected": "00000000000000000000000000000000"
+        },
+        {
+          "time": 10,
+          "expected": "10101010101010101010101010101010"
+        },
+        {
+          "time": 15,
+          "expected": "10101010101010101010101010101010"
+        },
+        {
+          "time": 19,
+          "expected": "10101010101010101010101010101010"
+        },
+        {
+          "time": 20,
+          "expected": "00000000000000000000000000000000"
+        },
+        {
+          "time": 25,
+          "expected": "00000000000000000000000000000000"
+        },
+        {
+          "time": 29,
+          "expected": "00000000000000000000000000000000"
+        },
+        {
+          "time": 30,
+          "expected": "11111111111111111111111111111111"
+        },
+        {
+          "time": 65,
+          "expected": "11111111111111111111111111111111"
+        },
+        {
+          "time": 99,
+          "expected": "11111111111111111111111111111111"
+        },
+        {
+          "time": 100,
+          "expected": "01010111010000010101011001000101"
+        },
+        {
+          "time": 105,
+          "expected": "01010111010000010101011001000101"
+        },
+        {
+          "time": 109,
+          "expected": "01010111010000010101011001000101"
+        },
+        {
+          "time": 110,
+          "expected": "00111111100000000000000000000000"
+        },
+        {
+          "time": 115,
+          "expected": "00111111100000000000000000000000"
+        },
+        {
+          "time": 119,
+          "expected": "00111111100000000000000000000000"
+        },
+        {
+          "time": 120,
+          "expected": "10111111100000000000000000000000"
+        },
+        {
+          "time": 125,
+          "expected": "10111111100000000000000000000000"
+        },
+        {
+          "time": 129,
+          "expected": "10111111100000000000000000000000"
+        },
+        {
+          "time": 130,
+          "expected": "01111111100000000000000000000000"
+        },
+        {
+          "time": 135,
+          "expected": "01111111100000000000000000000000"
+        },
+        {
+          "time": 139,
+          "expected": "01111111100000000000000000000000"
+        },
+        {
+          "time": 140,
+          "expected": "11111111100000000000000000000000"
+        },
+        {
+          "time": 145,
+          "expected": "11111111100000000000000000000000"
+        },
+        {
+          "time": 149,
+          "expected": "11111111100000000000000000000000"
+        },
+        {
+          "time": 150,
+          "expected": "01111111110000000000000000000000"
+        },
+        {
+          "time": 190,
+          "expected": "01111111110000000000000000000000"
+        },
+        {
+          "time": 229,
+          "expected": "01111111110000000000000000000000"
+        },
+        {
+          "time": 230,
+          "expected": "xxxx000000000000000000000000xxxx"
+        },
+        {
+          "time": 305,
+          "expected": "xxxx000000000000000000000000xxxx"
+        },
+        {
+          "time": 380,
+          "expected": "xxxx000000000000000000000000xxxx"
+        },
+        {
+          "time": 381,
+          "expected": "xxxx000000000000000000000000xxxx"
+        },
+        {
+          "time": 761,
+          "expected": "xxxx000000000000000000000000xxxx"
+        }
+      ],
+      "changesInRange": [
+        {
+          "start": 0,
+          "end": 0,
+          "expected": []
+        },
+        {
+          "start": 0,
+          "end": 381,
+          "expected": [
+            {
+              "time": 0,
+              "value": "00000000000000000000000000000000"
+            },
+            {
+              "time": 10,
+              "value": "10101010101010101010101010101010"
+            },
+            {
+              "time": 20,
+              "value": "00000000000000000000000000000000"
+            },
+            {
+              "time": 30,
+              "value": "11111111111111111111111111111111"
+            },
+            {
+              "time": 100,
+              "value": "01010111010000010101011001000101"
+            },
+            {
+              "time": 110,
+              "value": "00111111100000000000000000000000"
+            },
+            {
+              "time": 120,
+              "value": "10111111100000000000000000000000"
+            },
+            {
+              "time": 130,
+              "value": "01111111100000000000000000000000"
+            },
+            {
+              "time": 140,
+              "value": "11111111100000000000000000000000"
+            },
+            {
+              "time": 150,
+              "value": "01111111110000000000000000000000"
+            },
+            {
+              "time": 230,
+              "value": "xxxx000000000000000000000000xxxx"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 11,
+          "expected": [
+            {
+              "time": 0,
+              "value": "00000000000000000000000000000000"
+            },
+            {
+              "time": 10,
+              "value": "10101010101010101010101010101010"
+            }
+          ]
+        },
+        {
+          "start": 10,
+          "end": 21,
+          "expected": [
+            {
+              "time": 10,
+              "value": "10101010101010101010101010101010"
+            },
+            {
+              "time": 20,
+              "value": "00000000000000000000000000000000"
+            }
+          ]
+        },
+        {
+          "start": 20,
+          "end": 31,
+          "expected": [
+            {
+              "time": 20,
+              "value": "00000000000000000000000000000000"
+            },
+            {
+              "time": 30,
+              "value": "11111111111111111111111111111111"
+            }
+          ]
+        },
+        {
+          "start": 30,
+          "end": 101,
+          "expected": [
+            {
+              "time": 30,
+              "value": "11111111111111111111111111111111"
+            },
+            {
+              "time": 100,
+              "value": "01010111010000010101011001000101"
+            }
+          ]
+        },
+        {
+          "start": 100,
+          "end": 111,
+          "expected": [
+            {
+              "time": 100,
+              "value": "01010111010000010101011001000101"
+            },
+            {
+              "time": 110,
+              "value": "00111111100000000000000000000000"
+            }
+          ]
+        },
+        {
+          "start": 110,
+          "end": 121,
+          "expected": [
+            {
+              "time": 110,
+              "value": "00111111100000000000000000000000"
+            },
+            {
+              "time": 120,
+              "value": "10111111100000000000000000000000"
+            }
+          ]
+        },
+        {
+          "start": 120,
+          "end": 131,
+          "expected": [
+            {
+              "time": 120,
+              "value": "10111111100000000000000000000000"
+            },
+            {
+              "time": 130,
+              "value": "01111111100000000000000000000000"
+            }
+          ]
+        },
+        {
+          "start": 130,
+          "end": 141,
+          "expected": [
+            {
+              "time": 130,
+              "value": "01111111100000000000000000000000"
+            },
+            {
+              "time": 140,
+              "value": "11111111100000000000000000000000"
+            }
+          ]
+        },
+        {
+          "start": 140,
+          "end": 151,
+          "expected": [
+            {
+              "time": 140,
+              "value": "11111111100000000000000000000000"
+            },
+            {
+              "time": 150,
+              "value": "01111111110000000000000000000000"
+            }
+          ]
+        },
+        {
+          "start": 150,
+          "end": 231,
+          "expected": [
+            {
+              "time": 150,
+              "value": "01111111110000000000000000000000"
+            },
+            {
+              "time": 230,
+              "value": "xxxx000000000000000000000000xxxx"
+            }
+          ]
+        },
+        {
+          "start": 230,
+          "end": 381,
+          "expected": [
+            {
+              "time": 230,
+              "value": "xxxx000000000000000000000000xxxx"
+            }
+          ]
+        }
+      ],
+      "nextTransition": [
+        {
+          "afterTime": -1,
+          "expected": {
+            "time": 0,
+            "value": "00000000000000000000000000000000"
+          }
+        },
+        {
+          "afterTime": 0,
+          "expected": {
+            "time": 10,
+            "value": "10101010101010101010101010101010"
+          }
+        },
+        {
+          "afterTime": 10,
+          "expected": {
+            "time": 20,
+            "value": "00000000000000000000000000000000"
+          }
+        },
+        {
+          "afterTime": 20,
+          "expected": {
+            "time": 30,
+            "value": "11111111111111111111111111111111"
+          }
+        },
+        {
+          "afterTime": 30,
+          "expected": {
+            "time": 100,
+            "value": "01010111010000010101011001000101"
+          }
+        },
+        {
+          "afterTime": 100,
+          "expected": {
+            "time": 110,
+            "value": "00111111100000000000000000000000"
+          }
+        },
+        {
+          "afterTime": 110,
+          "expected": {
+            "time": 120,
+            "value": "10111111100000000000000000000000"
+          }
+        },
+        {
+          "afterTime": 120,
+          "expected": {
+            "time": 130,
+            "value": "01111111100000000000000000000000"
+          }
+        },
+        {
+          "afterTime": 130,
+          "expected": {
+            "time": 140,
+            "value": "11111111100000000000000000000000"
+          }
+        },
+        {
+          "afterTime": 140,
+          "expected": {
+            "time": 150,
+            "value": "01111111110000000000000000000000"
+          }
+        },
+        {
+          "afterTime": 150,
+          "expected": {
+            "time": 230,
+            "value": "xxxx000000000000000000000000xxxx"
+          }
+        },
+        {
+          "afterTime": 230,
+          "expected": null
+        },
+        {
+          "afterTime": 380,
+          "expected": null
+        },
+        {
+          "afterTime": 381,
+          "expected": null
+        }
+      ],
+      "prevTransition": [
+        {
+          "beforeTime": -1,
+          "expected": null
+        },
+        {
+          "beforeTime": 0,
+          "expected": null
+        },
+        {
+          "beforeTime": 10,
+          "expected": {
+            "time": 0,
+            "value": "00000000000000000000000000000000"
+          }
+        },
+        {
+          "beforeTime": 20,
+          "expected": {
+            "time": 10,
+            "value": "10101010101010101010101010101010"
+          }
+        },
+        {
+          "beforeTime": 30,
+          "expected": {
+            "time": 20,
+            "value": "00000000000000000000000000000000"
+          }
+        },
+        {
+          "beforeTime": 100,
+          "expected": {
+            "time": 30,
+            "value": "11111111111111111111111111111111"
+          }
+        },
+        {
+          "beforeTime": 110,
+          "expected": {
+            "time": 100,
+            "value": "01010111010000010101011001000101"
+          }
+        },
+        {
+          "beforeTime": 120,
+          "expected": {
+            "time": 110,
+            "value": "00111111100000000000000000000000"
+          }
+        },
+        {
+          "beforeTime": 130,
+          "expected": {
+            "time": 120,
+            "value": "10111111100000000000000000000000"
+          }
+        },
+        {
+          "beforeTime": 140,
+          "expected": {
+            "time": 130,
+            "value": "01111111100000000000000000000000"
+          }
+        },
+        {
+          "beforeTime": 150,
+          "expected": {
+            "time": 140,
+            "value": "11111111100000000000000000000000"
+          }
+        },
+        {
+          "beforeTime": 230,
+          "expected": {
+            "time": 150,
+            "value": "01111111110000000000000000000000"
+          }
+        },
+        {
+          "beforeTime": 380,
+          "expected": {
+            "time": 230,
+            "value": "xxxx000000000000000000000000xxxx"
+          }
+        },
+        {
+          "beforeTime": 381,
+          "expected": {
+            "time": 230,
+            "value": "xxxx000000000000000000000000xxxx"
+          }
+        }
+      ]
+    },
+    "top.quad64": {
+      "allChanges": [
+        {
+          "time": 0,
+          "value": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "time": 10,
+          "value": "1111111111111111111111111111111111111111111111111111111111111111"
+        },
+        {
+          "time": 20,
+          "value": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "time": 30,
+          "value": "1010101010101010101010101010101010101010101010101010101010101010"
+        },
+        {
+          "time": 160,
+          "value": "0011111111110000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "valueAt": [
+        {
+          "time": -1,
+          "expected": null
+        },
+        {
+          "time": 0,
+          "expected": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "time": 5,
+          "expected": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "time": 9,
+          "expected": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "time": 10,
+          "expected": "1111111111111111111111111111111111111111111111111111111111111111"
+        },
+        {
+          "time": 15,
+          "expected": "1111111111111111111111111111111111111111111111111111111111111111"
+        },
+        {
+          "time": 19,
+          "expected": "1111111111111111111111111111111111111111111111111111111111111111"
+        },
+        {
+          "time": 20,
+          "expected": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "time": 25,
+          "expected": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "time": 29,
+          "expected": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "time": 30,
+          "expected": "1010101010101010101010101010101010101010101010101010101010101010"
+        },
+        {
+          "time": 95,
+          "expected": "1010101010101010101010101010101010101010101010101010101010101010"
+        },
+        {
+          "time": 159,
+          "expected": "1010101010101010101010101010101010101010101010101010101010101010"
+        },
+        {
+          "time": 160,
+          "expected": "0011111111110000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "time": 270,
+          "expected": "0011111111110000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "time": 380,
+          "expected": "0011111111110000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "time": 381,
+          "expected": "0011111111110000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "time": 761,
+          "expected": "0011111111110000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "changesInRange": [
+        {
+          "start": 0,
+          "end": 0,
+          "expected": []
+        },
+        {
+          "start": 0,
+          "end": 381,
+          "expected": [
+            {
+              "time": 0,
+              "value": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            {
+              "time": 10,
+              "value": "1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "time": 20,
+              "value": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            {
+              "time": 30,
+              "value": "1010101010101010101010101010101010101010101010101010101010101010"
+            },
+            {
+              "time": 160,
+              "value": "0011111111110000000000000000000000000000000000000000000000000000"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 11,
+          "expected": [
+            {
+              "time": 0,
+              "value": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            {
+              "time": 10,
+              "value": "1111111111111111111111111111111111111111111111111111111111111111"
+            }
+          ]
+        },
+        {
+          "start": 10,
+          "end": 21,
+          "expected": [
+            {
+              "time": 10,
+              "value": "1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "time": 20,
+              "value": "0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          ]
+        },
+        {
+          "start": 20,
+          "end": 31,
+          "expected": [
+            {
+              "time": 20,
+              "value": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            {
+              "time": 30,
+              "value": "1010101010101010101010101010101010101010101010101010101010101010"
+            }
+          ]
+        },
+        {
+          "start": 30,
+          "end": 161,
+          "expected": [
+            {
+              "time": 30,
+              "value": "1010101010101010101010101010101010101010101010101010101010101010"
+            },
+            {
+              "time": 160,
+              "value": "0011111111110000000000000000000000000000000000000000000000000000"
+            }
+          ]
+        },
+        {
+          "start": 160,
+          "end": 381,
+          "expected": [
+            {
+              "time": 160,
+              "value": "0011111111110000000000000000000000000000000000000000000000000000"
+            }
+          ]
+        }
+      ],
+      "nextTransition": [
+        {
+          "afterTime": -1,
+          "expected": {
+            "time": 0,
+            "value": "0000000000000000000000000000000000000000000000000000000000000000"
+          }
+        },
+        {
+          "afterTime": 0,
+          "expected": {
+            "time": 10,
+            "value": "1111111111111111111111111111111111111111111111111111111111111111"
+          }
+        },
+        {
+          "afterTime": 10,
+          "expected": {
+            "time": 20,
+            "value": "0000000000000000000000000000000000000000000000000000000000000000"
+          }
+        },
+        {
+          "afterTime": 20,
+          "expected": {
+            "time": 30,
+            "value": "1010101010101010101010101010101010101010101010101010101010101010"
+          }
+        },
+        {
+          "afterTime": 30,
+          "expected": {
+            "time": 160,
+            "value": "0011111111110000000000000000000000000000000000000000000000000000"
+          }
+        },
+        {
+          "afterTime": 160,
+          "expected": null
+        },
+        {
+          "afterTime": 380,
+          "expected": null
+        },
+        {
+          "afterTime": 381,
+          "expected": null
+        }
+      ],
+      "prevTransition": [
+        {
+          "beforeTime": -1,
+          "expected": null
+        },
+        {
+          "beforeTime": 0,
+          "expected": null
+        },
+        {
+          "beforeTime": 10,
+          "expected": {
+            "time": 0,
+            "value": "0000000000000000000000000000000000000000000000000000000000000000"
+          }
+        },
+        {
+          "beforeTime": 20,
+          "expected": {
+            "time": 10,
+            "value": "1111111111111111111111111111111111111111111111111111111111111111"
+          }
+        },
+        {
+          "beforeTime": 30,
+          "expected": {
+            "time": 20,
+            "value": "0000000000000000000000000000000000000000000000000000000000000000"
+          }
+        },
+        {
+          "beforeTime": 160,
+          "expected": {
+            "time": 30,
+            "value": "1010101010101010101010101010101010101010101010101010101010101010"
+          }
+        },
+        {
+          "beforeTime": 380,
+          "expected": {
+            "time": 160,
+            "value": "0011111111110000000000000000000000000000000000000000000000000000"
+          }
+        },
+        {
+          "beforeTime": 381,
+          "expected": {
+            "time": 160,
+            "value": "0011111111110000000000000000000000000000000000000000000000000000"
+          }
+        }
+      ]
+    },
+    "top.xnib": {
+      "allChanges": [
+        {
+          "time": 0,
+          "value": "xxxx"
+        },
+        {
+          "time": 10,
+          "value": "0xxx"
+        },
+        {
+          "time": 20,
+          "value": "xxxx"
+        },
+        {
+          "time": 30,
+          "value": "x0x1"
+        }
+      ],
+      "valueAt": [
+        {
+          "time": -1,
+          "expected": null
+        },
+        {
+          "time": 0,
+          "expected": "xxxx"
+        },
+        {
+          "time": 5,
+          "expected": "xxxx"
+        },
+        {
+          "time": 9,
+          "expected": "xxxx"
+        },
+        {
+          "time": 10,
+          "expected": "0xxx"
+        },
+        {
+          "time": 15,
+          "expected": "0xxx"
+        },
+        {
+          "time": 19,
+          "expected": "0xxx"
+        },
+        {
+          "time": 20,
+          "expected": "xxxx"
+        },
+        {
+          "time": 25,
+          "expected": "xxxx"
+        },
+        {
+          "time": 29,
+          "expected": "xxxx"
+        },
+        {
+          "time": 30,
+          "expected": "x0x1"
+        },
+        {
+          "time": 205,
+          "expected": "x0x1"
+        },
+        {
+          "time": 380,
+          "expected": "x0x1"
+        },
+        {
+          "time": 381,
+          "expected": "x0x1"
+        },
+        {
+          "time": 761,
+          "expected": "x0x1"
+        }
+      ],
+      "changesInRange": [
+        {
+          "start": 0,
+          "end": 0,
+          "expected": []
+        },
+        {
+          "start": 0,
+          "end": 381,
+          "expected": [
+            {
+              "time": 0,
+              "value": "xxxx"
+            },
+            {
+              "time": 10,
+              "value": "0xxx"
+            },
+            {
+              "time": 20,
+              "value": "xxxx"
+            },
+            {
+              "time": 30,
+              "value": "x0x1"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 11,
+          "expected": [
+            {
+              "time": 0,
+              "value": "xxxx"
+            },
+            {
+              "time": 10,
+              "value": "0xxx"
+            }
+          ]
+        },
+        {
+          "start": 10,
+          "end": 21,
+          "expected": [
+            {
+              "time": 10,
+              "value": "0xxx"
+            },
+            {
+              "time": 20,
+              "value": "xxxx"
+            }
+          ]
+        },
+        {
+          "start": 20,
+          "end": 31,
+          "expected": [
+            {
+              "time": 20,
+              "value": "xxxx"
+            },
+            {
+              "time": 30,
+              "value": "x0x1"
+            }
+          ]
+        },
+        {
+          "start": 30,
+          "end": 381,
+          "expected": [
+            {
+              "time": 30,
+              "value": "x0x1"
+            }
+          ]
+        }
+      ],
+      "nextTransition": [
+        {
+          "afterTime": -1,
+          "expected": {
+            "time": 0,
+            "value": "xxxx"
+          }
+        },
+        {
+          "afterTime": 0,
+          "expected": {
+            "time": 10,
+            "value": "0xxx"
+          }
+        },
+        {
+          "afterTime": 10,
+          "expected": {
+            "time": 20,
+            "value": "xxxx"
+          }
+        },
+        {
+          "afterTime": 20,
+          "expected": {
+            "time": 30,
+            "value": "x0x1"
+          }
+        },
+        {
+          "afterTime": 30,
+          "expected": null
+        },
+        {
+          "afterTime": 380,
+          "expected": null
+        },
+        {
+          "afterTime": 381,
+          "expected": null
+        }
+      ],
+      "prevTransition": [
+        {
+          "beforeTime": -1,
+          "expected": null
+        },
+        {
+          "beforeTime": 0,
+          "expected": null
+        },
+        {
+          "beforeTime": 10,
+          "expected": {
+            "time": 0,
+            "value": "xxxx"
+          }
+        },
+        {
+          "beforeTime": 20,
+          "expected": {
+            "time": 10,
+            "value": "0xxx"
+          }
+        },
+        {
+          "beforeTime": 30,
+          "expected": {
+            "time": 20,
+            "value": "xxxx"
+          }
+        },
+        {
+          "beforeTime": 380,
+          "expected": {
+            "time": 30,
+            "value": "x0x1"
+          }
+        },
+        {
+          "beforeTime": 381,
+          "expected": {
+            "time": 30,
+            "value": "x0x1"
+          }
+        }
+      ]
+    },
+    "top.znib": {
+      "allChanges": [
+        {
+          "time": 0,
+          "value": "zzzz"
+        },
+        {
+          "time": 10,
+          "value": "0001"
+        },
+        {
+          "time": 20,
+          "value": "zzzz"
+        },
+        {
+          "time": 30,
+          "value": "z0z1"
+        }
+      ],
+      "valueAt": [
+        {
+          "time": -1,
+          "expected": null
+        },
+        {
+          "time": 0,
+          "expected": "zzzz"
+        },
+        {
+          "time": 5,
+          "expected": "zzzz"
+        },
+        {
+          "time": 9,
+          "expected": "zzzz"
+        },
+        {
+          "time": 10,
+          "expected": "0001"
+        },
+        {
+          "time": 15,
+          "expected": "0001"
+        },
+        {
+          "time": 19,
+          "expected": "0001"
+        },
+        {
+          "time": 20,
+          "expected": "zzzz"
+        },
+        {
+          "time": 25,
+          "expected": "zzzz"
+        },
+        {
+          "time": 29,
+          "expected": "zzzz"
+        },
+        {
+          "time": 30,
+          "expected": "z0z1"
+        },
+        {
+          "time": 205,
+          "expected": "z0z1"
+        },
+        {
+          "time": 380,
+          "expected": "z0z1"
+        },
+        {
+          "time": 381,
+          "expected": "z0z1"
+        },
+        {
+          "time": 761,
+          "expected": "z0z1"
+        }
+      ],
+      "changesInRange": [
+        {
+          "start": 0,
+          "end": 0,
+          "expected": []
+        },
+        {
+          "start": 0,
+          "end": 381,
+          "expected": [
+            {
+              "time": 0,
+              "value": "zzzz"
+            },
+            {
+              "time": 10,
+              "value": "0001"
+            },
+            {
+              "time": 20,
+              "value": "zzzz"
+            },
+            {
+              "time": 30,
+              "value": "z0z1"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 11,
+          "expected": [
+            {
+              "time": 0,
+              "value": "zzzz"
+            },
+            {
+              "time": 10,
+              "value": "0001"
+            }
+          ]
+        },
+        {
+          "start": 10,
+          "end": 21,
+          "expected": [
+            {
+              "time": 10,
+              "value": "0001"
+            },
+            {
+              "time": 20,
+              "value": "zzzz"
+            }
+          ]
+        },
+        {
+          "start": 20,
+          "end": 31,
+          "expected": [
+            {
+              "time": 20,
+              "value": "zzzz"
+            },
+            {
+              "time": 30,
+              "value": "z0z1"
+            }
+          ]
+        },
+        {
+          "start": 30,
+          "end": 381,
+          "expected": [
+            {
+              "time": 30,
+              "value": "z0z1"
+            }
+          ]
+        }
+      ],
+      "nextTransition": [
+        {
+          "afterTime": -1,
+          "expected": {
+            "time": 0,
+            "value": "zzzz"
+          }
+        },
+        {
+          "afterTime": 0,
+          "expected": {
+            "time": 10,
+            "value": "0001"
+          }
+        },
+        {
+          "afterTime": 10,
+          "expected": {
+            "time": 20,
+            "value": "zzzz"
+          }
+        },
+        {
+          "afterTime": 20,
+          "expected": {
+            "time": 30,
+            "value": "z0z1"
+          }
+        },
+        {
+          "afterTime": 30,
+          "expected": null
+        },
+        {
+          "afterTime": 380,
+          "expected": null
+        },
+        {
+          "afterTime": 381,
+          "expected": null
+        }
+      ],
+      "prevTransition": [
+        {
+          "beforeTime": -1,
+          "expected": null
+        },
+        {
+          "beforeTime": 0,
+          "expected": null
+        },
+        {
+          "beforeTime": 10,
+          "expected": {
+            "time": 0,
+            "value": "zzzz"
+          }
+        },
+        {
+          "beforeTime": 20,
+          "expected": {
+            "time": 10,
+            "value": "0001"
+          }
+        },
+        {
+          "beforeTime": 30,
+          "expected": {
+            "time": 20,
+            "value": "zzzz"
+          }
+        },
+        {
+          "beforeTime": 380,
+          "expected": {
+            "time": 30,
+            "value": "z0z1"
+          }
+        },
+        {
+          "beforeTime": 381,
+          "expected": {
+            "time": 30,
+            "value": "z0z1"
+          }
+        }
+      ]
+    },
+    "top.mixed_xz": {
+      "allChanges": [
+        {
+          "time": 0,
+          "value": "0000xxxx"
+        },
+        {
+          "time": 10,
+          "value": "1111zzzz"
+        },
+        {
+          "time": 20,
+          "value": "0000xxxx"
+        },
+        {
+          "time": 30,
+          "value": "x0x1z0z1"
+        }
+      ],
+      "valueAt": [
+        {
+          "time": -1,
+          "expected": null
+        },
+        {
+          "time": 0,
+          "expected": "0000xxxx"
+        },
+        {
+          "time": 5,
+          "expected": "0000xxxx"
+        },
+        {
+          "time": 9,
+          "expected": "0000xxxx"
+        },
+        {
+          "time": 10,
+          "expected": "1111zzzz"
+        },
+        {
+          "time": 15,
+          "expected": "1111zzzz"
+        },
+        {
+          "time": 19,
+          "expected": "1111zzzz"
+        },
+        {
+          "time": 20,
+          "expected": "0000xxxx"
+        },
+        {
+          "time": 25,
+          "expected": "0000xxxx"
+        },
+        {
+          "time": 29,
+          "expected": "0000xxxx"
+        },
+        {
+          "time": 30,
+          "expected": "x0x1z0z1"
+        },
+        {
+          "time": 205,
+          "expected": "x0x1z0z1"
+        },
+        {
+          "time": 380,
+          "expected": "x0x1z0z1"
+        },
+        {
+          "time": 381,
+          "expected": "x0x1z0z1"
+        },
+        {
+          "time": 761,
+          "expected": "x0x1z0z1"
+        }
+      ],
+      "changesInRange": [
+        {
+          "start": 0,
+          "end": 0,
+          "expected": []
+        },
+        {
+          "start": 0,
+          "end": 381,
+          "expected": [
+            {
+              "time": 0,
+              "value": "0000xxxx"
+            },
+            {
+              "time": 10,
+              "value": "1111zzzz"
+            },
+            {
+              "time": 20,
+              "value": "0000xxxx"
+            },
+            {
+              "time": 30,
+              "value": "x0x1z0z1"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 11,
+          "expected": [
+            {
+              "time": 0,
+              "value": "0000xxxx"
+            },
+            {
+              "time": 10,
+              "value": "1111zzzz"
+            }
+          ]
+        },
+        {
+          "start": 10,
+          "end": 21,
+          "expected": [
+            {
+              "time": 10,
+              "value": "1111zzzz"
+            },
+            {
+              "time": 20,
+              "value": "0000xxxx"
+            }
+          ]
+        },
+        {
+          "start": 20,
+          "end": 31,
+          "expected": [
+            {
+              "time": 20,
+              "value": "0000xxxx"
+            },
+            {
+              "time": 30,
+              "value": "x0x1z0z1"
+            }
+          ]
+        },
+        {
+          "start": 30,
+          "end": 381,
+          "expected": [
+            {
+              "time": 30,
+              "value": "x0x1z0z1"
+            }
+          ]
+        }
+      ],
+      "nextTransition": [
+        {
+          "afterTime": -1,
+          "expected": {
+            "time": 0,
+            "value": "0000xxxx"
+          }
+        },
+        {
+          "afterTime": 0,
+          "expected": {
+            "time": 10,
+            "value": "1111zzzz"
+          }
+        },
+        {
+          "afterTime": 10,
+          "expected": {
+            "time": 20,
+            "value": "0000xxxx"
+          }
+        },
+        {
+          "afterTime": 20,
+          "expected": {
+            "time": 30,
+            "value": "x0x1z0z1"
+          }
+        },
+        {
+          "afterTime": 30,
+          "expected": null
+        },
+        {
+          "afterTime": 380,
+          "expected": null
+        },
+        {
+          "afterTime": 381,
+          "expected": null
+        }
+      ],
+      "prevTransition": [
+        {
+          "beforeTime": -1,
+          "expected": null
+        },
+        {
+          "beforeTime": 0,
+          "expected": null
+        },
+        {
+          "beforeTime": 10,
+          "expected": {
+            "time": 0,
+            "value": "0000xxxx"
+          }
+        },
+        {
+          "beforeTime": 20,
+          "expected": {
+            "time": 10,
+            "value": "1111zzzz"
+          }
+        },
+        {
+          "beforeTime": 30,
+          "expected": {
+            "time": 20,
+            "value": "0000xxxx"
+          }
+        },
+        {
+          "beforeTime": 380,
+          "expected": {
+            "time": 30,
+            "value": "x0x1z0z1"
+          }
+        },
+        {
+          "beforeTime": 381,
+          "expected": {
+            "time": 30,
+            "value": "x0x1z0z1"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,13 @@
+# Cargo configuration for lxt2fst cross-compilation.
+#
+# Mirrors native/wellen_ffi/.cargo/config.toml — same Android/iOS/desktop story
+# applies because lxt2fst ships through the same dart:ffi + wasm-bindgen seams
+# as wellen_ffi / wellen_wasm. See native/wellen_ffi/.cargo/config.toml for the
+# full cross-compile linker setup.
+
+[profile.release-mobile]
+inherits = "release"
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = "debuginfo"

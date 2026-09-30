@@ -1,0 +1,40 @@
+{
+  "matchedSignalCount": 3,
+  "groupCount": 0,
+  "markerCount": 0,
+  "unmatchedSignalPaths": [],
+  "canvasBackgroundHex": null,
+  "sourceFilePath": "fixture.vcd",
+  "panOffsetTicks": 0.0,
+  "primaryCursorTime": null,
+  "markers": {},
+  "signals": [
+    {
+      "kind": "signal",
+      "signalRef": "top.clk",
+      "displayName": "clk",
+      "signalPath": "top.clk",
+      "format": "binary",
+      "argbColor": null,
+      "renderAsAnalog": false
+    },
+    {
+      "kind": "signal",
+      "signalRef": "top.rst",
+      "displayName": "rst",
+      "signalPath": "top.rst",
+      "format": "binary",
+      "argbColor": null,
+      "renderAsAnalog": false
+    },
+    {
+      "kind": "signal",
+      "signalRef": "top.data",
+      "displayName": "data",
+      "signalPath": "top.data",
+      "format": "binary",
+      "argbColor": null,
+      "renderAsAnalog": false
+    }
+  ]
+}

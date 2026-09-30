@@ -1,0 +1,38 @@
+# Copyright 2024-2025 Cornell University
+# released under BSD 3-Clause License
+# author: Kevin Laeufer <laeufer@cornell.edu>
+#
+# Vendored copy of fst-writer 0.3.1 (crates.io; upstream
+# https://github.com/ekiwi/fst-writer at c8be3494b418203c52d0a959cd588947c0f66b92),
+# carried as a `[patch.crates-io]` override by `native/lxt2fst` and
+# `native/wellen_ffi`. The version stays 0.3.1 so the patch satisfies their
+# `fst-writer = "0.3"` requirement.
+#
+# One change against upstream, in `src/writer.rs`: `FstHeaderWriter::new`, a
+# public constructor over any `Write + Seek` sink. Upstream 0.3.1 can only
+# create a writer on a file path (`open_fst`), and `wasm32-unknown-unknown` has
+# no filesystem, so the web build could not produce an FST at all. `open_fst`
+# now delegates to `new`; its behaviour is unchanged. Everything else —
+# sources, LICENSE, README.md — is byte-identical to the published crate. The
+# upstream dev-dependencies, tests, examples and release profile are omitted:
+# none of them are built when this crate is a dependency.
+#
+# Drop this directory and both `[patch.crates-io]` entries once an fst-writer
+# release has a public non-file constructor.
+
+[package]
+name = "fst-writer"
+version = "0.3.1"
+edition = "2024"
+rust-version = "1.85.0"
+authors = ["Kevin Laeufer <laeufer@cornell.edu>"]
+description = "A Rust library for writing waveform traces in the FST format."
+repository = "https://github.com/ekiwi/fst-writer"
+license = "BSD-3-Clause"
+keywords = ["fst", "waveform", "wavedump"]
+publish = false
+
+[dependencies]
+lz4_flex = "0.11"
+miniz_oxide = "0.8.2"
+thiserror = "2.0"

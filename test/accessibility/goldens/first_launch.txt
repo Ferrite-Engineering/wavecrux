@@ -1,0 +1,3 @@
+# Tab walk: 2 stops, cycles
+1. I have read and accept the End User License Agreement. check box not checked
+2. Agreement text grouping

@@ -1,0 +1,23 @@
+$date 2026-08-06 $end
+$version WaveCrux tool/generate_analog_fixtures.dart $end
+$timescale 1 ns $end
+$scope module edge $end
+$var wire 8 ! constant_bus $end
+$var wire 8 " single_change $end
+$var wire 16 # full_swing $end
+$var wire 8 $ always_x $end
+$var real 1 % lone_real $end
+$upscope $end
+$enddefinitions $end
+$dumpvars
+b01000010 !
+b00000000 "
+b1000000000000000 #
+bxxxxxxxx $
+r2.5 %
+$end
+#100
+b11111111 "
+b0111111111111111 #
+#200
+b1000000000000000 #

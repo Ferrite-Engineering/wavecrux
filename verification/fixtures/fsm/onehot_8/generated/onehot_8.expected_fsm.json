@@ -1,0 +1,122 @@
+{
+  "signalPath": "tb.STATE",
+  "startTime": 0,
+  "endTime": 81,
+  "totalTransitionCount": 8,
+  "states": [
+    {
+      "id": "1",
+      "label": "1",
+      "entryCount": 2,
+      "firstEntryTime": 0
+    },
+    {
+      "id": "2",
+      "label": "2",
+      "entryCount": 1,
+      "firstEntryTime": 10
+    },
+    {
+      "id": "4",
+      "label": "4",
+      "entryCount": 1,
+      "firstEntryTime": 20
+    },
+    {
+      "id": "8",
+      "label": "8",
+      "entryCount": 1,
+      "firstEntryTime": 30
+    },
+    {
+      "id": "16",
+      "label": "16",
+      "entryCount": 1,
+      "firstEntryTime": 40
+    },
+    {
+      "id": "32",
+      "label": "32",
+      "entryCount": 1,
+      "firstEntryTime": 50
+    },
+    {
+      "id": "64",
+      "label": "64",
+      "entryCount": 1,
+      "firstEntryTime": 60
+    },
+    {
+      "id": "128",
+      "label": "128",
+      "entryCount": 1,
+      "firstEntryTime": 70
+    }
+  ],
+  "transitions": [
+    {
+      "fromId": "128",
+      "toId": "1",
+      "count": 1,
+      "times": [
+        80
+      ]
+    },
+    {
+      "fromId": "16",
+      "toId": "32",
+      "count": 1,
+      "times": [
+        50
+      ]
+    },
+    {
+      "fromId": "1",
+      "toId": "2",
+      "count": 1,
+      "times": [
+        10
+      ]
+    },
+    {
+      "fromId": "2",
+      "toId": "4",
+      "count": 1,
+      "times": [
+        20
+      ]
+    },
+    {
+      "fromId": "32",
+      "toId": "64",
+      "count": 1,
+      "times": [
+        60
+      ]
+    },
+    {
+      "fromId": "4",
+      "toId": "8",
+      "count": 1,
+      "times": [
+        30
+      ]
+    },
+    {
+      "fromId": "64",
+      "toId": "128",
+      "count": 1,
+      "times": [
+        70
+      ]
+    },
+    {
+      "fromId": "8",
+      "toId": "16",
+      "count": 1,
+      "times": [
+        40
+      ]
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- App Store Connect distribution for the open-core WaveCrux app (iOS).
+	     'app-store' is the long-standing method name; newer Xcode also accepts
+	     the alias 'app-store-connect'. Either resolves to the App Store. -->
+	<key>method</key>
+	<string>app-store</string>
+
+	<!-- Ferrite Engineering LLC -->
+	<key>teamID</key>
+	<string>7957R7M965</string>
+
+	<!-- Let Xcode pick the Apple Distribution cert + App Store provisioning
+	     profile for com.ferriteengineering.wavecrux automatically. -->
+	<key>signingStyle</key>
+	<string>automatic</string>
+
+	<key>destination</key>
+	<string>export</string>
+
+	<!-- Upload dSYMs so App Store Connect can symbolicate crash reports. -->
+	<key>uploadSymbols</key>
+	<true/>
+
+	<key>stripSwiftSymbols</key>
+	<true/>
+</dict>
+</plist>

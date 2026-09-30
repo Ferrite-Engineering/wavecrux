@@ -1,0 +1,91 @@
+site_name: WaveCrux Documentation
+site_url: https://docs.wavecrux.app/
+site_description: The complete WaveCrux user guide — installation, the interface, loading waveforms, analysis, protocol decoders, WaveCrux Stage, the Sigrok bridge, and authoring Rive widgets. Covers Open Core, Pro, and Enterprise.
+copyright: Copyright &copy; 2026 Ferrite Engineering LLC
+use_directory_urls: false
+docs_dir: docs
+theme:
+  name: material
+  logo: assets/logo.png
+  favicon: assets/favicon.png
+  font: false
+  palette:
+    # Dark first, matching the marketing site; the toggle offers light.
+    - scheme: slate
+      primary: custom
+      accent: custom
+      toggle: { icon: material/weather-sunny, name: Switch to light mode }
+    - scheme: default
+      primary: custom
+      accent: custom
+      toggle: { icon: material/weather-night, name: Switch to dark mode }
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - toc.follow
+extra:
+  homepage: https://wavecrux.app
+extra_css:
+  - assets/brand.css
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc: { permalink: true }
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed: { alternate_style: true }
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+validation:
+  omitted_files: warn
+  absolute_links: info
+  unrecognized_links: warn
+  anchors: warn
+nav:
+  - Getting started:
+      - Overview: index.md
+      - Installation & first launch: getting-started.md
+      - The interface: interface.md
+      - Appearance & themes: appearance-and-themes.md
+      - Tiers & licensing: licensing.md
+  - Working with waveforms:
+      - Files & sessions: files-and-sessions.md
+      - Navigating & measuring: navigating-waveforms.md
+      - Keyboard & mouse reference: keyboard-mouse.md
+      - Working with signals: working-with-signals.md
+      - Translators: translators.md
+      - Analysis & debug: analysis.md
+      - Annotations: annotations.md
+      - AI assistant: ai-assistant.md
+      - Protocol decoders: protocol-decoders.md
+  - WaveCrux Stage:
+      - The Stage panel: stage.md
+      - Authoring Rive widgets: authoring-rive-widgets.md
+  - Extend & integrate:
+      - Authoring custom decoders: authoring-custom-decoders.md
+      - Sigrok bridge: sigrok-bridge.md
+      - Automation & collaboration: automation-and-collaboration.md
+      - Use in VS Code: vscode.md
+  - Administration:
+      - Org-wide configuration: administration.md
+      - Policy file reference: https://edacrux.app/policy-reference
+      - Audit log: https://edacrux.app/audit-log
+      - Deployment: https://edacrux.app/deployment
+  - Cookbook:
+      - Workflow recipes: cookbook.md
+      - Find a bug by diffing runs: cookbook-find-a-bug.md
+      - Decode a bus from raw signals: cookbook-decode-a-bus.md
+      - Measure clock & timing: cookbook-measure-timing.md
+      - Build a live Stage dashboard: cookbook-stage-dashboard.md
+  - Learn:
+      - Educational packs: educational-packs.md

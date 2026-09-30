@@ -1,0 +1,13 @@
+# Built shared libraries — regenerated on demand by build_test_plugins.sh / .bat.
+# The C source and CMakeLists.txt files in this tree ARE committed.
+*.so
+*.dylib
+*.dll
+*.lib
+*.pdb
+*.ilk
+*.exp
+*.o
+*.obj
+# macOS debug-info bundles (dsymutil sidecars).
+*.dSYM/

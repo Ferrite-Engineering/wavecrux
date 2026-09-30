@@ -1,0 +1,16 @@
+{
+  "source_url": "https://github.com/YosysHQ/picorv32",
+  "source_commit": "87c89acc18994c8cf9a2311e871818e87d304568",
+  "license": "ISC",
+  "license_spdx": "ISC",
+  "simulator": "iverilog",
+  "simulator_version": "13.0",
+  "acquired_date": "2026-05-31",
+  "size_bytes": 279073,
+  "brief_description": "PicoRV32 RISC-V CPU 'ez' (easy) testbench output, kept as raw VCD to exercise the parser's VCD path. Small SoC trace covering instruction fetch, memory read/write, and a tight counter loop on the test firmware. Built locally: iverilog -o testbench_ez.vvp testbench_ez.v picorv32.v && vvp testbench_ez.vvp +vcd.",
+  "anchors": [
+    "scope `testbench` exists with top-level reg `clk`, `mem_ready`, `resetn`",
+    "child scope `testbench.uut` is the picorv32 core instance",
+    "signal `trap` should remain 0 throughout the trace"
+  ]
+}

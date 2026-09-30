@@ -1,0 +1,14 @@
+# Tab walk: 13 stops, cycles
+1. Open Sample Waveform button
+2. Open Workspace… button
+3. NetCrux See the logic behind the signal. Cross-probe a waveform straight into the schematic, and back. link
+4. LintCrux Catch it before you simulate it. Lint and CDC-check the RTL that produced this trace. link
+5. SimCrux Run the testbench that wrote this trace. Launch regressions and open the failures here. link
+6. A member of the EDACrux suite of products — edacrux.app link
+7. Statistics button collapsed
+8. [Toolbar grouping] Open File (Ctrl+O) button
+9. Search Signals (Ctrl+F) button
+10. Cross-Probe Panel (Ctrl+Shift+X) button
+11. Settings… (Ctrl+,) button
+12. App Diagnostics (Ctrl+Shift+M) button
+13. [WaveCrux grouping] Open File… button
