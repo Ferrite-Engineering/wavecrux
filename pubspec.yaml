@@ -1,7 +1,7 @@
 name: wavecrux
 description: "A waveform viewer for silicon development"
 publish_to: 'none'
-version: 1.0.0+10
+version: 1.0.1+11
 license: Apache-2.0
 
 environment:

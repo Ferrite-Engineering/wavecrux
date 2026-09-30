@@ -80,12 +80,15 @@ void main() {
       }
 
       // Not answered is not consent: nothing is constructed that could send.
+      // The disclosure is on screen, so the launch's events wait for its
+      // answer — a pending service, which transmits exactly as much as the
+      // no-op does.
       final unanswered = await shipping(TelemetryConsentState.unset);
       expect(unanswered.read(telemetryBetaPeriodProvider), isFalse);
       expect(unanswered.read(telemetryEnabledProvider), isFalse);
       expect(
         unanswered.read(telemetryServiceProvider),
-        isA<NoopTelemetryService>(),
+        isA<PendingTelemetryService>(),
       );
 
       // A user who opted in is counted, with no define and no dev flag.
