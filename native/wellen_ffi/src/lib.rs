@@ -1273,21 +1273,21 @@ mod tests {
         ) {
             let mut cs_buf = vec![0u64; num_scopes as usize];
             let cs_count = wellen_scope_child_scopes(h, scope_idx, cs_buf.as_mut_ptr(), num_scopes);
-            for i in 0..cs_count.max(0) as usize {
-                collect_signal_refs(h, cs_buf[i], num_scopes, num_vars, out);
+            for &child in cs_buf.iter().take(cs_count.max(0) as usize) {
+                collect_signal_refs(h, child, num_scopes, num_vars, out);
             }
             let mut var_buf = vec![0u64; num_vars as usize];
             let v_count = wellen_scope_child_vars(h, scope_idx, var_buf.as_mut_ptr(), num_vars);
-            for i in 0..v_count.max(0) as usize {
-                let sr = wellen_var_signal_ref(h, var_buf[i]);
+            for &var in var_buf.iter().take(v_count.max(0) as usize) {
+                let sr = wellen_var_signal_ref(h, var);
                 if sr != u32::MAX {
                     out.insert(sr);
                 }
             }
         }
         let mut all_refs = std::collections::HashSet::new();
-        for i in 0..root_count as usize {
-            collect_signal_refs(h, root_buf[i], num_scopes, num_vars, &mut all_refs);
+        for &root in root_buf.iter().take(root_count as usize) {
+            collect_signal_refs(h, root, num_scopes, num_vars, &mut all_refs);
         }
         assert!(!all_refs.is_empty(), "no signal refs found");
 
@@ -1359,9 +1359,9 @@ mod tests {
 ///     (`WELLEN_REPRO_ITERS`, default 200) to make the heap/timing-dependent
 ///     fault deterministic. Run under AddressSanitizer to name the exact
 ///     out-of-bounds read:
-///       RUSTFLAGS="-Zsanitizer=address" \
-///         cargo +nightly test --target aarch64-apple-darwin \
-///         captured_riscv_add_all_in_scope_stress -- --ignored --nocapture
+///     `RUSTFLAGS="-Zsanitizer=address" cargo +nightly test
+///     --target aarch64-apple-darwin captured_riscv_add_all_in_scope_stress
+///     -- --ignored --nocapture`
 #[cfg(test)]
 mod captured_riscv_repro {
     use super::*;
@@ -1401,13 +1401,13 @@ mod captured_riscv_repro {
         ) {
             let mut cs_buf = vec![0u64; num_scopes as usize];
             let cs_count = wellen_scope_child_scopes(h, scope_idx, cs_buf.as_mut_ptr(), num_scopes);
-            for i in 0..cs_count.max(0) as usize {
-                walk(h, cs_buf[i], num_scopes, num_vars, out);
+            for &child in cs_buf.iter().take(cs_count.max(0) as usize) {
+                walk(h, child, num_scopes, num_vars, out);
             }
             let mut var_buf = vec![0u64; num_vars as usize];
             let v_count = wellen_scope_child_vars(h, scope_idx, var_buf.as_mut_ptr(), num_vars);
-            for i in 0..v_count.max(0) as usize {
-                let sr = wellen_var_signal_ref(h, var_buf[i]);
+            for &var in var_buf.iter().take(v_count.max(0) as usize) {
+                let sr = wellen_var_signal_ref(h, var);
                 if sr != u32::MAX {
                     out.insert(sr);
                 }
@@ -1417,8 +1417,8 @@ mod captured_riscv_repro {
         let mut root_buf = vec![0u64; num_scopes.max(1) as usize];
         let root_count = wellen_root_scopes(h, root_buf.as_mut_ptr(), num_scopes.max(1));
         let mut refs = HashSet::new();
-        for i in 0..root_count.max(0) as usize {
-            walk(h, root_buf[i], num_scopes, num_vars, &mut refs);
+        for &root in root_buf.iter().take(root_count.max(0) as usize) {
+            walk(h, root, num_scopes, num_vars, &mut refs);
         }
         refs.into_iter().collect()
     }
