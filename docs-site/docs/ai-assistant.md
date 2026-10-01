@@ -88,7 +88,7 @@ Point it at a symptom — the **Why did it hang here?** quick action, or a quest
 
 3. **Follow the evidence.**
 
-    Click any citation in the answer to jump there. **Pin this finding** keeps it under **Pinned findings** — pinned findings and the conversation are saved with your session, so they are still there when you reopen the capture tomorrow. **New conversation** starts over.
+    Click any citation in the answer to jump there. **Pin this finding** keeps it under **Pinned findings** — pinned findings and the conversation are saved with your session, so they are still there when you reopen the capture tomorrow. The **×** on the panel's tab hides the assistant and keeps the conversation; **New conversation** starts over.
 
 !!! note "Leads, not proofs"
 

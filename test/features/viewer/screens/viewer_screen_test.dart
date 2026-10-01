@@ -1226,6 +1226,7 @@ void main() {
           icon: Icons.smart_toy_outlined,
           builder: (_) => const SizedBox.shrink(),
           visibilityProvider: visibility,
+          onDismiss: (_) {},
         );
         await tester.pumpWidget(
           _buildApp(
@@ -1323,6 +1324,7 @@ void main() {
           icon: Icons.smart_toy_outlined,
           builder: (_) => const SizedBox.shrink(),
           visibilityProvider: visibility,
+          onDismiss: (_) {},
         );
         await tester.pumpWidget(
           _buildApp(

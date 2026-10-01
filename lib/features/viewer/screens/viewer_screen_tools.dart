@@ -167,9 +167,9 @@ extension _ViewerScreenTools on _ViewerScreenState {
       if (!FeatureGate.isAvailable(tab.requiredTier, tier)) continue;
       if (_activeTabContainer.read(tab.visibilityProvider)) {
         // Reveal, dock-style: open the region AND make the contributed tab
-        // the active one. Pro entries are not closable (their seam exposes
-        // visibility read-only), so the dock's own auto-reveal never fires
-        // for them — this is their reveal path.
+        // the active one. The dock's own auto-reveal also fires for a newly
+        // present contributed tab, but only post-frame and only while the
+        // dock is mounted; this reveals synchronously from the action.
         _activeTabContainer
             .read(panelLayoutProvider.notifier)
             .revealBottomDockTab(tab.id);

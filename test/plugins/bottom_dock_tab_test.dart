@@ -19,6 +19,7 @@ void main() {
         icon: Icons.list,
         builder: (_) => const SizedBox.shrink(),
         visibilityProvider: _stubVisibility,
+        onDismiss: (_) {},
       );
       expect(tab.requiredTier, LicenseTier.openCore);
     });
@@ -30,6 +31,7 @@ void main() {
         icon: Icons.check,
         builder: (_) => const SizedBox.shrink(),
         visibilityProvider: _stubVisibility,
+        onDismiss: (_) {},
       );
       final b = BottomDockTab(
         id: 'sva',
@@ -37,6 +39,7 @@ void main() {
         icon: Icons.flag,
         builder: (_) => const SizedBox(width: 1),
         visibilityProvider: _stubVisibility,
+        onDismiss: (_) {},
         requiredTier: LicenseTier.pro,
       );
       final c = BottomDockTab(
@@ -45,6 +48,7 @@ void main() {
         icon: Icons.list,
         builder: (_) => const SizedBox.shrink(),
         visibilityProvider: _stubVisibility,
+        onDismiss: (_) {},
       );
       expect(a, equals(b));
       expect(a.hashCode, b.hashCode);
@@ -67,6 +71,7 @@ void main() {
           icon: Icons.list,
           builder: (_) => const SizedBox.shrink(),
           visibilityProvider: _stubVisibility,
+          onDismiss: (_) {},
         );
 
         late String resolved;

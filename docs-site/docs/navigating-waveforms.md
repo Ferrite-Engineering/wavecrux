@@ -147,6 +147,7 @@ With the signal tree focused, the arrow keys, ++home++ / ++end++, ++page-up++ / 
 |---|---|
 | Toggle Debug Advisor Panel | ++cmd+shift+b++ / ++ctrl+shift+b++ |
 | Toggle SystemVerilog Assertion Panel | ++cmd+shift+v++ / ++ctrl+shift+v++ |
+| Next / Previous Event of the Assertion Row (SVA panel focused) | ++n++ / ++p++ |
 
 !!! note "Bindings are yours"
 

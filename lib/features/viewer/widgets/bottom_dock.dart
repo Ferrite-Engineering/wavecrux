@@ -53,8 +53,10 @@ import 'package:wavecrux/shared/layouts/device_class_provider.dart';
 /// - **Pro extras** ([extraBottomDockTabsProvider]) map straight onto
 ///   entries — the `BottomDockTab` seam carried an icon and a label resolver
 ///   "for any future tab-strip presentation" since it shipped; this is that
-///   presentation. They are not closable: the seam exposes visibility as a
-///   read-only listenable, and the Pro side owns hiding.
+///   presentation. Their `×` calls the contributor's `onDismiss`, which
+///   *hides* the tab and keeps its state (loaded SVA results, an AI Advisor
+///   conversation); showing the tab again brings that state back. Clearing
+///   is a separate, explicit action inside the panel.
 ///
 /// Mounted per-tab inside `CruxIdeLayout`'s bottom region, so every read
 /// resolves this tab's providers, and each workspace tab keeps its own dock
@@ -336,6 +338,7 @@ List<CruxDockEntry> _proEntries(BuildContext context, WidgetRef ref) {
           icon: tab.icon,
           label: tab.labelResolver(context),
           builder: tab.builder,
+          onClose: () => tab.onDismiss(ref),
         ),
   ];
 }

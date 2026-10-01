@@ -26,6 +26,7 @@ void main() {
           icon: Icons.check,
           builder: (_) => const SizedBox.shrink(),
           visibilityProvider: _visibility,
+          onDismiss: (_) {},
           requiredTier: LicenseTier.pro,
         ),
       ];

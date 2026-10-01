@@ -3,6 +3,7 @@
 
 import 'package:crux_license/crux_license.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 
 /// Resolves the localized label for a [BottomDockTab]. Receives the
@@ -24,6 +25,13 @@ typedef BottomDockTabLabelResolver = String Function(BuildContext context);
 /// `_buildBottomPanelContent` priority chain.
 typedef BottomDockTabBuilder = Widget Function(BuildContext context);
 
+/// Hides a [BottomDockTab] when the user presses its `×` in the bottom dock.
+///
+/// Receives the dock's own [WidgetRef], which resolves the tab's per-tab
+/// providers, so the contributor flips the same flag its
+/// [BottomDockTab.visibilityProvider] reads.
+typedef BottomDockTabDismiss = void Function(WidgetRef ref);
+
 /// Open-core descriptor for a bottom-dock tab contributed through
 /// [extraBottomDockTabsProvider].
 ///
@@ -40,6 +48,9 @@ typedef BottomDockTabBuilder = Widget Function(BuildContext context);
 /// [requiredTier] so the host can route activation through
 /// `FeatureGate.isAvailable`.
 ///
+/// Every contributed tab is closable: [onDismiss] is required, so the host
+/// renders the same `×` it gives its own on-demand tabs and a new contributor
+/// cannot ship a tab the user has no visible way to put away.
 /// The host inserts contributed tabs into the priority chain just
 /// after the cocotb log panel — the cocotb panel keeps priority over
 /// extras, but extras win over the default transaction table view.
@@ -53,6 +64,7 @@ class BottomDockTab {
     required this.icon,
     required this.builder,
     required this.visibilityProvider,
+    required this.onDismiss,
     this.requiredTier = LicenseTier.openCore,
   });
 
@@ -86,6 +98,17 @@ class BottomDockTab {
   /// `NotifierProvider<X, bool>`, or a `select()` projection can
   /// satisfy it.
   final ProviderListenable<bool> visibilityProvider;
+
+  /// Called when the user presses the tab's `×`. Must make
+  /// [visibilityProvider] read `false`.
+  ///
+  /// The `×` on a contributed tab means **hide**, not discard: the panel's
+  /// state (loaded results, a conversation) must survive so that showing the
+  /// tab again brings it back unchanged. Discarding belongs to an explicit
+  /// action inside the panel. This differs on purpose from the host's own
+  /// analysis tabs, whose `×` clears the analysis because the tab only exists
+  /// while the analysis does.
+  final BottomDockTabDismiss onDismiss;
 
   /// Builds the panel widget. Called only when [visibilityProvider]
   /// is `true` and [requiredTier] is satisfied.

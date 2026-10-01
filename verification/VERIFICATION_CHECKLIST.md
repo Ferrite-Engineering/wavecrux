@@ -421,6 +421,10 @@ Fixtures live under `test/fixtures/gtkw/{generated,captured}/` (consumed directl
 - [ ] A non-waveform drop opens into **Failed to load waveform**, never a silent no-op; `.fsdb` gets the conversion offer — `[Coverage: WIDGET]` (unsupported) + `[Coverage: MANUAL]` (FSDB, needs `fsdb2vcd`)
 - [ ] No overlay and no open while a dialog (e.g. Settings) is in front; tab-chip reorder, signal drags and the Stage bindings pane's drop still work with no overlay — `[Coverage: WIDGET]` (dialog / gate) + `[Coverage: MANUAL]` (in-app drags)
 
+### Contributed bottom-dock tabs (§22.5.2)
+
+- [ ] Every tab an overlay contributes through `extraBottomDockTabsProvider` shows a `×` like FSM / X-Trace; the `×` hides only that tab and leaves its panel state alone (`BottomDockTab.onDismiss` is required) — `[Coverage: WIDGET]` (`test/features/viewer/widgets/bottom_dock_contributed_tabs_test.dart`)
+
 ### User-contributed decoder plugin loader (§22.5.4)
 
 - [ ] First-launch acknowledgment dialog explains that plugins run as native code; user can decline — `[Coverage: WIDGET]` (`test/features/settings/widgets/plugin_safety_dialog_test.dart`)

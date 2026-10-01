@@ -211,7 +211,15 @@ SVA visualization (**View → Toggle SystemVerilog Assertion Panel**, ++cmd+shif
 
 3. **Jump to a failure.**
 
-    Click an assertion (or **Jump to first failure**) to move the cursor to its first failing event and see exactly what the signals were doing when it fired.
+    Click an assertion (or **Jump to first failure**, the last button on its row) to move the cursor to its first failing event and see exactly what the signals were doing when it fired.
+
+4. **Step through the rest.**
+
+    The **Previous event** and **Next event** chevrons on each row walk that assertion's events in timeline order, and wrap round at the ends. They follow the kind chips: with **FAIL** on, a row steps through its failures only, skipping the passes and cover hits between them. Between the chevrons, a quiet **2 of 3** shows where the cursor is. With the panel focused (click a row), ++n++ and ++p++ step the row you last used.
+
+5. **Put the panel away.**
+
+    The **×** on the panel's tab hides it and keeps the results: ++cmd+shift+v++ / ++ctrl+shift+v++ brings the same assertions back without loading the log again. The trash can in the panel header is what discards them.
 
 !!! note
 

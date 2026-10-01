@@ -6322,6 +6322,8 @@ Open-core ships several Riverpod-provider seams through which the closed-source 
 
 **What it does (plain language).** The bottom dock currently shows one of: Stage panel, FSM bubble diagram, X-Trace report, switching-activity report, cocotb log panel, or the default transaction table — a priority chain inside `_buildBottomPanelContent`. `extraBottomDockTabsProvider` lets the Pro overlay (and any future open-core feature) contribute additional panels into this chain without forking the viewer. Each contributed `BottomDockTab` carries its own visibility provider, license-tier gate, ARB-driven label, icon, and panel builder. The host inserts contributed tabs between the cocotb panel (priority-wise above contributors) and the transaction table (the fallback). License-tier gating routes through `FeatureGate.isAvailable`, which short-circuits to allow during the public beta and consults `licenseTierProvider` post-beta.
 
+**Closing a contributed tab.** Every contributed tab gets the same `×` as the FSM and X-Trace tabs. `BottomDockTab.onDismiss` is a required field, so a contributor cannot ship a tab without one; the host calls it with the dock's own `WidgetRef` when the `×` is pressed. The `×` on a contributed tab *hides* it and keeps its state (Pro: the loaded SVA results, the AI Advisor conversation); showing the tab again brings that state back. This differs on purpose from the analysis tabs, whose `×` clears the analysis.
+
 **Setup.** Open-Core build with no Pro overlay; load a waveform fixture.
 
 **Step-by-step expected behavior.**
@@ -6346,6 +6348,8 @@ Open-core ships several Riverpod-provider seams through which the closed-source 
 | Open-core default returns empty list | **WIDGET** (`test/plugins/extra_bottom_dock_tabs_provider_test.dart`) |
 | Equality of `BottomDockTab` by id | **WIDGET** (`test/plugins/bottom_dock_tab_test.dart`) |
 | Default `requiredTier` is `LicenseTier.openCore` | **WIDGET** (same file) |
+| Every contributed tab renders a `×`; the `×` calls `onDismiss` and hides only that tab; the phone sheet renders the same `×` | **WIDGET** (`test/features/viewer/widgets/bottom_dock_contributed_tabs_test.dart`) |
+| The `×` on a contributed tab leaves the panel's state alone | **WIDGET** (same file); the Pro SVA / AI Advisor behaviour is in the Pro repo's guide |
 | `_buildBottomPanelContent` priority chain end-to-end | **WIDGET — pending** (broader viewer integration covers this indirectly today) |
 | Tier-gate during beta vs post-beta | **In Pro repo's** `verification/VERIFICATION_GUIDE.md` for the Pro SVA tab |
 
