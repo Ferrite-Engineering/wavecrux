@@ -166,6 +166,9 @@ echo
 PASSED=()
 FAILED=()
 TIMED_OUT=()
+# Files whose first attempt hung but whose clean-build retry produced a
+# result (pass or fail). See the retry below.
+HUNG_THEN_RAN=()
 TOTAL=${#TEST_FILES[@]}
 INDEX=0
 
@@ -220,13 +223,35 @@ for f in "${TEST_FILES[@]}"; do
   perl -e 'alarm shift @ARGV; exec @ARGV or exit 127' \
     "$TEST_TIMEOUT" flutter test "$f" -d "$DEVICE" 2>&1 | tee "$LOG_DIR/$log_name"
   status="${PIPESTATUS[0]}"
+  if [[ $status -eq 142 ]]; then
+    # 142 = SIGALRM: the file hung rather than failed. Retry it ONCE from a
+    # clean build before calling it. The hang this cap exists for is
+    # flutter_tools never establishing the VM-service connection to a
+    # launched app (problem (b) above, and the iOS-simulator sweeps of
+    # 2026-09-01 and 2026-10-01). It is not a property of the file: the
+    # 2026-10-01 casualty, mobile/gesture_two_finger_pan_test.dart, passes in
+    # under five seconds against the same simulator. A clean rebuild is the
+    # one remedy (b) is known to answer to. A hang inside the test body
+    # hangs the retry too, so a real defect is still reported as HUNG; one
+    # that clears on retry is listed separately so it stays visible.
+    echo ">>> $f HUNG: no result after ${TEST_TIMEOUT}s; retrying once from a clean build"
+    flutter clean >/dev/null 2>&1
+    flutter pub get >/dev/null 2>&1
+    mkdir -p "$LOG_DIR"
+    perl -e 'alarm shift @ARGV; exec @ARGV or exit 127' \
+      "$TEST_TIMEOUT" flutter test "$f" -d "$DEVICE" 2>&1 | tee -a "$LOG_DIR/$log_name"
+    status="${PIPESTATUS[0]}"
+    if [[ $status -ne 142 ]]; then
+      HUNG_THEN_RAN+=("$f")
+    fi
+  fi
   if [[ $status -eq 0 ]]; then
     PASSED+=("$f")
   elif [[ $status -eq 142 ]]; then
-    # 142 = SIGALRM: the file hung rather than failed. Report it as its own
-    # class — a hang and an assertion failure want different follow-ups —
-    # and carry on to the remaining files instead of stalling the sweep.
-    echo ">>> $f HUNG: no result after ${TEST_TIMEOUT}s; moving on"
+    # Hung twice. Report it as its own class — a hang and an assertion
+    # failure want different follow-ups — and carry on to the remaining
+    # files instead of stalling the sweep.
+    echo ">>> $f HUNG again: no result after ${TEST_TIMEOUT}s; moving on"
     TIMED_OUT+=("$f")
   else
     FAILED+=("$f")
@@ -242,9 +267,16 @@ echo "────────────────────────�
 echo "Passed:  ${#PASSED[@]} / ${#TEST_FILES[@]}"
 echo "Failed:  ${#FAILED[@]}"
 echo "Hung:    ${#TIMED_OUT[@]}"
+if [[ ${#HUNG_THEN_RAN[@]} -gt 0 ]]; then
+  echo
+  echo "Hung once, then produced a result on a clean-build retry:"
+  for f in "${HUNG_THEN_RAN[@]}"; do
+    echo "  ↻ $f"
+  done
+fi
 if [[ ${#TIMED_OUT[@]} -gt 0 ]]; then
   echo
-  echo "Hung tests (no result within ${TEST_TIMEOUT}s):"
+  echo "Hung tests (no result within ${TEST_TIMEOUT}s, twice):"
   for f in "${TIMED_OUT[@]}"; do
     echo "  ⏱ $f"
   done
