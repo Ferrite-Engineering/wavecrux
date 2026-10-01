@@ -111,15 +111,63 @@ void main() {
       expect(find.text('X-Trace'), findsNothing);
     });
 
-    testWidgets('shows error text when trace inactive with error', (
+    testWidgets('a refused trace shows why, in the user language', (
       tester,
     ) async {
       await tester.pumpWidget(
-        _wrap(const XTraceState(error: 'Signal is not X.')),
+        _wrap(const XTraceState(error: XTraceFailure.notXAtTime)),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Signal is not X.'), findsOneWidget);
+      expect(find.byKey(const Key('xTracePanelError')), findsOneWidget);
+      expect(
+        find.text(
+          'This signal is not X at the requested time, so there is no X '
+          'origin to trace.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          "Right-click a signal with value 'x' at cursor to trace its X "
+          'origin.',
+        ),
+        findsNothing,
+      );
     });
+
+    testWidgets('an unknown signal is reported as such', (tester) async {
+      await tester.pumpWidget(
+        _wrap(const XTraceState(error: XTraceFailure.signalNotFound)),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'This signal is not in the loaded design, so its X origin cannot '
+          'be traced.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    for (final loc in const [
+      Locale('zh', 'CN'),
+      Locale('ja'),
+      Locale('ko'),
+    ]) {
+      testWidgets('error view renders in ${loc.toLanguageTag()}', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _wrap(
+            const XTraceState(error: XTraceFailure.notXAtTime),
+            locale: loc,
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('xTracePanelError')), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    }
   });
 
   // ── active trace ──────────────────────────────────────────────────────────────

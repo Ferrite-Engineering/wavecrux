@@ -6,10 +6,25 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:wavecrux/features/cursors/providers/cursor_providers.dart';
 import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.dart';
 import 'package:wavecrux/features/viewer/providers/navigation_provider.dart';
+import 'package:wavecrux/features/viewer/providers/panel_layout_provider.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
 import 'package:wavecrux/services/signal_query/x_trace_service.dart';
 
 part 'x_trace_provider.g.dart';
+
+// ── XTraceFailure ─────────────────────────────────────────────────────────────
+
+/// Why the last [XTraceNotifier.traceX] produced no causal chain.
+///
+/// A code rather than a message, so the X-Trace panel shows it in the user's
+/// language.
+enum XTraceFailure {
+  /// The signal is not X at the requested time, so there is nothing to trace.
+  notXAtTime,
+
+  /// The signal is not in the loaded design hierarchy.
+  signalNotFound,
+}
 
 // ── XTraceState ───────────────────────────────────────────────────────────────
 
@@ -31,16 +46,24 @@ class XTraceState {
   /// markers at the relevant signal lanes.
   final Set<String> involvedSignalPaths;
 
-  /// Human-readable error message if the last [XTraceNotifier.traceX] failed.
-  final String? error;
+  /// Why the last [XTraceNotifier.traceX] failed, or null when it did not.
+  final XTraceFailure? error;
 
   /// Whether an X-trace result is currently displayed.
   bool get isActive => rootNode != null;
 
+  /// Whether the X-Trace panel has anything to show: a causal chain, or the
+  /// reason the last trace could not build one.
+  ///
+  /// The dock keys the panel's presence on this rather than [isActive]. A
+  /// refused trace used to leave the panel unmounted, so its reason had no
+  /// surface and the action that asked for it appeared to do nothing.
+  bool get hasContent => rootNode != null || error != null;
+
   XTraceState copyWith({
     XCausalNode? rootNode,
     Set<String>? involvedSignalPaths,
-    String? error,
+    XTraceFailure? error,
     bool clearRoot = false,
     bool clearError = false,
   }) => XTraceState(
@@ -94,7 +117,10 @@ class XTraceNotifier extends _$XTraceNotifier {
     // Look up Variable from the flat signalRef map.
     final variablesMap = ref.read(signalVariablesMapProvider);
     final variable = variablesMap[signalRef];
-    if (variable == null) return;
+    if (variable == null) {
+      state = const XTraceState(error: XTraceFailure.signalNotFound);
+      return;
+    }
 
     // Ensure signal data is loaded.
     if (!source.isSignalLoaded(signalRef)) {
@@ -109,9 +135,7 @@ class XTraceNotifier extends _$XTraceNotifier {
     // Quick check: is the signal actually X at the requested time?
     final valueAtTime = source.valueAt(signalRef, time);
     if (valueAtTime == null || !valueAtTime.toLowerCase().contains('x')) {
-      state = const XTraceState(
-        error: 'Signal is not X at the cursor time.',
-      );
+      state = const XTraceState(error: XTraceFailure.notXAtTime);
       return;
     }
 
@@ -134,6 +158,23 @@ class XTraceNotifier extends _$XTraceNotifier {
     // Move primary cursor to X-origin time.
     ref.read(cursorStateProvider.notifier).placePrimary(chain.xStartTime);
     ref.read(navigationProvider.notifier).jumpToTime(chain.xStartTime);
+  }
+
+  /// Runs [traceX] and brings its result in front of the user: selects the
+  /// X-Trace tab in whichever dock it is placed in and opens that dock if it
+  /// was collapsed.
+  ///
+  /// The one entry point for every user action that starts a trace (the
+  /// signal list's *Trace X Origin*, the Debug Advisor's *View causal
+  /// chain*), so reveal is part of the action rather than something each
+  /// caller has to remember. A refused trace is revealed too: the panel then
+  /// shows why.
+  Future<void> traceXAndReveal(String signalRef, int time) async {
+    await traceX(signalRef, time);
+    if (!ref.mounted || !state.hasContent) return;
+    ref
+        .read(panelLayoutProvider.notifier)
+        .revealDockTabPlaced(kBottomDockTabXTrace, kDockRegionBottom);
   }
 
   /// Clears the active trace result and resets to idle.

@@ -577,7 +577,10 @@ class SignalListPanel extends ConsumerWidget {
                       : null,
                   hasX: hasX,
                   onTraceXOrigin: hasX && cursorTime != null
-                      ? () => xTraceNotifier.traceX(signalRef, cursorTime)
+                      ? () => xTraceNotifier.traceXAndReveal(
+                          signalRef,
+                          cursorTime,
+                        )
                       : null,
                   canVisualizeFsm: _isFsmCandidate(ref, signalRef),
                   onVisualizeFsm: () => _visualizeFsm(context, ref, signalRef),

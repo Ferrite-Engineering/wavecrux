@@ -16,7 +16,9 @@ import 'package:wavecrux/features/decoders/widgets/transaction_table_panel.dart'
 import 'package:wavecrux/features/stage/providers/stage_workspace_provider.dart';
 import 'package:wavecrux/features/stage/widgets/stage_panel.dart';
 import 'package:wavecrux/features/viewer/providers/panel_layout_provider.dart';
+import 'package:wavecrux/features/viewer/providers/x_trace_provider.dart';
 import 'package:wavecrux/features/viewer/widgets/bottom_dock.dart';
+import 'package:wavecrux/features/viewer/widgets/x_trace_panel.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/plugins/stage_registry.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
@@ -44,11 +46,19 @@ class _LedStub extends StageWidget {
   List<SignalBinding> get requiredSignals => const [];
 }
 
+/// An X-trace notifier a test can put into the refused state directly.
+class _RefusingXTrace extends XTraceNotifier {
+  void refuse() => state = const XTraceState(error: XTraceFailure.notXAtTime);
+}
+
 Future<ProviderContainer> _pump(WidgetTester tester) async {
   late ProviderContainer container;
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [deviceClassProvider.overrideWithValue(DeviceClass.desktop)],
+      overrides: [
+        deviceClassProvider.overrideWithValue(DeviceClass.desktop),
+        xTraceProvider.overrideWith(_RefusingXTrace.new),
+      ],
       child: MaterialApp(
         localizationsDelegates: L10N.localizationsDelegates,
         supportedLocales: L10N.supportedLocales,
@@ -298,6 +308,29 @@ void main() {
           isFalse,
         );
         expect(find.byKey(const ValueKey('cruxDockTab-cocotb')), findsNothing);
+      });
+
+      testWidgets('a refused X-trace mounts the X-Trace tab with its reason, '
+          'and its × clears it', (tester) async {
+        final container = await _pump(tester);
+        expect(find.byKey(const ValueKey('cruxDockTab-xtrace')), findsNothing);
+
+        (container.read(xTraceProvider.notifier) as _RefusingXTrace).refuse();
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const ValueKey('cruxDockTab-xtrace')),
+          findsOneWidget,
+        );
+        await tester.tap(find.byKey(const ValueKey('cruxDockTab-xtrace')));
+        await tester.pumpAndSettle();
+        expect(find.byType(XTracePanel), findsOneWidget);
+        expect(find.byKey(const Key('xTracePanelError')), findsOneWidget);
+
+        await tester.tap(find.byKey(const ValueKey('cruxDockClose-xtrace')));
+        await tester.pumpAndSettle();
+        expect(container.read(xTraceProvider), const XTraceState());
+        expect(find.byKey(const ValueKey('cruxDockTab-xtrace')), findsNothing);
       });
 
       testWidgets('a newly appearing on-demand tab auto-reveals', (

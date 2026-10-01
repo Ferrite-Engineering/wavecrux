@@ -221,7 +221,7 @@ List<CruxDockEntry> movableDockEntries(
         onClose: () => ref.read(fsmProvider.notifier).clearFsm(),
       ),
     if (placedHere(kBottomDockTabXTrace, kDockRegionBottom) &&
-        ref.watch(xTraceProvider.select((s) => s.isActive)))
+        ref.watch(xTraceProvider.select((s) => s.hasContent)))
       CruxDockEntry(
         id: kBottomDockTabXTrace,
         icon: Icons.timeline,

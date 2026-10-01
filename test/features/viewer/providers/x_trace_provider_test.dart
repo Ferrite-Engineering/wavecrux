@@ -12,6 +12,7 @@ import 'package:wavecrux/domain/models/scope.dart';
 import 'package:wavecrux/domain/models/signal_change.dart';
 import 'package:wavecrux/domain/models/variable.dart';
 import 'package:wavecrux/features/cursors/providers/cursor_providers.dart';
+import 'package:wavecrux/features/viewer/providers/panel_layout_provider.dart';
 import 'package:wavecrux/features/viewer/providers/time_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
 import 'package:wavecrux/features/viewer/providers/x_trace_provider.dart';
@@ -99,10 +100,10 @@ void main() {
         rootNode: node,
         involvedSignalPaths: {'top.s'},
       );
-      final copy = s.copyWith(error: 'boom');
+      final copy = s.copyWith(error: XTraceFailure.notXAtTime);
       expect(copy.rootNode, node);
       expect(copy.involvedSignalPaths, {'top.s'});
-      expect(copy.error, 'boom');
+      expect(copy.error, XTraceFailure.notXAtTime);
     });
 
     test('copyWith clearRoot removes rootNode', () {
@@ -118,14 +119,14 @@ void main() {
     });
 
     test('copyWith clearError removes error', () {
-      const s = XTraceState(error: 'oops');
+      const s = XTraceState(error: XTraceFailure.notXAtTime);
       final cleared = s.copyWith(clearError: true);
       expect(cleared.error, isNull);
     });
 
     test('equality holds for same fields', () {
-      const a = XTraceState(error: 'e');
-      const b = XTraceState(error: 'e');
+      const a = XTraceState(error: XTraceFailure.notXAtTime);
+      const b = XTraceState(error: XTraceFailure.notXAtTime);
       expect(a, equals(b));
       expect(a.hashCode, b.hashCode);
     });
@@ -142,9 +143,22 @@ void main() {
     });
 
     test('inequality when error differs', () {
-      const a = XTraceState(error: 'x');
-      const b = XTraceState(error: 'y');
+      const a = XTraceState(error: XTraceFailure.notXAtTime);
+      const b = XTraceState(error: XTraceFailure.signalNotFound);
       expect(a, isNot(equals(b)));
+    });
+
+    test('hasContent is true for a chain or a failure, false when idle', () {
+      const node = XCausalNode(
+        signalPath: 'top.s',
+        signalRef: 'ref',
+        xStartTime: 100,
+      );
+      expect(const XTraceState().hasContent, isFalse);
+      expect(const XTraceState(rootNode: node).hasContent, isTrue);
+      const refused = XTraceState(error: XTraceFailure.notXAtTime);
+      expect(refused.hasContent, isTrue);
+      expect(refused.isActive, isFalse);
     });
 
     test('toString contains active status', () {
@@ -242,7 +256,7 @@ void main() {
     });
 
     test(
-      'traceX when signalRef is absent from variables map is a no-op',
+      'traceX when signalRef is absent from variables map reports it',
       () async {
         final src = _MockSource();
         // Scope has no variables — so the variables map will be empty.
@@ -253,7 +267,7 @@ void main() {
 
         final state = c.read(xTraceProvider);
         expect(state.isActive, isFalse);
-        expect(state.error, isNull);
+        expect(state.error, XTraceFailure.signalNotFound);
       },
     );
 
@@ -493,8 +507,7 @@ void main() {
 
       final state = c.read(xTraceProvider);
       expect(state.isActive, isFalse);
-      expect(state.error, isNotNull);
-      expect(state.error, contains('not X'));
+      expect(state.error, XTraceFailure.notXAtTime);
     });
 
     test(
@@ -631,6 +644,86 @@ void main() {
         ..clearTrace()
         ..clearTrace();
       expect(c.read(xTraceProvider), const XTraceState());
+    });
+  });
+
+  // ── XTraceNotifier.traceXAndReveal — run, then show the result ─────────────
+
+  group('XTraceNotifier.traceXAndReveal', () {
+    _MockSource xSource() {
+      final src = _MockSource();
+      final variable = _variable('sig', 'ref_rv', 'top');
+      when(() => src.rootScopes).thenReturn([
+        _scope('top', 'top', [variable]),
+      ]);
+      when(() => src.isSignalLoaded('ref_rv')).thenReturn(true);
+      when(() => src.startTime).thenReturn(0);
+      when(() => src.endTime).thenReturn(1000);
+      when(() => src.valueAt('ref_rv', 100)).thenReturn('0');
+      when(() => src.valueAt('ref_rv', 500)).thenReturn('x');
+      when(
+        () => src.changesInRange('ref_rv', 0, 501),
+      ).thenReturn([const SignalChange(time: 500, value: 'x')]);
+      return src;
+    }
+
+    test('a successful trace selects the X-Trace tab and opens the '
+        'collapsed bottom dock', () async {
+      final c = _container(source: xSource());
+      c
+          .read(timeMapperProvider.notifier)
+          .initialize(startTime: 0, endTime: 1000, viewportWidth: 1000);
+      c
+          .read(panelLayoutProvider.notifier)
+          .setTransactionViewVisible(visible: false);
+
+      await c.read(xTraceProvider.notifier).traceXAndReveal('ref_rv', 500);
+
+      expect(c.read(xTraceProvider).isActive, isTrue);
+      final layout = c.read(panelLayoutProvider);
+      expect(layout.transactionViewVisible, isTrue);
+      expect(layout.effectiveBottomDockTab, kBottomDockTabXTrace);
+    });
+
+    test('a refused trace is revealed too, so its reason is seen', () async {
+      final c = _container(source: xSource());
+      c
+          .read(panelLayoutProvider.notifier)
+          .setTransactionViewVisible(visible: false);
+
+      await c.read(xTraceProvider.notifier).traceXAndReveal('ref_rv', 100);
+
+      expect(c.read(xTraceProvider).error, XTraceFailure.notXAtTime);
+      final layout = c.read(panelLayoutProvider);
+      expect(layout.transactionViewVisible, isTrue);
+      expect(layout.effectiveBottomDockTab, kBottomDockTabXTrace);
+    });
+
+    test('a trace with no source leaves the dock alone', () async {
+      final c = _container();
+      c
+          .read(panelLayoutProvider.notifier)
+          .setTransactionViewVisible(visible: false);
+
+      await c.read(xTraceProvider.notifier).traceXAndReveal('ref_rv', 500);
+
+      expect(c.read(panelLayoutProvider).transactionViewVisible, isFalse);
+    });
+
+    test('a tab dragged to the right dock is revealed there', () async {
+      final c = _container(source: xSource());
+      c
+          .read(timeMapperProvider.notifier)
+          .initialize(startTime: 0, endTime: 1000, viewportWidth: 1000);
+      c.read(panelLayoutProvider.notifier)
+        ..moveDockTab(kBottomDockTabXTrace, kDockRegionRight)
+        ..setTransactionViewVisible(visible: false);
+
+      await c.read(xTraceProvider.notifier).traceXAndReveal('ref_rv', 500);
+
+      final layout = c.read(panelLayoutProvider);
+      expect(layout.rightDockTab, kBottomDockTabXTrace);
+      expect(layout.transactionViewVisible, isFalse);
     });
   });
 

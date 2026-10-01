@@ -40,7 +40,7 @@ X-trace answers a single question: where did this `X` come from? Starting from a
 
 2. **Trace the origin.**
 
-    Right-click the signal in the signal list (long-press on touch) and choose **Trace X Origin** — the item appears when the value at the cursor contains an `X`. The **X-Trace** panel opens showing *Became X at &lt;time&gt;* and *Was: &lt;value&gt;* — the exact tick it went unknown and the last good value it held.
+    Right-click the signal in the signal list (long-press on touch) and choose **Trace X Origin** — the item appears when the value at the cursor contains an `X`. The **X-Trace** tab is selected in the bottom dock, and the dock opens if it was collapsed, showing *Became X at &lt;time&gt;* and *Was: &lt;value&gt;* — the exact tick it went unknown and the last good value it held. If a trace cannot be run (the signal is not `X` at the requested time), the tab opens with the reason instead of staying silent.
 
 3. **Inspect the co-temporal suspects.**
 
@@ -174,7 +174,9 @@ The panel is driven by a **stems file** — a mapping from signal hierarchy path
 
 ## Debug Advisor <span class="tier tier-pro">Pro</span> { #debug-advisor }
 
-The Debug Advisor (**Tools → Toggle Debug Advisor Panel**, ++cmd+shift+b++ / ++ctrl+shift+b++) is a **rule-based heuristic engine — not an LLM**. It surfaces likely problems **for the current cursor position** as a ranked list of suggestions, each with a severity (Info / Warning / Error) and a confidence percentage. The list re-computes as you move the cursor, so it reads the part of the run you are actually looking at rather than dumping every issue in the file at once.
+The Debug Advisor (**Tools → Toggle Debug Advisor Panel**, ++cmd+shift+b++ / ++ctrl+shift+b++) is a **rule-based heuristic engine — not an LLM**. It surfaces likely problems **for the current cursor position** as a ranked list of suggestions, each with a severity (Info / Warning / Error) and a confidence percentage. The list re-computes when you move the cursor and when signals you add finish loading, so it reads the part of the run you are actually looking at rather than dumping every issue in the file at once.
+
+The X-propagation rule does not wait for you to find the `X`. If nothing is `X` at the cursor, it analyses the earliest `X` in the loaded signals and says so on the card: *Nothing is X at the cursor. This chain starts at the first X in the loaded signals, at &lt;time&gt;.* If the loaded signals hold `X` values but no chain can be built from them, a line at the top of the panel says where the first one is (*X values exist in the loaded signals at &lt;time&gt;, but no X-propagation chain could be built from them.*); select it to move the cursor there.
 
 It checks four families of rules:
 
@@ -183,7 +185,7 @@ It checks four families of rules:
 - **Signal appears stuck** — a non-trivial-width signal that held one value for at least 95% of the loaded simulation window, often an undriven net, a tie-off, or a line only set during reset.
 - **Setup/hold proximity** — a data signal that switched within a few ticks of a clock edge, below the heuristic setup/hold window.
 
-Each suggestion explains itself in plain language with the specific signals, clocks, and tick deltas filled in, and gives you actions: **tap to jump** the cursor to the evidence, **Learn more** for the rule's full rationale, **View causal chain** (on X-propagation findings) to seed [X-trace](#x-trace) with the focus signal, and **Accept** / **Dismiss** to clear a lead you have judged.
+Each suggestion explains itself in plain language with the specific signals, clocks, and tick deltas filled in, and gives you actions: **tap to jump** the cursor to the moment the finding is about (the instant a signal went `X`, the start of a stuck interval, the data transition near a clock edge, the first of two crossing transitions), **Learn more** for the rule's full rationale, **View causal chain** (on X-propagation findings), which closes the Advisor and runs [X-trace](#x-trace) from the focus signal's X origin with the **X-Trace** tab selected, and **Accept** / **Dismiss** to clear a lead you have judged.
 
 !!! note "Heuristics, not proofs"
 

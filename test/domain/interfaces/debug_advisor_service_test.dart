@@ -13,6 +13,7 @@ DebugAdvisorSuggestion _makeSuggestion({
   List<String> signals = const ['top.cpu.dataout'],
   int start = 100,
   int end = 200,
+  int anchor = 150,
   Map<String, String> placeholders = const {},
 }) => DebugAdvisorSuggestion(
   ruleId: rule,
@@ -23,6 +24,7 @@ DebugAdvisorSuggestion _makeSuggestion({
   affectedSignals: signals,
   affectedTimeRangeStart: start,
   affectedTimeRangeEnd: end,
+  anchorTime: anchor,
   placeholders: placeholders,
 );
 
@@ -35,7 +37,8 @@ void main() {
       expect(a.hashCode, b.hashCode);
     });
 
-    test('differs by ruleId / severity / confidence / range / signals', () {
+    test('differs by ruleId / severity / confidence / range / anchor / '
+        'signals', () {
       final base = _makeSuggestion();
       expect(
         base,
@@ -52,6 +55,7 @@ void main() {
       );
       expect(base, isNot(_makeSuggestion(start: 0)));
       expect(base, isNot(_makeSuggestion(end: 999)));
+      expect(base, isNot(_makeSuggestion(anchor: 100)));
     });
 
     test('placeholder map equality', () {
@@ -68,6 +72,7 @@ void main() {
       expect(str, contains('xPropagationChain'));
       expect(str, contains('warning'));
       expect(str, contains('0.50'));
+      expect(str, contains('anchor: 150'));
     });
   });
 

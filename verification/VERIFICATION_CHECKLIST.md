@@ -290,6 +290,8 @@ four orders of magnitude; a subtler mismatch decodes plausible wrong bytes.
 - [ ] Red lines + diamond markers on involved lanes only — `[Coverage: WIDGET — pending]` (canvas-side X-Trace overlay rendering; queued)
 - [ ] Subtle red tint covers involved lanes from origin time rightward — `[Coverage: WIDGET — pending]`
 - [ ] Click chain node → cursor jumps — `[Coverage: WIDGET]` (`test/features/viewer/widgets/x_trace_panel_test.dart`)
+- [ ] Trace X Origin selects the **X-Trace** tab and opens a collapsed bottom dock (or reveals it in the right dock if moved there) — `[Coverage: UNIT]` (`test/features/viewer/providers/x_trace_provider_test.dart`, `traceXAndReveal` group)
+- [ ] A refused trace still mounts the X-Trace tab, showing the localized reason in the error colour (announced to screen readers); the tab × clears it — `[Coverage: WIDGET]` (`bottom_dock_test.dart`, `x_trace_panel_test.dart` with CJK sweep)
 - [ ] Open new file while X-Trace active → state clears (regression catch) — `[Coverage: WIDGET]` (provider-side state-clearing test)
 - [ ] Close a tab / reload a saved workspace → the tab's per-tab `ProviderContainer` is structurally evicted (crux_workspace `WorkspaceScopeReconciler`, registered at bootstrap), so closed tabs don't leak and a revived `TabId` never inherits the dead tab's state (§6.2.4) — `[Coverage: UNIT]` (`test/services/tabs/workspace_scope_reconciler_test.dart`)
 

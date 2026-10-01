@@ -2230,7 +2230,7 @@ A red vertical line and diamond marker appear at the X-origin time on the wavefo
 
 1. Load `xtrace.vcd`. Add all signals to the canvas. Place the cursor near T=200 ns.
 2. Right-click `data_out` (which has value `x` at the cursor) — "Trace X Origin".
-3. Verify the X-Trace panel auto-opens.
+3. Verify the **X-Trace** tab is the selected bottom-dock tab. Repeat with the bottom dock collapsed first, and with another tab (Transactions) selected: the dock must open and X-Trace must be selected both times. If the X-Trace tab was dragged to the right dock, it is revealed there instead.
 4. Verify the causal chain shows: root = `data_out`, sibling = `status`.
 5. Verify red vertical lines + diamond markers appear at T=200 ns on both `data_out` and `status` lanes.
 6. Verify a subtle red tint overlay covers `data_out` and `status` from T=200 ns rightward.
@@ -2273,7 +2273,8 @@ A red vertical line and diamond marker appear at the X-origin time on the wavefo
 
 #### 6.2.5 Edge cases
 
-- Trace X on a signal that was never X — clear "no X to trace" message.
+- Trace X on a signal that is not X at the requested time (e.g. the Pro Debug Advisor's *View causal chain* on a stale finding) — the X-Trace tab still opens, showing *This signal is not X at the requested time, so there is no X origin to trace.* in the error colour, and a screen reader announces it. Its tab × clears it. Before 1.1 a refused trace left the tab unmounted, so the message had no surface.
+- Trace X on a signal that is not in the loaded design — the tab shows *This signal is not in the loaded design, so its X origin cannot be traced.*
 - Trace X on a signal that has been X the entire simulation — handle gracefully.
 - Cluttered design with many X signals — performance should remain reasonable.
 
@@ -2287,6 +2288,8 @@ A red vertical line and diamond marker appear at the X-origin time on the wavefo
 | Closed-then-revived tab/pane gets a fresh container (structural scope eviction) | **UNIT** (`test/services/tabs/workspace_scope_reconciler_test.dart` — both managers implement `WorkspaceScopeReconciler`; evict-on-close and resurrection-safety) |
 | Click-to-jump from chain node | **WIDGET** (`x_trace_panel_test.dart`) |
 | Right-click X-valued signal → "Trace X Origin" gesture dispatch | **INTEGRATION_TEST — pending** (gesture-arena interaction; queued) |
+| Run-and-reveal: a trace selects the X-Trace tab and opens a collapsed dock (or reveals it in the right dock when moved there) | **UNIT** (`test/features/viewer/providers/x_trace_provider_test.dart` — `XTraceNotifier.traceXAndReveal` group) |
+| A refused trace mounts the tab with its localized reason; × clears it | **WIDGET** (`test/features/viewer/widgets/bottom_dock_test.dart` + `x_trace_panel_test.dart`, CJK sweep) |
 
 ---
 

@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart' show announceCrux;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/features/viewer/providers/time_providers.dart';
@@ -16,7 +17,8 @@ import 'package:wavecrux/services/time_format/time_format_service.dart';
 /// previous value. Tapping any row jumps the primary cursor to that node's
 /// X-start time.
 ///
-/// Shows an empty-state prompt when no trace is active.
+/// Shows an empty-state prompt when no trace is active, and the reason when
+/// the last trace was refused.
 class XTracePanel extends ConsumerWidget {
   const XTracePanel({super.key});
 
@@ -28,8 +30,17 @@ class XTracePanel extends ConsumerWidget {
     final timescale = ref.watch(currentTimescaleProvider);
     final formatter = TimeFormatService(timescale: timescale);
 
+    if (traceState.error case final failure?) {
+      return _ErrorView(
+        key: const Key('xTracePanelError'),
+        message: switch (failure) {
+          XTraceFailure.notXAtTime => l10n.xTraceErrorNotX,
+          XTraceFailure.signalNotFound => l10n.xTraceErrorSignalNotFound,
+        },
+      );
+    }
     if (!traceState.isActive) {
-      return _buildEmpty(context, l10n, traceState.error, colorScheme);
+      return _buildEmpty(context, l10n, colorScheme);
     }
 
     final root = traceState.rootNode!;
@@ -92,7 +103,6 @@ class XTracePanel extends ConsumerWidget {
   Widget _buildEmpty(
     BuildContext context,
     L10N l10n,
-    String? error,
     ColorScheme colorScheme,
   ) {
     return ColoredBox(
@@ -101,14 +111,64 @@ class XTracePanel extends ConsumerWidget {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Text(
-            error ?? l10n.xTracePanelEmpty,
+            l10n.xTracePanelEmpty,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,
-              color: error != null
-                  ? colorScheme.error
-                  : colorScheme.onSurfaceVariant,
+              color: colorScheme.onSurfaceVariant,
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── _ErrorView ────────────────────────────────────────────────────────────────
+
+/// Why the last trace was refused, in the error colour, and announced: a red
+/// pane is silent to a screen reader, and the panel only mounts because a
+/// trace was asked for.
+class _ErrorView extends StatefulWidget {
+  const _ErrorView({required this.message, super.key});
+
+  final String message;
+
+  @override
+  State<_ErrorView> createState() => _ErrorViewState();
+}
+
+class _ErrorViewState extends State<_ErrorView> {
+  @override
+  void initState() {
+    super.initState();
+    _announce();
+  }
+
+  @override
+  void didUpdateWidget(_ErrorView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.message != widget.message) _announce();
+  }
+
+  void _announce() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) announceCrux(context, widget.message);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return ColoredBox(
+      color: colorScheme.surface,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            widget.message,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, color: colorScheme.error),
           ),
         ),
       ),

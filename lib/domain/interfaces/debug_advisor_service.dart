@@ -60,6 +60,7 @@ class DebugAdvisorSuggestion {
     required this.affectedSignals,
     required this.affectedTimeRangeStart,
     required this.affectedTimeRangeEnd,
+    required this.anchorTime,
     this.placeholders = const <String, String>{},
   });
 
@@ -94,6 +95,17 @@ class DebugAdvisorSuggestion {
   /// [affectedTimeRangeStart] for point-in-time suggestions.
   final int affectedTimeRangeEnd;
 
+  /// The instant the finding is about, in simulation ticks: where a consumer
+  /// puts the cursor, and the time it traces from.
+  ///
+  /// Distinct from the affected range, which is a span to highlight and often
+  /// starts before the event (a window opened ahead of an X, a stuck-at span
+  /// measured from the start of the trace). For an X-propagation finding it is
+  /// a time at which the focus signal is X. Required so that every rule has
+  /// to say when its finding happened, and no consumer has to guess it from
+  /// the range.
+  final int anchorTime;
+
   /// Substitution values for the [explanationArbKey] template (signal names,
   /// numeric thresholds, time deltas, etc.). Already resolved to display
   /// strings by the rule (so the panel does not need to format times or
@@ -112,6 +124,7 @@ class DebugAdvisorSuggestion {
           _listEquals(affectedSignals, other.affectedSignals) &&
           affectedTimeRangeStart == other.affectedTimeRangeStart &&
           affectedTimeRangeEnd == other.affectedTimeRangeEnd &&
+          anchorTime == other.anchorTime &&
           _mapEquals(placeholders, other.placeholders);
 
   @override
@@ -123,6 +136,7 @@ class DebugAdvisorSuggestion {
     explanationArbKey,
     affectedTimeRangeStart,
     affectedTimeRangeEnd,
+    anchorTime,
     affectedSignals.length,
   );
 
@@ -131,7 +145,8 @@ class DebugAdvisorSuggestion {
       'DebugAdvisorSuggestion(rule: $ruleId, '
       'severity: $severity, confidence: ${confidence.toStringAsFixed(2)}, '
       'signals: ${affectedSignals.length}, '
-      'range: [$affectedTimeRangeStart, $affectedTimeRangeEnd))';
+      'range: [$affectedTimeRangeStart, $affectedTimeRangeEnd), '
+      'anchor: $anchorTime)';
 }
 
 bool _listEquals<T>(List<T> a, List<T> b) {

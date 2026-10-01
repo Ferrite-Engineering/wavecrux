@@ -2689,6 +2689,14 @@
   "@xTraceClearButton": {
     "description": "Button label to dismiss the X-trace result and reset the panel to its empty state"
   },
+  "xTraceErrorNotX": "この信号は指定時刻で X ではないため、追跡する X 発生源がありません。",
+  "@xTraceErrorNotX": {
+    "description": "Shown in the X-Trace panel when a trace was asked for at a time when the signal is not X"
+  },
+  "xTraceErrorSignalNotFound": "この信号は読み込まれた設計に含まれていないため、X 発生源を追跡できません。",
+  "@xTraceErrorSignalNotFound": {
+    "description": "Shown in the X-Trace panel when a trace was asked for on a signal that is not in the loaded design hierarchy"
+  },
   "shortcutActionAnalyzeSwitchingActivity": "スイッチング活性度を分析",
   "@shortcutActionAnalyzeSwitchingActivity": {
     "description": "Command palette and settings label for the analyze switching activity action"

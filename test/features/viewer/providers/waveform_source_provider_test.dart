@@ -289,7 +289,7 @@ void main() {
 
       (container.read(xTraceProvider.notifier) as _TestableXTraceNotifier)
           .forceState(
-            const XTraceState(error: 'stale error from previous file'),
+            const XTraceState(error: XTraceFailure.notXAtTime),
           );
       expect(container.read(xTraceProvider).error, isNotNull);
 
@@ -388,7 +388,7 @@ void main() {
       addTearDown(container.dispose);
 
       (container.read(xTraceProvider.notifier) as _TestableXTraceNotifier)
-          .forceState(const XTraceState(error: 'old error'));
+          .forceState(const XTraceState(error: XTraceFailure.notXAtTime));
 
       await container.read(waveformSourceProvider.notifier).close();
 

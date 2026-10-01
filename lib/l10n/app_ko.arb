@@ -2689,6 +2689,14 @@
   "@xTraceClearButton": {
     "description": "Button label to dismiss the X-trace result and reset the panel to its empty state"
   },
+  "xTraceErrorNotX": "이 신호는 요청한 시점에 X가 아니므로 추적할 X 발생 원인이 없습니다.",
+  "@xTraceErrorNotX": {
+    "description": "Shown in the X-Trace panel when a trace was asked for at a time when the signal is not X"
+  },
+  "xTraceErrorSignalNotFound": "이 신호는 로드된 설계에 없으므로 X 발생 원인을 추적할 수 없습니다.",
+  "@xTraceErrorSignalNotFound": {
+    "description": "Shown in the X-Trace panel when a trace was asked for on a signal that is not in the loaded design hierarchy"
+  },
   "shortcutActionAnalyzeSwitchingActivity": "스위칭 활동 분석",
   "@shortcutActionAnalyzeSwitchingActivity": {
     "description": "Command palette and settings label for the analyze switching activity action"
