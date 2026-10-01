@@ -59,6 +59,8 @@ void main() {
         final result = _importService.importSession(
           parsed,
           fixtureVcdVariables(),
+          gtkwFilePath: fixture.path,
+          fileExists: (path) => File(path).existsSync(),
         );
         _expectGolden(
           encodeImportResult(result),

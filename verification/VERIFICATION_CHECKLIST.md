@@ -311,7 +311,8 @@ Fixtures live under `test/fixtures/gtkw/{generated,captured}/` (consumed directl
 - [ ] `generated/groups.gtkw` reconstructs named groups — `[Coverage: AUTOMATED]` (gtkw_import_service_test.dart)
 - [ ] `generated/format_flags.gtkw` reconstructs per-signal display formats — `[Coverage: AUTOMATED]` (gtkw_import_service_test.dart)
 - [ ] `generated/colors_and_markers.gtkw` reconstructs colors, markers A=30/B=50 and the primary cursor at 40 (the `*` line's field 1 is GTKWave's primary marker, not marker A) — `[Coverage: AUTOMATED]` (gtkw_parser_test.dart, gtkw_import_pipeline_test.dart)
-- [ ] `generated/translate_refs.gtkw` imports all five signals with none unmatched — the `^n` / `^>n` / `^<n` filter-reference lines are skipped, not read as signal paths — `[Coverage: AUTOMATED]` (gtkw_parser_test.dart, gtkw_golden_test.dart)
+- [ ] `generated/translate_refs.gtkw` imports all five signals with none unmatched; `data` shows labels from `sample_filter.txt` (re-anchored from the `^1` absolute path via `[savefile]`); **Filters not applied (3)** lists the missing `^2` file, the `^>` filter process and the `^<` transaction filter — `[Coverage: AUTOMATED]` (gtkw_parser_test.dart, gtkw_import_service_test.dart, gtkw_golden_test.dart, gtkw_import_pipeline_test.dart)
+- [ ] `.gtkw` zoom and `[timestart]` land the view where GTKWave had it (a zoom wider than the dump lands on fit-all), and `[treeopen]` scopes open in the hierarchy tree — `[Coverage: AUTOMATED]` (`test/features/viewer/providers/gtkw_import_apply_test.dart`)
 - [ ] Full parse→import pipeline matches `generated/*.expected_session.json` goldens — `[Coverage: AUTOMATED]` (`test/services/session/gtkw_golden_test.dart`)
 - [ ] Captured real-world saves (`captured/*.gtkw`: Sonata/Ibex, ben-marshall UART, fpxx, BubbleFifo) parse without throwing + match `*.expected_parse.json` — `[Coverage: AUTOMATED]` (gtkw_golden_test.dart captured group)
 - [ ] Import orchestration applies groups/markers/colors/formats into live providers — `[Coverage: AUTOMATED]` (`test/features/viewer/gtkw_import_pipeline_test.dart`)
@@ -882,8 +883,8 @@ Picking a preset must repaint EVERY surface, not just the preset card outline. T
 - [ ] Per-token reset: tapping reset removes the override from `AppSettings.themeOverrides` and the token returns to the preset default — `[Coverage: MANUAL]`
 - [ ] Token override persists across app restart — `[Coverage: MANUAL]`
 - [ ] Uninstall confirmation dialog: Cancel keeps the pack installed; Uninstall removes it from the list and from `${appSupportDir}/themes/` — `[Coverage: MANUAL]`
-- [ ] GTKWave `.gtkw` import with `[bgcolor]` → `canvas.background` override applied — `[Coverage: AUTOMATED]` (`test/services/session/gtkw_parser_test.dart` and `test/services/session/gtkw_import_service_test.dart`)
-- [ ] GTKWave `.gtkw` import with invalid `[bgcolor]` hex → override silently ignored — `[Coverage: AUTOMATED]` (same)
+- [ ] GTKWave `.gtkw` import with `[bgcolor]` → canvas background and theme unchanged (`[bgcolor]` is not imported) — `[Coverage: AUTOMATED]` (`test/services/session/gtkw_parser_test.dart` and `test/services/session/gtkw_import_service_test.dart`)
+- [ ] GTKWave `.gtkw` import with invalid `[bgcolor]` hex → import completes — `[Coverage: AUTOMATED]` (same)
 - [ ] Chrome-only theme pack (no `canvas` key) → canvas uses preset defaults, chrome updates — `[Coverage: MANUAL]`
 - [ ] No RenderFlex overflow in Settings → Appearance at 320 dp width — `[Coverage: WIDGET]` (`crux_theme` package suite covers internal widgets)
 - [ ] No exception in en, zh_CN, zh, ja, ko locale sweeps for Settings → Appearance — `[Coverage: WIDGET]` (`test/features/settings/widgets/color_theme_section_test.dart` — full five-locale sweep)

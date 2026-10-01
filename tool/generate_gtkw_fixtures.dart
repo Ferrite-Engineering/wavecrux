@@ -166,29 +166,43 @@ top.data
 [color] 0
 top.cpu.addr
 ''',
-  // A translate-filter reference, plus a group containing a separator and a
-  // comment row. The `^1`, `^>2` and `^<3` lines are the file, process and
-  // transaction filter references GTKWave itself writes; the parser skips them
-  // rather than reading them as signal paths.
+  // Filter references written the way GTKWave 3.3.115 writes them
+  // (`savefile.c`, `write_save_helper`): the trace's flag word carries the
+  // filter bit (TR_FTRANSLATED 0x2000, TR_PTRANSLATED 0x4000, TR_TTRANSLATED
+  // 0x10000000), and the `^` line names the filter by its absolute path on the
+  // saving machine. `[savefile]` records where that save lived, so the import
+  // re-anchors `/home/user/proj/sample_filter.txt` to the sample_filter.txt
+  // beside this fixture. The `^2` filter does not exist anywhere and must be
+  // reported missing; the `^>` and `^<` processes must be reported as not
+  // imported. Ends with a group holding a separator and a comment row.
   'translate_refs.gtkw':
       '''
-[dumpfile] "fixture.vcd"
+[*]
+[*] GTKWave Analyzer v3.3.115 (w)1999-2023 BSI
+[*]
+[dumpfile] "/home/user/proj/fixture.vcd"
+[savefile] "/home/user/proj/translate_refs.gtkw"
 [timestart] 0
 ${_star(-19)}
+[treeopen] top.
 @28
 top.clk
-[translate_filter_file] /path/to/sample_filter.txt
-top.data
-@28
-^1 /path/to/sample_filter.txt
+@2022
+^1 /home/user/proj/sample_filter.txt
+top.data[7:0]
+@2028
+^2 /home/user/proj/filters/missing_filter.txt
 top.rst
-^>2 /path/to/filter_process
-top.cpu.addr
-^<3 /path/to/transaction_process
-top.cpu.dout
+@4022
+^>1 /home/user/proj/bin/decode_proc
+top.cpu.addr[15:0]
+@10000022
+[transaction_args] ""
+^<1 /home/user/proj/bin/txn_proc
+top.cpu.dout[7:0]
 @800200
 -Separators and Comments
-@28
+@200
 -
 -This is a comment
 @1000200
@@ -272,8 +286,14 @@ void _writeGeneratedGoldens() {
       encodeGolden(encodeGtkwFile(parsed)),
     );
 
-    // Import golden — full parse→import against fixture.vcd's variable set.
-    final result = _importService.importSession(parsed, fixtureVcdVariables());
+    // Import golden — full parse→import against fixture.vcd's variable set,
+    // resolving filter files against the fixture tree.
+    final result = _importService.importSession(
+      parsed,
+      fixtureVcdVariables(),
+      gtkwFilePath: '$_generatedDir/$name',
+      fileExists: (path) => File(path).existsSync(),
+    );
     _write(
       '$_generatedDir/$base.expected_session.json',
       encodeGolden(encodeImportResult(result)),

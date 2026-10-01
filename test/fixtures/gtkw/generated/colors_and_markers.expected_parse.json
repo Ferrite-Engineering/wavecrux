@@ -1,5 +1,6 @@
 {
   "dumpFilePath": "fixture.vcd",
+  "savedFilePath": null,
   "timeStart": 10,
   "zoomFactor": -19.0,
   "primaryMarker": 40,
@@ -16,6 +17,8 @@
       "format": "binary",
       "colorArgb": 4294923605,
       "translateFilterPath": null,
+      "processFilterPath": null,
+      "transactionFilterPath": null,
       "renderAsAnalog": false,
       "analogInterpolation": "stepHold"
     },
@@ -25,6 +28,8 @@
       "format": "binary",
       "colorArgb": 4278255360,
       "translateFilterPath": null,
+      "processFilterPath": null,
+      "transactionFilterPath": null,
       "renderAsAnalog": false,
       "analogInterpolation": "stepHold"
     },
@@ -34,6 +39,8 @@
       "format": "binary",
       "colorArgb": 4284914175,
       "translateFilterPath": null,
+      "processFilterPath": null,
+      "transactionFilterPath": null,
       "renderAsAnalog": false,
       "analogInterpolation": "stepHold"
     },
@@ -43,6 +50,8 @@
       "format": "binary",
       "colorArgb": null,
       "translateFilterPath": null,
+      "processFilterPath": null,
+      "transactionFilterPath": null,
       "renderAsAnalog": false,
       "analogInterpolation": "stepHold"
     }

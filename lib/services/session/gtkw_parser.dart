@@ -16,6 +16,7 @@ import 'package:wavecrux/domain/enums/display_format.dart';
 class GtkwFile {
   const GtkwFile({
     this.dumpFilePath,
+    this.savedFilePath,
     this.timeStart,
     this.zoomFactor,
     this.primaryMarker,
@@ -27,6 +28,13 @@ class GtkwFile {
 
   /// Path to the referenced waveform file (from `[dumpfile]` directive), or null.
   final String? dumpFilePath;
+
+  /// Where GTKWave wrote this save file (`[savefile]`), or null if absent.
+  ///
+  /// GTKWave uses it to re-anchor the absolute filter paths it wrote: a path
+  /// that sat beside the original save file is looked for beside this one
+  /// when the project has moved. [GtkwImportService] does the same.
+  final String? savedFilePath;
 
   /// Simulation tick at the left edge of the viewport (`[timestart]`), or null.
   final int? timeStart;
@@ -59,8 +67,10 @@ class GtkwFile {
   final List<GtkwEntry> entries;
 
   /// Canvas background color from a `[bgcolor]` directive, as a CSS hex string
-  /// (`#RRGGBB`), or null if absent. Callers apply this as the
-  /// `canvas.background` theme override during GTKWave session import.
+  /// (`#RRGGBB`), or null if absent.
+  ///
+  /// Parsed so the import can report it, never applied: the WaveCrux theme
+  /// owns the canvas background.
   final String? canvasBackgroundHex;
 
   @override
@@ -86,6 +96,8 @@ final class GtkwSignalEntry extends GtkwEntry {
     required this.format,
     this.colorArgb,
     this.translateFilterPath,
+    this.processFilterPath,
+    this.transactionFilterPath,
     this.renderAsAnalog = false,
     this.analogInterpolation = AnalogInterpolation.linear,
   });
@@ -102,8 +114,21 @@ final class GtkwSignalEntry extends GtkwEntry {
   /// Packed ARGB color derived from a `[color]` directive, or null for auto.
   final int? colorArgb;
 
-  /// Path to a GTKWave translate filter file, or null if absent.
+  /// The translate filter file this trace uses, exactly as the save file
+  /// wrote it on the `^<n> <path>` line, or null when the trace has none.
+  ///
+  /// Set only when the trace's flag word carries `TR_FTRANSLATED`, which is how
+  /// GTKWave itself decides whether the current file filter applies.
   final String? translateFilterPath;
+
+  /// The filter process this trace uses (`^><n> <path>` with
+  /// `TR_PTRANSLATED`), or null. Parsed so the import can report it; WaveCrux
+  /// does not start a program named by an imported save file.
+  final String? processFilterPath;
+
+  /// The transaction filter process this trace uses (`^<<n> <path>` with
+  /// `TR_TTRANSLATED`), or null. Parsed so the import can report it.
+  final String? transactionFilterPath;
 
   /// True when the save file asked for this trace to be drawn as an analog
   /// curve (`TR_ANALOG_STEP` or `TR_ANALOG_INTERPOLATED`).
@@ -174,7 +199,8 @@ final class GtkwCommentEntry extends GtkwEntry {
 /// | `[key]`     | Metadata directive (dumpfile, timestart, color, …) |
 /// | `*`         | Zoom factor, primary marker, then named markers a–z |
 /// | `@XXXXXXXX` | Display-format / attribute flags for the next entry |
-/// | `^`         | Translate-filter reference for the next trace (skipped) |
+/// | `^`         | Filter file / process for the traces that follow |
+/// | `>`         | Time shift for the traces that follow (skipped) |
 /// | `-`         | Comment, blank separator, or group label |
 /// | *(other)*   | Signal hierarchical path |
 ///
@@ -190,9 +216,16 @@ final class GtkwCommentEntry extends GtkwEntry {
 /// ### `^` translate-filter lines
 ///
 /// GTKWave writes `^<n> <path>` (file filter), `^><n> <path>` (process filter)
-/// and `^<<n> <path>` (transaction filter) before a trace that uses one. They
-/// are not signal paths, so they are skipped; importing the filters they name
-/// is not implemented.
+/// and `^<<n> <path>` (transaction filter) before a trace that uses one, with
+/// the path made absolute (`savefile.c`, `write_save_helper`). The reader keeps
+/// one current filter of each kind until the next line of that kind replaces
+/// it; `^0 disabled` (or `^>0`, `^<0`) clears it. A trace takes the current
+/// filter only when its flag word carries the matching bit — `TR_FTRANSLATED`,
+/// `TR_PTRANSLATED` or `TR_TTRANSLATED` — exactly as GTKWave's reader does.
+/// The path is kept as written; resolving it against the file system is the
+/// import service's job.
+///
+/// `[translate_filter_file]` is not a GTKWave directive and is not read.
 ///
 /// ### The `@` flag word is a bit set, not an enumeration
 ///
@@ -211,12 +244,15 @@ final class GtkwCommentEntry extends GtkwEntry {
 /// | `0x00000200` | `TR_BLANK` | blank / separator row |
 /// | `0x00000400` | `TR_SIGNED` | signed; alone (no radix bit) means signed decimal |
 /// | `0x00000800` | `TR_ASCII` | ASCII |
+/// | `0x00002000` | `TR_FTRANSLATED` | uses the current file filter (`^n`) |
+/// | `0x00004000` | `TR_PTRANSLATED` | uses the current filter process (`^>n`) |
 /// | `0x00008000` | `TR_ANALOG_STEP` | draw as an analog curve, step-held |
 /// | `0x00010000` | `TR_ANALOG_INTERPOLATED` | draw as an analog curve, interpolated |
 /// | `0x00800000` | `TR_GRP_BEGIN` | group begin |
 /// | `0x01000000` | `TR_GRP_END` | group end |
 /// | `0x02000000` | `TR_BINGRAY` | Gray-coded |
 /// | `0x04000000` | `TR_GRAYBIN` | Gray-coded |
+/// | `0x10000000` | `TR_TTRANSLATED` | uses the current transaction filter (`^<n`) |
 ///
 /// **Do not reintroduce a low-byte lookup table here.** An earlier one read
 /// `0x22` as octal and `0x28` as hex; per the header they are hex and binary
@@ -240,12 +276,15 @@ class GtkwParser {
   static const int _kFlagOct = 0x10; // TR_OCT
   static const int _kFlagSigned = 0x400; // TR_SIGNED
   static const int _kFlagAscii = 0x800; // TR_ASCII
+  static const int _kFlagFileFilter = 0x2000; // TR_FTRANSLATED
+  static const int _kFlagProcessFilter = 0x4000; // TR_PTRANSLATED
   static const int _kFlagAnalogStep = 0x8000; // TR_ANALOG_STEP
   static const int _kFlagAnalogInterpolated = 0x10000; // TR_ANALOG_INTERPOLATED
   static const int _kFlagGroupBegin = 0x800000; // TR_GRP_BEGIN
   static const int _kFlagGroupEnd = 0x1000000; // TR_GRP_END
   static const int _kFlagBinGray = 0x2000000; // TR_BINGRAY
   static const int _kFlagGrayBin = 0x4000000; // TR_GRAYBIN
+  static const int _kFlagTransactionFilter = 0x10000000; // TR_TTRANSLATED
   static const int _kFlagGrayMask = _kFlagBinGray | _kFlagGrayBin;
 
   /// GTKWave's own default for a trace with no explicit radix bit: hex, with
@@ -274,6 +313,7 @@ class GtkwParser {
   /// a completely malformed file produces an empty [GtkwFile].
   GtkwFile parse(String content) {
     String? dumpFilePath;
+    String? savedFilePath;
     int? timeStart;
     double? zoomFactor;
     int? primaryMarker;
@@ -285,7 +325,12 @@ class GtkwParser {
     // Per-entry pending state (reset after each signal entry is emitted).
     var currentFlags = _kDefaultFlags;
     int? pendingColorIndex;
-    String? pendingTranslateFilter;
+
+    // The current filter of each kind. Like GTKWave's reader, these persist
+    // across traces until the next `^` line of the same kind.
+    String? fileFilter;
+    String? processFilter;
+    String? transactionFilter;
 
     for (final rawLine in content.split('\n')) {
       final line = rawLine.trimRight();
@@ -301,20 +346,19 @@ class GtkwParser {
         switch (key) {
           case 'dumpfile':
             dumpFilePath = value.isEmpty ? null : value;
+          case 'savefile':
+            savedFilePath = value.isEmpty ? null : value;
           case 'timestart':
             timeStart = int.tryParse(value);
           case 'treeopen':
             if (value.isNotEmpty) openScopes.add(value);
           case 'color':
             pendingColorIndex = int.tryParse(value);
-          case 'translate_filter_file':
-            pendingTranslateFilter = value.isEmpty ? null : value;
           case 'bgcolor':
             canvasBackgroundHex = _parseBgcolor(value);
           case 'signal_comment':
             entries.add(GtkwCommentEntry(value));
             pendingColorIndex = null;
-            pendingTranslateFilter = null;
           default:
             break; // unknown — skip for forward compatibility
         }
@@ -342,10 +386,27 @@ class GtkwParser {
         continue;
       }
 
-      // ── ^ translate-filter references (^n, ^>n, ^<n) ───────────────────────
-      // Not signal paths. Skipped without touching the pending per-trace state,
-      // because GTKWave writes them between a trace's attributes and its path.
-      if (line.startsWith('^')) continue;
+      // ── ^ filter lines (^n, ^>n, ^<n) ─────────────────────────────────────
+      // Not signal paths. They set the current filter of their kind without
+      // touching the pending per-trace state, because GTKWave writes them
+      // between a trace's attributes and its path.
+      if (line.startsWith('^')) {
+        final filter = _parseFilterLine(line);
+        switch (filter.kind) {
+          case _FilterKind.file:
+            fileFilter = filter.path;
+          case _FilterKind.process:
+            processFilter = filter.path;
+          case _FilterKind.transaction:
+            transactionFilter = filter.path;
+        }
+        continue;
+      }
+
+      // ── > time shift ──────────────────────────────────────────────────────
+      // GTKWave writes `>N` before traces it has shifted in time. Not a signal
+      // path, and not imported.
+      if (line.startsWith('>')) continue;
 
       // ── @XXXXXXXX display-format / attribute flags ────────────────────────
       if (line.startsWith('@')) {
@@ -382,7 +443,6 @@ class GtkwParser {
         }
         // Per-signal attributes reset regardless of entry kind.
         pendingColorIndex = null;
-        pendingTranslateFilter = null;
         continue;
       }
 
@@ -394,18 +454,30 @@ class GtkwParser {
             path: path,
             format: _flagsToFormat(currentFlags),
             colorArgb: _colorIndexToArgb(pendingColorIndex),
-            translateFilterPath: pendingTranslateFilter,
+            translateFilterPath: (currentFlags & _kFlagFileFilter) != 0
+                ? fileFilter
+                : null,
+            // GTKWave's writer treats file and process filters as exclusive,
+            // with the file filter first.
+            processFilterPath:
+                (currentFlags & _kFlagFileFilter) == 0 &&
+                    (currentFlags & _kFlagProcessFilter) != 0
+                ? processFilter
+                : null,
+            transactionFilterPath: (currentFlags & _kFlagTransactionFilter) != 0
+                ? transactionFilter
+                : null,
             renderAsAnalog: _flagsToAnalog(currentFlags),
             analogInterpolation: _flagsToInterpolation(currentFlags),
           ),
         );
         pendingColorIndex = null;
-        pendingTranslateFilter = null;
       }
     }
 
     return GtkwFile(
       dumpFilePath: dumpFilePath,
+      savedFilePath: savedFilePath,
       timeStart: timeStart,
       zoomFactor: zoomFactor,
       primaryMarker: primaryMarker,
@@ -417,6 +489,28 @@ class GtkwParser {
   }
 
   // ── Private helpers ─────────────────────────────────────────────────────────
+
+  /// Splits a `^` line into its kind and path. The path is null for a cleared
+  /// filter (`^0 disabled`, `^>0 …`, `^<0 …`) or a line with no path.
+  ///
+  /// Follows GTKWave's reader: the character after `^` picks the kind, a `0`
+  /// filter number clears it, and the path is everything after the first run
+  /// of whitespace (so a path containing spaces survives).
+  static ({_FilterKind kind, String? path}) _parseFilterLine(String line) {
+    var rest = line.substring(1);
+    var kind = _FilterKind.file;
+    if (rest.startsWith('>')) {
+      kind = _FilterKind.process;
+      rest = rest.substring(1);
+    } else if (rest.startsWith('<')) {
+      kind = _FilterKind.transaction;
+      rest = rest.substring(1);
+    }
+    if (rest.startsWith('0')) return (kind: kind, path: null);
+    final match = RegExp(r'^\S*\s+(\S.*)$').firstMatch(rest);
+    final path = match?.group(1)?.trim();
+    return (kind: kind, path: path == null || path.isEmpty ? null : path);
+  }
 
   /// Maps a GTKWave flag word to a [DisplayFormat].
   ///
@@ -503,3 +597,6 @@ class GtkwParser {
     return valid ? '#$stripped' : null;
   }
 }
+
+/// The three kinds of filter a GTKWave `^` line can name.
+enum _FilterKind { file, process, transaction }

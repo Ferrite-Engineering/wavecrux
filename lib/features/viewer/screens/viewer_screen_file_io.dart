@@ -1003,8 +1003,8 @@ extension _ViewerScreenFileIo on _ViewerScreenState {
   }
 
   /// Imports a GTKWave `.gtkw` session from [gtkwPath] into the active tab's
-  /// currently-loaded waveform: parses the file, applies signal groups and
-  /// named markers, records the path in Recent Files, and shows the import
+  /// currently-loaded waveform: parses the file, applies it through
+  /// [applyGtkwImport], records the path in Recent Files, and shows the import
   /// summary dialog. Split from [_importGtkwSession] so the Recent Files
   /// list can re-open a previously-imported `.gtkw` without re-prompting for
   /// the file.
@@ -1042,29 +1042,14 @@ extension _ViewerScreenFileIo on _ViewerScreenState {
       gtkwFile,
       variables,
       sourceFilePath: currentFilePath,
+      gtkwFilePath: gtkwPath,
+      fileExists: (path) => File(path).existsSync(),
     );
 
-    // 6. Apply signal groups.
-    _activeTabContainer
-        .read(signalGroupsProvider.notifier)
-        .restoreFromSession(importResult.sessionState.signalGroup);
-
-    // 7. Apply named markers.
-    final markerNotifier = _activeTabContainer.read(
-      markerStateProvider.notifier,
-    );
-    for (final entry in importResult.sessionState.markerState.getAllMarkers()) {
-      markerNotifier.setMarker(entry.key, entry.value);
-    }
-
-    // 7b. Apply GTKWave's primary marker as the primary cursor.
-    final primaryCursor =
-        importResult.sessionState.cursorState.primaryCursorTime;
-    if (primaryCursor != null) {
-      _activeTabContainer
-          .read(cursorStateProvider.notifier)
-          .placePrimary(primaryCursor);
-    }
+    // 6. Apply everything the import carries: traces, markers and cursor,
+    // zoom and scroll position, expanded scopes and translate filters.
+    await applyGtkwImport(_activeTabContainer, importResult);
+    if (!mounted) return;
 
     // Record the imported .gtkw session in Recent Files (parse + apply
     // succeeded by this point — the only earlier exit is a file-read error).

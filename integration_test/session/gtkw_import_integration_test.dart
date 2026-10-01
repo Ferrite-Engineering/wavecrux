@@ -28,9 +28,9 @@ import 'package:integration_test/integration_test.dart';
 import 'package:wavecrux/domain/models/signal_filter.dart';
 import 'package:wavecrux/domain/models/signal_group.dart';
 import 'package:wavecrux/features/cursors/providers/cursor_providers.dart';
+import 'package:wavecrux/features/viewer/providers/gtkw_import_apply.dart';
 import 'package:wavecrux/features/viewer/providers/signal_group_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
-import 'package:wavecrux/services/session/gtkw_import_service.dart';
 import 'package:wavecrux/services/session/gtkw_parser.dart';
 
 import '../helpers/app_driver.dart';
@@ -60,27 +60,17 @@ void main() {
     const parser = GtkwParser();
     const importer = GtkwImportService();
 
-    GtkwImportResult importInto(String fixture) {
+    Future<GtkwImportResult> importInto(String fixture) async {
       final content = File(_gtkwFixture(fixture)).readAsStringSync();
       final result = importer.importSession(parser.parse(content), liveVars);
-      // Apply through the real per-tab providers (orchestration steps 6–7b).
-      tab
-          .read(signalGroupsProvider.notifier)
-          .restoreFromSession(result.sessionState.signalGroup);
-      final markers = tab.read(markerStateProvider.notifier);
-      for (final m in result.sessionState.markerState.getAllMarkers()) {
-        markers.setMarker(m.key, m.value);
-      }
-      final primary = result.sessionState.cursorState.primaryCursorTime;
-      if (primary != null) {
-        tab.read(cursorStateProvider.notifier).placePrimary(primary);
-      }
+      // Apply through the real per-tab providers, as the import command does.
+      await applyGtkwImport(tab, result);
       return result;
     }
 
     // 3. simple_signals.gtkw — the core integration assertion: every path in
     //    the save resolves against a real wellen variable (nothing unmatched).
-    final simple = importInto('simple_signals.gtkw');
+    final simple = await importInto('simple_signals.gtkw');
     expect(
       simple.unmatchedSignalPaths,
       isEmpty,
@@ -92,7 +82,7 @@ void main() {
     expect(tab.read(signalGroupsProvider).signalCount, 3);
 
     // 4. groups.gtkw — named groups reconstruct over live variables.
-    final groups = importInto('groups.gtkw');
+    final groups = await importInto('groups.gtkw');
     expect(groups.unmatchedSignalPaths, isEmpty);
     expect(groups.groupCount, 2);
     final groupEntries = tab
@@ -104,7 +94,7 @@ void main() {
     expect(groupEntries, ['Clocks', 'CPU Bus']);
 
     // 5. colors_and_markers.gtkw — markers land in the live marker provider.
-    final colored = importInto('colors_and_markers.gtkw');
+    final colored = await importInto('colors_and_markers.gtkw');
     expect(colored.unmatchedSignalPaths, isEmpty);
     final liveMarkers = tab.read(markerStateProvider);
     expect(liveMarkers.getMarker('a'), 30);

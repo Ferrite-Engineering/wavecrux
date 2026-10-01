@@ -377,34 +377,13 @@ void main() {
     });
   });
 
-  // ── [translate_filter_file] directive ─────────────────────────────────────
-
-  group('GtkwParser — [translate_filter_file]', () {
-    test('sets translateFilterPath on next signal', () {
-      final f = parse(
-        '@28\n[translate_filter_file] /filters/states.txt\ntop.data\n',
-      );
-      final e = f.entries.first as GtkwSignalEntry;
-      expect(e.translateFilterPath, '/filters/states.txt');
-    });
-
-    test('resets after signal', () {
-      final f = parse(
-        '@28\n[translate_filter_file] /f.txt\ntop.clk\ntop.rst\n',
-      );
-      final a = f.entries[0] as GtkwSignalEntry;
-      final b = f.entries[1] as GtkwSignalEntry;
-      expect(a.translateFilterPath, '/f.txt');
-      expect(b.translateFilterPath, isNull);
-    });
-  });
-
-  // ── ^ translate-filter reference lines ─────────────────────────────────────
+  // ── ^ filter lines ─────────────────────────────────────────────────────────
 
   // GTKWave writes `^<n> <path>`, `^><n> <path>` and `^<<n> <path>` before a
-  // trace that uses a file, process or transaction filter (savefile.c). They
-  // are not signal paths.
-  group('GtkwParser — ^ translate-filter lines', () {
+  // trace that uses a file, process or transaction filter (savefile.c), and
+  // sets TR_FTRANSLATED (0x2000), TR_PTRANSLATED (0x4000) or TR_TTRANSLATED
+  // (0x10000000) in that trace's flag word.
+  group('GtkwParser — ^ filter lines', () {
     test('^n, ^>n and ^<n lines do not become signal entries', () {
       final f = parse(
         '@28\n'
@@ -430,9 +409,129 @@ void main() {
     });
 
     test('a ^ line between [color] and its trace keeps the color', () {
-      final f = parse('@28\n[color] 1\n^1 /f.txt\ntop.data\n');
+      final f = parse('@2028\n[color] 1\n^1 /f.txt\ntop.data\n');
       final e = f.entries.single as GtkwSignalEntry;
       expect(e.colorArgb, 0xFFFF5555);
+      expect(e.translateFilterPath, '/f.txt');
+    });
+
+    test('a file filter applies to a trace flagged TR_FTRANSLATED', () {
+      final f = parse('@2022\n^1 /home/u/filters/states.txt\ntop.state\n');
+      final e = f.entries.single as GtkwSignalEntry;
+      expect(e.translateFilterPath, '/home/u/filters/states.txt');
+      // The filter bit does not disturb the radix decode.
+      expect(e.format, DisplayFormat.hexadecimal);
+    });
+
+    test('a trace without TR_FTRANSLATED takes no file filter', () {
+      final f = parse('@22\n^1 /f.txt\ntop.state\n');
+      final e = f.entries.single as GtkwSignalEntry;
+      expect(e.translateFilterPath, isNull);
+    });
+
+    test('the current file filter carries to later flagged traces', () {
+      // GTKWave only rewrites `@` when the flags change and keeps the current
+      // filter until the next `^` line, so two traces can share one line.
+      final f = parse('@2022\n^1 /f.txt\ntop.a\ntop.b\n@22\ntop.c\n');
+      final filters = f.entries
+          .whereType<GtkwSignalEntry>()
+          .map((e) => e.translateFilterPath)
+          .toList();
+      expect(filters, ['/f.txt', '/f.txt', null]);
+    });
+
+    test('^0 disabled clears the current file filter', () {
+      final f = parse('@2022\n^1 /f.txt\ntop.a\n^0 disabled\ntop.b\n');
+      final filters = f.entries
+          .whereType<GtkwSignalEntry>()
+          .map((e) => e.translateFilterPath)
+          .toList();
+      expect(filters, ['/f.txt', null]);
+    });
+
+    test('a filter path containing spaces is kept whole', () {
+      final f = parse('@2022\n^1 /home/u/My Filters/states map.txt\ntop.s\n');
+      final e = f.entries.single as GtkwSignalEntry;
+      expect(e.translateFilterPath, '/home/u/My Filters/states map.txt');
+    });
+
+    test('^>n on a TR_PTRANSLATED trace is a process filter', () {
+      final f = parse('@4022\n^>1 /home/u/bin/decode\ntop.op\n');
+      final e = f.entries.single as GtkwSignalEntry;
+      expect(e.processFilterPath, '/home/u/bin/decode');
+      expect(e.translateFilterPath, isNull);
+      expect(e.transactionFilterPath, isNull);
+    });
+
+    test('^<n on a TR_TTRANSLATED trace is a transaction filter', () {
+      final f = parse(
+        '@10000022\n[transaction_args] ""\n^<1 /home/u/bin/txn\ntop.bus\n',
+      );
+      final e = f.entries.single as GtkwSignalEntry;
+      expect(e.transactionFilterPath, '/home/u/bin/txn');
+      expect(e.processFilterPath, isNull);
+    });
+
+    test('^>0 and ^<0 clear their filters', () {
+      final f = parse(
+        '@10004022\n^>1 /p\n^<1 /t\ntop.a\n^>0 disabled\n^<0 disabled\n'
+        'top.b\n',
+      );
+      final entries = f.entries.whereType<GtkwSignalEntry>().toList();
+      expect(entries[0].processFilterPath, '/p');
+      expect(entries[0].transactionFilterPath, '/t');
+      expect(entries[1].processFilterPath, isNull);
+      expect(entries[1].transactionFilterPath, isNull);
+    });
+
+    test('a file filter wins over a process filter, as GTKWave writes it', () {
+      final f = parse('@6022\n^1 /f.txt\n^>1 /p\ntop.a\n');
+      final e = f.entries.single as GtkwSignalEntry;
+      expect(e.translateFilterPath, '/f.txt');
+      expect(e.processFilterPath, isNull);
+    });
+
+    test('a bare ^ line with no path is ignored', () {
+      final f = parse('@2022\n^1\ntop.a\n');
+      final e = f.entries.single as GtkwSignalEntry;
+      expect(e.translateFilterPath, isNull);
+    });
+
+    test(
+      '[translate_filter_file] is not a GTKWave directive and is ignored',
+      () {
+        final f = parse(
+          '@2028\n[translate_filter_file] /filters/states.txt\ntop.data\n',
+        );
+        final e = f.entries.single as GtkwSignalEntry;
+        expect(e.translateFilterPath, isNull);
+      },
+    );
+  });
+
+  // ── > time shift lines ───────────────────────────────────────────────────
+
+  group('GtkwParser — > time shift lines', () {
+    test('a >N line is not read as a signal path', () {
+      final f = parse('@28\n>100\ntop.clk\n>0\ntop.rst\n');
+      final paths = f.entries
+          .whereType<GtkwSignalEntry>()
+          .map((e) => e.path)
+          .toList();
+      expect(paths, ['top.clk', 'top.rst']);
+    });
+  });
+
+  // ── [savefile] ─────────────────────────────────────────────────────────────
+
+  group('GtkwParser — [savefile]', () {
+    test('records where GTKWave wrote the save', () {
+      final f = parse('[savefile] "/home/u/proj/view.gtkw"\n');
+      expect(f.savedFilePath, '/home/u/proj/view.gtkw');
+    });
+
+    test('is null when absent', () {
+      expect(parse('@28\ntop.clk\n').savedFilePath, isNull);
     });
   });
 
@@ -542,12 +641,23 @@ void main() {
       expect(clk.colorArgb, 0xFFFF5555);
     });
 
-    test('translate_refs.gtkw — translate filter on data signal', () {
+    test('translate_refs.gtkw — file filter on the data trace', () {
       final f = parser.parse(loadFixture('translate_refs.gtkw'));
-      final dataSignal = f.entries.whereType<GtkwSignalEntry>().firstWhere(
-        (e) => e.path == 'top.data',
-      );
-      expect(dataSignal.translateFilterPath, '/path/to/sample_filter.txt');
+      final signals = f.entries.whereType<GtkwSignalEntry>().toList();
+      final data = signals.firstWhere((e) => e.path == 'top.data[7:0]');
+      expect(data.translateFilterPath, '/home/user/proj/sample_filter.txt');
+      final clk = signals.firstWhere((e) => e.path == 'top.clk');
+      expect(clk.translateFilterPath, isNull);
+      expect(f.savedFilePath, '/home/user/proj/translate_refs.gtkw');
+    });
+
+    test('translate_refs.gtkw — process and transaction filters', () {
+      final f = parser.parse(loadFixture('translate_refs.gtkw'));
+      final signals = f.entries.whereType<GtkwSignalEntry>().toList();
+      final addr = signals.firstWhere((e) => e.path == 'top.cpu.addr[15:0]');
+      expect(addr.processFilterPath, '/home/user/proj/bin/decode_proc');
+      final dout = signals.firstWhere((e) => e.path == 'top.cpu.dout[7:0]');
+      expect(dout.transactionFilterPath, '/home/user/proj/bin/txn_proc');
     });
 
     test('translate_refs.gtkw — ^ filter lines are not signal paths', () {
@@ -555,10 +665,10 @@ void main() {
       final paths = f.entries.whereType<GtkwSignalEntry>().map((e) => e.path);
       expect(paths, [
         'top.clk',
-        'top.data',
+        'top.data[7:0]',
         'top.rst',
-        'top.cpu.addr',
-        'top.cpu.dout',
+        'top.cpu.addr[15:0]',
+        'top.cpu.dout[7:0]',
       ]);
     });
 

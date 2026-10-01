@@ -1,5 +1,6 @@
 {
   "dumpFilePath": "generated/BubbleFifo.vcd",
+  "savedFilePath": "bubble.gtkw",
   "timeStart": 0,
   "zoomFactor": -2.432238,
   "primaryMarker": null,
@@ -15,6 +16,8 @@
       "format": "binary",
       "colorArgb": null,
       "translateFilterPath": null,
+      "processFilterPath": null,
+      "transactionFilterPath": null,
       "renderAsAnalog": false,
       "analogInterpolation": "stepHold"
     },
@@ -24,6 +27,8 @@
       "format": "hexadecimal",
       "colorArgb": null,
       "translateFilterPath": null,
+      "processFilterPath": null,
+      "transactionFilterPath": null,
       "renderAsAnalog": false,
       "analogInterpolation": "stepHold"
     },
@@ -33,6 +38,8 @@
       "format": "binary",
       "colorArgb": null,
       "translateFilterPath": null,
+      "processFilterPath": null,
+      "transactionFilterPath": null,
       "renderAsAnalog": false,
       "analogInterpolation": "stepHold"
     },
@@ -42,6 +49,8 @@
       "format": "binary",
       "colorArgb": null,
       "translateFilterPath": null,
+      "processFilterPath": null,
+      "transactionFilterPath": null,
       "renderAsAnalog": false,
       "analogInterpolation": "stepHold"
     },
@@ -51,6 +60,8 @@
       "format": "binary",
       "colorArgb": null,
       "translateFilterPath": null,
+      "processFilterPath": null,
+      "transactionFilterPath": null,
       "renderAsAnalog": false,
       "analogInterpolation": "stepHold"
     },
@@ -60,6 +71,8 @@
       "format": "binary",
       "colorArgb": null,
       "translateFilterPath": null,
+      "processFilterPath": null,
+      "transactionFilterPath": null,
       "renderAsAnalog": false,
       "analogInterpolation": "stepHold"
     },
@@ -69,6 +82,8 @@
       "format": "hexadecimal",
       "colorArgb": null,
       "translateFilterPath": null,
+      "processFilterPath": null,
+      "transactionFilterPath": null,
       "renderAsAnalog": false,
       "analogInterpolation": "stepHold"
     },
@@ -78,6 +93,8 @@
       "format": "hexadecimal",
       "colorArgb": null,
       "translateFilterPath": null,
+      "processFilterPath": null,
+      "transactionFilterPath": null,
       "renderAsAnalog": false,
       "analogInterpolation": "stepHold"
     },
@@ -87,6 +104,8 @@
       "format": "hexadecimal",
       "colorArgb": null,
       "translateFilterPath": null,
+      "processFilterPath": null,
+      "transactionFilterPath": null,
       "renderAsAnalog": false,
       "analogInterpolation": "stepHold"
     },
@@ -96,6 +115,8 @@
       "format": "hexadecimal",
       "colorArgb": null,
       "translateFilterPath": null,
+      "processFilterPath": null,
+      "transactionFilterPath": null,
       "renderAsAnalog": false,
       "analogInterpolation": "stepHold"
     },
@@ -105,6 +126,8 @@
       "format": "hexadecimal",
       "colorArgb": null,
       "translateFilterPath": null,
+      "processFilterPath": null,
+      "transactionFilterPath": null,
       "renderAsAnalog": false,
       "analogInterpolation": "stepHold"
     }

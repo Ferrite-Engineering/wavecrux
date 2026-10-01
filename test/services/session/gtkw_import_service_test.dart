@@ -399,6 +399,13 @@ void main() {
       const gtkw = GtkwFile();
       final r = _import(gtkw);
       expect(r.sessionState.panOffsetTicks, 0.0);
+      // The result tells "absent" apart from a start time of zero.
+      expect(r.panOffsetTicks, isNull);
+    });
+
+    test('timeStart is carried on the result for the viewer to apply', () {
+      final r = _import(const GtkwFile(timeStart: 500));
+      expect(r.panOffsetTicks, 500.0);
     });
 
     test('sourceFilePath override takes precedence over dumpFilePath', () {
@@ -558,6 +565,17 @@ MEALY_STATE_MACHINE_TB.FOUND
       mealyVars,
     );
 
+    test('zoom, start time and the open scope are carried', () {
+      final r = importMealy();
+      // 2^17.277769 / 200: GTKWave's zoom exponent as ticks per pixel.
+      expect(r.ticksPerPixel, closeTo(794.5, 0.1));
+      expect(r.sessionState.ticksPerPixel, r.ticksPerPixel);
+      expect(r.panOffsetTicks, 0.0);
+      expect(r.sessionState.expandedScopePaths, {tb});
+      expect(r.filterIssues, isEmpty);
+      expect(r.sessionState.translateFilterPaths, isEmpty);
+    });
+
     test('markers are exactly A=2500 and B=6100, with no cursor', () {
       final r = importMealy();
       expect(r.sessionState.markerState.markers, {'a': 2500, 'b': 6100});
@@ -590,6 +608,236 @@ MEALY_STATE_MACHINE_TB.FOUND
       expect(signals['state']!.format, DisplayFormat.unsignedDecimal); // @24
       expect(signals['state']!.argbColor, 0xFFFFFF00); // [color] 3
       expect(signals['FOUND']!.argbColor, 0xFF00FF00); // [color] 4
+    });
+  });
+
+  // ── Zoom ──────────────────────────────────────────────────────────────────
+
+  group('GtkwImportService — zoom', () {
+    test('converts GTKWave zoom exponents to ticks per pixel', () {
+      // ticks per pixel = max(2^-z, 1) / 200 (GTKWave's calczoom).
+      expect(GtkwImportService.ticksPerPixelForZoom(-19), 2621.44);
+      expect(GtkwImportService.ticksPerPixelForZoom(-1), 0.01);
+      // A frame narrower than one time unit is floored at one unit.
+      expect(GtkwImportService.ticksPerPixelForZoom(3), 0.005);
+    });
+
+    test('the zoom lands on the session and the result', () {
+      final r = _import(const GtkwFile(zoomFactor: -10));
+      expect(r.ticksPerPixel, closeTo(5.12, 1e-9));
+      expect(r.sessionState.ticksPerPixel, closeTo(5.12, 1e-9));
+    });
+
+    test('no zoom in the file leaves the result zoom null', () {
+      final r = _import(const GtkwFile());
+      expect(r.ticksPerPixel, isNull);
+    });
+
+    test('a non-finite zoom is ignored', () {
+      final r = _import(const GtkwFile(zoomFactor: double.nan));
+      expect(r.ticksPerPixel, isNull);
+    });
+  });
+
+  // ── Expanded scopes ───────────────────────────────────────────────────────
+
+  group('GtkwImportService — [treeopen] scopes', () {
+    test('trailing dots are dropped and paths match the dump scopes', () {
+      final r = _import(const GtkwFile(openScopes: ['top.', 'top.cpu.']));
+      expect(r.sessionState.expandedScopePaths, {'top', 'top.cpu'});
+    });
+
+    test('match falls back to case-insensitive', () {
+      final r = _import(const GtkwFile(openScopes: ['TOP.CPU.']));
+      expect(r.sessionState.expandedScopePaths, {'top.cpu'});
+    });
+
+    test('a scope the dump does not have is dropped', () {
+      final r = _import(const GtkwFile(openScopes: ['other.', '.', '']));
+      expect(r.sessionState.expandedScopePaths, isEmpty);
+    });
+
+    test('an ancestor with no variables of its own still matches', () {
+      final r = _import(
+        const GtkwFile(openScopes: ['a.']),
+        variables: [_mkVar('a.b.c', 'x')],
+      );
+      expect(r.sessionState.expandedScopePaths, {'a'});
+    });
+  });
+
+  // ── Translate filters ─────────────────────────────────────────────────────
+
+  group('GtkwImportService — translate filters', () {
+    GtkwFile withFilter(String filter, {String? savedFilePath}) =>
+        const GtkwParser().parse(
+          '${savedFilePath == null ? '' : '[savefile] "$savedFilePath"\n'}'
+          '@2022\n^1 $filter\ntop.data[7:0]\n@28\ntop.clk\n',
+        );
+
+    test('a found filter is keyed by the matched signal ref', () {
+      final r = _service.importSession(
+        withFilter('/proj/states.txt'),
+        _fixtureVars,
+        gtkwFilePath: '/proj/view.gtkw',
+        fileExists: (path) => path == '/proj/states.txt',
+      );
+      expect(r.sessionState.translateFilterPaths, {
+        'ref_data': '/proj/states.txt',
+      });
+      expect(r.filterIssues, isEmpty);
+    });
+
+    test('a moved project re-anchors the filter beside the save file', () {
+      final r = _service.importSession(
+        withFilter(
+          '/home/jeff/proj/filters/states.txt',
+          savedFilePath: '/home/jeff/proj/waves/view.gtkw',
+        ),
+        _fixtureVars,
+        gtkwFilePath: '/Users/me/checkout/waves/view.gtkw',
+        fileExists: (path) =>
+            path == '/Users/me/checkout/filters/states.txt' ||
+            path == '/home/jeff/proj/filters/states.txt',
+      );
+      // GTKWave's own rule wins over the literal path.
+      expect(
+        r.sessionState.translateFilterPaths['ref_data'],
+        '/Users/me/checkout/filters/states.txt',
+      );
+    });
+
+    test('a relative filter path resolves against the save file', () {
+      final r = _service.importSession(
+        withFilter('filters/states.txt'),
+        _fixtureVars,
+        gtkwFilePath: '/proj/view.gtkw',
+        sourceFilePath: '/sim/out.vcd',
+        fileExists: (path) => path == '/proj/filters/states.txt',
+      );
+      expect(
+        r.sessionState.translateFilterPaths['ref_data'],
+        '/proj/filters/states.txt',
+      );
+    });
+
+    test('a relative filter path falls back to the dump directory', () {
+      final r = _service.importSession(
+        withFilter('filters/states.txt'),
+        _fixtureVars,
+        gtkwFilePath: '/proj/view.gtkw',
+        sourceFilePath: '/sim/out.vcd',
+        fileExists: (path) => path == '/sim/filters/states.txt',
+      );
+      expect(
+        r.sessionState.translateFilterPaths['ref_data'],
+        '/sim/filters/states.txt',
+      );
+    });
+
+    test('the file name alone is tried beside the save, then the dump', () {
+      final besideDump = _service.importSession(
+        withFilter('/elsewhere/states.txt'),
+        _fixtureVars,
+        gtkwFilePath: '/proj/view.gtkw',
+        sourceFilePath: '/sim/out.vcd',
+        fileExists: (path) => path == '/sim/states.txt',
+      );
+      expect(
+        besideDump.sessionState.translateFilterPaths['ref_data'],
+        '/sim/states.txt',
+      );
+    });
+
+    test('a missing filter is reported, not dropped silently', () {
+      final r = _service.importSession(
+        withFilter('/proj/gone.txt'),
+        _fixtureVars,
+        gtkwFilePath: '/proj/view.gtkw',
+        fileExists: (_) => false,
+      );
+      expect(r.sessionState.translateFilterPaths, isEmpty);
+      expect(r.hasFilterIssues, isTrue);
+      expect(r.filterIssues, [
+        const GtkwFilterIssue(
+          signalPath: 'top.data[7:0]',
+          filterPath: '/proj/gone.txt',
+          kind: GtkwFilterIssueKind.missingFile,
+        ),
+      ]);
+      // The trace itself still imports.
+      expect(r.matchedSignalCount, 2);
+      expect(r.hasUnmatchedSignals, isFalse);
+    });
+
+    test('without fileExists every filter is reported missing', () {
+      final r = _import(withFilter('/proj/states.txt'));
+      expect(r.filterIssues.single.kind, GtkwFilterIssueKind.missingFile);
+    });
+
+    test('a filter on an unmatched signal is not reported twice', () {
+      final r = _service.importSession(
+        const GtkwParser().parse('@2022\n^1 /f.txt\ntop.nothere\n'),
+        _fixtureVars,
+        fileExists: (_) => false,
+      );
+      expect(r.unmatchedSignalPaths, ['top.nothere']);
+      expect(r.filterIssues, isEmpty);
+    });
+
+    test('process and transaction filters are reported as not imported', () {
+      final r = _service.importSession(
+        const GtkwParser().parse(
+          '@4022\n^>1 /bin/decode\ntop.cpu.addr\n'
+          '@10000022\n^<1 /bin/txn\ntop.cpu.dout\n',
+        ),
+        _fixtureVars,
+        fileExists: (_) => true,
+      );
+      expect(r.sessionState.translateFilterPaths, isEmpty);
+      expect(r.filterIssues.map((i) => (i.signalPath, i.kind)), [
+        ('top.cpu.addr', GtkwFilterIssueKind.process),
+        ('top.cpu.dout', GtkwFilterIssueKind.transaction),
+      ]);
+    });
+
+    test('GtkwFilterIssue equality and toString', () {
+      const a = GtkwFilterIssue(
+        signalPath: 's',
+        filterPath: 'f',
+        kind: GtkwFilterIssueKind.process,
+      );
+      const b = GtkwFilterIssue(
+        signalPath: 's',
+        filterPath: 'f',
+        kind: GtkwFilterIssueKind.process,
+      );
+      expect(a, b);
+      expect(a.hashCode, b.hashCode);
+      expect(a.toString(), contains('process'));
+    });
+  });
+
+  group('GtkwImportService.resolveFilterPath', () {
+    test('a Windows-written path re-anchors by its own separators', () {
+      final resolved = GtkwImportService.resolveFilterPath(
+        r'C:\proj\filters\states.txt',
+        savedFilePath: r'C:\proj\waves\view.gtkw',
+        gtkwFilePath: '/Users/me/proj/waves/view.gtkw',
+        fileExists: (path) => path == '/Users/me/proj/filters/states.txt',
+      );
+      expect(resolved, '/Users/me/proj/filters/states.txt');
+    });
+
+    test('no candidate found returns null', () {
+      expect(
+        GtkwImportService.resolveFilterPath(
+          '/x/y.txt',
+          gtkwFilePath: '/proj/view.gtkw',
+          fileExists: (_) => false,
+        ),
+        isNull,
+      );
     });
   });
 }

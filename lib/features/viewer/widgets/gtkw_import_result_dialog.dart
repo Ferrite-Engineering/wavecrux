@@ -9,7 +9,8 @@ import 'package:wavecrux/services/session/gtkw_import_service.dart';
 ///
 /// Displays a summary of imported signals, groups, and markers, and lists any
 /// signal paths from the `.gtkw` file that could not be matched to a variable
-/// in the currently loaded waveform.
+/// in the currently loaded waveform, then any filters it names that were not
+/// applied (a filter file that was not found, or a filter process).
 class GtkwImportResultDialog extends StatelessWidget {
   const GtkwImportResultDialog({required this.result, super.key});
 
@@ -29,7 +30,6 @@ class GtkwImportResultDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = L10N.of(context);
-    final theme = Theme.of(context);
 
     return AlertDialog(
       title: Text(l10n.gtkwImportDialogTitle),
@@ -55,34 +55,23 @@ class GtkwImportResultDialog extends StatelessWidget {
             ),
             if (result.hasUnmatchedSignals) ...[
               const SizedBox(height: 16),
-              Text(
-                l10n.gtkwImportUnmatchedHeader(
+              _IssueList(
+                header: l10n.gtkwImportUnmatchedHeader(
                   result.unmatchedSignalPaths.length,
                 ),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.error,
-                  fontWeight: FontWeight.bold,
-                ),
+                rows: result.unmatchedSignalPaths,
               ),
-              const SizedBox(height: 4),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 160),
-                child: Scrollbar(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: result.unmatchedSignalPaths.length,
-                    itemBuilder: (_, i) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 1),
-                      child: Text(
-                        result.unmatchedSignalPaths[i],
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontFamily: 'monospace',
-                          color: theme.colorScheme.error,
-                        ),
-                      ),
-                    ),
-                  ),
+            ],
+            if (result.hasFilterIssues) ...[
+              const SizedBox(height: 16),
+              _IssueList(
+                header: l10n.gtkwImportFilterIssuesHeader(
+                  result.filterIssues.length,
                 ),
+                rows: [
+                  for (final issue in result.filterIssues)
+                    _filterIssueText(l10n, issue),
+                ],
               ),
             ],
           ],
@@ -92,6 +81,69 @@ class GtkwImportResultDialog extends StatelessWidget {
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: Text(l10n.gtkwImportClose),
+        ),
+      ],
+    );
+  }
+}
+
+String _filterIssueText(L10N l10n, GtkwFilterIssue issue) =>
+    switch (issue.kind) {
+      GtkwFilterIssueKind.missingFile => l10n.gtkwImportFilterMissing(
+        issue.signalPath,
+        issue.filterPath,
+      ),
+      GtkwFilterIssueKind.process => l10n.gtkwImportFilterProcess(
+        issue.signalPath,
+        issue.filterPath,
+      ),
+      GtkwFilterIssueKind.transaction => l10n.gtkwImportFilterTransaction(
+        issue.signalPath,
+        issue.filterPath,
+      ),
+    };
+
+/// A header in the error color over a scrolling list of monospace rows: the
+/// parts of a `.gtkw` the import could not bring across.
+class _IssueList extends StatelessWidget {
+  const _IssueList({required this.header, required this.rows});
+
+  final String header;
+  final List<String> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          header,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.error,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 160),
+          child: Scrollbar(
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: rows.length,
+              itemBuilder: (_, i) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 1),
+                child: Text(
+                  rows[i],
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontFamily: 'monospace',
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       ],
     );

@@ -5,7 +5,13 @@
   "unmatchedSignalPaths": [],
   "canvasBackgroundHex": null,
   "sourceFilePath": "fixture.vcd",
+  "ticksPerPixel": 3707.2323165102757,
   "panOffsetTicks": 0.0,
+  "expandedScopePaths": [
+    "top"
+  ],
+  "translateFilterPaths": {},
+  "filterIssues": [],
   "primaryCursorTime": null,
   "markers": {},
   "signals": [

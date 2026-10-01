@@ -101,7 +101,23 @@ Workspaces are managed from the **File** menu (or the command palette). Build th
 
 !!! tip "Migrating from GTKWave"
 
-    Already have GTKWave save files? Use **File → Import GTKWave Session** or ++cmd+i++ / ++ctrl+i++ to bring in a `.gtkw` session, or [drop the `.gtkw` onto the window](#drop) on desktop. The import carries over your signal lists, groups, color assignments, display formats, analog rendering, named markers A–Z, and GTKWave's primary marker, which becomes the primary cursor. Translate-filter assignments, zoom level, scroll position, expanded scopes and the canvas background color are not applied yet; reassign translate filters from the signal's context menu. Signals that do not exist in the loaded waveform are reported rather than silently dropped. This is the main migration path from GTKWave.
+    Already have GTKWave save files? Use **File → Import GTKWave Session** or ++cmd+i++ / ++ctrl+i++ to bring in a `.gtkw` session, or [drop the `.gtkw` onto the window](#drop) on desktop. This is the main migration path from GTKWave.
+
+    **What the import applies:**
+
+    - your signal list, with groups, separators, comments, color assignments, display formats and analog rendering;
+    - named markers A–Z, and GTKWave's primary marker, which becomes the primary cursor;
+    - the zoom level and scroll position, so the view opens on the same stretch of time GTKWave showed (a zoom wider than the waveform opens fitted to the whole trace);
+    - the scopes you had expanded in GTKWave's hierarchy, which open in the hierarchy tree alongside any already open;
+    - translate filter files. GTKWave saves each filter's full path on the machine that wrote the file; if that path does not exist here, WaveCrux looks for the filter in the same place relative to the `.gtkw` (so a moved or freshly cloned project still works), then by file name next to the `.gtkw` and next to the waveform.
+
+    **What it does not apply:**
+
+    - filter processes and transaction filters. An imported save file never starts a program; set a filter process yourself with **Set Translate Filter Process…** on the signal;
+    - time shifts on individual traces;
+    - the canvas background color. The WaveCrux theme owns the canvas; change it in **Settings → Appearance**.
+
+    The import dialog lists anything it could not bring across: signals that do not exist in the loaded waveform, and under **Filters not applied**, filter files it could not find and the filter processes it skipped.
 
 ## Recovering when the app won't start { #recovery }
 

@@ -46,6 +46,7 @@ String encodeGolden(Map<String, Object?> map) =>
 /// `generated/` and `captured/` carries an `.expected_parse.json` of this shape.
 Map<String, Object?> encodeGtkwFile(GtkwFile file) => {
   'dumpFilePath': file.dumpFilePath,
+  'savedFilePath': file.savedFilePath,
   'timeStart': file.timeStart,
   'zoomFactor': file.zoomFactor,
   'primaryMarker': file.primaryMarker,
@@ -64,6 +65,8 @@ Map<String, Object?> _encodeEntry(GtkwEntry entry) {
         'format': entry.format.name,
         'colorArgb': entry.colorArgb,
         'translateFilterPath': entry.translateFilterPath,
+        'processFilterPath': entry.processFilterPath,
+        'transactionFilterPath': entry.transactionFilterPath,
         'renderAsAnalog': entry.renderAsAnalog,
         'analogInterpolation': entry.analogInterpolation.name,
       };
@@ -93,7 +96,22 @@ Map<String, Object?> encodeImportResult(GtkwImportResult result) => {
   'unmatchedSignalPaths': result.unmatchedSignalPaths,
   'canvasBackgroundHex': result.canvasBackgroundHex,
   'sourceFilePath': result.sessionState.sourceFilePath,
-  'panOffsetTicks': result.sessionState.panOffsetTicks,
+  'ticksPerPixel': result.ticksPerPixel,
+  'panOffsetTicks': result.panOffsetTicks,
+  'expandedScopePaths': result.sessionState.expandedScopePaths.toList()..sort(),
+  'translateFilterPaths': {
+    for (final key
+        in result.sessionState.translateFilterPaths.keys.toList()..sort())
+      key: _portablePath(result.sessionState.translateFilterPaths[key]!),
+  },
+  'filterIssues': [
+    for (final issue in result.filterIssues)
+      {
+        'signalPath': issue.signalPath,
+        'filterPath': issue.filterPath,
+        'kind': issue.kind.name,
+      },
+  ],
   'primaryCursorTime': result.sessionState.cursorState.primaryCursorTime,
   'markers': _sortedMarkers(result.sessionState.markerState.markers),
   'signals': result.sessionState.signalGroup.entries
@@ -175,6 +193,10 @@ List<Variable> fixtureVcdVariables() => const [
     bitWidth: 8,
   ),
 ];
+
+/// A resolved filter path with `/` separators, so a golden written on one
+/// platform matches on Windows.
+String _portablePath(String path) => path.replaceAll(r'\', '/');
 
 /// Markers serialized in deterministic (alphabetical) key order.
 Map<String, int> _sortedMarkers(Map<String, int> markers) {

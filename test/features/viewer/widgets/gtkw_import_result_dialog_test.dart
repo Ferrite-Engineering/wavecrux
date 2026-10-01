@@ -29,13 +29,33 @@ GtkwImportResult _result({
   int groups = 1,
   int markers = 2,
   List<String> unmatched = const [],
+  List<GtkwFilterIssue> filterIssues = const [],
 }) => GtkwImportResult(
   sessionState: const SessionState(),
   matchedSignalCount: matched,
   groupCount: groups,
   markerCount: markers,
   unmatchedSignalPaths: unmatched,
+  filterIssues: filterIssues,
 );
+
+const _everyFilterIssue = [
+  GtkwFilterIssue(
+    signalPath: 'top.state[2:0]',
+    filterPath: '/home/u/filters/states.txt',
+    kind: GtkwFilterIssueKind.missingFile,
+  ),
+  GtkwFilterIssue(
+    signalPath: 'top.opcode[6:0]',
+    filterPath: '/home/u/bin/decode',
+    kind: GtkwFilterIssueKind.process,
+  ),
+  GtkwFilterIssue(
+    signalPath: 'top.bus[31:0]',
+    filterPath: '/home/u/bin/txn',
+    kind: GtkwFilterIssueKind.transaction,
+  ),
+];
 
 Future<void> _showDialog(WidgetTester tester, GtkwImportResult result) async {
   await tester.pumpWidget(
@@ -65,7 +85,12 @@ void main() {
       ) async {
         await tester.pumpWidget(
           _wrap(
-            GtkwImportResultDialog(result: _result()),
+            GtkwImportResultDialog(
+              result: _result(
+                unmatched: const ['top.missing'],
+                filterIssues: _everyFilterIssue,
+              ),
+            ),
             locale: locale,
           ),
         );
@@ -129,6 +154,52 @@ void main() {
       );
       expect(find.text('top.missing'), findsOneWidget);
       expect(find.text('tb.dut.bad'), findsOneWidget);
+    });
+
+    testWidgets('filter section hidden when every filter applied', (
+      tester,
+    ) async {
+      await _showDialog(tester, _result());
+      expect(find.textContaining('Filters not applied'), findsNothing);
+    });
+
+    testWidgets('filters not applied are listed with the reason', (
+      tester,
+    ) async {
+      await _showDialog(tester, _result(filterIssues: _everyFilterIssue));
+      expect(find.text('Filters not applied (3):'), findsOneWidget);
+      expect(
+        find.text(
+          'top.state[2:0]: filter file not found: /home/u/filters/states.txt',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'top.opcode[6:0]: filter process not imported: /home/u/bin/decode',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'top.bus[31:0]: transaction filter not imported: /home/u/bin/txn',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('unmatched signals and filter issues show together', (
+      tester,
+    ) async {
+      await _showDialog(
+        tester,
+        _result(
+          unmatched: const ['top.missing'],
+          filterIssues: _everyFilterIssue.take(1).toList(),
+        ),
+      );
+      expect(find.textContaining('not found in waveform (1)'), findsOneWidget);
+      expect(find.text('Filters not applied (1):'), findsOneWidget);
     });
 
     testWidgets('zero counts displayed correctly', (tester) async {

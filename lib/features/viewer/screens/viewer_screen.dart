@@ -92,6 +92,7 @@ import 'package:wavecrux/features/viewer/providers/active_tab_panel_layout_provi
 import 'package:wavecrux/features/viewer/providers/export_providers.dart';
 import 'package:wavecrux/features/viewer/providers/file_watcher_provider.dart';
 import 'package:wavecrux/features/viewer/providers/fsm_provider.dart';
+import 'package:wavecrux/features/viewer/providers/gtkw_import_apply.dart';
 import 'package:wavecrux/features/viewer/providers/landscape_hint_provider.dart';
 import 'package:wavecrux/features/viewer/providers/lane_geometry_provider.dart';
 import 'package:wavecrux/features/viewer/providers/mobile_memory_guard_provider.dart';
@@ -140,7 +141,6 @@ import 'package:wavecrux/services/platform/security_scoped_bookmark_service.dart
 import 'package:wavecrux/services/policy/org_theme_application.dart';
 import 'package:wavecrux/services/samples/sample_waveform_service.dart';
 import 'package:wavecrux/services/session/crux_project_resolution.dart';
-import 'package:wavecrux/services/session/gtkw_import_service.dart';
 import 'package:wavecrux/services/session/gtkw_parser.dart';
 import 'package:wavecrux/services/session/session_service.dart';
 import 'package:wavecrux/services/tabs/tab_container_manager.dart';

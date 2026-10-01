@@ -4,8 +4,32 @@
   "markerCount": 0,
   "unmatchedSignalPaths": [],
   "canvasBackgroundHex": null,
-  "sourceFilePath": "fixture.vcd",
+  "sourceFilePath": "/home/user/proj/fixture.vcd",
+  "ticksPerPixel": 2621.44,
   "panOffsetTicks": 0.0,
+  "expandedScopePaths": [
+    "top"
+  ],
+  "translateFilterPaths": {
+    "top.data": "test/fixtures/gtkw/generated/sample_filter.txt"
+  },
+  "filterIssues": [
+    {
+      "signalPath": "top.rst",
+      "filterPath": "/home/user/proj/filters/missing_filter.txt",
+      "kind": "missingFile"
+    },
+    {
+      "signalPath": "top.cpu.addr[15:0]",
+      "filterPath": "/home/user/proj/bin/decode_proc",
+      "kind": "process"
+    },
+    {
+      "signalPath": "top.cpu.dout[7:0]",
+      "filterPath": "/home/user/proj/bin/txn_proc",
+      "kind": "transaction"
+    }
+  ],
   "primaryCursorTime": null,
   "markers": {},
   "signals": [
@@ -23,7 +47,7 @@
       "signalRef": "top.data",
       "displayName": "data",
       "signalPath": "top.data",
-      "format": "binary",
+      "format": "hexadecimal",
       "argbColor": null,
       "renderAsAnalog": false
     },
@@ -41,7 +65,7 @@
       "signalRef": "top.cpu.addr",
       "displayName": "addr",
       "signalPath": "top.cpu.addr",
-      "format": "binary",
+      "format": "hexadecimal",
       "argbColor": null,
       "renderAsAnalog": false
     },
@@ -50,7 +74,7 @@
       "signalRef": "top.cpu.dout",
       "displayName": "dout",
       "signalPath": "top.cpu.dout",
-      "format": "binary",
+      "format": "hexadecimal",
       "argbColor": null,
       "renderAsAnalog": false
     },

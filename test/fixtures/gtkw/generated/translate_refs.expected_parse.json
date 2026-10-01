@@ -1,10 +1,13 @@
 {
-  "dumpFilePath": "fixture.vcd",
+  "dumpFilePath": "/home/user/proj/fixture.vcd",
+  "savedFilePath": "/home/user/proj/translate_refs.gtkw",
   "timeStart": 0,
   "zoomFactor": -19.0,
   "primaryMarker": null,
   "canvasBackgroundHex": null,
-  "openScopes": [],
+  "openScopes": [
+    "top."
+  ],
   "namedMarkers": {},
   "entries": [
     {
@@ -13,15 +16,19 @@
       "format": "binary",
       "colorArgb": null,
       "translateFilterPath": null,
+      "processFilterPath": null,
+      "transactionFilterPath": null,
       "renderAsAnalog": false,
       "analogInterpolation": "stepHold"
     },
     {
       "type": "signal",
-      "path": "top.data",
-      "format": "binary",
+      "path": "top.data[7:0]",
+      "format": "hexadecimal",
       "colorArgb": null,
-      "translateFilterPath": "/path/to/sample_filter.txt",
+      "translateFilterPath": "/home/user/proj/sample_filter.txt",
+      "processFilterPath": null,
+      "transactionFilterPath": null,
       "renderAsAnalog": false,
       "analogInterpolation": "stepHold"
     },
@@ -30,25 +37,31 @@
       "path": "top.rst",
       "format": "binary",
       "colorArgb": null,
-      "translateFilterPath": null,
+      "translateFilterPath": "/home/user/proj/filters/missing_filter.txt",
+      "processFilterPath": null,
+      "transactionFilterPath": null,
       "renderAsAnalog": false,
       "analogInterpolation": "stepHold"
     },
     {
       "type": "signal",
-      "path": "top.cpu.addr",
-      "format": "binary",
+      "path": "top.cpu.addr[15:0]",
+      "format": "hexadecimal",
       "colorArgb": null,
       "translateFilterPath": null,
+      "processFilterPath": "/home/user/proj/bin/decode_proc",
+      "transactionFilterPath": null,
       "renderAsAnalog": false,
       "analogInterpolation": "stepHold"
     },
     {
       "type": "signal",
-      "path": "top.cpu.dout",
-      "format": "binary",
+      "path": "top.cpu.dout[7:0]",
+      "format": "hexadecimal",
       "colorArgb": null,
       "translateFilterPath": null,
+      "processFilterPath": null,
+      "transactionFilterPath": "/home/user/proj/bin/txn_proc",
       "renderAsAnalog": false,
       "analogInterpolation": "stepHold"
     },

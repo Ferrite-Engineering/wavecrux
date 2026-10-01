@@ -1477,6 +1477,51 @@
       }
     }
   },
+  "gtkwImportFilterIssuesHeader": "Filters not applied ({count}):",
+  "@gtkwImportFilterIssuesHeader": {
+    "description": "Header label shown above the list of translate filters and filter processes named in a .gtkw file that the import did not apply",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "gtkwImportFilterMissing": "{signal}: filter file not found: {path}",
+  "@gtkwImportFilterMissing": {
+    "description": "Row in the GTKWave import summary for a translate filter file that could not be found; signal is the .gtkw trace path, path is the filter path as the .gtkw wrote it",
+    "placeholders": {
+      "signal": {
+        "type": "String"
+      },
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "gtkwImportFilterProcess": "{signal}: filter process not imported: {path}",
+  "@gtkwImportFilterProcess": {
+    "description": "Row in the GTKWave import summary for a filter process the .gtkw names, which import does not start; signal is the .gtkw trace path, path is the program path",
+    "placeholders": {
+      "signal": {
+        "type": "String"
+      },
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "gtkwImportFilterTransaction": "{signal}: transaction filter not imported: {path}",
+  "@gtkwImportFilterTransaction": {
+    "description": "Row in the GTKWave import summary for a transaction filter process the .gtkw names, which import does not start; signal is the .gtkw trace path, path is the program path",
+    "placeholders": {
+      "signal": {
+        "type": "String"
+      },
+      "path": {
+        "type": "String"
+      }
+    }
+  },
   "gtkwImportClose": "Close",
   "@gtkwImportClose": {
     "description": "Close button label in the GTKWave import summary dialog"

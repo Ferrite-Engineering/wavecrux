@@ -2376,6 +2376,12 @@ A simple shell script (e.g., `fsm_filter.sh`) that maps:
 
 GTKWave's static translate filters (`.txt` files mapping value → label) and `.gtkw` session save files are widely used in the GTKWave installed base. WaveCrux imports both for migration parity.
 
+A `.gtkw` import applies: the trace list with groups, separators, comments, colors, display formats and analog rendering; named markers A–Z; GTKWave's primary marker as the primary cursor; the zoom and the time at the left edge of the view (`[timestart]`), so the view lands where GTKWave had it; the scopes GTKWave had expanded (`[treeopen]`), added to those already open in the hierarchy tree; and each trace's translate filter file (`^<n> <path>`).
+
+GTKWave writes the filter's absolute path on the machine that saved the file. The import looks for it re-anchored beside the `.gtkw` (the path relative to the `[savefile]` directory, GTKWave's own rule), then at the path as written, then by file name beside the `.gtkw` and beside the dump. A filter file found nowhere is listed under **Filters not applied** in the import dialog, next to any signals not found in the waveform.
+
+Not imported: filter processes (`^>n`) and transaction filters (`^<n`), which are listed under **Filters not applied** because an imported save file never starts a program; time shifts (`>N` lines); and the canvas background (`[bgcolor]`), which the WaveCrux theme owns. GTKWave times are taken as ticks of the loaded dump.
+
 #### 6.6.2 Setup
 
 The GTKWave fixture corpus lives under `test/fixtures/gtkw/` and follows the
@@ -2410,8 +2416,9 @@ under `verification/fixtures/`.
 2. Repeat with `groups.gtkw` — verify named groups appear.
 3. Repeat with `format_flags.gtkw` — verify per-signal format choices apply (hex/bin/dec/etc.).
 4. Repeat with `colors_and_markers.gtkw` — verify per-signal colors, named markers A at 30 and B at 50 (no marker C), and the primary cursor at 40. GTKWave writes the primary marker before the named markers on the `*` line; a marker C at 50 means the import has slipped one letter.
-5. Repeat with `translate_refs.gtkw` — verify all five signals import with none unmatched: the `^1`, `^>2` and `^<3` filter-reference lines must not appear as unmatched signal paths.
-6. Verify the import-result dialog shows matched/unmatched signal counts.
+5. Repeat with `translate_refs.gtkw` — verify all five signals import with none unmatched (the `^` filter lines are not signal paths), and that `data` shows `IDLE`, `RUNNING`, `HALTED` from `sample_filter.txt` rather than raw values. The **Filters not applied (3)** list names `top.rst` (filter file not found: `/home/user/proj/filters/missing_filter.txt`), `top.cpu.addr[15:0]` (filter process not imported) and `top.cpu.dout[7:0]` (transaction filter not imported).
+6. Zoom in and scroll somewhere else, then import `colors_and_markers.gtkw` again: the view moves back to start at time 10 (its `[timestart]`). With `simple_signals.gtkw` the hierarchy tree opens `top`.
+7. Verify the import-result dialog shows matched/unmatched signal counts.
 
 #### 6.6.5 Steps — real-world captured saves (robustness)
 
@@ -2435,6 +2442,8 @@ real-world `.gtkw` (full of `[size]`, `[pos]`, `[sst_*]`, `[pattern_trace]`,
 | Parser output vs golden snapshots (synthetic + captured) | **AUTOMATED** (`gtkw_golden_test.dart` against `*.expected_parse.json`) |
 | Real-world captured saves parse without throwing | **AUTOMATED** (`gtkw_golden_test.dart` captured group) |
 | Import orchestration → live providers (groups/markers/colors/formats land) | **AUTOMATED** (`test/features/viewer/gtkw_import_pipeline_test.dart`) |
+| Each applied field reaches its provider: zoom, scroll position, staged viewport, expanded scopes, translate filter file, markers, cursor, trace list | **AUTOMATED** (`test/features/viewer/providers/gtkw_import_apply_test.dart`) |
+| `^` filter lines, filter-path resolution, missing and unsupported filters reported | **AUTOMATED** (`gtkw_parser_test.dart`, `gtkw_import_service_test.dart`, `translate_refs` golden) |
 | Import resolves against **live wellen-parsed** variables (real FFI scope-path contract), real app booted | **INTEGRATION** (`integration_test/session/gtkw_import_integration_test.dart` — nightly Linux / weekly desktop sweep) |
 | Malformed / adversarial input never throws | **AUTOMATED** (`gtkw_parser_test.dart` adversarial group) |
 | Import-result dialog | **AUTOMATED** (`test/features/viewer/widgets/gtkw_import_result_dialog_test.dart`) |
@@ -6595,7 +6604,7 @@ WaveCrux ships a named-token color system that lets engineers customize the wave
 2. **Color overrides** — one collapsible `TokenCategorySection` per registered category (`canvas`, `chrome`). Each row shows the token's display name, current color swatch, and a reset-to-default button. Tapping the swatch opens the package's `ColorPickerDialog` (HSV sliders + hex input + RGB readout + live preview).
 3. **Theme packs** — install / activate / uninstall flow for `.crux-theme.json` files (JSON with `schemaVersion`, `id`, `displayName`, `brightness`, `tokens` keys; missing tokens fall back to the active preset's registered defaults).
 
-The active theme name is persisted in `.wavecrux` session files. When a session is loaded and the named theme is not found, WaveCrux falls back to `wavecrux-dark` and shows a non-blocking snackbar. GTKWave `.gtkw` imports apply `[bgcolor]` directives as a `canvas.background` quick override and per-signal `[color]` directives as per-signal color overrides.
+The active theme name is persisted in `.wavecrux` session files. When a session is loaded and the named theme is not found, WaveCrux falls back to `wavecrux-dark` and shows a non-blocking snackbar. GTKWave `.gtkw` imports apply per-signal `[color]` directives as per-signal color overrides. A `[bgcolor]` directive is parsed but not applied: the theme owns the canvas background.
 
 ### Setup
 
@@ -6648,9 +6657,9 @@ The active theme name is persisted in `.wavecrux` session files. When a session 
 #### 22.7.6 GTKWave `.gtkw` migration
 
 1. Import a `.gtkw` file that contains `[bgcolor] 002B36` and per-signal `[color]` directives.
-2. **Expected:** The `canvas.background` quick override is set to `#002B36`. Affected signals have their `argbColor` set from the `[color]` directive. The theme preset is unchanged.
+2. **Expected:** Affected signals have their `argbColor` set from the `[color]` directive. The canvas background, the `canvas.background` quick override and the theme preset are all unchanged: `[bgcolor]` is not imported.
 3. Import a `.gtkw` file with `[bgcolor] ZZZZZZ` (invalid hex).
-4. **Expected:** The invalid value is silently ignored; `canvas.background` is not changed.
+4. **Expected:** The import completes; nothing about the theme changes.
 
 #### 22.7.7 Chrome token behavior
 
@@ -6741,7 +6750,7 @@ Open the diagnostics panel → Provider tab. Verify that `cruxColorThemeProvider
 | `SessionState.activeThemeName` round-trip | `test/domain/models/session_state_test.dart` | **AUTOMATED** |
 | `SessionService` saves/loads `activeThemeName` | `test/services/session/session_service_test.dart` | **AUTOMATED** |
 | `GtkwParser` parses `[bgcolor]` directive | `test/services/session/gtkw_parser_test.dart` | **AUTOMATED** |
-| `GtkwImportService` passes `canvasBackgroundHex` through | `test/services/session/gtkw_import_service_test.dart` | **AUTOMATED** |
+| `GtkwImportService` reports `canvasBackgroundHex` (applied by nothing) | `test/services/session/gtkw_import_service_test.dart` | **AUTOMATED** |
 | Canvas renders with `oscilloscope` preset (golden) | `test/features/viewer/rendering/waveform_canvas_golden_test.dart` (`vector_formats_oscilloscope.png` + `analog_real_oscilloscope.png`) | **AUTOMATED** (macOS-gated, native-FFI-gated) — see §13A for the full Layer 5 golden suite |
 | Every cursor, marker and ruler token reaches its painter: `cursor.primary`/`secondary` (canvas lines + ruler triangles), `cursor.delta` (band between the cursors), `marker.line` (line per named marker), `marker.flag`/`flagText`, `ruler.background`/`tick`/`label`/`cursorTime`; a theme change repaints the cursor layer and the ruler; unedited Crux Dark / Crux Light paint exactly the colors these elements had before the tokens were wired, and the four branded presets paint their designed palette (a marker's letter in its triangle's color) | `test/features/viewer/widgets/canvas_theme_tokens_paint_test.dart` | **AUTOMATED** — recorded canvas calls for geometry, rendered pixels for text color |
 | Every built-in preset's canvas token values, and the registered defaults equal Crux Dark / Crux Light | `test/core/theme/wavecrux_canvas_preset_overlay_test.dart` | **AUTOMATED** |

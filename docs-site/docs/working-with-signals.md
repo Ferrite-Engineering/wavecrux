@@ -54,7 +54,7 @@ Color and density are adjustable per signal. The quickest way to recolor a signa
 
 !!! tip
 
-    If you already have this trace set up in GTKWave, you do not have to rebuild it. Importing a `.gtkw` file (see [Files & sessions](files-and-sessions.md)) brings your groups, colors, display formats, and translate filters across in one step.
+    If you already have this trace set up in GTKWave, you do not have to rebuild it. Importing a `.gtkw` file (see [Files & sessions](files-and-sessions.md)) brings your groups, colors, display formats, and translate filter files across in one step.
 
 ## Display formats { #formats }
 

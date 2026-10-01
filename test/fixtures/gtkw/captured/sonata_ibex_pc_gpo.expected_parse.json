@@ -1,5 +1,6 @@
 {
   "dumpFilePath": "./sim.fst",
+  "savedFilePath": "./data/pc_and_gpo.gtkw",
   "timeStart": 5093,
   "zoomFactor": -7.0,
   "primaryMarker": 3723,
@@ -21,6 +22,8 @@
       "format": "binary",
       "colorArgb": 4294923605,
       "translateFilterPath": null,
+      "processFilterPath": null,
+      "transactionFilterPath": null,
       "renderAsAnalog": false,
       "analogInterpolation": "stepHold"
     },
@@ -30,6 +33,8 @@
       "format": "hexadecimal",
       "colorArgb": null,
       "translateFilterPath": null,
+      "processFilterPath": null,
+      "transactionFilterPath": null,
       "renderAsAnalog": false,
       "analogInterpolation": "stepHold"
     },
@@ -39,6 +44,8 @@
       "format": "hexadecimal",
       "colorArgb": null,
       "translateFilterPath": null,
+      "processFilterPath": null,
+      "transactionFilterPath": null,
       "renderAsAnalog": false,
       "analogInterpolation": "stepHold"
     }

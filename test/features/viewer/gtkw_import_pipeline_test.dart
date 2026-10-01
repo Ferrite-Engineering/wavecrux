@@ -3,8 +3,7 @@
 
 // Integration-style test for the GTKWave import *orchestration* — the wiring
 // that `ViewerScreen._importGtkwFromPath` performs after the file picker
-// returns: read → parse → import → apply the result into the live
-// `signalGroupsProvider` and `markerStateProvider`.
+// returns: read → parse → import → `applyGtkwImport` into the live providers.
 //
 // It drives the real fixture files through the real parser, the real import
 // service, and the REAL providers (a `ProviderContainer`, no mocks), then
@@ -24,8 +23,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:wavecrux/domain/enums/display_format.dart';
 import 'package:wavecrux/domain/models/signal_group.dart';
 import 'package:wavecrux/features/cursors/providers/cursor_providers.dart';
+import 'package:wavecrux/features/viewer/providers/gtkw_import_apply.dart';
 import 'package:wavecrux/features/viewer/providers/signal_group_providers.dart';
-import 'package:wavecrux/services/session/gtkw_import_service.dart';
+import 'package:wavecrux/features/viewer/providers/translate_filter_provider.dart';
 import 'package:wavecrux/services/session/gtkw_parser.dart';
 
 import '../../services/session/gtkw_golden_codec.dart';
@@ -36,27 +36,20 @@ const _importService = GtkwImportService();
 
 /// Runs the full picker-less orchestration: parse [fixture], import it against
 /// the fixture-VCD variable set, and apply the result into [container]'s
-/// providers exactly as `ViewerScreen._importGtkwFromPath` does (steps 6–7b).
-GtkwImportResult _importInto(ProviderContainer container, String fixture) {
-  final content = File('$_generatedDir/$fixture').readAsStringSync();
+/// providers through `applyGtkwImport`, the call
+/// `ViewerScreen._importGtkwFromPath` makes.
+Future<GtkwImportResult> _importInto(
+  ProviderContainer container,
+  String fixture,
+) async {
+  final path = '$_generatedDir/$fixture';
   final result = _importService.importSession(
-    _parser.parse(content),
+    _parser.parse(File(path).readAsStringSync()),
     fixtureVcdVariables(),
+    gtkwFilePath: path,
+    fileExists: (candidate) => File(candidate).existsSync(),
   );
-  // Step 6: apply signal groups.
-  container
-      .read(signalGroupsProvider.notifier)
-      .restoreFromSession(result.sessionState.signalGroup);
-  // Step 7: apply named markers.
-  final markers = container.read(markerStateProvider.notifier);
-  for (final entry in result.sessionState.markerState.getAllMarkers()) {
-    markers.setMarker(entry.key, entry.value);
-  }
-  // Step 7b: apply GTKWave's primary marker as the primary cursor.
-  final primary = result.sessionState.cursorState.primaryCursorTime;
-  if (primary != null) {
-    container.read(cursorStateProvider.notifier).placePrimary(primary);
-  }
+  await applyGtkwImport(container, result);
   return result;
 }
 
@@ -68,9 +61,9 @@ ProviderContainer _container() {
 
 void main() {
   group('GTKWave import orchestration → live providers', () {
-    test('simple_signals.gtkw lands 3 signals in the signal panel', () {
+    test('simple_signals.gtkw lands 3 signals in the signal panel', () async {
       final c = _container();
-      final result = _importInto(c, 'simple_signals.gtkw');
+      final result = await _importInto(c, 'simple_signals.gtkw');
 
       final group = c.read(signalGroupsProvider);
       expect(group.signalCount, 3);
@@ -81,27 +74,30 @@ void main() {
       expect(c.read(markerStateProvider).markers, isEmpty);
     });
 
-    test('groups.gtkw reconstructs both named groups + trailing signal', () {
-      final c = _container();
-      _importInto(c, 'groups.gtkw');
+    test(
+      'groups.gtkw reconstructs both named groups + trailing signal',
+      () async {
+        final c = _container();
+        await _importInto(c, 'groups.gtkw');
 
-      final entries = c.read(signalGroupsProvider).entries;
-      final groups = entries
-          .where((e) => e.kind == SignalEntryKind.group)
-          .map((e) => e.groupName)
-          .toList();
-      expect(groups, ['Clocks', 'CPU Bus']);
-      // "CPU Bus" wraps top.cpu.addr + top.cpu.dout.
-      final cpuBus = entries.firstWhere((e) => e.groupName == 'CPU Bus');
-      expect(cpuBus.children.length, 2);
-      // The ungrouped top.rst trails the two groups.
-      expect(entries.last.kind, SignalEntryKind.signal);
-      expect(entries.last.displayName, 'rst');
-    });
+        final entries = c.read(signalGroupsProvider).entries;
+        final groups = entries
+            .where((e) => e.kind == SignalEntryKind.group)
+            .map((e) => e.groupName)
+            .toList();
+        expect(groups, ['Clocks', 'CPU Bus']);
+        // "CPU Bus" wraps top.cpu.addr + top.cpu.dout.
+        final cpuBus = entries.firstWhere((e) => e.groupName == 'CPU Bus');
+        expect(cpuBus.children.length, 2);
+        // The ungrouped top.rst trails the two groups.
+        expect(entries.last.kind, SignalEntryKind.signal);
+        expect(entries.last.displayName, 'rst');
+      },
+    );
 
-    test('format_flags.gtkw applies per-signal display formats', () {
+    test('format_flags.gtkw applies per-signal display formats', () async {
       final c = _container();
-      _importInto(c, 'format_flags.gtkw');
+      await _importInto(c, 'format_flags.gtkw');
 
       final byName = {
         for (final e in c.read(signalGroupsProvider).entries) e.displayName: e,
@@ -113,52 +109,76 @@ void main() {
       expect(byName['dout']!.format, DisplayFormat.octal); // @22
     });
 
-    test('colors_and_markers.gtkw applies colors, markers a/b and cursor', () {
-      final c = _container();
-      _importInto(c, 'colors_and_markers.gtkw');
+    test(
+      'colors_and_markers.gtkw applies colors, markers a/b and cursor',
+      () async {
+        final c = _container();
+        await _importInto(c, 'colors_and_markers.gtkw');
 
-      final byName = {
-        for (final e in c.read(signalGroupsProvider).entries) e.displayName: e,
-      };
-      expect(byName['clk']!.argbColor, 0xFFFF5555); // [color] 1 red
-      expect(byName['rst']!.argbColor, 0xFF00FF00); // [color] 4 green
-      expect(byName['addr']!.argbColor, isNull); // [color] 0 auto
+        final byName = {
+          for (final e in c.read(signalGroupsProvider).entries)
+            e.displayName: e,
+        };
+        expect(byName['clk']!.argbColor, 0xFFFF5555); // [color] 1 red
+        expect(byName['rst']!.argbColor, 0xFF00FF00); // [color] 4 green
+        expect(byName['addr']!.argbColor, isNull); // [color] 0 auto
 
-      final markers = c.read(markerStateProvider);
-      expect(markers.getMarker('a'), 30);
-      expect(markers.getMarker('b'), 50);
-      // The field before the named markers is GTKWave's primary marker.
-      expect(markers.getMarker('c'), isNull);
-      expect(c.read(cursorStateProvider).primaryCursorTime, 40);
-    });
+        final markers = c.read(markerStateProvider);
+        expect(markers.getMarker('a'), 30);
+        expect(markers.getMarker('b'), 50);
+        // The field before the named markers is GTKWave's primary marker.
+        expect(markers.getMarker('c'), isNull);
+        expect(c.read(cursorStateProvider).primaryCursorTime, 40);
+      },
+    );
 
-    test('re-importing replaces (not appends to) the prior signal panel', () {
-      final c = _container();
-      _importInto(c, 'groups.gtkw'); // 4 signals across 2 groups + rst
-      _importInto(c, 'simple_signals.gtkw'); // 3 flat signals
+    test(
+      're-importing replaces (not appends to) the prior signal panel',
+      () async {
+        final c = _container();
+        await _importInto(c, 'groups.gtkw'); // 4 signals across 2 groups + rst
+        await _importInto(c, 'simple_signals.gtkw'); // 3 flat signals
 
-      // restoreFromSession replaces wholesale — the groups must be gone.
-      final entries = c.read(signalGroupsProvider).entries;
-      expect(entries.every((e) => e.kind == SignalEntryKind.signal), isTrue);
-      expect(c.read(signalGroupsProvider).signalCount, 3);
-    });
+        // restoreFromSession replaces wholesale — the groups must be gone.
+        final entries = c.read(signalGroupsProvider).entries;
+        expect(entries.every((e) => e.kind == SignalEntryKind.signal), isTrue);
+        expect(c.read(signalGroupsProvider).signalCount, 3);
+      },
+    );
 
-    test('unmatched signals are reported and excluded from the panel', () {
-      final c = _container();
-      // fixtureVcdVariables has no `top.missing` — synthesize a tiny .gtkw
-      // inline rather than reading a fixture.
-      const gtkw = GtkwParser();
-      final parsed = gtkw.parse('@28\ntop.clk\ntop.missing\n');
-      final result = _importService.importSession(
-        parsed,
-        fixtureVcdVariables(),
-      );
-      c
-          .read(signalGroupsProvider.notifier)
-          .restoreFromSession(result.sessionState.signalGroup);
+    test(
+      'translate_refs.gtkw lands its filter file on the data trace',
+      () async {
+        final c = _container();
+        final result = await _importInto(c, 'translate_refs.gtkw');
 
-      expect(result.unmatchedSignalPaths, ['top.missing']);
-      expect(c.read(signalGroupsProvider).signalCount, 1);
-    });
+        final filter = c.read(translateFilterProvider)['top.data'];
+        expect(filter, isNotNull);
+        expect(filter!.translate('00000001'), 'RUNNING');
+        expect(c.read(translateFilterProvider).keys, ['top.data']);
+        // The missing file and both filter processes are reported.
+        expect(result.filterIssues, hasLength(3));
+        expect(result.hasUnmatchedSignals, isFalse);
+      },
+    );
+
+    test(
+      'unmatched signals are reported and excluded from the panel',
+      () async {
+        final c = _container();
+        // fixtureVcdVariables has no `top.missing` — synthesize a tiny .gtkw
+        // inline rather than reading a fixture.
+        const gtkw = GtkwParser();
+        final parsed = gtkw.parse('@28\ntop.clk\ntop.missing\n');
+        final result = _importService.importSession(
+          parsed,
+          fixtureVcdVariables(),
+        );
+        await applyGtkwImport(c, result);
+
+        expect(result.unmatchedSignalPaths, ['top.missing']);
+        expect(c.read(signalGroupsProvider).signalCount, 1);
+      },
+    );
   });
 }
