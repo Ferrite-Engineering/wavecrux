@@ -15,9 +15,10 @@
 // Geometry is read from the recorded canvas calls; text color, which a
 // recorded paragraph does not expose, is read from the rendered pixels.
 //
-// The default-preset tests pin the other half of the contract: an unedited
-// theme paints exactly the colors these elements had before the tokens were
-// wired.
+// The preset tests pin the other half of the contract: unedited, Crux Dark
+// and Crux Light paint exactly the colors these elements had before the
+// tokens were wired, and the four branded presets paint their designed
+// cursor, marker and ruler palette.
 
 import 'dart:ui' as ui;
 
@@ -264,10 +265,7 @@ void main() {
       await _edit(tester, container, {'canvas.marker.line': _markerLine});
 
       final lines = _inColor(_record(_overlayPaint), #drawLine, _markerLine);
-      expect(
-        lines.map((d) => (d.args[0] as Offset).dx).toSet(),
-        {80.0, 320.0},
-      );
+      expect(lines.map((d) => (d.args[0] as Offset).dx).toSet(), {80.0, 320.0});
     });
 
     testWidgets(
@@ -289,9 +287,10 @@ void main() {
         // all, so the default picture is the pre-token picture.
         expect(_drawn(calls, #drawRect), isEmpty);
         expect(
-          _drawn(calls, #drawLine).where(
-            (d) => {80.0, 320.0}.contains((d.args[0] as Offset).dx),
-          ),
+          _drawn(
+            calls,
+            #drawLine,
+          ).where((d) => {80.0, 320.0}.contains((d.args[0] as Offset).dx)),
           isEmpty,
         );
       },
@@ -463,14 +462,14 @@ void main() {
     });
   });
 
-  // Pixel-for-pixel continuity. Before these tokens were wired, the ruler
-  // filled with the Material theme's `colorScheme.surface` — which app.dart
-  // derives from the preset's chrome tokens through `applyChromeTokens` — and
-  // painted its ticks and labels from `WavecruxColorExtension`, and the
-  // cursors and markers from one palette per brightness. Every built-in preset
-  // must still paint exactly that.
-  group('an unedited preset paints what it always painted', () {
-    for (final presetId in builtinPresets().keys) {
+  // Pixel-for-pixel continuity for Crux Dark and Crux Light. Before these
+  // tokens were wired, the ruler filled with the Material theme's
+  // `colorScheme.surface` — which app.dart derives from the preset's chrome
+  // tokens through `applyChromeTokens` — and painted its ticks and labels from
+  // `WavecruxColorExtension`, and the cursors and markers from one palette
+  // per brightness. The two Crux presets must still paint exactly that.
+  group('Crux Dark and Crux Light paint what they always painted', () {
+    for (final presetId in ['crux-dark', 'crux-light']) {
       testWidgets(presetId, (tester) async {
         final preset = builtinPresets()[presetId]!;
         final light = preset.brightness == Brightness.light;
@@ -548,4 +547,128 @@ void main() {
       });
     }
   });
+
+  // The branded presets paint the cursor, marker and ruler palette each was
+  // designed with. The values are spelled out here rather than read from the
+  // presets, so a drift in the overlay fails this test as well as the pin
+  // test. The ruler's major ticks are not a theme token (see the ruler's
+  // build method), so they keep the dark extension's color in all four.
+  group('branded presets paint their designed palette', () {
+    const designed = <String, _Designed>{
+      'solarized-dark': (
+        primary: 0xFFB58900,
+        secondary: 0xFFCB4B16,
+        marker: 0xFF268BD2,
+        rulerBackground: 0xFF073642,
+        tick: 0xFF586E75,
+        label: 0xFF93A1A1,
+        cursorTime: 0xFFB58900,
+      ),
+      'high-contrast-dark': (
+        primary: 0xFFFFFF00,
+        secondary: 0xFF00FFFF,
+        marker: 0xFF00FFFF,
+        rulerBackground: 0xFF000000,
+        tick: 0xFF666666,
+        label: 0xFFFFFFFF,
+        cursorTime: 0xFFFFFF00,
+      ),
+      'oscilloscope': (
+        primary: 0xFF00FF41,
+        secondary: 0xFF66FF88,
+        marker: 0xFF66FF88,
+        rulerBackground: 0xFF000000,
+        tick: 0xFF1A4A1A,
+        label: 0xFF00FF41,
+        cursorTime: 0xFF00FF41,
+      ),
+      'oled-xr': (
+        primary: 0xFFFFD400,
+        secondary: 0xFF00E5FF,
+        marker: 0xFF34FF8A,
+        rulerBackground: 0xFF000000,
+        tick: 0xFF5A5A5A,
+        label: 0xFFE8E8E8,
+        cursorTime: 0xFFFFD400,
+      ),
+    };
+
+    test('covers every built-in preset except the two Crux presets', () {
+      expect(
+        designed.keys.toSet(),
+        builtinPresets().keys.toSet().difference({'crux-dark', 'crux-light'}),
+      );
+    });
+
+    for (final MapEntry(key: presetId, value: d) in designed.entries) {
+      testWidgets(presetId, (tester) async {
+        final preset = builtinPresets()[presetId]!;
+        const extension = WavecruxColorExtension.dark();
+        final chrome = CruxThemeExtension(theme: preset);
+        final appTheme = applyChromeTokens(
+          WavecruxTheme.dark.copyWith(extensions: [extension, chrome]),
+          chrome,
+        );
+        final majorTick = extension.timeRulerMajorTick.toARGB32();
+
+        await _pumpHarness(tester, preset: preset, materialTheme: appTheme);
+        final ruler = _record(_rulerPaint);
+        int colorOf(({List<dynamic> args, Paint paint}) d) =>
+            d.paint.color.toARGB32();
+
+        expect(colorOf(_drawn(ruler, #drawRect).first), d.rulerBackground);
+        final ticks = _drawn(
+          ruler,
+          #drawLine,
+        ).where((c) => (c.args[1] as Offset).dy == 35);
+        expect(
+          ticks
+              .where((c) => (c.args[0] as Offset).dy == 31)
+              .map(colorOf)
+              .toSet(),
+          {d.tick},
+        );
+        expect(
+          ticks
+              .where((c) => (c.args[0] as Offset).dy == 26)
+              .map(colorOf)
+              .toSet(),
+          {majorTick},
+        );
+        expect(_drawn(ruler, #drawPath).map(colorOf).toList(), [
+          d.marker,
+          d.marker,
+          d.secondary,
+          d.primary,
+        ]);
+
+        // Tick labels, the marker letters (in their triangle's color) and
+        // the delta readout. A set, because Oscilloscope labels its ticks
+        // and its delta readout in the same green.
+        final rendered = await _renderedColors(
+          tester,
+          find.byType(TimeRulerWidget),
+        );
+        expect(rendered, containsAll({d.label, d.marker, d.cursorTime}));
+
+        final overlay = _record(_overlayPaint);
+        expect(_inColor(overlay, #drawLine, Color(d.primary)), hasLength(1));
+        expect(
+          _inColor(overlay, #drawLine, Color(d.secondary)).length,
+          greaterThan(1),
+        );
+        expect(_drawn(overlay, #drawRect), isEmpty);
+      });
+    }
+  });
 }
+
+typedef _Designed = ({
+  int primary,
+  int secondary,
+  int marker,
+  int rulerBackground,
+  int tick,
+  int label,
+  int cursorTime,
+});

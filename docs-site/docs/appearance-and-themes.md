@@ -10,10 +10,12 @@ Open **Settings** (++cmd+comma++ / ++ctrl+comma++) and select the **Appearance**
 |---|---|---|
 | Crux Dark | Dark | The default. The suite's engineering-tool look, tuned for long debugging sessions. |
 | Crux Light | Light | The light counterpart — good for bright rooms, projectors, and printed screenshots. |
-| Solarized Dark | Dark | The familiar Solarized palette applied to the app chrome. |
-| High Contrast Dark | Dark | Maximum contrast for accessibility and high-glare environments. |
-| Oscilloscope | Dark | A phosphor-green-on-black look reminiscent of a bench oscilloscope. |
-| OLED XR | Dark | True black with saturated accents and tempered whites, tuned for Micro-OLED XR / AR glasses. |
+| Solarized Dark | Dark | The familiar Solarized palette applied to the app chrome. Cursors in Solarized yellow and orange, markers in Solarized blue. |
+| High Contrast Dark | Dark | Maximum contrast for accessibility and high-glare environments. Pure yellow and cyan cursors on a pure-black ruler. |
+| Oscilloscope | Dark | A phosphor-green-on-black look reminiscent of a bench oscilloscope. Both cursors are green: the primary is a solid line, the secondary a paler dashed one. |
+| OLED XR | Dark | True black with saturated accents and tempered whites, tuned for Micro-OLED XR / AR glasses. Amber and cyan cursors, green markers, and no fine blue lines. |
+
+Crux Dark and Crux Light share the suite's cursor colors: a yellow primary and light-blue secondary cursor with pink markers in dark, orange and blue with magenta markers in light. The other four presets bring their own cursor, marker and time-ruler colors. In every preset the primary cursor is a solid line with a filled triangle on the time ruler, and the secondary a dashed line with an outlined triangle.
 
 ## Light, dark, and the toggle { #light-dark }
 

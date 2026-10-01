@@ -13,12 +13,18 @@ import 'package:flutter/material.dart' show Color;
 /// waveform palette they can never paint with (and would expose it in
 /// their Settings -> Appearance).
 ///
-/// The `cursor.*`, `marker.*`, `ruler.background`, `ruler.tick`,
-/// `ruler.label` and `ruler.cursorTime` values are what each preset painted
-/// before those tokens reached the cursor layer and the time ruler: the
-/// shared per-brightness cursor palette, and the preset's panel surface
-/// behind the ruler. `cursor.delta` and `marker.line` are transparent, so
-/// the overlays they color stay off.
+/// Cursors, markers and the time ruler:
+///
+/// - Crux Dark and Crux Light paint the per-brightness cursor palette the
+///   app has always used, on the preset's panel surface behind the ruler.
+/// - Solarized Dark, High Contrast Dark, Oscilloscope and OLED XR paint
+///   their own designed cursor, marker and ruler colors (OLED XR, for
+///   example, avoids a fine blue cursor line on birdbath optics).
+/// - `marker.flagText` equals `marker.flag` in every preset: the letter is
+///   drawn on the ruler below its triangle, not on the triangle, so it takes
+///   the triangle's color to stay legible on the ruler background.
+/// - `cursor.delta` and `marker.line` are transparent, so the overlays they
+///   color stay off until a theme pack or a Color override sets them.
 const PresetTokenOverlay waveCruxCanvasPresetOverlay = PresetTokenOverlay(
   categoryId: 'canvas',
   byPresetId: <String, Map<String, Color>>{
@@ -75,17 +81,17 @@ const PresetTokenOverlay waveCruxCanvasPresetOverlay = PresetTokenOverlay(
       'signal.x.fill': Color(0xFFDC322F),
       'signal.x.hatch': Color(0xFFFF4444),
       'signal.z.line': Color(0xFF586E75),
-      'cursor.primary': Color(0xFFFFEE58),
-      'cursor.secondary': Color(0xFF29B6F6),
+      'cursor.primary': Color(0xFFB58900),
+      'cursor.secondary': Color(0xFFCB4B16),
       'cursor.delta': Color(0x00000000),
       'marker.line': Color(0x00000000),
-      'marker.flag': Color(0xFFF48FB1),
-      'marker.flagText': Color(0xFFF48FB1),
+      'marker.flag': Color(0xFF268BD2),
+      'marker.flagText': Color(0xFF268BD2),
       'ruler.background': Color(0xFF073642),
-      'ruler.tick': Color(0xFF565668),
+      'ruler.tick': Color(0xFF586E75),
       'ruler.tickMajor': Color(0xFF839496),
-      'ruler.label': Color(0xFF8888A0),
-      'ruler.cursorTime': Color(0xFF29B6F6),
+      'ruler.label': Color(0xFF93A1A1),
+      'ruler.cursorTime': Color(0xFFB58900),
       'selection': Color(0x22268BD2),
     },
     'high-contrast-dark': <String, Color>{
@@ -97,17 +103,17 @@ const PresetTokenOverlay waveCruxCanvasPresetOverlay = PresetTokenOverlay(
       'signal.x.fill': Color(0xFFFF0000),
       'signal.x.hatch': Color(0xFFFF6666),
       'signal.z.line': Color(0xFFAAAAAA),
-      'cursor.primary': Color(0xFFFFEE58),
-      'cursor.secondary': Color(0xFF29B6F6),
+      'cursor.primary': Color(0xFFFFFF00),
+      'cursor.secondary': Color(0xFF00FFFF),
       'cursor.delta': Color(0x00000000),
       'marker.line': Color(0x00000000),
-      'marker.flag': Color(0xFFF48FB1),
-      'marker.flagText': Color(0xFFF48FB1),
-      'ruler.background': Color(0xFF141418),
-      'ruler.tick': Color(0xFF565668),
+      'marker.flag': Color(0xFF00FFFF),
+      'marker.flagText': Color(0xFF00FFFF),
+      'ruler.background': Color(0xFF000000),
+      'ruler.tick': Color(0xFF666666),
       'ruler.tickMajor': Color(0xFFAAAAAA),
-      'ruler.label': Color(0xFF8888A0),
-      'ruler.cursorTime': Color(0xFF29B6F6),
+      'ruler.label': Color(0xFFFFFFFF),
+      'ruler.cursorTime': Color(0xFFFFFF00),
       'selection': Color(0x44FFFFFF),
     },
     'oscilloscope': <String, Color>{
@@ -119,17 +125,17 @@ const PresetTokenOverlay waveCruxCanvasPresetOverlay = PresetTokenOverlay(
       'signal.x.fill': Color(0xFFFF3300),
       'signal.x.hatch': Color(0xFFFF6644),
       'signal.z.line': Color(0xFF445544),
-      'cursor.primary': Color(0xFFFFEE58),
-      'cursor.secondary': Color(0xFF29B6F6),
+      'cursor.primary': Color(0xFF00FF41),
+      'cursor.secondary': Color(0xFF66FF88),
       'cursor.delta': Color(0x00000000),
       'marker.line': Color(0x00000000),
-      'marker.flag': Color(0xFFF48FB1),
-      'marker.flagText': Color(0xFFF48FB1),
-      'ruler.background': Color(0xFF020A02),
-      'ruler.tick': Color(0xFF565668),
+      'marker.flag': Color(0xFF66FF88),
+      'marker.flagText': Color(0xFF66FF88),
+      'ruler.background': Color(0xFF000000),
+      'ruler.tick': Color(0xFF1A4A1A),
       'ruler.tickMajor': Color(0xFF2A7A2A),
-      'ruler.label': Color(0xFF8888A0),
-      'ruler.cursorTime': Color(0xFF29B6F6),
+      'ruler.label': Color(0xFF00FF41),
+      'ruler.cursorTime': Color(0xFF00FF41),
       'selection': Color(0x2200FF41),
     },
     'oled-xr': <String, Color>{
@@ -141,17 +147,17 @@ const PresetTokenOverlay waveCruxCanvasPresetOverlay = PresetTokenOverlay(
       'signal.x.fill': Color(0xFFFF3B3B),
       'signal.x.hatch': Color(0xFFFF7070),
       'signal.z.line': Color(0xFF9AA0A6),
-      'cursor.primary': Color(0xFFFFEE58),
-      'cursor.secondary': Color(0xFF29B6F6),
+      'cursor.primary': Color(0xFFFFD400),
+      'cursor.secondary': Color(0xFF00E5FF),
       'cursor.delta': Color(0x00000000),
       'marker.line': Color(0x00000000),
-      'marker.flag': Color(0xFFF48FB1),
-      'marker.flagText': Color(0xFFF48FB1),
-      'ruler.background': Color(0xFF050505),
-      'ruler.tick': Color(0xFF565668),
+      'marker.flag': Color(0xFF34FF8A),
+      'marker.flagText': Color(0xFF34FF8A),
+      'ruler.background': Color(0xFF000000),
+      'ruler.tick': Color(0xFF5A5A5A),
       'ruler.tickMajor': Color(0xFF9AA0A6),
-      'ruler.label': Color(0xFF8888A0),
-      'ruler.cursorTime': Color(0xFF29B6F6),
+      'ruler.label': Color(0xFFE8E8E8),
+      'ruler.cursorTime': Color(0xFFFFD400),
       'selection': Color(0x2AFFFFFF),
     },
   },

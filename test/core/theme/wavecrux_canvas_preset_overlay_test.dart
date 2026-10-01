@@ -16,13 +16,17 @@
 // out literally rather than derived from the overlay: a test that reads its
 // expectations out of the thing it is testing guards nothing.
 //
-// The cursor, marker and ruler rows are the colors each preset showed before
-// those tokens were wired to the cursor layer and the time ruler: one cursor
-// palette per brightness (dark: primary #FFEE58, secondary #29B6F6, markers
-// #F48FB1; light: #E65100, #0277BD, #C2185B), and behind the ruler the
-// preset's panel surface. Wiring the tokens must not recolor an unedited
-// preset, so a change to one of these rows is a visible change to shipped
-// presets, not a refactor.
+// The cursor, marker and ruler rows:
+// - Crux Dark / Crux Light: the per-brightness cursor palette the app has
+//   always painted (dark: primary #FFEE58, secondary #29B6F6, markers
+//   #F48FB1; light: #E65100, #0277BD, #C2185B) on the preset's panel surface.
+// - Solarized Dark, High Contrast Dark, Oscilloscope, OLED XR: each preset's
+//   own designed cursor, marker and ruler palette.
+// - `marker.flagText` equals `marker.flag` everywhere: the letter sits on the
+//   ruler below its triangle, so a letter colored for the inside of the
+//   triangle (the black the branded designs once carried) would vanish.
+// A change to any of these rows is a visible change to shipped presets, not
+// a refactor.
 
 import 'package:crux_theme/crux_theme.dart';
 import 'package:flutter/material.dart';
@@ -85,17 +89,17 @@ const Map<String, Map<String, Color>> _expected = <String, Map<String, Color>>{
     'signal.x.fill': Color(0xFFDC322F),
     'signal.x.hatch': Color(0xFFFF4444),
     'signal.z.line': Color(0xFF586E75),
-    'cursor.primary': Color(0xFFFFEE58),
-    'cursor.secondary': Color(0xFF29B6F6),
+    'cursor.primary': Color(0xFFB58900),
+    'cursor.secondary': Color(0xFFCB4B16),
     'cursor.delta': Color(0x00000000),
     'marker.line': Color(0x00000000),
-    'marker.flag': Color(0xFFF48FB1),
-    'marker.flagText': Color(0xFFF48FB1),
+    'marker.flag': Color(0xFF268BD2),
+    'marker.flagText': Color(0xFF268BD2),
     'ruler.background': Color(0xFF073642),
-    'ruler.tick': Color(0xFF565668),
+    'ruler.tick': Color(0xFF586E75),
     'ruler.tickMajor': Color(0xFF839496),
-    'ruler.label': Color(0xFF8888A0),
-    'ruler.cursorTime': Color(0xFF29B6F6),
+    'ruler.label': Color(0xFF93A1A1),
+    'ruler.cursorTime': Color(0xFFB58900),
     'selection': Color(0x22268BD2),
   },
   'high-contrast-dark': <String, Color>{
@@ -107,17 +111,17 @@ const Map<String, Map<String, Color>> _expected = <String, Map<String, Color>>{
     'signal.x.fill': Color(0xFFFF0000),
     'signal.x.hatch': Color(0xFFFF6666),
     'signal.z.line': Color(0xFFAAAAAA),
-    'cursor.primary': Color(0xFFFFEE58),
-    'cursor.secondary': Color(0xFF29B6F6),
+    'cursor.primary': Color(0xFFFFFF00),
+    'cursor.secondary': Color(0xFF00FFFF),
     'cursor.delta': Color(0x00000000),
     'marker.line': Color(0x00000000),
-    'marker.flag': Color(0xFFF48FB1),
-    'marker.flagText': Color(0xFFF48FB1),
-    'ruler.background': Color(0xFF141418),
-    'ruler.tick': Color(0xFF565668),
+    'marker.flag': Color(0xFF00FFFF),
+    'marker.flagText': Color(0xFF00FFFF),
+    'ruler.background': Color(0xFF000000),
+    'ruler.tick': Color(0xFF666666),
     'ruler.tickMajor': Color(0xFFAAAAAA),
-    'ruler.label': Color(0xFF8888A0),
-    'ruler.cursorTime': Color(0xFF29B6F6),
+    'ruler.label': Color(0xFFFFFFFF),
+    'ruler.cursorTime': Color(0xFFFFFF00),
     'selection': Color(0x44FFFFFF),
   },
   'oscilloscope': <String, Color>{
@@ -129,17 +133,17 @@ const Map<String, Map<String, Color>> _expected = <String, Map<String, Color>>{
     'signal.x.fill': Color(0xFFFF3300),
     'signal.x.hatch': Color(0xFFFF6644),
     'signal.z.line': Color(0xFF445544),
-    'cursor.primary': Color(0xFFFFEE58),
-    'cursor.secondary': Color(0xFF29B6F6),
+    'cursor.primary': Color(0xFF00FF41),
+    'cursor.secondary': Color(0xFF66FF88),
     'cursor.delta': Color(0x00000000),
     'marker.line': Color(0x00000000),
-    'marker.flag': Color(0xFFF48FB1),
-    'marker.flagText': Color(0xFFF48FB1),
-    'ruler.background': Color(0xFF020A02),
-    'ruler.tick': Color(0xFF565668),
+    'marker.flag': Color(0xFF66FF88),
+    'marker.flagText': Color(0xFF66FF88),
+    'ruler.background': Color(0xFF000000),
+    'ruler.tick': Color(0xFF1A4A1A),
     'ruler.tickMajor': Color(0xFF2A7A2A),
-    'ruler.label': Color(0xFF8888A0),
-    'ruler.cursorTime': Color(0xFF29B6F6),
+    'ruler.label': Color(0xFF00FF41),
+    'ruler.cursorTime': Color(0xFF00FF41),
     'selection': Color(0x2200FF41),
   },
   'oled-xr': <String, Color>{
@@ -151,17 +155,17 @@ const Map<String, Map<String, Color>> _expected = <String, Map<String, Color>>{
     'signal.x.fill': Color(0xFFFF3B3B),
     'signal.x.hatch': Color(0xFFFF7070),
     'signal.z.line': Color(0xFF9AA0A6),
-    'cursor.primary': Color(0xFFFFEE58),
-    'cursor.secondary': Color(0xFF29B6F6),
+    'cursor.primary': Color(0xFFFFD400),
+    'cursor.secondary': Color(0xFF00E5FF),
     'cursor.delta': Color(0x00000000),
     'marker.line': Color(0x00000000),
-    'marker.flag': Color(0xFFF48FB1),
-    'marker.flagText': Color(0xFFF48FB1),
-    'ruler.background': Color(0xFF050505),
-    'ruler.tick': Color(0xFF565668),
+    'marker.flag': Color(0xFF34FF8A),
+    'marker.flagText': Color(0xFF34FF8A),
+    'ruler.background': Color(0xFF000000),
+    'ruler.tick': Color(0xFF5A5A5A),
     'ruler.tickMajor': Color(0xFF9AA0A6),
-    'ruler.label': Color(0xFF8888A0),
-    'ruler.cursorTime': Color(0xFF29B6F6),
+    'ruler.label': Color(0xFFE8E8E8),
+    'ruler.cursorTime': Color(0xFFFFD400),
     'selection': Color(0x2AFFFFFF),
   },
 };
@@ -250,6 +254,30 @@ void main() {
             reason: '${entry.key}/$token would draw an overlay by default',
           );
         }
+      }
+    });
+
+    test('a marker letter takes its triangle color in every preset', () {
+      for (final entry in builtinPresets().entries) {
+        expect(
+          entry.value.color(canvasTokens.id, 'marker.flagText')?.toARGB32(),
+          entry.value.color(canvasTokens.id, 'marker.flag')?.toARGB32(),
+          reason:
+              '${entry.key}: the letter is drawn on the ruler, not on the '
+              'triangle',
+        );
+      }
+    });
+
+    test('the two cursors differ in every preset', () {
+      for (final entry in builtinPresets().entries) {
+        expect(
+          entry.value.color(canvasTokens.id, 'cursor.secondary')?.toARGB32(),
+          isNot(
+            entry.value.color(canvasTokens.id, 'cursor.primary')?.toARGB32(),
+          ),
+          reason: entry.key,
+        );
       }
     });
   });
