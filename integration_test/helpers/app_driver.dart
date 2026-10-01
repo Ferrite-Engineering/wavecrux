@@ -301,18 +301,20 @@ ProviderContainer activeTabContainer(WidgetTester tester) {
 ProviderContainer paneContainer(WidgetTester tester) =>
     ProviderScope.containerOf(tester.element(find.byType(WaveformCanvas)));
 
-/// Flushes any pending debounced workspace auto-save held by an app instance
-/// still mounted from an earlier `testWidgets` body in this file, so it can
-/// no longer rewrite `workspace.json` behind a subsequent clear. No-op when
-/// no app tree is mounted (first boot in the file).
-Future<void> _flushMountedAppWorkspaceSave() async {
-  final scopes = find.byType(UncontrolledProviderScope).evaluate();
-  if (scopes.isEmpty) return;
-  // Depth-first order puts the root scope (the one bootstrap installs) first;
-  // workspaceProvider is a root-scope provider, so that is the container
-  // holding the debounce timer. Same resolution rationale as [rootContainer].
-  final container =
-      (scopes.first.widget as UncontrolledProviderScope).container;
+/// Flushes any pending debounced workspace auto-save held by the app instance
+/// an earlier `testWidgets` body in this file booted, so it can no longer
+/// rewrite `workspace.json` behind a subsequent clear. No-op before the first
+/// boot in the file.
+///
+/// The container comes from [lastBootstrapRootContainer], not from the widget
+/// tree: the test binding unmounts the previous body's tree before the next
+/// body starts, so by the time setup runs there is no
+/// [UncontrolledProviderScope] left to find. The container itself is never
+/// disposed and its 2 s save timer is still armed. Looking it up in the tree
+/// made this flush a silent no-op, and the timer fired after the clear.
+Future<void> _flushPreviousAppWorkspaceSave() async {
+  final container = lastBootstrapRootContainer;
+  if (container == null) return;
   await container.read(workspaceProvider.notifier).flushPendingSave();
 }
 
@@ -338,20 +340,18 @@ Future<void> _flushMountedAppWorkspaceSave() async {
 /// the Linux integration sweep. So we also wipe the sidecar directory, leaving
 /// on-disk persistence in a truly empty state for the fresh launch.
 ///
-/// Clearing alone is not enough when an app instance from an earlier
-/// `testWidgets` body in the same file is still mounted: its workspace
-/// notifier holds a 2 s-debounced auto-save (and a dispose-time
-/// `flushPendingSave`, triggered when the next `bootstrap()`'s `runApp`
-/// replaces the tree). Either one can rewrite `workspace.json` with the
-/// previous test's tabs *after* this clear but *before* the new instance's
-/// restore read — on the slow Windows Debug runner the new boot then restores
-/// a stale tab and "boot with no workspace → EmptyCanvasState" tests time
-/// out (windows-latest 2026-07-02 tablet, 2026-07-16 phone). Flushing the
-/// mounted instance's pending save FIRST cancels the debounce timer and makes
-/// the dispose-time flush a no-op, so nothing can dirty the document after
-/// the clear.
+/// Clearing alone is not enough when an earlier `testWidgets` body in the same
+/// file booted the app: the binding unmounts that app's tree between bodies,
+/// but its root container lives on, and its workspace notifier still holds a
+/// 2 s-debounced auto-save. When the timer fires it rewrites `workspace.json`
+/// with the previous test's tabs *after* this clear, and if that lands before
+/// the next boot's hydration read, the new instance restores a stale tab and
+/// a "boot with no workspace → EmptyCanvasState" test times out
+/// (windows-latest tablet and phone, macos-latest phone). Flushing that
+/// container's pending save FIRST cancels the timer and writes the document
+/// now, so the clear below is the last write.
 Future<void> clearPersistedWorkspace() async {
-  await _flushMountedAppWorkspaceSave();
+  await _flushPreviousAppWorkspaceSave();
   final service = WorkspaceService(codec: const WaveCruxWorkspaceCodec());
   await service.clear();
   await service.clearAllSidecars();

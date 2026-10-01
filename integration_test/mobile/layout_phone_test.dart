@@ -106,11 +106,12 @@ void main() {
 
       // Start from a clean workspace document so the empty-canvas state is
       // the only thing that renders. clearPersistedWorkspace (not a raw
-      // WorkspaceService.clear()) — it first flushes the previous test's
-      // still-mounted app instance's pending debounced auto-save, which
-      // otherwise rewrites workspace.json with that test's tab after this
-      // clear and boots us into a restored tab instead of the empty canvas
-      // (the windows-latest 2026-07-16 failure).
+      // WorkspaceService.clear()) — it first flushes the pending debounced
+      // auto-save of the app instance the previous test booted (its tree is
+      // gone, its root container is not), which otherwise rewrites
+      // workspace.json with that test's tab after this clear and boots us
+      // into a restored tab instead of the empty canvas (windows-latest
+      // 2026-07-16, macos-latest 2026-09-06 and 2026-10-01).
       await clearPersistedWorkspace();
       addTearDown(clearPersistedWorkspace);
 

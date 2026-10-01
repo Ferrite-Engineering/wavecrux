@@ -199,6 +199,22 @@ void attachDiagnosticSinks({SevereLogStderrSink? stderrSink}) {
   if (!kIsWeb) (stderrSink ?? SevereLogStderrSink.instance).attach();
 }
 
+/// The root [ProviderContainer] built by the most recent [bootstrap] call in
+/// this process, or null before the first one.
+///
+/// For integration tests, which boot the app once per `testWidgets` body in a
+/// single process. Between two bodies the test binding unmounts the previous
+/// app's widget tree, but nothing disposes its root container, so that
+/// container's timers keep running: its workspace auto-save, debounced by a
+/// couple of seconds, can land *after* the next test cleared `workspace.json`
+/// and hand the next boot the previous test's tabs. With the tree gone, this
+/// is the only remaining handle on that container, so test setup can flush
+/// its pending save before clearing.
+@visibleForTesting
+ProviderContainer? get lastBootstrapRootContainer =>
+    _lastBootstrapRootContainer;
+ProviderContainer? _lastBootstrapRootContainer;
+
 /// Entry-point body shared by the open-core `lib/main.dart` and the
 /// Pro overlay's `lib/main.dart` (through [runWaveCrux]).
 /// Open-core runs `bootstrap(args: args)`; the Pro overlay adds
@@ -558,6 +574,7 @@ Future<bool> bootstrap({
       ...extraOverrides,
     ],
   );
+  _lastBootstrapRootContainer = rootContainer;
   // The host-kind signal `telemetryFormFactorProvider` reads, set before
   // anything can flush. Idempotent, and a no-op for the `none` default.
   rootContainer.read(editorHostKindProvider.notifier).set(editorHostKind);
