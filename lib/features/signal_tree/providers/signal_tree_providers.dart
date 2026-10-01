@@ -14,7 +14,11 @@ import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart
 
 // Re-export the signal group provider so existing imports continue to work.
 export 'package:wavecrux/features/viewer/providers/signal_group_providers.dart'
-    show SignalGroupsNotifier, signalColorPalette, signalGroupsProvider;
+    show
+        SignalGroupsNotifier,
+        SignalRemoval,
+        signalColorPalette,
+        signalGroupsProvider;
 
 part 'signal_tree_providers.g.dart';
 

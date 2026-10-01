@@ -11,11 +11,14 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:wavecrux/domain/enums/display_format.dart';
+import 'package:wavecrux/domain/enums/var_direction.dart';
+import 'package:wavecrux/domain/enums/var_type.dart';
 import 'package:wavecrux/domain/models/cursor_state.dart';
 import 'package:wavecrux/domain/models/fsm_annotation.dart';
 import 'package:wavecrux/domain/models/marker_state.dart';
 import 'package:wavecrux/domain/models/session_state.dart';
 import 'package:wavecrux/domain/models/signal_group.dart';
+import 'package:wavecrux/domain/models/variable.dart';
 import 'package:wavecrux/domain/models/workspace.dart';
 import 'package:wavecrux/features/cursors/providers/cursor_providers.dart';
 import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.dart';
@@ -647,6 +650,56 @@ void main() {
           restoredFsm['top.fsm.state']!.stateLabels,
           equals(const {'0': 'IDLE', '1': 'RUN'}),
         );
+      });
+    });
+
+    test('a cleared canvas saves as an empty list and stays empty on '
+        'reopen, with cursors and markers kept', () async {
+      // Clear Canvas must be a legitimate state of the session, not a gap
+      // the loader fills back in: save after clearing, reopen, and the
+      // signals that were cleared must not come back.
+      await _withTempFile((path) async {
+        const realService = SessionService();
+        final tab = _container(service: realService);
+        tab
+            .read(signalGroupsProvider.notifier)
+            .restoreFromSession(
+              SignalGroup(
+                entries: [
+                  SignalEntry.signal(signalRef: 'top.a', displayName: 'a'),
+                  const SignalEntry.group(groupName: 'bus'),
+                ],
+              ),
+            );
+        tab.read(cursorStateProvider.notifier).placePrimary(300);
+        tab.read(markerStateProvider.notifier).setMarker('b', 700);
+        await tab.read(sessionProvider.notifier).saveToPath(path);
+
+        expect(
+          tab.read(signalGroupsProvider.notifier).clearCanvas(),
+          isNotNull,
+        );
+        await tab.read(sessionProvider.notifier).saveToPath(path);
+
+        // Reopen into a tab that still shows signals from earlier — the load
+        // must replace them with the saved empty list, not merge or skip.
+        final reopened = _container(service: realService);
+        reopened
+            .read(signalGroupsProvider.notifier)
+            .addSignal(
+              const Variable(
+                name: 'stale',
+                varType: VarType.wire,
+                direction: VarDirection.unknown,
+                signalRef: 'top.stale',
+                scopePath: 'top',
+              ),
+            );
+        await reopened.read(sessionProvider.notifier).loadFromPath(path);
+
+        expect(reopened.read(signalGroupsProvider).entries, isEmpty);
+        expect(reopened.read(cursorStateProvider).primaryCursorTime, 300);
+        expect(reopened.read(markerStateProvider).getMarker('b'), 700);
       });
     });
 

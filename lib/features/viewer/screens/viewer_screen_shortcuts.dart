@@ -157,6 +157,10 @@ extension _ViewerScreenShortcuts on _ViewerScreenState {
         _activeTabContainer.read(cursorStateProvider.notifier).clearSecondary();
       case ShortcutAction.clearSignalSelection:
         _activeTabContainer.read(selectedVariablesProvider.notifier).clear();
+      case ShortcutAction.clearCanvas:
+        _clearCanvas();
+      case ShortcutAction.removeSelectedSignals:
+        _removeSelectedSignals();
       case ShortcutAction.saveSession:
         unawaited(_saveSession());
       case ShortcutAction.saveSessionAs:
@@ -514,5 +518,36 @@ extension _ViewerScreenShortcuts on _ViewerScreenState {
       case ShortcutAction.moveTabToOtherPane:
         unawaited(_moveActiveTabToOtherPane());
     }
+  }
+
+  // ── bulk signal removal ───────────────────────────────────────────────────────
+
+  /// Clear Canvas: every row off the active tab's list in one update, with an
+  /// Undo snackbar. The file, cursors, markers, decoders and zoom live in
+  /// other providers and are untouched.
+  void _clearCanvas() {
+    final notifier = _activeTabContainer.read(signalGroupsProvider.notifier);
+    final removal = notifier.clearCanvas();
+    if (removal == null) return;
+    showSignalRemovalUndo(
+      context,
+      removal: removal,
+      notifier: notifier,
+      clearedCanvas: true,
+    );
+  }
+
+  /// Remove Selected Signals: the Edit-menu / palette route to what the
+  /// Signals list's Delete key does.
+  void _removeSelectedSignals() {
+    final tab = _activeTabContainer;
+    final notifier = tab.read(signalGroupsProvider.notifier);
+    final removal = notifier.removeSignalsAtPaths(
+      tab.read(selectedVariablesProvider),
+      tab.read(signalVariablesMapProvider),
+    );
+    if (removal == null) return;
+    tab.read(selectedVariablesProvider.notifier).clear();
+    showSignalRemovalUndo(context, removal: removal, notifier: notifier);
   }
 }

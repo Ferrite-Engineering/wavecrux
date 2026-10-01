@@ -8,7 +8,7 @@ import 'package:wavecrux/l10n/generated/l10n.dart';
 
 void main() {
   group('ShortcutAction', () {
-    test('enum contains all 123 expected actions', () {
+    test('enum contains all 125 expected actions', () {
       const expected = {
         ShortcutAction.openFile,
         ShortcutAction.closeFile,
@@ -35,6 +35,8 @@ void main() {
         ShortcutAction.clearCursors,
         ShortcutAction.clearSecondaryCursor,
         ShortcutAction.clearSignalSelection,
+        ShortcutAction.clearCanvas,
+        ShortcutAction.removeSelectedSignals,
         ShortcutAction.openSearch,
         ShortcutAction.toggleTheme,
         // Diagnostics surfaces.

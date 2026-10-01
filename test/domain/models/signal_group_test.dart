@@ -319,4 +319,71 @@ void main() {
       expect(original.entries, isEmpty);
     });
   });
+
+  // ── withoutSignals ──────────────────────────────────────────────────────────
+
+  group('SignalGroup.withoutSignals', () {
+    SignalEntry sig(String name) =>
+        SignalEntry.signal(signalRef: 'ref_$name', displayName: name);
+
+    test('removes matching rows at the top level and inside groups in one '
+        'pass, keeping order of what remains', () {
+      final a = sig('a');
+      final b = sig('b');
+      final c = sig('c');
+      final d = sig('d');
+      final group = SignalGroup(
+        entries: [
+          a,
+          SignalEntry.group(groupName: 'bus', children: [b, c]),
+          const SignalEntry.separator(),
+          d,
+        ],
+      );
+
+      final result = group.withoutSignals(
+        (e) => e.displayName == 'a' || e.displayName == 'c',
+      );
+
+      expect(result.removed, [a, c], reason: 'top-to-bottom order');
+      expect(result.group.entries, [
+        SignalEntry.group(groupName: 'bus', children: [b]),
+        const SignalEntry.separator(),
+        d,
+      ]);
+    });
+
+    test('keeps a group it empties, as a container to refill', () {
+      final b = sig('b');
+      final group = SignalGroup(
+        entries: [
+          SignalEntry.group(groupName: 'bus', children: [b]),
+        ],
+      );
+      final result = group.withoutSignals((_) => true);
+      expect(result.removed, [b]);
+      expect(result.group.entries, [
+        const SignalEntry.group(groupName: 'bus'),
+      ]);
+    });
+
+    test('never removes separators or comments', () {
+      const group = SignalGroup(
+        entries: [
+          SignalEntry.separator(),
+          SignalEntry.comment(text: 'x'),
+        ],
+      );
+      final result = group.withoutSignals((_) => true);
+      expect(result.removed, isEmpty);
+      expect(identical(result.group, group), isTrue);
+    });
+
+    test('returns this instance untouched when nothing matches', () {
+      final group = SignalGroup(entries: [sig('a')]);
+      final result = group.withoutSignals((_) => false);
+      expect(identical(result.group, group), isTrue);
+      expect(result.removed, isEmpty);
+    });
+  });
 }

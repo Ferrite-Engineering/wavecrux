@@ -89,6 +89,20 @@ enum ShortcutAction implements CruxAction {
   /// guard happy), but it stays discoverable from the menu / overflow menu /
   /// command palette and is enabled only while a selection exists.
   clearSignalSelection,
+
+  /// Clear Canvas: remove every signal from the active tab's canvas in one
+  /// step, leaving the file open and the cursors, markers, decoders and zoom
+  /// as they are. View menu and command palette; no default chord, because a
+  /// one-key wipe of a curated view is a chord that gets hit by accident. An
+  /// Undo snackbar follows every clear.
+  clearCanvas,
+
+  /// Remove every selected signal from the active tab's canvas. In the
+  /// Signals list the Delete and Backspace keys do this directly; this action
+  /// is the Edit-menu and palette route to the same removal, so it carries no
+  /// global chord of its own (a bare Delete bound app-wide would fire from
+  /// panels that have nothing to do with the signal list).
+  removeSelectedSignals,
   // ── session ───────────────────────────────────────────────────────────────
   /// Save the current session to its existing path (Ctrl/Cmd+S).
   saveSession,
@@ -619,6 +633,8 @@ enum ShortcutAction implements CruxAction {
     ShortcutAction.clearCursors => ActionCategory.navigate,
     ShortcutAction.clearSecondaryCursor => ActionCategory.navigate,
     ShortcutAction.clearSignalSelection => ActionCategory.navigate,
+    ShortcutAction.clearCanvas => ActionCategory.view,
+    ShortcutAction.removeSelectedSignals => ActionCategory.edit,
     // ── Search ────────────────────────────────────────────────────────
     ShortcutAction.openSearch => ActionCategory.search,
     ShortcutAction.patternSearch => ActionCategory.search,
@@ -796,6 +812,9 @@ extension ShortcutActionLabel on ShortcutAction {
       l10n.shortcutActionClearSecondaryCursor,
     ShortcutAction.clearSignalSelection =>
       l10n.shortcutActionClearSignalSelection,
+    ShortcutAction.clearCanvas => l10n.shortcutActionClearCanvas,
+    ShortcutAction.removeSelectedSignals =>
+      l10n.shortcutActionRemoveSelectedSignals,
     ShortcutAction.addDecoder => l10n.shortcutActionAddDecoder,
     ShortcutAction.toggleTransactionTable =>
       l10n.shortcutActionToggleTransactionTable,

@@ -39,12 +39,17 @@ void main() {
       expect(
         ShortcutAction.values.where((a) => a.category == ActionCategory.edit),
         [
+          // The third occupant, deliberately: removing the selected signals
+          // is an edit of the canvas the user curated, and the Signals
+          // list's Delete key needs a by-name route. (Enum order, not menu
+          // order — the menu groups it after annotation authoring.)
+          ShortcutAction.removeSelectedSignals,
           ShortcutAction.addAnnotationAtCursor,
           ShortcutAction.annotateSelectedRange,
         ],
         reason:
-            'the Edit menu holds annotation authoring — a third occupant '
-            'should be a deliberate decision, not a drift',
+            'the Edit menu holds annotation authoring and signal removal — '
+            'a further occupant should be a deliberate decision, not a drift',
       );
     });
   });

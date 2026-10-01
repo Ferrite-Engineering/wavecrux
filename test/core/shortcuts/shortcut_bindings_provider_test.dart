@@ -144,6 +144,12 @@ const Set<ShortcutAction> paletteOnlyActions = {
   // own transport. `]` and `[` carry the stepping; starting an automatic tour
   // is a deliberate act rather than something worth a keyboard slot.
   ShortcutAction.annotationWalkthroughPlay,
+  // Clear Canvas — View menu / overflow / palette only; no default chord for
+  // a one-key wipe of the canvas.
+  ShortcutAction.clearCanvas,
+  // Remove Selected Signals — Edit menu / overflow / palette; the Signals
+  // list's Delete / Backspace keys are local to the list, not a binding.
+  ShortcutAction.removeSelectedSignals,
 };
 
 const Set<ShortcutAction> unboundActions = paletteOnlyActions;

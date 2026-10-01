@@ -149,6 +149,14 @@ void main() {
     // transport. `]` and `[` carry the stepping; starting an automatic tour is
     // a deliberate act rather than something worth a keyboard slot.
     ShortcutAction.annotationWalkthroughPlay,
+    // Clear Canvas — View menu / overflow / palette. No default chord: a
+    // one-key wipe of a curated view is a chord that gets hit by accident,
+    // even with the Undo snackbar behind it.
+    ShortcutAction.clearCanvas,
+    // Remove Selected Signals — Edit menu / overflow / palette. The Signals
+    // list owns Delete and Backspace for it while the list has focus; a
+    // global binding would fire from panels unrelated to the list.
+    ShortcutAction.removeSelectedSignals,
   };
 
   const unboundActions = paletteOnlyActions;

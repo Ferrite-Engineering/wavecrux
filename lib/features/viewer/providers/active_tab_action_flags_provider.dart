@@ -15,6 +15,7 @@ import 'package:wavecrux/features/cursors/providers/cursor_providers.dart';
 import 'package:wavecrux/features/cursors/providers/playback_provider.dart';
 import 'package:wavecrux/features/tabs/providers/tab_providers.dart';
 import 'package:wavecrux/features/viewer/providers/pattern_search_provider.dart';
+import 'package:wavecrux/features/viewer/providers/signal_group_providers.dart';
 import 'package:wavecrux/features/viewer/providers/time_providers.dart';
 import 'package:wavecrux/services/tabs/tab_container_manager.dart';
 import 'package:wavecrux/services/waveform_geom/time_mapper.dart';
@@ -35,6 +36,7 @@ class ActiveTabActionFlags {
     this.cursorPresent = false,
     this.markersPresent = false,
     this.annotationsPresent = false,
+    this.signalsDisplayed = false,
     this.diffActive = false,
     this.cocotbLogLoaded = false,
     this.patternMatchesPresent = false,
@@ -52,6 +54,10 @@ class ActiveTabActionFlags {
   /// Whether the active tab has at least one annotation. Gates the walkthrough
   /// actions, which have nothing to step through without one.
   final bool annotationsPresent;
+
+  /// Whether the active tab's signal list has at least one row. Gates Clear
+  /// Canvas.
+  final bool signalsDisplayed;
 
   /// Whether the active tab has a comparison (diff) file loaded.
   final bool diffActive;
@@ -80,6 +86,7 @@ class ActiveTabActionFlags {
     bool? cursorPresent,
     bool? markersPresent,
     bool? annotationsPresent,
+    bool? signalsDisplayed,
     bool? diffActive,
     bool? cocotbLogLoaded,
     bool? patternMatchesPresent,
@@ -90,6 +97,7 @@ class ActiveTabActionFlags {
     cursorPresent: cursorPresent ?? this.cursorPresent,
     markersPresent: markersPresent ?? this.markersPresent,
     annotationsPresent: annotationsPresent ?? this.annotationsPresent,
+    signalsDisplayed: signalsDisplayed ?? this.signalsDisplayed,
     diffActive: diffActive ?? this.diffActive,
     cocotbLogLoaded: cocotbLogLoaded ?? this.cocotbLogLoaded,
     patternMatchesPresent: patternMatchesPresent ?? this.patternMatchesPresent,
@@ -104,6 +112,7 @@ class ActiveTabActionFlags {
       other.cursorPresent == cursorPresent &&
       other.markersPresent == markersPresent &&
       other.annotationsPresent == annotationsPresent &&
+      other.signalsDisplayed == signalsDisplayed &&
       other.diffActive == diffActive &&
       other.cocotbLogLoaded == cocotbLogLoaded &&
       other.patternMatchesPresent == patternMatchesPresent &&
@@ -116,6 +125,7 @@ class ActiveTabActionFlags {
     cursorPresent,
     markersPresent,
     annotationsPresent,
+    signalsDisplayed,
     diffActive,
     cocotbLogLoaded,
     patternMatchesPresent,
@@ -162,6 +172,12 @@ class ActiveTabActionFlagsNotifier extends Notifier<ActiveTabActionFlags> {
         (_, next) =>
             state = state.copyWith(annotationsPresent: next.isNotEmpty),
       ),
+      // `.select` so only an empty/non-empty flip reaches the action
+      // surfaces, not every reorder or colour change of the list.
+      container.listen<bool>(
+        signalGroupsProvider.select((g) => g.entries.isNotEmpty),
+        (_, next) => state = state.copyWith(signalsDisplayed: next),
+      ),
       container.listen<DiffState>(
         diffProvider,
         (_, next) => state = state.copyWith(diffActive: next.isActive),
@@ -200,6 +216,7 @@ class ActiveTabActionFlagsNotifier extends Notifier<ActiveTabActionFlags> {
           container.read(cursorStateProvider).primaryCursorTime != null,
       markersPresent: container.read(markerStateProvider).markers.isNotEmpty,
       annotationsPresent: container.read(annotationsProvider).isNotEmpty,
+      signalsDisplayed: container.read(signalGroupsProvider).entries.isNotEmpty,
       diffActive: container.read(diffProvider).isActive,
       cocotbLogLoaded: container.read(cocotbLogProvider) != null,
       patternMatchesPresent: container.read(patternSearchProvider).hasMatches,

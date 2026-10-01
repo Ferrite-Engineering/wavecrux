@@ -26,7 +26,7 @@ Every step below is covered in full further down the page; this is the path most
 
 The left panel presents the design as a tree of scopes and variables. Each entry carries a type icon and its bit width, so you can tell a single-bit net from a wide bus at a glance and see where one scope ends and the next begins. **Expand All** and **Collapse All** keep the tree focused on the part of the hierarchy you are working in.
 
-To bring a signal onto the canvas, click it, press ++enter++ on it, or right-click it and choose **Add to Viewer**; **Add All in Scope** adds a whole scope. Clicking a signal that is already on the canvas adds it again, so to *select* an existing signal, click its name in the signal list instead. You can also drag a signal from the tree onto a Stage widget to bind it.
+To bring a signal onto the canvas, click it, press ++enter++ on it, or right-click it and choose **Add to Viewer**; **Add All in Scope** adds a whole scope, and **Remove All in Scope**, right beside it, takes that scope's signals off the canvas again (see [Removing signals](#removing)). Clicking a signal that is already on the canvas adds it again, so to *select* an existing signal, click its name in the signal list instead. You can also drag a signal from the tree onto a Stage widget to bind it.
 
 To add many signals at once, ++shift++ + click to select a range of rows (or ++cmd++ / ++ctrl++ + click to pick individual ones), then right-click and choose **Add N Selected to Viewer** — the signals land on the canvas in tree order. The same context menu can **Apply Decoder to Selection…** in one step. Leaves declared as HDL parameters show their constant value inline in the row, so module generics are readable without adding them to the trace.
 
@@ -46,11 +46,24 @@ The direction can also be typed as a GTKWave-compatible prefix at the start of t
 
 ## Organizing signals { #organizing }
 
-Once signals are on the canvas, you arrange them into a trace that reads cleanly. Collect related signals into named, collapsible groups — a bus, a set of correlated control nets, or everything belonging to one functional module. To make a group, right-click a signal in the signal list (long-press on touch) and choose **Move to Group**; pick an existing group or create one inline. You can also start an empty group with the **Create a new signal group** button in the signal panel and drag signals into it. Collapse a group with its disclosure triangle when you want it out of the way without removing it, and right-click a group's header to **Rename…** it or **Remove Group** (which ungroups the signals without deleting them). To pull one signal back out, right-click it and choose **Remove from Group**.
+Once signals are on the canvas, you arrange them into a trace that reads cleanly. Collect related signals into named, collapsible groups — a bus, a set of correlated control nets, or everything belonging to one functional module. To make a group, right-click a signal in the signal list (long-press on touch) and choose **Move to Group**; pick an existing group or create one inline. You can also start an empty group with the **Create a new signal group** button in the signal panel and drag signals into it. Collapse a group with its disclosure triangle when you want it out of the way without removing it, and right-click a group's header to **Rename…** it, **Ungroup** it (the header goes and its signals stay on the canvas), or **Remove Group and Signals** (the header and everything in it leave the canvas). To pull one signal back out, right-click it and choose **Remove from Group**.
 
 Reorder signals by dragging an explicit drag handle. On touch devices the handle is the only part of the row that starts a drag; long-pressing the body of the row instead opens the context menu, so you never reorder a signal by accident while reaching for its menu.
 
 Color and density are adjustable per signal. The quickest way to recolor a signal is to tap its **color swatch** at the left of the row — each tap cycles to the next palette color. For a specific color, right-click the signal (long-press on touch) and choose **Change Color…** to open the picker. Colors are saved with the session. Lane height is per-signal too: drag a row's lane-resize handle, so you can pack low-interest nets into dense rows and give the signals you are studying more vertical room; double-click the signal's name to return the lane to its default height.
+
+## Removing signals { #removing }
+
+Each row in the signal list has a **×** that takes that one signal off the canvas. For more than a few, remove them together:
+
+- **Remove Selected.** Click a signal's name in the signal list to select it, ++shift++ + click another to select the run of rows between them, or ++cmd++ / ++ctrl++ + click to add or drop single rows. Selected rows are highlighted across the signal list, the canvas and the value column. Press ++delete++ or ++backspace++, or right-click a selected row and choose **Remove Selected**. **Edit → Remove Selected Signals** and the command palette do the same.
+- **Remove All in Scope.** Right-click a scope in the signal hierarchy and choose **Remove All in Scope**, the inverse of **Add All in Scope**. Every signal from that scope and the scopes below it leaves the canvas, including ones you have moved into groups. Use it after an **Add All in Scope** on a scope wider than you meant.
+- **Remove Group and Signals.** Right-click a group's header to remove the group together with every signal in it. **Ungroup** is the other choice there: it removes only the header and keeps the signals.
+- **Clear Canvas.** **View → Clear Canvas**, or **Clear Canvas** in the command palette, removes every signal, group, separator and comment from the active tab. The file stays open, and the cursors, markers, decoders and zoom stay as they are.
+
+Removal is per tab: it changes only the tab you are looking at. Every bulk removal shows a message at the bottom of the window with an **Undo** button, which puts the removed signals back where they were, with their groups, colors, display formats and lane heights. Groups emptied by **Remove Selected** or **Remove All in Scope** stay in the list, ready to be refilled.
+
+A cleared canvas is a real state of the session. Saving after **Clear Canvas** saves an empty signal list, and reopening that session shows an empty canvas.
 
 !!! tip
 

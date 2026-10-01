@@ -17,6 +17,7 @@ import 'package:wavecrux/domain/models/tab_id.dart';
 import 'package:wavecrux/features/cursors/providers/cursor_providers.dart';
 import 'package:wavecrux/features/tabs/providers/tab_providers.dart';
 import 'package:wavecrux/features/viewer/providers/active_tab_action_flags_provider.dart';
+import 'package:wavecrux/features/viewer/providers/signal_group_providers.dart';
 import 'package:wavecrux/features/viewer/providers/time_providers.dart';
 import 'package:wavecrux/services/tabs/tab_container_manager.dart';
 
@@ -94,6 +95,20 @@ void main() {
 
       activeTab.read(cursorStateProvider.notifier).clearAll();
       expect(root.read(activeTabActionFlagsProvider).cursorPresent, isFalse);
+    });
+
+    test('mirrors whether the active tab has rows on its canvas', () {
+      // Gates Clear Canvas, which lives in the root-scope menu bar.
+      final sub = root.listen(activeTabActionFlagsProvider, (_, _) {});
+      addTearDown(sub.close);
+      expect(root.read(activeTabActionFlagsProvider).signalsDisplayed, isFalse);
+
+      final activeTab = tcm.containerFor(root.read(activeTabIdProvider));
+      activeTab.read(signalGroupsProvider.notifier).addGroup('bus');
+      expect(root.read(activeTabActionFlagsProvider).signalsDisplayed, isTrue);
+
+      activeTab.read(signalGroupsProvider.notifier).clearCanvas();
+      expect(root.read(activeTabActionFlagsProvider).signalsDisplayed, isFalse);
     });
 
     test('tracks only the active tab — a different tab does not bleed in', () {

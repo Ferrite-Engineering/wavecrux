@@ -65,6 +65,9 @@ enum ActionRequirement {
   /// At least one signal is selected in the active tab.
   hasSelection,
 
+  /// The active tab's signal list has at least one row (gates Clear Canvas).
+  signalsDisplayed,
+
   /// A usable AI model is configured.
   aiModelConfigured,
 
@@ -114,6 +117,7 @@ enum ActionRequirement {
     ActionRequirement.streamingActive => c.streamingActive,
     ActionRequirement.diagnosticsEnabled => c.diagnosticsEnabled,
     ActionRequirement.hasSelection => c.hasSelection,
+    ActionRequirement.signalsDisplayed => c.signalsDisplayed,
     ActionRequirement.aiModelConfigured => c.aiModelConfigured,
     ActionRequirement.notInSession => !c.inSession,
     ActionRequirement.inSession => c.inSession,

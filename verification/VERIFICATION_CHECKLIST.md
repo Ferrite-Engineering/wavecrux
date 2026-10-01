@@ -75,6 +75,21 @@ Fixture: `vcd/parameter_multiselect.vcd` (+ `.expected.json`).
 
 ---
 
+## 2B. Bulk signal removal (§4B)
+
+Fixture: `vcd/parameter_multiselect.vcd`.
+
+- [ ] **Remove All in Scope** sits directly below Add All in Scope on a scope's menu; removes that scope's signals (nested scopes and grouped rows too, groups kept) in one update; "Removed N signals" + **Undo** restores them in place; none on the canvas → "No signals from this scope are on the canvas" — `[Coverage: WIDGET]` (`test/features/signal_tree/widgets/scope_tree_node_test.dart` — "Remove All in Scope")
+- [ ] Signals list multi-select: Shift+click range, Cmd/Ctrl+click toggle, highlighted rows report `selected`; **Delete** and **Backspace** remove the selection in one update with **Undo**; **Remove Selected** on a selected row only — `[Coverage: WIDGET]` (`test/features/viewer/widgets/signal_list_panel_test.dart` — "bulk removal")
+- [ ] Video Scene 3 flow: right-click scope → Remove All in Scope → Undo → signals return → Shift+click three rows → Delete — `[Coverage: WIDGET]` (same file — "video scene") + `[Coverage: MANUAL]` (§4B.3 steps 1–3)
+- [ ] Group header menu: **Ungroup** keeps the signals; **Remove Group and Signals** removes header + rows with **Undo** — `[Coverage: WIDGET + UNIT]` (`signal_list_panel_test.dart`, `signal_group_providers_test.dart` — "bulk removal")
+- [ ] **View → Clear Canvas** (and palette) empties the active tab only, keeps cursor/markers/decoders/zoom, greyed on an empty canvas, "Canvas cleared" + **Undo**; **Edit → Remove Selected Signals** matches Delete — `[Coverage: WIDGET + UNIT]` (`viewer_screen_test.dart` — "Clear Canvas empties the ACTIVE TAB's list", `active_tab_action_flags_provider_test.dart`)
+- [ ] Save after Clear Canvas → reopen → canvas stays empty — `[Coverage: UNIT]` (`session_providers_test.dart` — "a cleared canvas saves as an empty list") + `[Coverage: MANUAL]` (§4B.3 step 10)
+- [ ] New menu items and snackbars render in zh_CN / ja / ko without exceptions — `[Coverage: WIDGET]` (locale sweeps in the three files above and `signal_removal_feedback_test.dart`)
+- [ ] Clearing several thousand signals is one rebuild burst with no raster fault — `[Coverage: MANUAL]` (§4B.4)
+
+---
+
 ## 3. Open Core protocol decoders
 
 ### Decoder picker

@@ -11,6 +11,7 @@ import 'package:wavecrux/domain/enums/scope_type.dart';
 import 'package:wavecrux/domain/enums/var_direction.dart';
 import 'package:wavecrux/domain/enums/var_type.dart';
 import 'package:wavecrux/domain/models/scope.dart';
+import 'package:wavecrux/domain/models/signal_group.dart';
 import 'package:wavecrux/domain/models/variable.dart';
 import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.dart';
 import 'package:wavecrux/features/signal_tree/widgets/scope_tree_node.dart';
@@ -734,5 +735,162 @@ void main() {
       expect(order, ['tapped', 'toggled']);
       expect(container.read(expandedScopesProvider), {'top.cpu'});
     });
+  });
+
+  // ── Remove All in Scope (issue #9) ───────────────────────────────────────
+  group('Remove All in Scope', () {
+    late L10N l10n;
+    setUpAll(() async => l10n = await L10N.delegate.load(const Locale('en')));
+
+    /// `top.cpu` with two signals of its own and a child scope `top.cpu.alu`
+    /// with one more.
+    Scope cpu() => _makeScope(
+      variables: [
+        _makeVar('pc', scopePath: 'top.cpu'),
+        _makeVar('ir', scopePath: 'top.cpu'),
+      ],
+      childScopes: [
+        _makeScope(
+          name: 'alu',
+          path: 'top.cpu.alu',
+          variables: [_makeVar('acc', scopePath: 'top.cpu.alu')],
+        ),
+      ],
+    );
+
+    Future<ProviderContainer> pump(
+      WidgetTester tester,
+      Scope scope, {
+      Locale? locale,
+    }) async {
+      late ProviderContainer container;
+      await tester.pumpWidget(
+        ProviderScope(
+          child: Builder(
+            builder: (context) {
+              container = ProviderScope.containerOf(context);
+              return MaterialApp(
+                locale: locale,
+                localizationsDelegates: L10N.localizationsDelegates,
+                supportedLocales: L10N.supportedLocales,
+                home: Scaffold(body: ScopeTreeNode(scope: scope)),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return container;
+    }
+
+    Future<void> chooseRemoveAll(WidgetTester tester, String label) async {
+      await tester.tap(find.text('cpu'), buttons: kSecondaryButton);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(label));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('sits right beside Add All in Scope', (tester) async {
+      await pump(tester, cpu());
+      await tester.tap(find.text('cpu'), buttons: kSecondaryButton);
+      await tester.pumpAndSettle();
+      final add = tester.getRect(find.text(l10n.signalTreeAddAllInScope));
+      final remove = tester.getRect(find.text('Remove All in Scope'));
+      expect(remove.top, greaterThan(add.top));
+      expect(remove.top - add.bottom, lessThan(kMinInteractiveDimension));
+    });
+
+    testWidgets('removes the scope and its child scopes from the canvas — '
+        'inside groups too — in one update, keeping everything else', (
+      tester,
+    ) async {
+      final recorder = AnnouncementRecorder.attach(tester);
+      final scope = cpu();
+      final container = await pump(tester, scope);
+      container.read(signalGroupsProvider.notifier)
+        ..addSignals([
+          _makeVar('clk'),
+          _makeVar('pc', scopePath: 'top.cpu'),
+          _makeVar('acc', scopePath: 'top.cpu.alu'),
+        ])
+        ..addGroup('regs')
+        ..addSignal(_makeVar('ir', scopePath: 'top.cpu'))
+        ..moveSignalIntoGroup(4, 3);
+      var updates = 0;
+      container.listen(signalGroupsProvider, (_, _) => updates++);
+
+      await chooseRemoveAll(tester, l10n.signalTreeRemoveAllInScope);
+
+      final entries = container.read(signalGroupsProvider).entries;
+      expect(entries.map((e) => e.displayName), ['clk', null]);
+      expect(entries[1].groupName, 'regs');
+      expect(entries[1].children, isEmpty, reason: 'the group is kept');
+      expect(updates, 1);
+      expect(find.text('Removed 3 signals'), findsOneWidget);
+      expect(recorder.messages, ['Removed 3 signals']);
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('matches rows restored from a session by their path', (
+      tester,
+    ) async {
+      // A restored row's ref was re-resolved, so it may not equal the
+      // Variable's ref; its path still identifies it.
+      final container = await pump(tester, cpu());
+      container
+          .read(signalGroupsProvider.notifier)
+          .restoreFromSession(
+            SignalGroup(
+              entries: [
+                SignalEntry.signal(
+                  signalRef: 'stale-ref',
+                  signalPath: 'top.cpu.pc',
+                  displayName: 'pc',
+                ),
+              ],
+            ),
+          );
+
+      await chooseRemoveAll(tester, l10n.signalTreeRemoveAllInScope);
+
+      expect(container.read(signalGroupsProvider).entries, isEmpty);
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('says so when none of the scope is on the canvas', (
+      tester,
+    ) async {
+      final container = await pump(tester, cpu());
+      container.read(signalGroupsProvider.notifier).addSignal(_makeVar('clk'));
+
+      await chooseRemoveAll(tester, l10n.signalTreeRemoveAllInScope);
+
+      expect(container.read(signalGroupsProvider).signalCount, 1);
+      expect(find.text(l10n.signalTreeRemoveAllInScopeNone), findsOneWidget);
+      expect(find.text(l10n.signalRemovalUndo), findsNothing);
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    for (final locale in const [
+      Locale('zh', 'CN'),
+      Locale('ja'),
+      Locale('ko'),
+    ]) {
+      testWidgets('locale sweep ${locale.toLanguageTag()}: menu item and '
+          'snackbar', (tester) async {
+        final container = await pump(tester, cpu(), locale: locale);
+        container
+            .read(signalGroupsProvider.notifier)
+            .addSignal(_makeVar('pc', scopePath: 'top.cpu'));
+        final local = await L10N.delegate.load(locale);
+
+        await chooseRemoveAll(tester, local.signalTreeRemoveAllInScope);
+
+        expect(container.read(signalGroupsProvider).entries, isEmpty);
+        expect(find.text(local.signalsRemovedToast(1)), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.pump(const Duration(seconds: 5));
+      });
+    }
   });
 }

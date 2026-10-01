@@ -11,6 +11,7 @@ import 'package:wavecrux/core/providers/system_dialog_provider.dart';
 import 'package:wavecrux/core/theme/wavecrux_colors.dart';
 import 'package:wavecrux/core/theme/wavecrux_theme.dart';
 import 'package:wavecrux/domain/enums/device_class.dart';
+import 'package:wavecrux/domain/models/active_decoder.dart';
 import 'package:wavecrux/domain/models/app_settings.dart';
 import 'package:wavecrux/domain/models/signal_group.dart';
 import 'package:wavecrux/domain/models/variable.dart';
@@ -32,6 +33,7 @@ import 'package:wavecrux/features/viewer/widgets/fsm_annotate_dialog.dart';
 import 'package:wavecrux/features/viewer/widgets/fsm_panel.dart';
 import 'package:wavecrux/features/viewer/widgets/signal_color_picker_dialog.dart';
 import 'package:wavecrux/features/viewer/widgets/signal_group_header.dart';
+import 'package:wavecrux/features/viewer/widgets/signal_removal_feedback.dart';
 import 'package:wavecrux/features/viewer/widgets/signal_separator.dart';
 import 'package:wavecrux/features/viewer/widgets/translate_filter_picker_dialog.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
@@ -160,83 +162,137 @@ class SignalListPanel extends ConsumerWidget {
     return Semantics(
       label: l10n.accessibilitySignalListRegion,
       container: true,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          border: Border(right: BorderSide(color: borderColor)),
-        ),
-        child: ScrollConfiguration(
-          // Opt this list OUT of the app-wide `trackpad` dragDevice (see
-          // [kTrackpadOwnedDragDevices]): [TrackpadScrollListener] below already
-          // drives [scrollController] from the two-finger pan-zoom, so letting
-          // the [ReorderableListView]'s own Scrollable also drag-scroll on the
-          // same gesture would double-drive the offset.
-          behavior: ScrollConfiguration.of(context).copyWith(
-            scrollbars: false,
-            dragDevices: kTrackpadOwnedDragDevices,
-          ),
-          // [TrackpadScrollListener] forwards iPad Magic Keyboard / macOS
-          // trackpad two-finger vertical scroll into [scrollController] —
-          // without it [ReorderableListView] silently swallows
-          // PointerPanZoom events and the lane list never scrolls when the
-          // user swipes over the signal list.
-          child: TrackpadScrollListener(
-            controller: scrollController,
-            // .builder so off-screen rows are not constructed. With 1000+
-            // signals loaded, the previous eager `ReorderableListView(children:
-            // [...])` rebuilt every row on every cursor frame (because every
-            // row watched a global Map provider keyed on cursor state). The
-            // builder only constructs the ~20–40 rows currently visible.
-            // Per-signal cursor-value subscription lives in a [Consumer] inside
-            // each signal-case row (see [_buildEntryTile]).
-            child: ReorderableListView.builder(
-              scrollController: scrollController,
-              buildDefaultDragHandles: false,
-              // Decoder rows are NOT reorderable: they have no
-              // [ReorderableDragStartListener], so a long-press on a decoder
-              // row never initiates a drag (long-press hits the row's own
-              // [PlatformContextMenu] instead). Guard the callback in case
-              // the user drags an entry past the last entry — clamp into
-              // the entries-only range so the list never tries to interpret
-              // a drop position inside the decoder band as an entry move.
-              // Under [ReorderableListView.onReorderItem], newIndex is the
-              // post-removal insertion index, so the maximum valid value is
-              // entries.length - 1.
-              onReorderItem: (oldIndex, newIndex) {
-                if (oldIndex >= entries.length) return;
-                final clampedNewIndex = newIndex >= entries.length
-                    ? entries.length - 1
-                    : newIndex;
-                notifier.reorderSignal(oldIndex, clampedNewIndex);
-              },
-              itemCount: entries.length + activeDecoders.length,
-              itemBuilder: (context, index) {
-                if (index < entries.length) {
-                  return _buildEntryTile(
-                    context,
-                    ref,
-                    entries[index],
-                    index,
-                    groupPositions,
-                    notifier,
-                    exportNotifier,
-                    diff,
-                    isMobile,
-                    metrics,
-                    defaultLaneHeight,
-                    variablesMap,
-                    childRowCounts,
-                  );
-                }
-                final decoderIndex = index - entries.length;
-                final decoder = activeDecoders[decoderIndex];
-                return DecoderListEntry(
-                  key: ValueKey('dec_${decoder.id}'),
-                  decoder: decoder,
-                  index: decoderIndex,
-                );
-              },
+      // The list's keyboard home for Delete / Backspace (remove the
+      // selection). A click anywhere in the list puts focus here, so the
+      // key works straight after a Shift- or Cmd/Ctrl-click without a Tab
+      // stop of its own: the rows are reached by pointer, and the keyboard
+      // route to the same removal is the Remove Selected Signals command.
+      child: Focus(
+        skipTraversal: true,
+        includeSemantics: false,
+        onKeyEvent: (node, event) => _handleListKey(node, event, context, ref),
+        child: Builder(
+          builder: (focusContext) => Listener(
+            onPointerDown: (_) {
+              final node = Focus.of(focusContext);
+              // Not while a descendant holds focus: a click into a comment
+              // row's text field must keep its caret.
+              if (!node.hasFocus) node.requestFocus();
+            },
+            child: _listBody(
+              context,
+              ref,
+              entries: entries,
+              borderColor: borderColor,
+              groupPositions: groupPositions,
+              notifier: notifier,
+              exportNotifier: exportNotifier,
+              diff: diff,
+              isMobile: isMobile,
+              metrics: metrics,
+              defaultLaneHeight: defaultLaneHeight,
+              activeDecoders: activeDecoders,
+              variablesMap: variablesMap,
+              childRowCounts: childRowCounts,
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _listBody(
+    BuildContext context,
+    WidgetRef ref, {
+    required List<SignalEntry> entries,
+    required Color borderColor,
+    required List<({int index, String name})> groupPositions,
+    required SignalGroupsNotifier notifier,
+    required ExportNotifier exportNotifier,
+    required DiffState diff,
+    required bool isMobile,
+    required MobileMetrics metrics,
+    required int defaultLaneHeight,
+    required List<ActiveDecoder> activeDecoders,
+    required Map<String, Variable> variablesMap,
+    required Map<String, int> childRowCounts,
+  }) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(right: BorderSide(color: borderColor)),
+      ),
+      child: ScrollConfiguration(
+        // Opt this list OUT of the app-wide `trackpad` dragDevice (see
+        // [kTrackpadOwnedDragDevices]): [TrackpadScrollListener] below already
+        // drives [scrollController] from the two-finger pan-zoom, so letting
+        // the [ReorderableListView]'s own Scrollable also drag-scroll on the
+        // same gesture would double-drive the offset.
+        behavior: ScrollConfiguration.of(context).copyWith(
+          scrollbars: false,
+          dragDevices: kTrackpadOwnedDragDevices,
+        ),
+        // [TrackpadScrollListener] forwards iPad Magic Keyboard / macOS
+        // trackpad two-finger vertical scroll into [scrollController] —
+        // without it [ReorderableListView] silently swallows
+        // PointerPanZoom events and the lane list never scrolls when the
+        // user swipes over the signal list.
+        child: TrackpadScrollListener(
+          controller: scrollController,
+          // .builder so off-screen rows are not constructed. With 1000+
+          // signals loaded, the previous eager `ReorderableListView(children:
+          // [...])` rebuilt every row on every cursor frame (because every
+          // row watched a global Map provider keyed on cursor state). The
+          // builder only constructs the ~20–40 rows currently visible.
+          // Per-signal cursor-value subscription lives in a [Consumer] inside
+          // each signal-case row (see [_buildEntryTile]).
+          child: ReorderableListView.builder(
+            scrollController: scrollController,
+            buildDefaultDragHandles: false,
+            // Decoder rows are NOT reorderable: they have no
+            // [ReorderableDragStartListener], so a long-press on a decoder
+            // row never initiates a drag (long-press hits the row's own
+            // [PlatformContextMenu] instead). Guard the callback in case
+            // the user drags an entry past the last entry — clamp into
+            // the entries-only range so the list never tries to interpret
+            // a drop position inside the decoder band as an entry move.
+            // Under [ReorderableListView.onReorderItem], newIndex is the
+            // post-removal insertion index, so the maximum valid value is
+            // entries.length - 1.
+            onReorderItem: (oldIndex, newIndex) {
+              if (oldIndex >= entries.length) return;
+              final clampedNewIndex = newIndex >= entries.length
+                  ? entries.length - 1
+                  : newIndex;
+              notifier.reorderSignal(oldIndex, clampedNewIndex);
+            },
+            itemCount: entries.length + activeDecoders.length,
+            itemBuilder: (context, index) {
+              if (index < entries.length) {
+                return _buildEntryTile(
+                  context,
+                  ref,
+                  entries[index],
+                  index,
+                  groupPositions,
+                  notifier,
+                  exportNotifier,
+                  diff,
+                  isMobile,
+                  metrics,
+                  defaultLaneHeight,
+                  variablesMap,
+                  childRowCounts,
+                );
+              }
+              final decoderIndex = index - entries.length;
+              final decoder = activeDecoders[decoderIndex];
+              return DecoderListEntry(
+                key: ValueKey('dec_${decoder.id}'),
+                decoder: decoder,
+                index: decoderIndex,
+              );
+            },
           ),
         ),
       ),
@@ -245,9 +301,10 @@ class SignalListPanel extends ConsumerWidget {
 
   /// Selects the signal row whose name the user clicked. A plain click replaces
   /// the selection with just this row; Ctrl/Cmd-click toggles it into/out of the
-  /// multi-selection (matching the value column and signal tree). Writes both
-  /// the per-tab [selectedVariablesProvider] — which drives the name-column,
-  /// canvas-lane, and value-column highlight — and the root
+  /// multi-selection, and Shift-click selects the run of rows from the last
+  /// clicked one to this one (matching the value column and signal tree).
+  /// Writes both the per-tab [selectedVariablesProvider] — which drives the
+  /// name-column, canvas-lane, and value-column highlight — and the root
   /// [selectedSignalProvider], the CXP focus the live auto-broadcast emitter and
   /// the cross-probe panel's per-peer send resolve. This lets a user select an
   /// already-added signal without the signal-tree click's add-and-duplicate
@@ -257,11 +314,12 @@ class SignalListPanel extends ConsumerWidget {
     required String fullPath,
     required String signalRef,
   }) {
-    final isToggle =
-        HardwareKeyboard.instance.isControlPressed ||
-        HardwareKeyboard.instance.isMetaPressed;
+    final keyboard = HardwareKeyboard.instance;
+    final isToggle = keyboard.isControlPressed || keyboard.isMetaPressed;
     final selection = ref.read(selectedVariablesProvider.notifier);
-    if (isToggle) {
+    if (keyboard.isShiftPressed) {
+      selection.selectRangeTo(fullPath, _orderedRowPaths(ref));
+    } else if (isToggle) {
       selection.toggle(fullPath);
     } else {
       selection.selectOnly(fullPath);
@@ -272,6 +330,65 @@ class SignalListPanel extends ConsumerWidget {
     if (signalRef.isNotEmpty) {
       ref.read(selectedSignalProvider.notifier).select(signalRef);
     }
+  }
+
+  /// The selection paths of the top-level signal rows, top to bottom — the
+  /// order a Shift-click range runs in. Built on demand at click time rather
+  /// than on every rebuild, which on a gate-level list is a million entries.
+  static List<String> _orderedRowPaths(WidgetRef ref) {
+    final variablesMap = ref.read(signalVariablesMapProvider);
+    return [
+      for (final e in ref.read(signalGroupsProvider).entries)
+        if (e.kind == SignalEntryKind.signal)
+          SignalGroupsNotifier.selectionPathOf(e, variablesMap),
+    ];
+  }
+
+  /// Delete or Backspace while the list has focus removes the selection.
+  ///
+  /// Only when the list itself holds focus — a key typed into a comment row's
+  /// text field belongs to that field — and only bare keys, so a modified
+  /// chord still reaches whatever it is bound to.
+  KeyEventResult _handleListKey(
+    FocusNode node,
+    KeyEvent event,
+    BuildContext context,
+    WidgetRef ref,
+  ) {
+    if (event is! KeyDownEvent || !node.hasPrimaryFocus) {
+      return KeyEventResult.ignored;
+    }
+    final key = event.logicalKey;
+    if (key != LogicalKeyboardKey.delete &&
+        key != LogicalKeyboardKey.backspace) {
+      return KeyEventResult.ignored;
+    }
+    final keyboard = HardwareKeyboard.instance;
+    if (keyboard.isControlPressed ||
+        keyboard.isMetaPressed ||
+        keyboard.isAltPressed) {
+      return KeyEventResult.ignored;
+    }
+    return removeSelectedSignals(context, ref)
+        ? KeyEventResult.handled
+        : KeyEventResult.ignored;
+  }
+
+  /// Removes every selected signal from this tab's canvas in one update and
+  /// offers an Undo. Returns false when nothing selected is on the canvas.
+  ///
+  /// The selection is cleared with it: the removed paths would otherwise stay
+  /// highlighted in the signal tree with nothing on the canvas to match.
+  static bool removeSelectedSignals(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(signalGroupsProvider.notifier);
+    final removal = notifier.removeSignalsAtPaths(
+      ref.read(selectedVariablesProvider),
+      ref.read(signalVariablesMapProvider),
+    );
+    if (removal == null) return false;
+    ref.read(selectedVariablesProvider.notifier).clear();
+    showSignalRemovalUndo(context, removal: removal, notifier: notifier);
+    return true;
   }
 
   Widget _buildEntryTile(
@@ -304,9 +421,10 @@ class SignalListPanel extends ConsumerWidget {
         // Variable record carries `scopePath` and `name`, which combine into
         // `fullPath` (e.g. `top.cpu.clk`). Falls back to displayName /
         // signalRef if the variable isn't loaded yet.
-        final variable = variablesMap[signalRef];
-        final fullSignalPath =
-            variable?.fullPath ?? entry.displayName ?? signalRef;
+        final fullSignalPath = SignalGroupsNotifier.selectionPathOf(
+          entry,
+          variablesMap,
+        );
         final filterNotifier = ref.read(translateFilterProvider.notifier);
         final hasFilter = ref
             .read(translateFilterProvider)
@@ -380,6 +498,7 @@ class SignalListPanel extends ConsumerWidget {
                   metrics: metrics,
                   defaultLaneHeight: defaultLaneHeight,
                   onRemove: () => notifier.removeSignal(index),
+                  onRemoveSelected: () => removeSelectedSignals(context, ref),
                   onColorCycle: () => notifier.setSignalColor(
                     index,
                     _nextPaletteColor(entry.argbColor),
@@ -486,6 +605,15 @@ class SignalListPanel extends ConsumerWidget {
           onToggleCollapsed: () => notifier.toggleGroupCollapsed(index),
           onRename: (name) => notifier.renameGroup(index, name),
           onDissolve: () => notifier.dissolveGroup(index),
+          onRemoveWithSignals: () {
+            final removal = notifier.removeGroupWithSignals(index);
+            if (removal == null) return;
+            showSignalRemovalUndo(
+              context,
+              removal: removal,
+              notifier: notifier,
+            );
+          },
           onRemoveChild: (childIndex) =>
               notifier.removeChildFromGroup(index, childIndex),
           onSignalDropped: (signalIndex) =>
@@ -592,6 +720,7 @@ enum _RegularAction {
   traceXOrigin,
   visualizeFsm,
   annotateFsm,
+  removeSelected,
 }
 
 class _SignalMenuAction extends _SignalMenuResult {
@@ -622,6 +751,7 @@ class _SignalRow extends StatefulWidget {
     required this.isSelected,
     required this.onSelect,
     required this.onRemove,
+    required this.onRemoveSelected,
     required this.onColorCycle,
     required this.onColorPicked,
     required this.onToggleRenderAsAnalog,
@@ -685,6 +815,11 @@ class _SignalRow extends StatefulWidget {
   final String? formattedValue;
   final List<({int index, String name})> availableGroups;
   final VoidCallback onRemove;
+
+  /// Removes the whole selection (this row among it). Offered in the context
+  /// menu of a selected row only — on an unselected row it would remove rows
+  /// other than the one clicked.
+  final VoidCallback onRemoveSelected;
   final VoidCallback onColorCycle;
   final ValueChanged<Color> onColorPicked;
 
@@ -945,6 +1080,17 @@ class _SignalRowState extends State<_SignalRow> {
           ),
         ),
       ],
+      // ── Remove the selection ──
+      if (widget.isSelected) ...[
+        const PopupMenuDivider(),
+        PopupMenuItem<_SignalMenuResult>(
+          value: const _SignalMenuAction(_RegularAction.removeSelected),
+          child: Text(
+            l10n.signalListRemoveSelected,
+            style: const TextStyle(fontSize: 13),
+          ),
+        ),
+      ],
     ];
 
     final result = await showMenu<_SignalMenuResult>(
@@ -986,6 +1132,8 @@ class _SignalRowState extends State<_SignalRow> {
             widget.onVisualizeFsm?.call();
           case _RegularAction.annotateFsm:
             widget.onAnnotateFsm?.call();
+          case _RegularAction.removeSelected:
+            widget.onRemoveSelected();
         }
       case _SignalMenuMoveToGroup(:final groupIndex):
         widget.onMoveToGroup(groupIndex);
@@ -1119,96 +1267,104 @@ class _SignalRowState extends State<_SignalRow> {
             // Move-to-group lives in that menu instead of being a
             // separate gesture (ARCHITECTURE.md §3.1.8.5).
             Expanded(
-              child: GestureDetector(
-                // Single click on the signal NAME selects this row — the way to
-                // select an already-added signal without re-adding it (a signal-
-                // tree click ADDS, duplicating the lane). Writes the same
-                // per-tab `selectedVariablesProvider` an inbound cross-probe and
-                // the panel's per-peer send resolve, so a canvas name-click can
-                // originate an outbound cross-probe.
-                onTap: widget.onSelect,
-                onDoubleTap: () =>
-                    widget.onHeightChanged(widget.defaultLaneHeight.toDouble()),
-                // Tooltip reveals the full hierarchical path on hover
-                // (desktop). Per ARCHITECTURE.md §3.1.8.14, every
-                // TextOverflow.ellipsis must pair with a tooltip
-                // and/or a context-menu reveal — we have both.
-                //
-                // triggerMode is `manual` so on touch the Tooltip's
-                // internal LongPressGestureRecognizer doesn't beat
-                // the outer PlatformContextMenu in the gesture arena.
-                // On touch, users see the full path via the
-                // "Show Full Path…" context-menu item instead.
-                child: Tooltip(
-                  message: widget.fullPath,
-                  waitDuration: const Duration(milliseconds: 600),
-                  triggerMode: TooltipTriggerMode.manual,
-                  // Issue 15: a bare Align(centerLeft) does not vertically center
-                  // here because the outer Row uses CrossAxisAlignment.center (the
-                  // default) — that gives the Expanded child loose vertical
-                  // constraints, so Align ends up sized to the Text's intrinsic
-                  // height and centering inside its own (shrunk) bounds has no
-                  // effect. SizedBox.expand forces the Align to span the full
-                  // lane height, after which Alignment.centerLeft vertically
-                  // centers the Text against the lane.
-                  child: SizedBox.expand(
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        displayName,
-                        // Font metric tuning to visually center the painted
-                        // glyph at the lane's vertical middle:
-                        //
-                        // - `height: 1.0` collapses the Text widget's line box
-                        //   to the font size, eliminating the natural line
-                        //   leading that monospace fonts ship with.
-                        // - `leadingDistribution: even` splits any residual
-                        //   leading evenly above and below the glyph instead
-                        //   of dumping it above (the default for proportional
-                        //   leading behavior).
-                        // - `textHeightBehavior(apply*: false)` is required
-                        //   in tandem with `height` to disable the
-                        //   first-line ascent and last-line descent padding
-                        //   that Flutter otherwise injects.
-                        // - `strutStyle(forceStrutHeight, height: 1)`
-                        //   forces the actual line metrics to honor the
-                        //   above even when the font's intrinsic line height
-                        //   would override them.
-                        //
-                        // Without these, monospace fonts (notably
-                        // JetBrainsMono — ascent 1.02em, descent 0.3em)
-                        // position the glyph in the upper ~60% of the
-                        // line box. Align(centerLeft) centered the line box
-                        // but the glyph still looked top-aligned, and the
-                        // effect was severe at the default 30 dp lane height
-                        // where every dp of font padding is visible.
-                        textHeightBehavior: const TextHeightBehavior(
-                          applyHeightToFirstAscent: false,
-                          applyHeightToLastDescent: false,
-                          leadingDistribution: TextLeadingDistribution.even,
-                        ),
-                        strutStyle: const StrutStyle(
-                          forceStrutHeight: true,
-                          height: 1,
-                          leadingDistribution: TextLeadingDistribution.even,
-                        ),
-                        style: TextStyle(
-                          fontFamily: WavecruxColors.monoFontFamily,
-                          fontFamilyFallback:
-                              WavecruxColors.monoFontFamilyFallback,
-                          fontSize: metrics.monoText,
-                          color: signalColor,
-                          // Selected-row name treatment: bold weight only —
-                          // the selection SURFACE is the full-row tint painted
-                          // by the row host (matching the value column's and
-                          // canvas lane's highlight bars), not a text
-                          // background, so all three panes read identically.
-                          fontWeight: widget.isSelected
-                              ? FontWeight.bold
-                              : null,
-                          overflow: TextOverflow.ellipsis,
-                          height: 1,
-                          leadingDistribution: TextLeadingDistribution.even,
+              // One node for the name, carrying the selected state the
+              // highlight bar shows, so a screen reader hears which rows a
+              // Delete would remove.
+              child: Semantics(
+                container: true,
+                selected: widget.isSelected,
+                child: GestureDetector(
+                  // Single click on the signal NAME selects this row — the way to
+                  // select an already-added signal without re-adding it (a signal-
+                  // tree click ADDS, duplicating the lane). Writes the same
+                  // per-tab `selectedVariablesProvider` an inbound cross-probe and
+                  // the panel's per-peer send resolve, so a canvas name-click can
+                  // originate an outbound cross-probe.
+                  onTap: widget.onSelect,
+                  onDoubleTap: () => widget.onHeightChanged(
+                    widget.defaultLaneHeight.toDouble(),
+                  ),
+                  // Tooltip reveals the full hierarchical path on hover
+                  // (desktop). Per ARCHITECTURE.md §3.1.8.14, every
+                  // TextOverflow.ellipsis must pair with a tooltip
+                  // and/or a context-menu reveal — we have both.
+                  //
+                  // triggerMode is `manual` so on touch the Tooltip's
+                  // internal LongPressGestureRecognizer doesn't beat
+                  // the outer PlatformContextMenu in the gesture arena.
+                  // On touch, users see the full path via the
+                  // "Show Full Path…" context-menu item instead.
+                  child: Tooltip(
+                    message: widget.fullPath,
+                    waitDuration: const Duration(milliseconds: 600),
+                    triggerMode: TooltipTriggerMode.manual,
+                    // Issue 15: a bare Align(centerLeft) does not vertically center
+                    // here because the outer Row uses CrossAxisAlignment.center (the
+                    // default) — that gives the Expanded child loose vertical
+                    // constraints, so Align ends up sized to the Text's intrinsic
+                    // height and centering inside its own (shrunk) bounds has no
+                    // effect. SizedBox.expand forces the Align to span the full
+                    // lane height, after which Alignment.centerLeft vertically
+                    // centers the Text against the lane.
+                    child: SizedBox.expand(
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          displayName,
+                          // Font metric tuning to visually center the painted
+                          // glyph at the lane's vertical middle:
+                          //
+                          // - `height: 1.0` collapses the Text widget's line box
+                          //   to the font size, eliminating the natural line
+                          //   leading that monospace fonts ship with.
+                          // - `leadingDistribution: even` splits any residual
+                          //   leading evenly above and below the glyph instead
+                          //   of dumping it above (the default for proportional
+                          //   leading behavior).
+                          // - `textHeightBehavior(apply*: false)` is required
+                          //   in tandem with `height` to disable the
+                          //   first-line ascent and last-line descent padding
+                          //   that Flutter otherwise injects.
+                          // - `strutStyle(forceStrutHeight, height: 1)`
+                          //   forces the actual line metrics to honor the
+                          //   above even when the font's intrinsic line height
+                          //   would override them.
+                          //
+                          // Without these, monospace fonts (notably
+                          // JetBrainsMono — ascent 1.02em, descent 0.3em)
+                          // position the glyph in the upper ~60% of the
+                          // line box. Align(centerLeft) centered the line box
+                          // but the glyph still looked top-aligned, and the
+                          // effect was severe at the default 30 dp lane height
+                          // where every dp of font padding is visible.
+                          textHeightBehavior: const TextHeightBehavior(
+                            applyHeightToFirstAscent: false,
+                            applyHeightToLastDescent: false,
+                            leadingDistribution: TextLeadingDistribution.even,
+                          ),
+                          strutStyle: const StrutStyle(
+                            forceStrutHeight: true,
+                            height: 1,
+                            leadingDistribution: TextLeadingDistribution.even,
+                          ),
+                          style: TextStyle(
+                            fontFamily: WavecruxColors.monoFontFamily,
+                            fontFamilyFallback:
+                                WavecruxColors.monoFontFamilyFallback,
+                            fontSize: metrics.monoText,
+                            color: signalColor,
+                            // Selected-row name treatment: bold weight only —
+                            // the selection SURFACE is the full-row tint painted
+                            // by the row host (matching the value column's and
+                            // canvas lane's highlight bars), not a text
+                            // background, so all three panes read identically.
+                            fontWeight: widget.isSelected
+                                ? FontWeight.bold
+                                : null,
+                            overflow: TextOverflow.ellipsis,
+                            height: 1,
+                            leadingDistribution: TextLeadingDistribution.even,
+                          ),
                         ),
                       ),
                     ),
@@ -1427,6 +1583,7 @@ class _GroupTile extends StatefulWidget {
     required this.onToggleCollapsed,
     required this.onRename,
     required this.onDissolve,
+    required this.onRemoveWithSignals,
     required this.onRemoveChild,
     required this.onSignalDropped,
     required this.isMobile,
@@ -1439,7 +1596,13 @@ class _GroupTile extends StatefulWidget {
   final int index;
   final VoidCallback onToggleCollapsed;
   final ValueChanged<String> onRename;
+
+  /// Ungroup: the header goes, its signals stay on the canvas.
   final VoidCallback onDissolve;
+
+  /// Remove Group and Signals: the header and every row in it leave the
+  /// canvas, with an Undo.
+  final VoidCallback onRemoveWithSignals;
   final ValueChanged<int> onRemoveChild;
   final ValueChanged<int> onSignalDropped;
   final bool isMobile;
@@ -1491,6 +1654,13 @@ class _GroupTileState extends State<_GroupTile> {
             style: const TextStyle(fontSize: 13),
           ),
         ),
+        PopupMenuItem(
+          value: _GroupContextAction.removeWithSignals,
+          child: Text(
+            l10n.signalGroupRemoveWithSignals,
+            style: const TextStyle(fontSize: 13),
+          ),
+        ),
       ],
     );
     if (!context.mounted) return;
@@ -1498,6 +1668,8 @@ class _GroupTileState extends State<_GroupTile> {
       await _showRenameDialog(context);
     } else if (result == _GroupContextAction.dissolve) {
       widget.onDissolve();
+    } else if (result == _GroupContextAction.removeWithSignals) {
+      widget.onRemoveWithSignals();
     }
   }
 
@@ -1621,7 +1793,7 @@ class _GroupTileState extends State<_GroupTile> {
   }
 }
 
-enum _GroupContextAction { rename, dissolve }
+enum _GroupContextAction { rename, dissolve, removeWithSignals }
 
 // ── Group child signal row ─────────────────────────────────────────────────────
 

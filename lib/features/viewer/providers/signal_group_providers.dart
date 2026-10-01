@@ -395,6 +395,114 @@ class SignalGroupsNotifier extends _$SignalGroupsNotifier {
   /// Removes all entries from the viewer.
   void clear() => state = const SignalGroup();
 
+  // ── bulk removal ───────────────────────────────────────────────────────────
+  //
+  // Every bulk removal is ONE state assignment, never N single removals. The
+  // canvas, value column and name column each rebuild their lane geometry on
+  // every list change, so a loop of `removeSignal` calls would churn the
+  // layer tree once per row; one assignment churns it once. Each returns the
+  // [SignalRemoval] the undo snackbar hands back to [undoRemoval], or null
+  // when nothing was removed (so the caller shows no snackbar).
+
+  /// Clear Canvas: removes every row of the list — signals, groups,
+  /// separators and comments — leaving the empty canvas.
+  ///
+  /// Only the list is touched. Cursors, markers, decoders, zoom and the open
+  /// file are separate providers and stay as they are.
+  SignalRemoval? clearCanvas() {
+    final before = state;
+    if (before.entries.isEmpty) return null;
+    state = const SignalGroup();
+    return SignalRemoval._(
+      before: before,
+      after: state,
+      removed: before.entries,
+      signalCount: before.signalCount,
+    );
+  }
+
+  /// Removes every signal row, at the top level or inside a group, for which
+  /// [test] returns true. Group headers stay, even when emptied.
+  SignalRemoval? removeSignalsWhere(bool Function(SignalEntry entry) test) {
+    final before = state;
+    final result = before.withoutSignals(test);
+    if (result.removed.isEmpty) return null;
+    state = result.group;
+    return SignalRemoval._(
+      before: before,
+      after: state,
+      removed: result.removed,
+      signalCount: result.removed.length,
+    );
+  }
+
+  /// Removes the signal rows whose selection path is in [paths] — the
+  /// Signals list's "Remove Selected" and its Delete key.
+  ///
+  /// [variablesMap] resolves a row to the same path the list selects it by;
+  /// see [selectionPathOf].
+  SignalRemoval? removeSignalsAtPaths(
+    Set<String> paths,
+    Map<String, Variable> variablesMap,
+  ) {
+    if (paths.isEmpty) return null;
+    return removeSignalsWhere(
+      (e) => paths.contains(selectionPathOf(e, variablesMap)),
+    );
+  }
+
+  /// Removes the group at top-level [index] together with every row in it —
+  /// "Remove Group and Signals", the counterpart of [dissolveGroup]
+  /// ("Ungroup"), which keeps the rows.
+  SignalRemoval? removeGroupWithSignals(int index) {
+    if (index < 0 || index >= state.entries.length) return null;
+    final group = state.entries[index];
+    if (group.kind != SignalEntryKind.group) return null;
+    final before = state;
+    final entries = [...before.entries]..removeAt(index);
+    state = before.copyWith(entries: entries);
+    return SignalRemoval._(
+      before: before,
+      after: state,
+      removed: [group],
+      signalCount: SignalGroup(entries: [group]).signalCount,
+    );
+  }
+
+  /// Undoes [removal]: the removed rows come back with their order, groups,
+  /// colours, formats and lane heights.
+  ///
+  /// When the list is still exactly what the removal left, the list from
+  /// before it is restored as it was. If something changed in between — a
+  /// signal added from the tree while the snackbar was up — that change is
+  /// kept and the removed rows are appended after it instead, so the undo
+  /// never throws away work done since.
+  ///
+  /// Returns false when the tab has been closed since the removal.
+  bool undoRemoval(SignalRemoval removal) {
+    if (!ref.mounted) return false;
+    if (state == removal.after) {
+      state = removal.before;
+    } else {
+      state = state.addEntries(removal.removed);
+    }
+    return true;
+  }
+
+  /// The path a Signals-list row is selected by: the variable's full
+  /// hierarchical path when the hierarchy knows the row's ref, otherwise the
+  /// row's own name.
+  ///
+  /// The one definition the list's highlight, its Shift-click range and
+  /// [removeSignalsAtPaths] share, so what is highlighted is what is removed.
+  static String selectionPathOf(
+    SignalEntry entry,
+    Map<String, Variable> variablesMap,
+  ) {
+    final ref = entry.signalRef ?? '';
+    return variablesMap[ref]?.fullPath ?? entry.displayName ?? ref;
+  }
+
   /// Re-resolves every entry's [SignalEntry.signalRef] against [source]'s
   /// current hierarchy, using [SignalEntry.signalPath] as the canonical
   /// identifier.
@@ -730,6 +838,34 @@ class SignalGroupsNotifier extends _$SignalGroupsNotifier {
     entries.insert(index.clamp(0, entries.length), entry);
     return group.copyWith(entries: entries);
   }
+}
+
+/// What a bulk removal took out of the list, held by its undo snackbar and
+/// handed back to [SignalGroupsNotifier.undoRemoval].
+///
+/// Built only by [SignalGroupsNotifier]: [after] must be the exact state the
+/// removal produced for the undo to restore [before] verbatim.
+@immutable
+class SignalRemoval {
+  const SignalRemoval._({
+    required this.before,
+    required this.after,
+    required this.removed,
+    required this.signalCount,
+  });
+
+  /// The list as it was before the removal.
+  final SignalGroup before;
+
+  /// The list the removal left behind.
+  final SignalGroup after;
+
+  /// The removed rows, in their original order — appended back if the list
+  /// changed again before the undo.
+  final List<SignalEntry> removed;
+
+  /// How many signal rows were removed, counting those inside removed groups.
+  final int signalCount;
 }
 
 /// The auto-color palette used when adding signals to the viewer.

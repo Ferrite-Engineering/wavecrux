@@ -62,6 +62,10 @@ const CruxMenuLayout<ShortcutAction> kMenuLayout = {
       ShortcutAction.addAnnotationAtCursor,
       ShortcutAction.annotateSelectedRange,
     ],
+    // Signal removal: the Signals list's Delete key, reachable by name.
+    [
+      ShortcutAction.removeSelectedSignals,
+    ],
   ],
 
   // ── File ──────────────────────────────────────────────────────────────────
@@ -129,6 +133,11 @@ const CruxMenuLayout<ShortcutAction> kMenuLayout = {
       ShortcutAction.zoomOut,
       ShortcutAction.zoomToSelection,
       ShortcutAction.fitAll,
+    ],
+    // What is on the canvas: Clear Canvas sits beside the zoom group because
+    // both act on the view of the open file, not on a panel.
+    [
+      ShortcutAction.clearCanvas,
     ],
     [
       ShortcutAction.toggleSignalTree,

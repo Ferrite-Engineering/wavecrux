@@ -281,6 +281,28 @@ ActionDescriptor descriptorFor(ShortcutAction action) => switch (action) {
     requires: [ActionRequirement.hasSelection],
   ),
 
+  // ── Clear Canvas — browsable, enabled while the canvas has rows ─────
+  // Greyed rather than hidden on an empty canvas: someone looking for how to
+  // start over should find the command and see why it is resting.
+  ShortcutAction.clearCanvas => const ActionDescriptor(
+    surfaces: _menuOverflowPalette,
+    requires: [
+      ActionRequirement.fileLoaded,
+      ActionRequirement.signalsDisplayed,
+    ],
+  ),
+
+  // ── Remove Selected Signals — browsable, enabled with a selection ───
+  // The Signals list's Delete / Backspace keys are the fast route; this is
+  // the one a keyboard or screen-reader user finds by name.
+  ShortcutAction.removeSelectedSignals => const ActionDescriptor(
+    surfaces: _menuOverflowPalette,
+    requires: [
+      ActionRequirement.fileLoaded,
+      ActionRequirement.hasSelection,
+    ],
+  ),
+
   // ── Command palette opener — menu + overflow only ──────────────────
   // Self-referential in the palette itself (you can't open the palette
   // from the palette), so it is excluded from the palette surface — but it

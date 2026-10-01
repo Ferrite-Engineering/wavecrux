@@ -114,6 +114,7 @@ import 'package:wavecrux/features/viewer/widgets/gtkw_import_result_dialog.dart'
 import 'package:wavecrux/features/viewer/widgets/large_file_warning_dialog.dart';
 import 'package:wavecrux/features/viewer/widgets/pattern_search_dialog.dart';
 import 'package:wavecrux/features/viewer/widgets/side_docks.dart';
+import 'package:wavecrux/features/viewer/widgets/signal_removal_feedback.dart';
 import 'package:wavecrux/features/viewer/widgets/status_bar.dart';
 import 'package:wavecrux/features/viewer/widgets/viewer_toolbar.dart';
 import 'package:wavecrux/features/viewer/widgets/waveform_view_center.dart';
@@ -597,8 +598,6 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
   void _stopStreaming() {
     _activeTabContainer.read(streamingSourceProvider.notifier).stop();
   }
-
-  // ── file open ────────────────────────────────────────────────────────────────
 
   // ── session helpers ──────────────────────────────────────────────────────────
 

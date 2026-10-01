@@ -36,6 +36,7 @@ class ActionContext {
     this.cursorPresent = false,
     this.markersPresent = false,
     this.annotationsPresent = false,
+    this.signalsDisplayed = false,
     this.diffActive = false,
     this.cocotbLogLoaded = false,
     this.patternMatchesPresent = false,
@@ -107,6 +108,10 @@ class ActionContext {
   /// actions, which are *structurally hidden* rather than greyed when false:
   /// three dead rows in every session that never annotates is menu noise.
   final bool annotationsPresent;
+
+  /// Whether the active tab's signal list has at least one row. Gates Clear
+  /// Canvas, which has nothing to clear on an empty canvas.
+  final bool signalsDisplayed;
 
   /// Whether the active tab has a comparison (diff) file loaded. Gates the
   /// Next/Previous Divergence navigation — there is nothing to step through
@@ -199,6 +204,7 @@ class ActionContext {
       other.hasSelection == hasSelection &&
       other.cursorPresent == cursorPresent &&
       other.markersPresent == markersPresent &&
+      other.signalsDisplayed == signalsDisplayed &&
       other.diffActive == diffActive &&
       other.cocotbLogLoaded == cocotbLogLoaded &&
       other.patternMatchesPresent == patternMatchesPresent &&
@@ -233,7 +239,13 @@ class ActionContext {
       streamingActive,
       playbackActive,
       tierGatedActionsAvailable,
-      Object.hash(canZoomOut, canZoomIn, isWeb, splitPaneAllowed),
+      Object.hash(
+        canZoomOut,
+        canZoomIn,
+        isWeb,
+        splitPaneAllowed,
+        signalsDisplayed,
+      ),
     ),
   );
 }

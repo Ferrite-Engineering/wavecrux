@@ -16,15 +16,18 @@ import 'package:wavecrux/domain/enums/device_class.dart';
 import 'package:wavecrux/domain/interfaces/waveform_data_source.dart';
 import 'package:wavecrux/domain/models/diff_result.dart';
 import 'package:wavecrux/domain/models/memory_stats.dart';
+import 'package:wavecrux/domain/models/signal_group.dart';
 import 'package:wavecrux/domain/models/signal_match.dart';
 import 'package:wavecrux/domain/models/time_range.dart';
 import 'package:wavecrux/domain/models/workspace.dart';
 import 'package:wavecrux/features/comparison/providers/diff_provider.dart';
 import 'package:wavecrux/features/comparison/widgets/diff_summary_panel.dart';
+import 'package:wavecrux/features/cursors/providers/cursor_providers.dart';
 import 'package:wavecrux/features/cursors/providers/playback_provider.dart';
 import 'package:wavecrux/features/decoders/widgets/decoder_picker_dialog.dart';
 import 'package:wavecrux/features/diagnostics/providers/memory_stats_provider.dart';
 import 'package:wavecrux/features/search/widgets/signal_search_dialog.dart';
+import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.dart';
 import 'package:wavecrux/features/stage/providers/stage_workspace_provider.dart';
 import 'package:wavecrux/features/statistics/widgets/live_statistics_strip.dart';
 import 'package:wavecrux/features/tabs/providers/tab_providers.dart';
@@ -1112,6 +1115,94 @@ void main() {
         );
         await tester.pump();
         expect(tabContainer.read(playbackProvider).isPlaying, isFalse);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    // ── Clear Canvas / Remove Selected Signals (dispatch behavior) ──────────
+
+    testWidgets(
+      "Clear Canvas empties the ACTIVE TAB's list, keeps its cursor and "
+      'markers, and the Undo snackbar restores the signals',
+      (tester) async {
+        await tester.pumpWidget(
+          _buildApp(
+            overrides: [
+              // Same escape hatch as the togglePlayback test: drives the
+              // loaded-file branch of the descriptor guard.
+              waveformIsLoadedProvider.overrideWithValue(true),
+              workspaceServiceProvider.overrideWithValue(
+                _InMemoryWorkspaceService(),
+              ),
+            ],
+            tabOverrides: [
+              memoryStatsProvider.overrideWith(_InertMemoryStatsNotifier.new),
+              sessionAutoSaveProvider.overrideWith(
+                _InertSessionAutoSaveNotifier.new,
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final rootContainer = ProviderScope.containerOf(
+          tester.element(find.byType(ViewerScreen)),
+        );
+        final tab = rootContainer
+            .read(tabContainerManagerProvider)
+            .containerFor(rootContainer.read(activeTabIdProvider));
+        tab
+            .read(signalGroupsProvider.notifier)
+            .restoreFromSession(
+              SignalGroup(
+                entries: [
+                  SignalEntry.signal(
+                    id: 'id_a',
+                    signalRef: 'ref_a',
+                    displayName: 'a',
+                  ),
+                  SignalEntry.signal(
+                    id: 'id_b',
+                    signalRef: 'ref_b',
+                    displayName: 'b',
+                  ),
+                ],
+              ),
+            );
+        final before = tab.read(signalGroupsProvider);
+        tab.read(cursorStateProvider.notifier).placePrimary(120);
+        tab.read(markerStateProvider.notifier).setMarker('a', 300);
+        await tester.pumpAndSettle();
+
+        Actions.invoke(
+          tester.element(find.byType(ViewerToolbar)),
+          const ShortcutActionIntent(ShortcutAction.clearCanvas),
+        );
+        await tester.pumpAndSettle();
+
+        expect(tab.read(signalGroupsProvider).entries, isEmpty);
+        expect(tab.read(cursorStateProvider).primaryCursorTime, 120);
+        expect(tab.read(markerStateProvider).getMarker('a'), 300);
+        expect(find.text('Canvas cleared'), findsOneWidget);
+
+        await tester.tap(find.text('Undo'));
+        await tester.pumpAndSettle();
+        expect(tab.read(signalGroupsProvider), before);
+
+        // Remove Selected Signals, by name, takes only the selection.
+        tab.read(selectedVariablesProvider.notifier).selectOnly('b');
+        await tester.pumpAndSettle();
+        Actions.invoke(
+          tester.element(find.byType(ViewerToolbar)),
+          const ShortcutActionIntent(ShortcutAction.removeSelectedSignals),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          tab.read(signalGroupsProvider).entries.map((e) => e.displayName),
+          ['a'],
+        );
+        expect(find.text('Removed 1 signal'), findsOneWidget);
+        await tester.pump(const Duration(seconds: 5));
         expect(tester.takeException(), isNull);
       },
     );

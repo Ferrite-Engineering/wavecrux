@@ -629,6 +629,14 @@
   "@signalTreeAddAllInScope": {
     "description": "Context-menu item that adds all signals in the right-clicked scope to the waveform viewer"
   },
+  "signalTreeRemoveAllInScope": "해당 스코프의 모든 신호 제거",
+  "@signalTreeRemoveAllInScope": {
+    "description": "Signal-tree scope context menu item, beside Add All in Scope: removes every signal under this scope (recursively) from the active tab's canvas. Undoable from the snackbar it shows."
+  },
+  "signalTreeRemoveAllInScopeNone": "캔버스에 이 스코프의 신호가 없습니다",
+  "@signalTreeRemoveAllInScopeNone": {
+    "description": "Snackbar shown when Remove All in Scope finds none of the scope's signals on the canvas, so nothing was removed."
+  },
   "signalLoadIndicatorLabel": "파형 로딩 중",
   "@signalLoadIndicatorLabel": {
     "description": "Tooltip on the status-bar indicator shown while a large batch of signals is decompressing into the waveform canvas"
@@ -1168,9 +1176,9 @@
   "@signalGroupRenameHint": {
     "description": "Hint text in the rename group dialog text field"
   },
-  "signalGroupDissolve": "그룹 제거",
+  "signalGroupDissolve": "그룹 해제",
   "@signalGroupDissolve": {
-    "description": "Context menu item to dissolve a group and promote its children to top-level entries"
+    "description": "Group header context menu item that dissolves the group: the header goes and its signals stay on the canvas, promoted to top-level entries. Contrast with Remove Group and Signals."
   },
   "signalGroupMoveToGroup": "그룹으로 이동",
   "@signalGroupMoveToGroup": {
@@ -1179,6 +1187,31 @@
   "signalGroupRemoveFromGroup": "그룹에서 제거",
   "@signalGroupRemoveFromGroup": {
     "description": "Button tooltip on a child signal row to remove it from its parent group"
+  },
+  "signalGroupRemoveWithSignals": "그룹 및 신호 제거",
+  "@signalGroupRemoveWithSignals": {
+    "description": "Group header context menu item that removes the group AND every signal in it from the canvas (undoable from the snackbar). Contrast with Ungroup (signalGroupDissolve), which keeps the signals."
+  },
+  "signalListRemoveSelected": "선택한 신호 제거",
+  "@signalListRemoveSelected": {
+    "description": "Signal-row context menu item, shown on a selected row: removes every selected signal from the canvas (same as pressing Delete or Backspace in the Signals list). Undoable from the snackbar it shows."
+  },
+  "signalsRemovedToast": "{count, plural, =1{신호 1개를 제거했습니다} other{신호 {count}개를 제거했습니다}}",
+  "@signalsRemovedToast": {
+    "description": "Snackbar after a bulk removal of signals from the canvas (Remove Selected, Remove All in Scope, Remove Group and Signals). Paired with an Undo action.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "canvasClearedToast": "캔버스를 지웠습니다",
+  "@canvasClearedToast": {
+    "description": "Snackbar after Clear Canvas removes every row from the active tab's signal list. Paired with an Undo action."
+  },
+  "signalRemovalUndo": "실행 취소",
+  "@signalRemovalUndo": {
+    "description": "Action label on the snackbar after a bulk signal removal or Clear Canvas; restores the removed rows."
   },
   "signalGroupHeaderExpandTooltip": "그룹 확장",
   "@signalGroupHeaderExpandTooltip": {
@@ -2110,6 +2143,14 @@
   "shortcutActionClearSignalSelection": "신호 선택 해제",
   "@shortcutActionClearSignalSelection": {
     "description": "Label for the Clear Signal Selection shortcut action (Escape) that deselects all currently-selected signals, shown in the command palette, menu, and keyboard shortcuts settings"
+  },
+  "shortcutActionClearCanvas": "캔버스 지우기",
+  "@shortcutActionClearCanvas": {
+    "description": "Label for the Clear Canvas action (View menu, command palette): removes every signal from the active tab while keeping the file, cursors, markers, decoders and zoom."
+  },
+  "shortcutActionRemoveSelectedSignals": "선택한 신호 제거",
+  "@shortcutActionRemoveSelectedSignals": {
+    "description": "Label for the Remove Selected Signals action (Edit menu, command palette): removes every selected signal from the active tab's canvas."
   },
   "statusBarClearSelectionTooltip": "신호 선택 해제",
   "@statusBarClearSelectionTooltip": {
@@ -4223,6 +4264,10 @@
   "actionRequiresSelection": "이 명령을 사용하려면 신호를 하나 이상 선택하세요.",
   "@actionRequiresSelection": {
     "description": "Hint shown when a keyboard shortcut fires for an action that is disabled because no signal is selected (e.g. Clear Signal Selection, Explain Selection)."
+  },
+  "actionRequiresSignals": "이 명령을 사용하려면 캔버스에 신호를 추가하세요.",
+  "@actionRequiresSignals": {
+    "description": "Hint shown when a keyboard shortcut fires for an action that is disabled because the canvas has no signals (e.g. Clear Canvas)."
   },
   "actionRequiresAiModel": "이 명령을 사용하려면 설정에서 AI 모델을 구성하세요.",
   "@actionRequiresAiModel": {

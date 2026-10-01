@@ -398,6 +398,54 @@ class SignalGroup {
   SignalGroup addEntries(List<SignalEntry> newEntries) =>
       SignalGroup(entries: [...entries, ...newEntries]);
 
+  /// Removes every [SignalEntryKind.signal] row for which [test] returns true,
+  /// at the top level and inside groups, in one pass.
+  ///
+  /// Group headers, separators and comments are kept, including a group left
+  /// with no children: removing signals is not restructuring the list, and an
+  /// empty group stays a container the user can refill.
+  ///
+  /// Returns the new list together with the removed rows in their original
+  /// top-to-bottom order. When nothing matches, [SignalRemovalResult.group]
+  /// is this instance unchanged and [SignalRemovalResult.removed] is empty.
+  SignalRemovalResult withoutSignals(bool Function(SignalEntry entry) test) {
+    final removed = <SignalEntry>[];
+    final kept = _withoutSignals(entries, test, removed);
+    if (removed.isEmpty) return SignalRemovalResult(group: this);
+    return SignalRemovalResult(
+      group: SignalGroup(entries: kept),
+      removed: removed,
+    );
+  }
+
+  static List<SignalEntry> _withoutSignals(
+    List<SignalEntry> entries,
+    bool Function(SignalEntry entry) test,
+    List<SignalEntry> removed,
+  ) {
+    final kept = <SignalEntry>[];
+    for (final e in entries) {
+      switch (e.kind) {
+        case SignalEntryKind.signal:
+          if (test(e)) {
+            removed.add(e);
+          } else {
+            kept.add(e);
+          }
+        case SignalEntryKind.group:
+          final before = removed.length;
+          final children = _withoutSignals(e.children, test, removed);
+          kept.add(
+            removed.length == before ? e : e.copyWith(children: children),
+          );
+        case SignalEntryKind.separator:
+        case SignalEntryKind.comment:
+          kept.add(e);
+      }
+    }
+    return kept;
+  }
+
   // ── equality ────────────────────────────────────────────────────────────────
 
   @override
@@ -416,4 +464,17 @@ class SignalGroup {
 
   @override
   String toString() => 'SignalGroup(${entries.length} entries)';
+}
+
+/// The outcome of [SignalGroup.withoutSignals]: the list after the removal and
+/// the signal rows that were taken out of it.
+@immutable
+class SignalRemovalResult {
+  const SignalRemovalResult({required this.group, this.removed = const []});
+
+  /// The list with the matching signal rows removed.
+  final SignalGroup group;
+
+  /// The removed signal rows, in their original top-to-bottom order.
+  final List<SignalEntry> removed;
 }

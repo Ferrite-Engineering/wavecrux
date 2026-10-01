@@ -40,6 +40,239 @@ void main() {
     });
   });
 
+  // ── bulk removal + undo ──────────────────────────────────────────────────────
+
+  group('bulk removal', () {
+    /// A list with every kind of row and per-row customisation, so a restore
+    /// that drops any of it fails. Fixed ids, so two calls compare equal.
+    SignalGroup curated() => SignalGroup(
+      entries: [
+        SignalEntry.signal(
+          id: 'id_clk',
+          signalRef: 'ref_clk',
+          signalPath: 'top.clk',
+          displayName: 'clk',
+          argbColor: 0xFF112233,
+          format: DisplayFormat.binary,
+          laneHeight: 48,
+        ),
+        SignalEntry.group(
+          groupName: 'bus',
+          collapsed: true,
+          children: [
+            SignalEntry.signal(
+              id: 'id_a',
+              signalRef: 'ref_a',
+              signalPath: 'top.u.a',
+              displayName: 'a',
+              format: DisplayFormat.signedDecimal,
+            ),
+            SignalEntry.signal(
+              id: 'id_b',
+              signalRef: 'ref_b',
+              signalPath: 'top.u.b',
+              displayName: 'b',
+            ),
+          ],
+        ),
+        const SignalEntry.comment(text: 'note'),
+        SignalEntry.signal(
+          id: 'id_d',
+          signalRef: 'ref_d',
+          signalPath: 'top.d',
+          displayName: 'd',
+          renderAsAnalog: true,
+        ),
+      ],
+    );
+
+    test('every bulk removal is ONE state update', () {
+      // Layer-tree churn guard: N single removals would rebuild the canvas,
+      // value column and name column N times.
+      final c = _container();
+      final notifier = c.read(signalGroupsProvider.notifier)
+        ..restoreFromSession(curated());
+      var updates = 0;
+      c.listen(signalGroupsProvider, (_, _) => updates++);
+
+      notifier.removeSignalsWhere((e) => e.displayName != 'clk');
+      expect(updates, 1);
+      notifier.restoreFromSession(curated());
+      updates = 0;
+      notifier.clearCanvas();
+      expect(updates, 1);
+      notifier.restoreFromSession(curated());
+      updates = 0;
+      notifier.removeGroupWithSignals(1);
+      expect(updates, 1);
+    });
+
+    test('clearCanvas empties the list and Undo restores it verbatim', () {
+      final c = _container();
+      final notifier = c.read(signalGroupsProvider.notifier)
+        ..restoreFromSession(curated());
+
+      final removal = notifier.clearCanvas();
+      expect(removal, isNotNull);
+      expect(removal!.signalCount, 4);
+      expect(c.read(signalGroupsProvider).entries, isEmpty);
+
+      expect(notifier.undoRemoval(removal), isTrue);
+      expect(c.read(signalGroupsProvider), curated());
+    });
+
+    test('clearCanvas on an empty canvas is a no-op returning null', () {
+      final c = _container();
+      expect(c.read(signalGroupsProvider.notifier).clearCanvas(), isNull);
+    });
+
+    test('removeSignalsWhere reaches into groups and keeps the header', () {
+      final c = _container();
+      final notifier = c.read(signalGroupsProvider.notifier)
+        ..restoreFromSession(curated());
+
+      final removal = notifier.removeSignalsWhere(
+        (e) => e.signalPath?.startsWith('top.u.') ?? false,
+      );
+
+      expect(removal!.signalCount, 2);
+      final entries = c.read(signalGroupsProvider).entries;
+      expect(entries.map((e) => e.kind), [
+        SignalEntryKind.signal,
+        SignalEntryKind.group,
+        SignalEntryKind.comment,
+        SignalEntryKind.signal,
+      ]);
+      expect(entries[1].children, isEmpty);
+      expect(entries[1].groupName, 'bus');
+
+      notifier.undoRemoval(removal);
+      expect(c.read(signalGroupsProvider), curated());
+    });
+
+    test('removeSignalsWhere returns null when nothing matches', () {
+      final c = _container();
+      final notifier = c.read(signalGroupsProvider.notifier)
+        ..restoreFromSession(curated());
+      expect(notifier.removeSignalsWhere((_) => false), isNull);
+      expect(c.read(signalGroupsProvider), curated());
+    });
+
+    test('removeSignalsAtPaths matches rows by their selection path', () {
+      final c = _container();
+      final notifier = c.read(signalGroupsProvider.notifier)
+        ..restoreFromSession(curated());
+      // `clk` resolves through the hierarchy to its full path; `d` is not in
+      // the map and falls back to its display name — the same rule the
+      // Signals list highlights by.
+      final removal = notifier.removeSignalsAtPaths(
+        {'top.clk', 'd'},
+        {
+          'ref_clk': const Variable(
+            name: 'clk',
+            varType: VarType.wire,
+            direction: VarDirection.unknown,
+            signalRef: 'ref_clk',
+            scopePath: 'top',
+          ),
+        },
+      );
+      expect(removal!.signalCount, 2);
+      expect(
+        c.read(signalGroupsProvider).entries.map((e) => e.kind),
+        [SignalEntryKind.group, SignalEntryKind.comment],
+      );
+    });
+
+    test('removeSignalsAtPaths with an empty selection does nothing', () {
+      final c = _container();
+      final notifier = c.read(signalGroupsProvider.notifier)
+        ..restoreFromSession(curated());
+      expect(notifier.removeSignalsAtPaths(const {}, const {}), isNull);
+    });
+
+    test('removeGroupWithSignals takes the header and its rows; '
+        'dissolveGroup (Ungroup) keeps the rows', () {
+      final c = _container();
+      final notifier = c.read(signalGroupsProvider.notifier)
+        ..restoreFromSession(curated());
+
+      final removal = notifier.removeGroupWithSignals(1);
+      expect(removal!.signalCount, 2);
+      expect(
+        c.read(signalGroupsProvider).entries.map((e) => e.displayName),
+        ['clk', null, 'd'],
+      );
+      notifier.undoRemoval(removal);
+      expect(c.read(signalGroupsProvider), curated());
+
+      notifier.dissolveGroup(1);
+      expect(
+        c.read(signalGroupsProvider).entries.map((e) => e.displayName),
+        ['clk', 'a', 'b', null, 'd'],
+      );
+    });
+
+    test('removeGroupWithSignals ignores a non-group row', () {
+      final c = _container();
+      final notifier = c.read(signalGroupsProvider.notifier)
+        ..restoreFromSession(curated());
+      expect(notifier.removeGroupWithSignals(0), isNull);
+      expect(notifier.removeGroupWithSignals(99), isNull);
+      expect(c.read(signalGroupsProvider), curated());
+    });
+
+    test('undo after a later change keeps that change and appends the '
+        'removed rows', () {
+      final c = _container();
+      final notifier = c.read(signalGroupsProvider.notifier)
+        ..restoreFromSession(curated());
+      final removal = notifier.removeSignalsWhere(
+        (e) => e.displayName == 'clk' || e.displayName == 'd',
+      );
+      notifier
+        ..addSignal(_v('late'))
+        ..undoRemoval(removal!);
+
+      final names = c
+          .read(signalGroupsProvider)
+          .entries
+          .map((e) => e.displayName)
+          .toList();
+      expect(names, [null, null, 'late', 'clk', 'd']);
+      final clk = c.read(signalGroupsProvider).entries[3];
+      expect(clk.argbColor, 0xFF112233, reason: 'colour survives');
+      expect(clk.format, DisplayFormat.binary, reason: 'format survives');
+      expect(clk.laneHeight, 48);
+    });
+
+    test('undo after the tab closed is refused, not thrown', () {
+      final c = ProviderContainer();
+      final notifier = c.read(signalGroupsProvider.notifier)
+        ..restoreFromSession(curated());
+      final removal = notifier.clearCanvas()!;
+      c.dispose();
+      expect(notifier.undoRemoval(removal), isFalse);
+    });
+
+    test('selectionPathOf prefers the hierarchy path, then the name', () {
+      final entry = SignalEntry.signal(signalRef: 'r', displayName: 'n');
+      expect(SignalGroupsNotifier.selectionPathOf(entry, const {}), 'n');
+      expect(
+        SignalGroupsNotifier.selectionPathOf(entry, {
+          'r': const Variable(
+            name: 'n',
+            varType: VarType.wire,
+            direction: VarDirection.unknown,
+            signalRef: 'r',
+            scopePath: 'top.u',
+          ),
+        }),
+        'top.u.n',
+      );
+    });
+  });
+
   // ── addSignal ──────────────────────────────────────────────────────────────
 
   group('addSignal', () {

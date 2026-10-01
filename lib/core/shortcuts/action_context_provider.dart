@@ -93,6 +93,7 @@ final actionContextProvider = Provider<ActionContext>((ref) {
     cursorPresent: flags.cursorPresent,
     markersPresent: flags.markersPresent,
     annotationsPresent: flags.annotationsPresent,
+    signalsDisplayed: flags.signalsDisplayed,
     diffActive: flags.diffActive,
     cocotbLogLoaded: flags.cocotbLogLoaded,
     patternMatchesPresent: flags.patternMatchesPresent,

@@ -55,6 +55,12 @@ WaveCrux distinguishes two kinds of selection: a **time range** on the canvas (d
 | Click a value in the value column | Copy that value to the clipboard. |
 | ++cmd++ / ++ctrl++ + click a signal's row in the value column | Toggle its selection from the waveform. |
 | Long-press a value row → **Select Signal** (touch) | Toggle a signal's selection on a touch device. |
+| Click a signal's name in the signal list | Select it (already on the canvas, so it is not added again). |
+| ++shift++ + click a signal's name in the signal list | Select the run of rows from the last one you clicked. |
+| ++cmd++ / ++ctrl++ + click a signal's name in the signal list | Toggle that row in or out of the selection. |
+| ++delete++ or ++backspace++ in the signal list | Remove the selected signals from the canvas, with an **Undo**. |
+| Right-click a selected row in the signal list | **Remove Selected**, among the row's other actions. |
+| Right-click a scope in the signal tree | **Add All in Scope** or **Remove All in Scope**. |
 | ++esc++ | Clear the signal selection — and the cursors. |
 
 !!! tip "Clearing the selection"

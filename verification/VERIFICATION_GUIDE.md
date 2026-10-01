@@ -15,6 +15,7 @@
 3. [Diagnostics panel](#3-diagnostics-panel)
 4. [Signal search and direction filtering](#4-signal-search-and-direction-filtering)
 4A. [Signal hierarchy tree — multi-select, parameter values, apply-decoder-to-selection](#4a-signal-hierarchy-tree--multi-select-parameter-values-apply-decoder-to-selection)
+4B. [Bulk signal removal — Clear Canvas, Remove All in Scope, Remove Group and Signals, multi-select Delete](#4b-bulk-signal-removal--clear-canvas-remove-all-in-scope-remove-group-and-signals-multi-select-delete)
 5. [Protocol decoders (Open Core)](#5-protocol-decoders-open-core)
 6. [Analysis and search features](#6-analysis-and-search-features)
 7. [Cocotb log file correlation](#7-cocotb-log-file-correlation)
@@ -541,6 +542,72 @@ The hierarchy tree is operable without a mouse. Before this, its rows were plain
 | Row semantics: name, width, value, expanded/selected, focus reporting, semantics focus action | **WIDGET** (same file — "what a screen reader hears"; `scope_tree_node_test.dart` and `variable_tree_leaf_test.dart` — "screen reader and keyboard" groups) | Mirrors what the desktop bridge sends. |
 | What is heard, keystroke by keystroke, in the real viewer (pinned transcript) and the tree as a Tab stop in the whole-viewer walk | **WIDGET** (`test/accessibility/screen_reader_test.dart` — `goldens/signal_tree.txt`, `goldens/viewer_file_open.txt`) | Golden diffs are reviewed like UI diffs. |
 | NVDA / VoiceOver actually speak the rows, instructions and menu items as modelled | **MANUAL** (steps 1, 4, 9, 11) | Needs a real screen reader; batched with the external tester's re-check. |
+
+---
+
+## 4B. Bulk signal removal — Clear Canvas, Remove All in Scope, Remove Group and Signals, multi-select Delete
+
+### 4B.1 What it does
+
+Signals come onto the canvas in bulk (**Add All in Scope**, **Add All** from search) and used to come off only one **×** at a time. Four bulk removals now exist, all per tab, all applied as **one** list update (never N single removals: the canvas, value column and name column each rebuild once, which keeps layer-tree churn down), and all followed by a snackbar with **Undo**:
+
+1. **Clear Canvas** — View menu, overflow menu and command palette (no default shortcut). Removes every row (signals, groups, separators, comments) from the active tab. The file stays open; cursors, markers, decoders and zoom are untouched. Greyed when the canvas is empty. Snackbar: "Canvas cleared".
+2. **Group header menu** — **Ungroup** (renamed from "Remove Group"; the header goes, its signals stay) and the new **Remove Group and Signals** (the header and every row in it leave the canvas).
+3. **Remove All in Scope** — signal-tree scope context menu, directly below **Add All in Scope**. Removes every canvas row showing a variable under that scope or any scope below it, at the top level or inside a group, matched by signal ref or by hierarchical path (so rows restored from a session are found). Groups it empties stay as empty containers. If none of the scope is on the canvas, an info snackbar says "No signals from this scope are on the canvas" and nothing changes.
+4. **Multi-select in the Signals list** — click a name to select it, Shift+click to select the run of rows from the last clicked one, Cmd/Ctrl+click to toggle one row. Selected rows show the full-row highlight bar and a bold name, and report `selected` to a screen reader. **Delete** or **Backspace** (while the list has focus — a click in the list gives it focus) removes the selection; a selected row's context menu has **Remove Selected**; **Edit → Remove Selected Signals** and the palette do the same. The selection is cleared after the removal.
+
+**Undo** restores the removed rows in place with their order, groups, colours, display formats, lane heights and analog flags. If the list changed between the removal and the Undo (a signal added from the tree, say), that change is kept and the removed rows are appended after it. Snackbar text for the targeted removals: "Removed N signals" ("Removed 1 signal"). The message is also announced to screen readers.
+
+A cleared canvas is a real session state: saving after Clear Canvas writes an empty signal list, and reopening that session shows an empty canvas (it does not resurrect the cleared signals).
+
+### 4B.2 Setup
+
+- Load `vcd/parameter_multiselect.vcd` (see §2.2). Right-click `top` → **Add All in Scope** so the canvas holds `top`'s parameters plus `top.spi`'s `sclk`, `mosi`, `miso`, `cs`.
+- Place the primary cursor and set marker `a` so step 9 can check they survive.
+
+### 4B.3 Steps and expected behavior
+
+1. **Remove All in Scope.** Right-click `spi` in the signal tree. **Remove All in Scope** sits directly below **Add All in Scope**. Choose it: `sclk`, `mosi`, `miso`, `cs` leave the canvas in one step; `top`'s own signals stay. A snackbar reads "Removed 4 signals" with **Undo**.
+2. **Undo.** Click **Undo** within four seconds: the four signals return in their original positions with their original colours.
+3. **Shift-click + Delete** (video Scene 3). Click `sclk`'s name in the Signals list, Shift+click `miso`'s name: `sclk`, `mosi`, `miso` highlight in the list, the canvas and the value column. Press **Delete** (macOS: the ⌫ key, which is Backspace). The three rows go; "Removed 3 signals" with **Undo**. Undo restores them.
+4. **Cmd/Ctrl-click.** Cmd/Ctrl+click two non-adjacent rows; only those two highlight. Right-click one of them: the menu ends with **Remove Selected**. Right-click an unselected row: no **Remove Selected** item.
+5. **Group menu.** Move `mosi` and `miso` into a new group (right-click → Move to Group). Right-click the group header: **Rename…**, **Ungroup**, **Remove Group and Signals**. **Remove Group and Signals** removes the header and both signals ("Removed 2 signals"); Undo brings back the group, collapsed state and children. **Ungroup** removes only the header; both signals stay on the canvas.
+6. **Remove All in Scope reaches into groups.** With `mosi` inside a group, run **Remove All in Scope** on `spi` again: `mosi` leaves the group, the (now empty) group header stays.
+7. **Nothing to remove.** Run **Remove All in Scope** on a scope none of whose signals are on the canvas: an info snackbar "No signals from this scope are on the canvas", no Undo, nothing changes.
+8. **Clear Canvas.** **View → Clear Canvas** (or the palette): every row goes, the empty-list hint shows, "Canvas cleared" with **Undo**. **View → Clear Canvas** is now greyed. Undo restores the full list.
+9. **Clear keeps the session.** After Clear Canvas, the cursor, marker `a`, any active decoder rows and the zoom level are unchanged.
+10. **Clear survives a save.** Clear Canvas, **File → Save Session As…**, close the tab, reopen the saved `.wavecrux`: the canvas is empty (the signals do not come back), cursor and marker `a` are restored.
+11. **Per tab.** Open a second file in another tab, add signals in both, Clear Canvas in tab 2: tab 1's list is untouched.
+12. **Locales.** Switch to 简体中文, 日本語 and 한국어: the new menu items and snackbars render without clipping.
+
+### 4B.4 Diagnostics-assisted verification
+
+- Pane Render Stats while clearing a canvas holding several thousand signals (Add All in Scope on a gate-level scope, then Clear Canvas): one rebuild burst, not one per row. No raster-thread fault: rapid row-removal churn is the suspected trigger of an intermittent Impeller raster-thread crash, so every bulk removal is a single batched update.
+
+### 4B.5 Edge cases
+
+- Delete / Backspace typed into a comment row's text field edits the text; it does not remove signals (the key only acts while the list itself holds focus).
+- Delete with no selection does nothing (no snackbar).
+- Cmd/Ctrl+Delete and Alt+Delete are not consumed by the list.
+- Undo after closing the tab is a no-op, never an error.
+- Two rows of the same signal (deliberate duplicates) share a selection path: selecting one highlights both, and Delete removes both.
+- Shift+click with an anchor set in the signal tree on a path not in the list selects only the clicked row.
+- Clear Canvas on an empty canvas is greyed in the menu; its palette entry is hidden.
+
+### 4B.6 Automation Assessment
+
+| Test | Coverage | Rationale |
+|---|---|---|
+| `withoutSignals` removes top-level and grouped rows in one pass, keeps groups/separators/comments | **UNIT** (`test/domain/models/signal_group_test.dart` — "SignalGroup.withoutSignals") | Pure model. |
+| Every bulk removal is one state update; Clear / scope / selection / group removal; Undo restores verbatim (colours, formats, lane heights, groups); Undo after a later change appends; Undo after tab close refused | **UNIT** (`test/features/viewer/providers/signal_group_providers_test.dart` — "bulk removal") | Notifier logic, listener-count assertions. |
+| Saving after Clear Canvas reopens empty; cursor and markers kept | **UNIT** (`test/features/viewer/providers/session_providers_test.dart` — "a cleared canvas saves as an empty list") | Real `SessionService` round trip through a temp file. |
+| Shift-click range, Cmd-click toggle, `selected` semantics, Delete and Backspace (one update) with Undo, Remove Selected only on a selected row, Ungroup vs Remove Group and Signals, CJK sweep | **WIDGET** (`test/features/viewer/widgets/signal_list_panel_test.dart` — "bulk removal") | Real key events and pointer gestures. |
+| Video Scene 3: Remove All in Scope → Undo → Shift-click three rows → Delete | **WIDGET** (same file — "video scene") | Tree node and list side by side in one container. |
+| Remove All in Scope: beside Add All, nested scopes, grouped rows, path match for restored rows, none-on-canvas snackbar, announcement, CJK sweep | **WIDGET** (`test/features/signal_tree/widgets/scope_tree_node_test.dart` — "Remove All in Scope") | Gesture-driven. |
+| Snackbar text, plural, Undo, auto-expiry, announcement, CJK sweep | **WIDGET** (`test/features/viewer/widgets/signal_removal_feedback_test.dart`) | Deterministic. |
+| Clear Canvas / Remove Selected Signals dispatch on the active tab, cursor + markers kept, Undo | **WIDGET** (`test/features/viewer/screens/viewer_screen_test.dart` — "Clear Canvas empties the ACTIVE TAB's list") | Same `ShortcutActionIntent` entry the app uses. |
+| Clear Canvas greyed on an empty canvas | **UNIT** (`test/features/viewer/providers/active_tab_action_flags_provider_test.dart` — "mirrors whether the active tab has rows") + descriptor conformance tests | Root-scope mirror of the per-tab flag. |
+| Large-canvas clear without a raster fault; real screen reader hears "selected" | **MANUAL** (§4B.4, step 3 with NVDA/VoiceOver) | Needs a real GPU and screen reader. |
 
 ---
 

@@ -153,6 +153,10 @@ _lateralUiAllowlist = <String, Map<String, String>>{
   'signal_tree': {
     'package:wavecrux/features/decoders/widgets/decoder_picker_dialog.dart':
         'The signal-tree context menu opens the decoder picker.',
+    'package:wavecrux/features/viewer/widgets/signal_removal_feedback.dart':
+        "Remove All in Scope reports through the viewer's one bulk-removal "
+        'Undo snackbar, so every bulk removal reads and reverses the same '
+        'way.',
   },
   'panes': {
     'package:wavecrux/features/diagnostics/widgets/pane_render_stats_popover.dart':

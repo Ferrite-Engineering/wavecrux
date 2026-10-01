@@ -1,7 +1,8 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
-import 'package:crux_ide_layout/crux_ide_layout.dart' show announceCrux;
+import 'package:crux_ide_layout/crux_ide_layout.dart'
+    show announceCrux, showCruxInfoSnack;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/domain/enums/scope_type.dart';
@@ -11,6 +12,7 @@ import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.da
 import 'package:wavecrux/features/signal_tree/utils/signal_tree_rows.dart';
 import 'package:wavecrux/features/signal_tree/widgets/signal_tree_menu_anchor.dart';
 import 'package:wavecrux/features/viewer/providers/signal_load_progress_provider.dart';
+import 'package:wavecrux/features/viewer/widgets/signal_removal_feedback.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
 import 'package:wavecrux/shared/widgets/platform_context_menu.dart';
@@ -241,10 +243,54 @@ class ScopeTreeNode extends ConsumerWidget {
           value: 'addAll',
           child: Text(l10n.signalTreeAddAllInScope),
         ),
+        PopupMenuItem(
+          value: 'removeAll',
+          child: Text(l10n.signalTreeRemoveAllInScope),
+        ),
       ],
     );
     if (result == null || !context.mounted) return;
-    if (result == 'addAll') await _addAllInScope(context, ref);
+    if (result == 'addAll') {
+      await _addAllInScope(context, ref);
+    } else if (result == 'removeAll') {
+      await _removeAllInScope(context, ref);
+    }
+  }
+
+  /// "Remove All in Scope": the inverse of [_addAllInScope]. Every signal row
+  /// on this tab's canvas that shows a variable under [scope] — at the top
+  /// level or inside a group — leaves in one update, with an Undo.
+  ///
+  /// A row matches by its signal ref or by its hierarchical path, so a row
+  /// restored from a session (whose ref was re-resolved) and a row added this
+  /// run are both found. Groups stay, even when emptied: the user built them.
+  Future<void> _removeAllInScope(BuildContext context, WidgetRef ref) async {
+    final groups = ref.read(signalGroupsProvider.notifier);
+    final container = ProviderScope.containerOf(context, listen: false);
+    bool tabClosed() {
+      try {
+        container.read(signalGroupsProvider);
+        return false;
+      } on Object {
+        return true;
+      }
+    }
+
+    final all = await _collectAllVariables(scope, isCancelled: tabClosed);
+    if (all == null || !context.mounted) return;
+    final refs = <String>{for (final v in all) v.signalRef};
+    final paths = <String>{for (final v in all) v.fullPath};
+    final removal = groups.removeSignalsWhere(
+      (e) => refs.contains(e.signalRef) || paths.contains(e.signalPath),
+    );
+    if (removal == null) {
+      showCruxInfoSnack(
+        context,
+        L10N.of(context).signalTreeRemoveAllInScopeNone,
+      );
+      return;
+    }
+    showSignalRemovalUndo(context, removal: removal, notifier: groups);
   }
 
   /// "Add All in Scope": every variable under [scope], depth-first, appended to

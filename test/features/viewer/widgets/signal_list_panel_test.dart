@@ -3,16 +3,19 @@
 
 import 'package:flutter/gestures.dart' show kSecondaryButton;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart' show StateProvider;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wavecrux/domain/enums/device_class.dart';
+import 'package:wavecrux/domain/enums/scope_type.dart';
 import 'package:wavecrux/domain/enums/var_direction.dart';
 import 'package:wavecrux/domain/enums/var_type.dart';
 import 'package:wavecrux/domain/models/active_decoder.dart';
 import 'package:wavecrux/domain/models/app_settings.dart';
 import 'package:wavecrux/domain/models/decoder_config.dart';
 import 'package:wavecrux/domain/models/decoder_definition.dart';
+import 'package:wavecrux/domain/models/scope.dart';
 import 'package:wavecrux/domain/models/signal_group.dart';
 import 'package:wavecrux/domain/models/variable.dart';
 import 'package:wavecrux/features/comparison/providers/diff_provider.dart';
@@ -20,6 +23,7 @@ import 'package:wavecrux/features/decoders/providers/active_decoders_provider.da
 import 'package:wavecrux/features/decoders/widgets/decoder_list_entry.dart';
 import 'package:wavecrux/features/settings/providers/settings_providers.dart';
 import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.dart';
+import 'package:wavecrux/features/signal_tree/widgets/scope_tree_node.dart';
 import 'package:wavecrux/features/viewer/widgets/signal_list_panel.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/plugins/decoder_registry.dart';
@@ -2191,6 +2195,322 @@ void main() {
         expect(heights()['inserted'], 30);
       },
     );
+  });
+
+  // ── Bulk removal (issue #9) ───────────────────────────────────────────────
+  //
+  // Multi-select in the Signals list, Delete / Backspace and Remove Selected,
+  // the group menu's Ungroup vs Remove Group and Signals, and the Undo
+  // snackbar every bulk removal shows. The "video scene" test drives the
+  // exact getting-started flow end to end.
+  group('bulk removal', () {
+    late L10N l10n;
+    setUpAll(() async => l10n = await L10N.delegate.load(const Locale('en')));
+
+    ProviderContainer desktopContainer() {
+      final c = ProviderContainer(
+        overrides: [deviceClassProvider.overrideWithValue(DeviceClass.desktop)],
+      );
+      addTearDown(c.dispose);
+      return c;
+    }
+
+    Future<void> pumpPanel(
+      WidgetTester tester,
+      ProviderContainer container, {
+      Widget? beside,
+      Locale? locale,
+    }) async {
+      final panel = SignalListPanel(scrollController: ScrollController());
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            locale: locale,
+            theme: ThemeData(platform: TargetPlatform.macOS),
+            localizationsDelegates: L10N.localizationsDelegates,
+            supportedLocales: L10N.supportedLocales,
+            home: Scaffold(
+              body: beside == null
+                  ? panel
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(width: 240, child: beside),
+                        Expanded(child: panel),
+                      ],
+                    ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    /// Clicks a row's name. The name's GestureDetector also listens for a
+    /// double tap, so the single tap only resolves after the double-tap
+    /// window — advance past it.
+    Future<void> clickName(
+      WidgetTester tester,
+      String name, {
+      LogicalKeyboardKey? holding,
+    }) async {
+      if (holding != null) await tester.sendKeyDownEvent(holding);
+      await tester.tap(find.text(name).last);
+      await tester.pump(const Duration(milliseconds: 350));
+      if (holding != null) await tester.sendKeyUpEvent(holding);
+      await tester.pumpAndSettle();
+    }
+
+    List<String?> names(ProviderContainer c) =>
+        c.read(signalGroupsProvider).entries.map((e) => e.displayName).toList();
+
+    testWidgets('Shift-click selects the run of rows; Cmd-click toggles one', (
+      tester,
+    ) async {
+      final c = desktopContainer();
+      c.read(signalGroupsProvider.notifier).addSignals([
+        for (final n in ['a', 'b', 'c', 'd', 'e']) _v(n),
+      ]);
+      await pumpPanel(tester, c);
+
+      await clickName(tester, 'b');
+      await clickName(tester, 'd', holding: LogicalKeyboardKey.shiftLeft);
+      expect(c.read(selectedVariablesProvider), {'b', 'c', 'd'});
+
+      await clickName(tester, 'c', holding: LogicalKeyboardKey.metaLeft);
+      expect(c.read(selectedVariablesProvider), {'b', 'd'});
+      // Nothing was added by any of the clicks.
+      expect(names(c), ['a', 'b', 'c', 'd', 'e']);
+    });
+
+    testWidgets('selected rows are highlighted and tell a screen reader they '
+        'are selected', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final c = desktopContainer();
+      c.read(signalGroupsProvider.notifier).addSignals([_v('a'), _v('b')]);
+      await pumpPanel(tester, c);
+
+      c.read(selectedVariablesProvider.notifier).selectOnly('a');
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(find.text('a')),
+        isSemantics(label: 'a', isSelected: true),
+      );
+      expect(
+        tester.getSemantics(find.text('b')),
+        isSemantics(label: 'b', isSelected: false),
+      );
+      expect(
+        tester.widget<Text>(find.text('a')).style?.fontWeight,
+        FontWeight.bold,
+      );
+      semantics.dispose();
+    });
+
+    for (final key in [
+      LogicalKeyboardKey.delete,
+      LogicalKeyboardKey.backspace,
+    ]) {
+      testWidgets('${key.keyLabel} removes the selection in ONE update, and '
+          'Undo restores it in place', (tester) async {
+        final c = desktopContainer();
+        c.read(signalGroupsProvider.notifier).addSignals([
+          for (final n in ['a', 'b', 'c', 'd']) _v(n),
+        ]);
+        final before = c.read(signalGroupsProvider);
+        await pumpPanel(tester, c);
+
+        await clickName(tester, 'b');
+        await clickName(tester, 'c', holding: LogicalKeyboardKey.shiftLeft);
+        var updates = 0;
+        c.listen(signalGroupsProvider, (_, _) => updates++);
+
+        await tester.sendKeyEvent(key);
+        await tester.pumpAndSettle();
+
+        expect(names(c), ['a', 'd']);
+        expect(updates, 1, reason: 'one batched update, not one per row');
+        expect(c.read(selectedVariablesProvider), isEmpty);
+        expect(find.text('Removed 2 signals'), findsOneWidget);
+
+        await tester.tap(find.text(l10n.signalRemovalUndo));
+        await tester.pumpAndSettle();
+        expect(c.read(signalGroupsProvider), before);
+        await tester.pump(const Duration(seconds: 5));
+      });
+    }
+
+    testWidgets('Delete with nothing selected removes nothing', (tester) async {
+      final c = desktopContainer();
+      c.read(signalGroupsProvider.notifier).addSignals([_v('a'), _v('b')]);
+      await pumpPanel(tester, c);
+
+      // Focus the list by clicking it, then clear the selection.
+      await clickName(tester, 'a');
+      c.read(selectedVariablesProvider.notifier).clear();
+      await tester.sendKeyEvent(LogicalKeyboardKey.delete);
+      await tester.pumpAndSettle();
+
+      expect(names(c), ['a', 'b']);
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets('Remove Selected is offered on a selected row only, and '
+        'removes the whole selection', (tester) async {
+      final c = desktopContainer();
+      c.read(signalGroupsProvider.notifier).addSignals([
+        for (final n in ['a', 'b', 'c']) _v(n),
+      ]);
+      await pumpPanel(tester, c);
+      await clickName(tester, 'a');
+      await clickName(tester, 'b', holding: LogicalKeyboardKey.shiftLeft);
+
+      await tester.tap(find.text('c'), buttons: kSecondaryButton);
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.signalListRemoveSelected), findsNothing);
+      await tester.tapAt(Offset.zero);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('b'), buttons: kSecondaryButton);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.signalListRemoveSelected));
+      await tester.pumpAndSettle();
+
+      expect(names(c), ['c']);
+      expect(find.text('Removed 2 signals'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('the group menu offers Ungroup (rows stay) and Remove Group '
+        'and Signals (rows go, with an Undo)', (tester) async {
+      final c = desktopContainer();
+      c.read(signalGroupsProvider.notifier)
+        ..addSignal(_v('top_sig'))
+        ..addGroup('Bus')
+        ..addSignal(_v('x'))
+        ..addSignal(_v('y'))
+        ..moveSignalIntoGroup(2, 1)
+        ..moveSignalIntoGroup(2, 1);
+      final before = c.read(signalGroupsProvider);
+      expect(before.entries[1].children.map((e) => e.displayName), ['x', 'y']);
+      await pumpPanel(tester, c);
+
+      expect(l10n.signalGroupDissolve, 'Ungroup');
+      expect(l10n.signalGroupRemoveWithSignals, 'Remove Group and Signals');
+
+      await tester.tap(find.text('Bus'), buttons: kSecondaryButton);
+      await tester.pumpAndSettle();
+      expect(find.text('Ungroup'), findsOneWidget);
+      expect(find.text('Remove Group and Signals'), findsOneWidget);
+      await tester.tap(find.text('Remove Group and Signals'));
+      await tester.pumpAndSettle();
+
+      expect(names(c), ['top_sig']);
+      expect(find.text('Removed 2 signals'), findsOneWidget);
+      await tester.tap(find.text(l10n.signalRemovalUndo));
+      await tester.pumpAndSettle();
+      expect(c.read(signalGroupsProvider), before);
+
+      await tester.tap(find.text('Bus'), buttons: kSecondaryButton);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ungroup'));
+      await tester.pumpAndSettle();
+      expect(names(c), ['top_sig', 'x', 'y']);
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    // The getting-started video, Scene 3, exactly: right-click a scope,
+    // Remove All in Scope, Undo from the snackbar, the signals return; then
+    // Shift-click three rows and press Delete.
+    testWidgets('video scene: Remove All in Scope, Undo, then Shift-click '
+        'three rows and Delete', (tester) async {
+      final c = desktopContainer();
+      final cpuVars = [
+        for (final n in ['pc', 'ir', 'alu_a', 'alu_b'])
+          _v(n, scopePath: 'top.cpu'),
+      ];
+      final scope = Scope(
+        name: 'cpu',
+        type: ScopeType.module,
+        path: 'top.cpu',
+        variables: cpuVars,
+      );
+      c.read(signalGroupsProvider.notifier).addSignals([
+        _v('clk'),
+        ...cpuVars,
+        _v('rst'),
+      ]);
+      final before = c.read(signalGroupsProvider);
+      await pumpPanel(tester, c, beside: ScopeTreeNode(scope: scope));
+
+      // 1. Right-click the scope → Remove All in Scope.
+      await tester.tap(find.text('cpu'), buttons: kSecondaryButton);
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.signalTreeAddAllInScope), findsOneWidget);
+      await tester.tap(find.text('Remove All in Scope'));
+      await tester.pumpAndSettle();
+      expect(names(c), ['clk', 'rst']);
+
+      // 2. The snackbar offers Undo; clicking it brings the signals back,
+      // in their places, with their colours.
+      expect(find.text('Removed 4 signals'), findsOneWidget);
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+      expect(c.read(signalGroupsProvider), before);
+      expect(names(c), ['clk', 'pc', 'ir', 'alu_a', 'alu_b', 'rst']);
+
+      // 3. Shift-click three rows, Delete.
+      await clickName(tester, 'pc');
+      await clickName(tester, 'alu_a', holding: LogicalKeyboardKey.shiftLeft);
+      expect(c.read(selectedVariablesProvider), {'pc', 'ir', 'alu_a'});
+      await tester.sendKeyEvent(LogicalKeyboardKey.delete);
+      await tester.pumpAndSettle();
+      expect(names(c), ['clk', 'alu_b', 'rst']);
+      expect(find.text('Removed 3 signals'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    for (final locale in const [
+      Locale('zh', 'CN'),
+      Locale('ja'),
+      Locale('ko'),
+    ]) {
+      testWidgets('locale sweep ${locale.toLanguageTag()}: the new menu items '
+          'and the removal snackbar render without exceptions', (
+        tester,
+      ) async {
+        final c = desktopContainer();
+        c.read(signalGroupsProvider.notifier)
+          ..addSignals([_v('a'), _v('b')])
+          ..addGroup('Bus');
+        await pumpPanel(tester, c, locale: locale);
+        final local = await L10N.delegate.load(locale);
+
+        // Group menu: Ungroup + Remove Group and Signals.
+        await tester.tap(find.text('Bus'), buttons: kSecondaryButton);
+        await tester.pumpAndSettle();
+        expect(find.text(local.signalGroupDissolve), findsOneWidget);
+        expect(find.text(local.signalGroupRemoveWithSignals), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.tapAt(Offset.zero);
+        await tester.pumpAndSettle();
+
+        // Row menu of a selected row: Remove Selected.
+        await clickName(tester, 'a');
+        await tester.tap(find.text('a'), buttons: kSecondaryButton);
+        await tester.pumpAndSettle();
+        expect(find.text(local.signalListRemoveSelected), findsOneWidget);
+        await tester.tap(find.text(local.signalListRemoveSelected));
+        await tester.pumpAndSettle();
+        expect(find.text(local.signalsRemovedToast(1)), findsOneWidget);
+        expect(find.text(local.signalRemovalUndo), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.pump(const Duration(seconds: 5));
+      });
+    }
   });
 }
 

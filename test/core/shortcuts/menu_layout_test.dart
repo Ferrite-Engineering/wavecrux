@@ -58,7 +58,8 @@ void main() {
       );
     });
 
-    test('declares an Edit menu holding annotation authoring', () {
+    test('declares an Edit menu holding annotation authoring and signal '
+        'removal', () {
       // Annotation authoring is WaveCrux's first create action. The
       // create action is deliberately not filed under View — that menu is
       // visibility toggles — nor under Navigate, whose annotation group is the
@@ -67,6 +68,9 @@ void main() {
         [
           ShortcutAction.addAnnotationAtCursor,
           ShortcutAction.annotateSelectedRange,
+        ],
+        [
+          ShortcutAction.removeSelectedSignals,
         ],
       ]);
     });

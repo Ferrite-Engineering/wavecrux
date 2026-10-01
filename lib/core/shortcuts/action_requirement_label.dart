@@ -35,6 +35,7 @@ extension ActionRequirementHint on ActionRequirement {
     ActionRequirement.streamingActive => l10n.actionRequiresStreaming,
     ActionRequirement.diagnosticsEnabled => l10n.actionRequiresDiagnostics,
     ActionRequirement.hasSelection => l10n.actionRequiresSelection,
+    ActionRequirement.signalsDisplayed => l10n.actionRequiresSignals,
     ActionRequirement.aiModelConfigured => l10n.actionRequiresAiModel,
     ActionRequirement.notInSession => l10n.actionRequiresNoSession,
     ActionRequirement.inSession => l10n.actionRequiresSession,
