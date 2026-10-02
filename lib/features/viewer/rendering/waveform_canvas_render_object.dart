@@ -37,7 +37,7 @@ class WaveformCanvasView extends LeafRenderObjectWidget {
     this.patternMatchRegions = const [],
     this.xOriginTime,
     this.xOriginSignalRefs = const {},
-    this.selectedSignalRefs = const {},
+    this.selectedRowPaths = const {},
     this.selectionColor = const Color(0xFF2196F3),
     this.statsCollector,
     this.viewportTop,
@@ -99,11 +99,12 @@ class WaveformCanvasView extends LeafRenderObjectWidget {
   /// Empty when no X-trace is active.
   final Set<String> xOriginSignalRefs;
 
-  /// signalRefs of the currently selected signal lanes (resolved from the
-  /// per-tab `selectedVariablesProvider`, which is keyed by fullPath). Lanes in
-  /// this set get a full-lane tint + left accent bar. Empty when nothing is
-  /// selected.
-  final Set<String> selectedSignalRefs;
+  /// Row paths of the currently selected signal lanes — the per-tab
+  /// `selectedVariablesProvider` as it stands, keyed by full path. A lane whose
+  /// [WaveformLaneData.rowPath] is in this set (or its signalRef, for a lane
+  /// built without a path) gets a full-lane tint + left accent bar. Empty when
+  /// nothing is selected.
+  final Set<String> selectedRowPaths;
 
   /// Accent color for the selected-lane treatment — the host passes
   /// `Theme.of(context).colorScheme.primary` so the canvas highlight matches
@@ -163,7 +164,7 @@ class WaveformCanvasView extends LeafRenderObjectWidget {
         statsCollector: statsCollector,
         recordPaintCommands: recordPaintCommands,
       )
-      ..selectedSignalRefs = selectedSignalRefs
+      ..selectedRowPaths = selectedRowPaths
       ..selectionColor = selectionColor
       ..viewportTop = viewportTop
       ..viewportBottom = viewportBottom;
@@ -193,7 +194,7 @@ class WaveformCanvasView extends LeafRenderObjectWidget {
       ..patternMatchRegions = patternMatchRegions
       ..xOriginTime = xOriginTime
       ..xOriginSignalRefs = xOriginSignalRefs
-      ..selectedSignalRefs = selectedSignalRefs
+      ..selectedRowPaths = selectedRowPaths
       ..selectionColor = selectionColor
       ..statsCollector = statsCollector
       ..viewportTop = viewportTop
@@ -371,20 +372,22 @@ class WaveformCanvasRenderObject extends RenderBox {
     markNeedsPaint();
   }
 
-  /// signalRefs of the currently-selected signal lanes.
+  /// Row paths of the currently-selected signal lanes.
   ///
   /// The per-tab selection lives in `selectedVariablesProvider` keyed by
-  /// fullPath; [WaveformCanvas] resolves those to signalRefs (the canvas lane's
-  /// data identity) and hands the set here so a selected signal's lane gets a
+  /// fullPath; [WaveformCanvas] hands that set here unchanged and each lane is
+  /// matched by its own [WaveformLaneData.rowPath]. Not by signalRef: aliased
+  /// variables share a ref, so selecting `up.clk` would also tint `down.clk`
+  /// and every other alias of the net. A selected signal's lane gets a
   /// full-lane tint + left accent bar — the canvas-side counterpart of the
   /// signal-name/value panes' row highlight. A cross-probe from a sibling
   /// product selects the signal here, so this is what makes the inbound
   /// highlight visible on the trace itself, not just in the side panes.
-  Set<String> get selectedSignalRefs => _selectedSignalRefs;
-  Set<String> _selectedSignalRefs = const {};
-  set selectedSignalRefs(Set<String> value) {
-    if (value == _selectedSignalRefs) return;
-    _selectedSignalRefs = value;
+  Set<String> get selectedRowPaths => _selectedRowPaths;
+  Set<String> _selectedRowPaths = const {};
+  set selectedRowPaths(Set<String> value) {
+    if (value == _selectedRowPaths) return;
+    _selectedRowPaths = value;
     markNeedsPaint();
   }
 
@@ -645,7 +648,7 @@ class WaveformCanvasRenderObject extends RenderBox {
       final isSelectedLane =
           lane.kind == WaveformLaneKind.signal &&
           lane.signalRef != null &&
-          _selectedSignalRefs.contains(lane.signalRef);
+          _selectedRowPaths.contains(lane.rowPath ?? lane.signalRef);
       if (isSelectedLane) {
         canvas.drawRect(laneRect, _selectionLaneBgPaint);
       }
@@ -781,7 +784,7 @@ class WaveformCanvasRenderObject extends RenderBox {
       // trace, not only in the side panes).
       if (lane.kind == WaveformLaneKind.signal &&
           lane.signalRef != null &&
-          _selectedSignalRefs.contains(lane.signalRef)) {
+          _selectedRowPaths.contains(lane.rowPath ?? lane.signalRef)) {
         commands
           ..add(
             DrawRect(

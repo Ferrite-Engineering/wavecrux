@@ -153,10 +153,6 @@ void main() {
     // one-key wipe of a curated view is a chord that gets hit by accident,
     // even with the Undo snackbar behind it.
     ShortcutAction.clearCanvas,
-    // Remove Selected Signals — Edit menu / overflow / palette. The Signals
-    // list owns Delete and Backspace for it while the list has focus; a
-    // global binding would fire from panels unrelated to the list.
-    ShortcutAction.removeSelectedSignals,
   };
 
   const unboundActions = paletteOnlyActions;
@@ -273,6 +269,15 @@ void main() {
 
     test('closeFile is unbound (Cmd+W is close on this platform)', () {
       expect(defaultBindings().containsKey(ShortcutAction.closeFile), isFalse);
+    });
+
+    test('Remove Selected Signals is the bare key labelled delete '
+        '(Backspace)', () {
+      final a =
+          defaultBindings()[ShortcutAction.removeSelectedSignals]!
+              as SingleActivator;
+      expect(a.trigger, LogicalKeyboardKey.backspace);
+      expect(a.meta || a.control || a.alt || a.shift, isFalse);
     });
 
     test('modifier-key actions use meta, not control', () {
@@ -426,6 +431,14 @@ void main() {
     setUp(() => debugDefaultTargetPlatformOverride = TargetPlatform.linux);
     tearDown(() => debugDefaultTargetPlatformOverride = null);
 
+    test('Remove Selected Signals is the bare Delete key', () {
+      final a =
+          defaultBindings()[ShortcutAction.removeSelectedSignals]!
+              as SingleActivator;
+      expect(a.trigger, LogicalKeyboardKey.delete);
+      expect(a.meta || a.control || a.alt || a.shift, isFalse);
+    });
+
     test('closeFile is Ctrl+F4, the platform close-document key', () {
       final close =
           defaultBindings()[ShortcutAction.closeFile]! as SingleActivator;
@@ -498,6 +511,14 @@ void main() {
   group('defaultBindings — Windows', () {
     setUp(() => debugDefaultTargetPlatformOverride = TargetPlatform.windows);
     tearDown(() => debugDefaultTargetPlatformOverride = null);
+
+    test('Remove Selected Signals is the bare Delete key', () {
+      final a =
+          defaultBindings()[ShortcutAction.removeSelectedSignals]!
+              as SingleActivator;
+      expect(a.trigger, LogicalKeyboardKey.delete);
+      expect(a.meta || a.control || a.alt || a.shift, isFalse);
+    });
 
     test('closeFile is Ctrl+F4, the platform close-document key', () {
       final close =

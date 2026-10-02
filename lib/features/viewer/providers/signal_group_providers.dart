@@ -489,16 +489,29 @@ class SignalGroupsNotifier extends _$SignalGroupsNotifier {
     return true;
   }
 
-  /// The path a Signals-list row is selected by: the variable's full
-  /// hierarchical path when the hierarchy knows the row's ref, otherwise the
-  /// row's own name.
+  /// The path a Signals-list row is selected by: the row's own
+  /// [SignalEntry.signalPath], the full path of the variable it was added
+  /// from.
   ///
-  /// The one definition the list's highlight, its Shift-click range and
-  /// [removeSignalsAtPaths] share, so what is highlighted is what is removed.
+  /// Not the path looked up through the row's ref. Aliased variables share
+  /// one ref: in a VCD, `top.down.clk` and `top.up.clk` both point at the
+  /// testbench's clock. The ref map holds only one of them, so resolving
+  /// through it gave every alias row the same path. Clicking `up.clk`
+  /// selected whichever alias the map held, a tree selection of `down.clk`
+  /// never matched its row, and removing one alias removed them all.
+  ///
+  /// Rows without a stored path (sessions written before paths were kept)
+  /// fall back to the ref lookup, then to the row's own name.
+  ///
+  /// The one definition the list's highlight, its Shift-click range,
+  /// [removeSignalsAtPaths] and Remove All in Scope share, so what is
+  /// highlighted is what is removed. It matches the Values dock, which
+  /// selects by [SignalEntry.signalPath] too.
   static String selectionPathOf(
     SignalEntry entry,
     Map<String, Variable> variablesMap,
   ) {
+    if (entry.signalPath case final path? when path.isNotEmpty) return path;
     final ref = entry.signalRef ?? '';
     return variablesMap[ref]?.fullPath ?? entry.displayName ?? ref;
   }

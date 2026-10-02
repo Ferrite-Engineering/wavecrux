@@ -12,8 +12,9 @@ import 'package:wavecrux/services/waveform_geom/time_mapper.dart';
 
 // P1: an inbound cross-probe selection must be visible on the waveform CANVAS,
 // not only in the signal-name / value panes. The render object paints a
-// full-lane tint + a left accent bar on any lane whose signalRef is in the
-// selected set; these tests assert that treatment through the recorded
+// full-lane tint + a left accent bar on any lane whose row path (or, without
+// one, signalRef) is in the selected set; these tests assert that treatment
+// through the recorded
 // draw-command snapshot.
 
 WaveformCanvasRenderObject _renderObj(GlobalKey key) =>
@@ -26,7 +27,7 @@ const _selectionColor = Color(0xFFAB47BC);
 Widget _canvas({
   required GlobalKey key,
   required List<WaveformLaneData> lanes,
-  Set<String> selectedSignalRefs = const {},
+  Set<String> selectedRowPaths = const {},
 }) {
   final tm = TimeMapper.fitAll(startTime: 0, endTime: 1000, viewportWidth: 800);
   return MaterialApp(
@@ -40,7 +41,7 @@ Widget _canvas({
           timeMapper: tm,
           cursorState: const CursorState(),
           colorTheme: defaultBuiltinPreset(),
-          selectedSignalRefs: selectedSignalRefs,
+          selectedRowPaths: selectedRowPaths,
           selectionColor: _selectionColor,
           recordPaintCommands: true,
         ),
@@ -74,7 +75,7 @@ void main() {
       ];
 
       await tester.pumpWidget(
-        _canvas(key: key, lanes: lanes, selectedSignalRefs: {'top.clk'}),
+        _canvas(key: key, lanes: lanes, selectedRowPaths: {'top.clk'}),
       );
       await tester.pump();
 
@@ -110,7 +111,7 @@ void main() {
 
       // Selected set names a different signal — this lane must stay plain.
       await tester.pumpWidget(
-        _canvas(key: key, lanes: lanes, selectedSignalRefs: {'top.other'}),
+        _canvas(key: key, lanes: lanes, selectedRowPaths: {'top.other'}),
       );
       await tester.pump();
 
@@ -151,7 +152,7 @@ void main() {
       ];
 
       await tester.pumpWidget(
-        _canvas(key: key, lanes: lanes, selectedSignalRefs: {'top.b'}),
+        _canvas(key: key, lanes: lanes, selectedRowPaths: {'top.b'}),
       );
       await tester.pump();
 
@@ -164,7 +165,51 @@ void main() {
       expect(accentRects.single.rect.top, 40);
     });
 
-    testWidgets('changing selectedSignalRefs marks the render object dirty', (
+    // counter_tb.vcd: `down.clk`, `up.clk` and the testbench's own `clk` are
+    // one net under three names, so they share a ref. Selecting one row must
+    // tint that row's lane only.
+    testWidgets(
+      'aliased lanes sharing a ref: only the selected row is tinted',
+      (
+        tester,
+      ) async {
+        final key = GlobalKey();
+        const lanes = [
+          WaveformLaneData(
+            kind: WaveformLaneKind.signal,
+            y: 0,
+            height: 40,
+            signalRef: '#',
+            rowPath: 'tb.down.clk',
+            displayName: 'clk',
+            isScalar: true,
+          ),
+          WaveformLaneData(
+            kind: WaveformLaneKind.signal,
+            y: 40,
+            height: 40,
+            signalRef: '#',
+            rowPath: 'tb.up.clk',
+            displayName: 'clk',
+            isScalar: true,
+          ),
+        ];
+
+        await tester.pumpWidget(
+          _canvas(key: key, lanes: lanes, selectedRowPaths: {'tb.up.clk'}),
+        );
+        await tester.pump();
+
+        final accentRects = _renderObj(key).lastPaintCommands.value
+            .whereType<DrawRect>()
+            .where((r) => r.paint.color.toARGB32() == accentArgb)
+            .toList();
+        expect(accentRects, hasLength(1));
+        expect(accentRects.single.rect.top, 40);
+      },
+    );
+
+    testWidgets('changing selectedRowPaths marks the render object dirty', (
       tester,
     ) async {
       final key = GlobalKey();
@@ -182,7 +227,7 @@ void main() {
       await tester.pumpWidget(_canvas(key: key, lanes: lanes));
       await tester.pump();
 
-      final ro = _renderObj(key)..selectedSignalRefs = {'top.clk'};
+      final ro = _renderObj(key)..selectedRowPaths = {'top.clk'};
       expect(ro.debugNeedsPaint, isTrue);
     });
   });

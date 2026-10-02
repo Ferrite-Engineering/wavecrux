@@ -12,6 +12,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:panes/panes.dart';
 import 'package:wavecrux/core/providers/paid_tier_actions_installed_provider.dart';
 import 'package:wavecrux/core/shortcuts/shortcut_action.dart';
+import 'package:wavecrux/core/shortcuts/shortcut_bindings.dart';
+import 'package:wavecrux/core/shortcuts/shortcut_manager_widget.dart';
 import 'package:wavecrux/domain/enums/device_class.dart';
 import 'package:wavecrux/domain/interfaces/waveform_data_source.dart';
 import 'package:wavecrux/domain/models/diff_result.dart';
@@ -1202,6 +1204,81 @@ void main() {
           ['a'],
         );
         expect(find.text('Removed 1 signal'), findsOneWidget);
+        await tester.pump(const Duration(seconds: 5));
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    // A click in the signal tree selects without taking keyboard focus, so
+    // the delete key arrives wherever focus already is. It has to remove the
+    // selection from there, through the Remove Selected Signals binding,
+    // rather than fall through to the platform (a beep on macOS).
+    testWidgets(
+      'the delete key removes a selection made in the signal tree, with '
+      'focus left where it was',
+      (tester) async {
+        await tester.pumpWidget(
+          _buildApp(
+            // The app's keymap layer, which app.dart mounts above every
+            // screen; the binding fires through it.
+            home: const ShortcutManagerWidget(child: ViewerScreen()),
+            overrides: [
+              waveformIsLoadedProvider.overrideWithValue(true),
+              workspaceServiceProvider.overrideWithValue(
+                _InMemoryWorkspaceService(),
+              ),
+            ],
+            tabOverrides: [
+              memoryStatsProvider.overrideWith(_InertMemoryStatsNotifier.new),
+              sessionAutoSaveProvider.overrideWith(
+                _InertSessionAutoSaveNotifier.new,
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final rootContainer = ProviderScope.containerOf(
+          tester.element(find.byType(ViewerScreen)),
+        );
+        final tab = rootContainer
+            .read(tabContainerManagerProvider)
+            .containerFor(rootContainer.read(activeTabIdProvider));
+        tab
+            .read(signalGroupsProvider.notifier)
+            .restoreFromSession(
+              SignalGroup(
+                entries: [
+                  for (final scope in ['down', 'up'])
+                    for (final name in ['clk', 'counter'])
+                      SignalEntry.signal(
+                        id: 'id_${scope}_$name',
+                        // The two clk rows are one net: they share a ref.
+                        signalRef: name == 'clk' ? '#' : 'ref_$scope',
+                        signalPath: 'tb.$scope.$name',
+                        displayName: name,
+                      ),
+                ],
+              ),
+            );
+        tab.read(selectedVariablesProvider.notifier)
+          ..selectOnly('tb.down.clk')
+          ..toggle('tb.down.counter');
+        await tester.pumpAndSettle();
+
+        final trigger =
+            (defaultBindings()[ShortcutAction.removeSelectedSignals]!
+                    as SingleActivator)
+                .trigger;
+        await tester.sendKeyEvent(trigger);
+        await tester.pumpAndSettle();
+
+        expect(
+          tab.read(signalGroupsProvider).entries.map((e) => e.signalPath),
+          ['tb.up.clk', 'tb.up.counter'],
+        );
+        expect(tab.read(selectedVariablesProvider), isEmpty);
+        expect(find.text('Removed 2 signals'), findsOneWidget);
         await tester.pump(const Duration(seconds: 5));
         expect(tester.takeException(), isNull);
       },

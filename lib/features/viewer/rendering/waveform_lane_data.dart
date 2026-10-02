@@ -51,6 +51,7 @@ class WaveformLaneData {
     required this.y,
     required this.height,
     this.signalRef,
+    this.rowPath,
     this.displayName = '',
     this.signalColor = const Color(0xFF4CAF50),
     this.format = DisplayFormat.hexadecimal,
@@ -90,6 +91,13 @@ class WaveformLaneData {
 
   /// Opaque signal reference used with [WaveformDataSource] queries.
   final String? signalRef;
+
+  /// The row's own hierarchical path ([SignalEntry.signalPath]), which is
+  /// what the per-tab selection holds. Distinct from [signalRef]: aliased
+  /// variables (`top.down.clk`, `top.up.clk`) share one ref, so a selection
+  /// matched by ref would light every alias lane at once. Null for a lane
+  /// built without one, which then matches by [signalRef].
+  final String? rowPath;
 
   /// Human-readable signal label shown inside each lane.
   final String displayName;

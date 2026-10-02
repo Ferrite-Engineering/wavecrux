@@ -926,6 +926,10 @@ class _WaveformCanvasState extends ConsumerState<WaveformCanvas> {
               y: y,
               height: height,
               signalRef: signalRef,
+              rowPath: SignalGroupsNotifier.selectionPathOf(
+                entry,
+                variablesMap,
+              ),
               displayName: entry.displayName ?? signalRef,
               signalColor: entry.argbColor != null
                   ? Color(entry.argbColor!)
@@ -1504,22 +1508,14 @@ class _WaveformCanvasState extends ConsumerState<WaveformCanvas> {
     final variablesMap = ref.watch(signalVariablesMapProvider);
     final filtersMap = ref.watch(translateFilterProvider);
 
-    // Resolve the per-tab selection (keyed by fullPath) to the canvas lane's
-    // data identity (signalRef) so the render object can tint the selected
-    // lane(s). Watching selectedVariablesProvider here is what repaints the
-    // canvas on a selection change — including an inbound CXP cross-probe,
-    // whose selection was previously visible only in the side panes.
-    // fullPath → signalRef via signalVariablesByPathProvider is O(selected)
-    // (usually one path), never a scan of the full — gate-level huge —
-    // variables map.
-    final selectedPaths = ref.watch(selectedVariablesProvider);
-    final pathToVariable = ref.watch(signalVariablesByPathProvider);
-    final selectedSignalRefs = selectedPaths.isEmpty
-        ? const <String>{}
-        : <String>{
-            for (final path in selectedPaths)
-              if (pathToVariable[path] case final variable?) variable.signalRef,
-          };
+    // The per-tab selection (keyed by fullPath) goes to the render object
+    // as it is; each lane carries its own row path to match it against.
+    // Resolving the paths to signalRefs instead tinted every alias of a
+    // selected net, since aliased variables share one ref. Watching
+    // selectedVariablesProvider here is what repaints the canvas on a
+    // selection change — including an inbound CXP cross-probe, whose
+    // selection was previously visible only in the side panes.
+    final selectedRowPaths = ref.watch(selectedVariablesProvider);
     // Accent color mirrors the value/name pane row highlight (Theme primary).
     final selectionColor = Theme.of(context).colorScheme.primary;
     final activeDecoders = ref.watch(activeDecodersProvider);
@@ -1930,7 +1926,7 @@ class _WaveformCanvasState extends ConsumerState<WaveformCanvas> {
                                       patternMatchRegions: patternMatchRanges,
                                       xOriginTime: xOriginTime,
                                       xOriginSignalRefs: xOriginSignalRefs,
-                                      selectedSignalRefs: selectedSignalRefs,
+                                      selectedRowPaths: selectedRowPaths,
                                       selectionColor: selectionColor,
                                       statsCollector: statsCollector,
                                       viewportTop: _viewportTop,

@@ -158,29 +158,92 @@ void main() {
       expect(c.read(signalGroupsProvider), curated());
     });
 
-    test('removeSignalsAtPaths matches rows by their selection path', () {
+    test('removeSignalsAtPaths matches rows by their own stored path', () {
       final c = _container();
       final notifier = c.read(signalGroupsProvider.notifier)
         ..restoreFromSession(curated());
-      // `clk` resolves through the hierarchy to its full path; `d` is not in
-      // the map and falls back to its display name — the same rule the
-      // Signals list highlights by.
+      // Every curated row stores its path, so the ref map is not consulted:
+      // an empty map still finds both.
+      final removal = notifier.removeSignalsAtPaths({'top.clk', 'top.d'}, {});
+      expect(removal!.signalCount, 2);
+      expect(
+        c.read(signalGroupsProvider).entries.map((e) => e.kind),
+        [SignalEntryKind.group, SignalEntryKind.comment],
+      );
+    });
+
+    test('aliases sharing a ref are told apart by their stored paths', () {
+      // counter_tb.vcd: down.clk and up.clk are the testbench clock under two
+      // names, one ref. The ref map can hold only one of them.
+      const shared = Variable(
+        name: 'clk',
+        varType: VarType.wire,
+        direction: VarDirection.unknown,
+        signalRef: '#',
+        scopePath: 'tb.up',
+      );
+      final c = _container();
+      final notifier = c.read(signalGroupsProvider.notifier)
+        ..restoreFromSession(
+          SignalGroup(
+            entries: [
+              SignalEntry.signal(
+                id: 'down',
+                signalRef: '#',
+                signalPath: 'tb.down.clk',
+                displayName: 'clk',
+              ),
+              SignalEntry.signal(
+                id: 'up',
+                signalRef: '#',
+                signalPath: 'tb.up.clk',
+                displayName: 'clk',
+              ),
+            ],
+          ),
+        );
       final removal = notifier.removeSignalsAtPaths(
-        {'top.clk', 'd'},
+        {'tb.down.clk'},
         {
-          'ref_clk': const Variable(
-            name: 'clk',
+          '#': shared,
+        },
+      );
+      expect(removal!.signalCount, 1);
+      expect(
+        c.read(signalGroupsProvider).entries.map((e) => e.signalPath),
+        ['tb.up.clk'],
+      );
+    });
+
+    test('a row with no stored path falls back to the ref map, then its '
+        'name', () {
+      final c = _container();
+      final notifier = c.read(signalGroupsProvider.notifier)
+        ..restoreFromSession(
+          SignalGroup(
+            entries: [
+              SignalEntry.signal(id: 'a', signalRef: 'ref_a', displayName: 'a'),
+              SignalEntry.signal(id: 'b', signalRef: 'ref_b', displayName: 'b'),
+              SignalEntry.signal(id: 'k', signalRef: 'ref_k', displayName: 'k'),
+            ],
+          ),
+        );
+      final removal = notifier.removeSignalsAtPaths(
+        {'top.a', 'b'},
+        {
+          'ref_a': const Variable(
+            name: 'a',
             varType: VarType.wire,
             direction: VarDirection.unknown,
-            signalRef: 'ref_clk',
+            signalRef: 'ref_a',
             scopePath: 'top',
           ),
         },
       );
       expect(removal!.signalCount, 2);
       expect(
-        c.read(signalGroupsProvider).entries.map((e) => e.kind),
-        [SignalEntryKind.group, SignalEntryKind.comment],
+        c.read(signalGroupsProvider).entries.map((e) => e.displayName),
+        ['k'],
       );
     });
 

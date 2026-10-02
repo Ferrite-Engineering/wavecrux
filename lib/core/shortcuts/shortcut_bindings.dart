@@ -132,6 +132,17 @@ Map<ShortcutAction, ShortcutActivator> defaultBindings() {
       LogicalKeyboardKey.escape,
       shift: true,
     ),
+    // The key a user presses to delete: the one labelled "delete" on a Mac
+    // keyboard is Backspace, and Windows and Linux use Delete. Bound here,
+    // not only in the Signals list's own key handler, because a click in the
+    // signal tree selects without taking keyboard focus: the key then reaches
+    // the viewer from wherever focus is. Bare keys never become macOS menu
+    // key equivalents (see `nativeMenuShortcut`), and the shortcut manager
+    // passes bare keys through while a text field has focus, so typing is
+    // unaffected.
+    ShortcutAction.removeSelectedSignals: SingleActivator(
+      isMac ? LogicalKeyboardKey.backspace : LogicalKeyboardKey.delete,
+    ),
     // ── other ─────────────────────────────────────────────────────────────
     // Cmd/Ctrl+Shift+K — moved off Cmd/Ctrl+Shift+T, which collided with
     // [toggleTransactionTable] (the frequently-toggled bottom dock keeps the

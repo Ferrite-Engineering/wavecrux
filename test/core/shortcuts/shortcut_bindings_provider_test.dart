@@ -147,9 +147,6 @@ const Set<ShortcutAction> paletteOnlyActions = {
   // Clear Canvas — View menu / overflow / palette only; no default chord for
   // a one-key wipe of the canvas.
   ShortcutAction.clearCanvas,
-  // Remove Selected Signals — Edit menu / overflow / palette; the Signals
-  // list's Delete / Backspace keys are local to the list, not a binding.
-  ShortcutAction.removeSelectedSignals,
 };
 
 const Set<ShortcutAction> unboundActions = paletteOnlyActions;

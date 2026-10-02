@@ -1794,7 +1794,9 @@ void main() {
           ],
         );
         addTearDown(container.dispose);
-        container.read(signalGroupsProvider.notifier).addSignal(_v('clk'));
+        container
+            .read(signalGroupsProvider.notifier)
+            .addSignal(_v('clk', scopePath: 'top.cpu'));
 
         await tester.pumpWidget(
           UncontrolledProviderScope(
@@ -2059,7 +2061,10 @@ void main() {
           await tester.pumpAndSettle();
 
           // The row's fullPath is selected in the per-tab selection …
-          expect(container.read(selectedVariablesProvider), contains('clk'));
+          expect(
+            container.read(selectedVariablesProvider),
+            contains('top.clk'),
+          );
           // … and the root CXP focus mirrors the clicked signalRef, so the
           // emitter / panel-send resolve it.
           expect(container.read(selectedSignalProvider), 'ref_clk');
@@ -2108,7 +2113,9 @@ void main() {
         // the row adopts the full-row highlight BAR (the same primary tint
         // the value column paints) plus the bold name — NOT a text
         // background, so the three panes' selection cues match.
-        container.read(selectedVariablesProvider.notifier).selectOnly('clk');
+        container
+            .read(selectedVariablesProvider.notifier)
+            .selectOnly('top.clk');
         await tester.pumpAndSettle();
 
         final style = tester.widget<Text>(find.text('clk')).style;
@@ -2276,10 +2283,10 @@ void main() {
 
       await clickName(tester, 'b');
       await clickName(tester, 'd', holding: LogicalKeyboardKey.shiftLeft);
-      expect(c.read(selectedVariablesProvider), {'b', 'c', 'd'});
+      expect(c.read(selectedVariablesProvider), {'top.b', 'top.c', 'top.d'});
 
       await clickName(tester, 'c', holding: LogicalKeyboardKey.metaLeft);
-      expect(c.read(selectedVariablesProvider), {'b', 'd'});
+      expect(c.read(selectedVariablesProvider), {'top.b', 'top.d'});
       // Nothing was added by any of the clicks.
       expect(names(c), ['a', 'b', 'c', 'd', 'e']);
     });
@@ -2291,7 +2298,7 @@ void main() {
       c.read(signalGroupsProvider.notifier).addSignals([_v('a'), _v('b')]);
       await pumpPanel(tester, c);
 
-      c.read(selectedVariablesProvider.notifier).selectOnly('a');
+      c.read(selectedVariablesProvider.notifier).selectOnly('top.a');
       await tester.pumpAndSettle();
 
       expect(
@@ -2464,13 +2471,127 @@ void main() {
       // 3. Shift-click three rows, Delete.
       await clickName(tester, 'pc');
       await clickName(tester, 'alu_a', holding: LogicalKeyboardKey.shiftLeft);
-      expect(c.read(selectedVariablesProvider), {'pc', 'ir', 'alu_a'});
+      expect(c.read(selectedVariablesProvider), {
+        'top.cpu.pc',
+        'top.cpu.ir',
+        'top.cpu.alu_a',
+      });
       await tester.sendKeyEvent(LogicalKeyboardKey.delete);
       await tester.pumpAndSettle();
       expect(names(c), ['clk', 'alu_b', 'rst']);
       expect(find.text('Removed 3 signals'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pump(const Duration(seconds: 5));
+    });
+
+    // counter_tb.vcd, the file the getting-started video records on: `clk`
+    // and `reset` are the testbench's nets, and `down` and `up` each declare
+    // them again under the same VCD id codes, so the aliases share a ref.
+    Variable alias(String name, String scope, String ref) => Variable(
+      name: name,
+      varType: VarType.wire,
+      direction: VarDirection.unknown,
+      signalRef: ref,
+      scopePath: 'tb.$scope',
+    );
+    final downVars = [
+      alias('clk', 'down', '#'),
+      alias('counter', 'down', '%'),
+      alias('reset', 'down', r'$'),
+    ];
+    final upVars = [
+      alias('clk', 'up', '#'),
+      alias('counter', 'up', "'"),
+      alias('reset', 'up', r'$'),
+    ];
+
+    testWidgets('Remove All in Scope on one scope leaves the aliases another '
+        'scope added', (tester) async {
+      final c = desktopContainer();
+      c.read(signalGroupsProvider.notifier).addSignals([
+        ...downVars,
+        ...upVars,
+      ]);
+      final down = Scope(
+        name: 'down',
+        type: ScopeType.module,
+        path: 'tb.down',
+        variables: downVars,
+      );
+      await pumpPanel(tester, c, beside: ScopeTreeNode(scope: down));
+
+      await tester.tap(find.text('down'), buttons: kSecondaryButton);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Remove All in Scope'));
+      await tester.pumpAndSettle();
+
+      expect(
+        c.read(signalGroupsProvider).entries.map((e) => e.signalPath),
+        ['tb.up.clk', 'tb.up.counter', 'tb.up.reset'],
+      );
+      expect(find.text('Removed 3 signals'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('an aliased row selects, and Delete removes, that row only', (
+      tester,
+    ) async {
+      final c = desktopContainer();
+      c.read(signalGroupsProvider.notifier).addSignals([
+        ...downVars,
+        ...upVars,
+      ]);
+      await pumpPanel(tester, c);
+
+      // The second `clk` row is up.clk.
+      await tester.tap(find.text('clk').at(1));
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pumpAndSettle();
+      expect(c.read(selectedVariablesProvider), {'tb.up.clk'});
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.delete);
+      await tester.pumpAndSettle();
+      expect(
+        c.read(signalGroupsProvider).entries.map((e) => e.signalPath),
+        [
+          'tb.down.clk',
+          'tb.down.counter',
+          'tb.down.reset',
+          'tb.up.counter',
+          'tb.up.reset',
+        ],
+      );
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('a selection made in the signal tree removes exactly those '
+        'rows, aliases included', (tester) async {
+      final c = desktopContainer();
+      c.read(signalGroupsProvider.notifier).addSignals([
+        ...downVars,
+        ...upVars,
+      ]);
+      // What Shift-clicking down's three rows in the tree selects.
+      c.read(selectedVariablesProvider.notifier)
+        ..selectOnly('tb.down.clk')
+        ..selectRangeTo('tb.down.reset', [
+          'tb.down.clk',
+          'tb.down.counter',
+          'tb.down.reset',
+        ]);
+      await pumpPanel(tester, c);
+
+      final removal = c
+          .read(signalGroupsProvider.notifier)
+          .removeSignalsAtPaths(
+            c.read(selectedVariablesProvider),
+            c.read(signalVariablesMapProvider),
+          );
+      expect(removal?.signalCount, 3);
+      expect(
+        c.read(signalGroupsProvider).entries.map((e) => e.signalPath),
+        ['tb.up.clk', 'tb.up.counter', 'tb.up.reset'],
+      );
     });
 
     for (final locale in const [

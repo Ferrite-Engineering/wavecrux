@@ -261,9 +261,12 @@ class ScopeTreeNode extends ConsumerWidget {
   /// on this tab's canvas that shows a variable under [scope] — at the top
   /// level or inside a group — leaves in one update, with an Undo.
   ///
-  /// A row matches by its signal ref or by its hierarchical path, so a row
-  /// restored from a session (whose ref was re-resolved) and a row added this
-  /// run are both found. Groups stay, even when emptied: the user built them.
+  /// A row matches by its own hierarchical path
+  /// ([SignalGroupsNotifier.selectionPathOf]), never by its signal ref.
+  /// Aliased variables share a ref: in a VCD where `down.clk` and `up.clk`
+  /// are both the testbench clock, matching by ref made Remove All in Scope
+  /// on `down` also take `up.clk`, `up.reset` and the testbench's own clock.
+  /// Groups stay, even when emptied: the user built them.
   Future<void> _removeAllInScope(BuildContext context, WidgetRef ref) async {
     final groups = ref.read(signalGroupsProvider.notifier);
     final container = ProviderScope.containerOf(context, listen: false);
@@ -278,10 +281,12 @@ class ScopeTreeNode extends ConsumerWidget {
 
     final all = await _collectAllVariables(scope, isCancelled: tabClosed);
     if (all == null || !context.mounted) return;
-    final refs = <String>{for (final v in all) v.signalRef};
     final paths = <String>{for (final v in all) v.fullPath};
+    final variablesMap = ref.read(signalVariablesMapProvider);
     final removal = groups.removeSignalsWhere(
-      (e) => refs.contains(e.signalRef) || paths.contains(e.signalPath),
+      (e) => paths.contains(
+        SignalGroupsNotifier.selectionPathOf(e, variablesMap),
+      ),
     );
     if (removal == null) {
       showCruxInfoSnack(
