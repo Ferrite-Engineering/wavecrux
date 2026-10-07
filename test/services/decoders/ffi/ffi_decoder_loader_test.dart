@@ -10,6 +10,7 @@ import 'dart:io';
 import 'package:crux_license/crux_license.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wavecrux/domain/enums/decoder_category.dart';
+import 'package:wavecrux/domain/enums/timescale_unit.dart';
 import 'package:wavecrux/domain/interfaces/protocol_decoder.dart';
 import 'package:wavecrux/domain/models/decoded_transaction.dart';
 import 'package:wavecrux/domain/models/decoder_config.dart';
@@ -160,6 +161,36 @@ void main() {
       expect(fields['signal_bindings'], '{data: top.dq}');
       expect(fields['parameters'], '{baudrate: 115200}');
       expect(fields['options'], '{baudrate: 115200}');
+    });
+
+    test('enum_labels loads as an object keyed by value or as an array in '
+        'enum_values order', () async {
+      if (_skipIfToolchainAbsent(toolchainAvailable)) return;
+
+      final dir = await _stageDirectory(
+        sources: {'config': pluginRoot},
+        ext: fixtureExtension,
+      );
+      final registry = DecoderRegistry.forTesting();
+      final loader = FfiDecoderLoader(
+        resolver: _resolverFor(dir),
+        registry: registry,
+      );
+      addTearDown(loader.dispose);
+
+      final infos = await loader.scan();
+      expect(infos.single.loadStatus, DecoderPluginLoadStatus.loaded);
+
+      final params = {
+        for (final p
+            in registry.getDefinition('test_config_contract')!.parameters)
+          p.name: p,
+      };
+      expect(params['parity']!.enumLabels, {'n': 'None', 'e': 'Even'});
+      expect(params['direction']!.enumLabels, {
+        'tx': 'Downstream',
+        'rx': 'Upstream',
+      });
     });
 
     test('reports abiMismatch and does not register the decoder', () async {
@@ -555,6 +586,87 @@ void main() {
       expect(counts.created, 1);
       expect(counts.destroyed, 1);
       expect(counts.destroyedTwice, 0);
+    });
+  });
+
+  // The plugin sees and returns femtoseconds; the viewer places
+  // transactions in ticks. The passthrough fixture echoes each sample's
+  // `timestamp_fs` back as the transaction's start and end, so a
+  // transaction must land on the tick of the sample it came from. A
+  // 1 fs timescale hides a missing conversion (the factor is 1), so
+  // every case here uses a coarser one.
+  group('FfiDecoderLoader — transaction times', () {
+    Future<DecoderFactory> loadPassthrough() async {
+      final dir = await _stageDirectory(
+        sources: {'passthrough': pluginRoot},
+        ext: fixtureExtension,
+      );
+      final registry = DecoderRegistry.forTesting();
+      final loader = FfiDecoderLoader(
+        resolver: _resolverFor(dir),
+        registry: registry,
+      );
+      addTearDown(loader.dispose);
+      final infos = await loader.scan();
+      expect(infos.single.loadStatus, DecoderPluginLoadStatus.loaded);
+      return registry.getFactory('test_passthrough')!;
+    }
+
+    List<int> startTimes(ProtocolDecoder decoder, Timescale? timescale) {
+      // A 1 ps trace with edges at 225 us and 2 ms, the shape of the
+      // openPCIE co-simulation that reported the defect.
+      const edges = <(int, String)>[(225000000, '1'), (2000000000, '0')];
+      final txs = decoder.decode(
+        0,
+        2000000001,
+        (name, time) => '1',
+        (name, start, end) => edges,
+        timescale: timescale,
+      );
+      for (final tx in txs) {
+        expect(tx.endTime, tx.startTime, reason: 'zero-width echo');
+      }
+      return [for (final tx in txs) tx.startTime];
+    }
+
+    test('a 1 ps trace places transactions on their sample ticks', () async {
+      if (_skipIfToolchainAbsent(toolchainAvailable)) return;
+      final factory = await loadPassthrough();
+
+      expect(
+        startTimes(
+          factory(const DecoderConfig(signalBindings: {'data': 'top.d'})),
+          const Timescale(factor: 1, unit: TimescaleUnit.picoSeconds),
+        ),
+        [225000000, 2000000000],
+      );
+    });
+
+    test('a 10 ns trace places transactions on their sample ticks', () async {
+      if (_skipIfToolchainAbsent(toolchainAvailable)) return;
+      final factory = await loadPassthrough();
+
+      expect(
+        startTimes(
+          factory(const DecoderConfig(signalBindings: {'data': 'top.d'})),
+          const Timescale(factor: 10, unit: TimescaleUnit.nanoSeconds),
+        ),
+        [225000000, 2000000000],
+      );
+    });
+
+    test('a trace with no timescale round-trips through the 1 ns '
+        'fallback', () async {
+      if (_skipIfToolchainAbsent(toolchainAvailable)) return;
+      final factory = await loadPassthrough();
+
+      expect(
+        startTimes(
+          factory(const DecoderConfig(signalBindings: {'data': 'top.d'})),
+          null,
+        ),
+        [225000000, 2000000000],
+      );
     });
   });
 }
