@@ -4,6 +4,8 @@
 // `create` refuses a configuration that does not name this decoder.
 // `flush` echoes the configuration back as the transaction's
 // `fields_json`, letting the Dart test assert every top-level key.
+// The manifest declares `enum_labels` in both accepted shapes: an
+// object keyed by value, and an array in `enum_values` order.
 //
 // Build (Linux/macOS):  see ../build_test_plugins.sh
 // Build (Windows):      see ../build_test_plugins.bat
@@ -22,7 +24,13 @@ static const char kManifestJson[] =
     "{\"name\":\"data\",\"description\":\"Test data line\",\"bit_width\":1}"
     "],"
     "\"parameters\":["
-    "{\"name\":\"baudrate\",\"kind\":\"integer\",\"default\":9600}"
+    "{\"name\":\"baudrate\",\"kind\":\"integer\",\"default\":9600},"
+    "{\"name\":\"parity\",\"kind\":\"enum\",\"default\":\"n\","
+    "\"enum_values\":[\"n\",\"e\"],"
+    "\"enum_labels\":{\"n\":\"None\",\"e\":\"Even\"}},"
+    "{\"name\":\"direction\",\"kind\":\"enum\",\"default\":\"tx\","
+    "\"enum_values\":[\"tx\",\"rx\"],"
+    "\"enum_labels\":[\"Downstream\",\"Upstream\"]}"
     "],"
     "\"description\":\"Loader fixture that echoes its instance configuration.\","
     "\"category\":\"userPlugin\""

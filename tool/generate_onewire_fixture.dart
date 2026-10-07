@@ -122,35 +122,34 @@ _Scenario _buildScenario() {
   builder.idleFor(50 * 1000);
 
   // Assemble the canonical expected-transactions JSON.
-  // Timestamps are emitted in fs (the unit the loader passes to the
-  // plugin via WcSample.timestamp_fs after the fs-per-tick
-  // conversion). The 1 ns VCD timescale gives 1 fs/tick = 1e6 fs.
-  const fsPerNs = 1000 * 1000;
+  // Timestamps are in ticks of the 1 ns VCD timescale, the unit every
+  // decoded transaction is placed in. The plugin itself sees and returns
+  // femtoseconds; the loader converts both ways.
   final expected = <Map<String, dynamic>>[
     {
-      'startTime': resetStart * fsPerNs,
-      'endTime': resetEnd * fsPerNs,
+      'startTime': resetStart,
+      'endTime': resetEnd,
       'label': 'RESET',
       'fields': {'kind': 'reset'},
       'isError': false,
     },
     {
-      'startTime': presenceStart * fsPerNs,
-      'endTime': presenceEnd * fsPerNs,
+      'startTime': presenceStart,
+      'endTime': presenceEnd,
       'label': 'PRESENCE',
       'fields': {'kind': 'presence', 'valid': 'true'},
       'isError': false,
     },
     {
-      'startTime': writeByteStart * fsPerNs,
-      'endTime': writeByteEnd * fsPerNs,
+      'startTime': writeByteStart,
+      'endTime': writeByteEnd,
       'label': 'BYTE 0x33',
       'fields': {'value': '0x33', 'bits': '8'},
       'isError': false,
     },
     {
-      'startTime': readByteStart * fsPerNs,
-      'endTime': readByteEnd * fsPerNs,
+      'startTime': readByteStart,
+      'endTime': readByteEnd,
       'label': 'BYTE 0x28',
       'fields': {'value': '0x28', 'bits': '8'},
       'isError': false,
@@ -161,8 +160,8 @@ _Scenario _buildScenario() {
   // bit's rising edge, not the slot completion. Patch the expected
   // entries to match the decoder's emission semantics — see the
   // README's transaction table.
-  expected[2]['endTime'] = builder.lastWriteByteEndNs * fsPerNs;
-  expected[3]['endTime'] = builder.lastReadByteEndNs * fsPerNs;
+  expected[2]['endTime'] = builder.lastWriteByteEndNs;
+  expected[3]['endTime'] = builder.lastReadByteEndNs;
 
   return _Scenario(
     vcd: builder.toVcd(),

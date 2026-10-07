@@ -54,7 +54,7 @@ Each `WcDecoderDef` carries the decoder's `id` (by convention lowercase and name
 |---|---|
 | `signals` | Array of required bindings: `{ "name", "bit_width"?, "description"? }`. |
 | `optional_signals` | Array of optional bindings, same shape. |
-| `parameters` | Array of `{ "name", "kind", "default"?, "description"?, "display_name"?, "enum_values"?, "enum_labels"? }`, where `kind` is `bool`, `int`, `enum` or `string`. |
+| `parameters` | Array of `{ "name", "kind", "default"?, "description"?, "display_name"?, "enum_values"?, "enum_labels"? }`, where `kind` is `bool`, `int`, `enum` or `string`. `enum_labels` is an object keyed by value, `{ "tx": "Downstream", "rx": "Upstream" }`, or an array with one label per `enum_values` entry, in the same order. |
 | `description` | Optional text shown in the picker. |
 | `category` | Optional picker category; anything unrecognized falls back to **User Plugins**. |
 
@@ -97,6 +97,8 @@ For a 1-bit signal, `bits_ptr[0] & 1` is the level and `(bits_ptr[0] >> 1) & 1` 
 Every timestamp the host passes you — and every timestamp you put on an emitted transaction — is in **femtoseconds**, not ticks and not the file's native timescale. The host derives the conversion from the file's timescale before calling you, so your decoder logic is timescale-independent.
 
 When you port timing thresholds from a datasheet, convert up front: multiply nanoseconds by 1,000,000 and microseconds by 1,000,000,000 to reach femtoseconds. A transaction whose timestamps look off by orders of magnitude is almost always a missing unit conversion here.
+
+WaveCrux 1.0.0 converted the timestamps it passed in but not the ones it got back, so on any file whose timescale is coarser than 1 fs it drew a plugin's transactions too late by the fs-per-tick factor (1,000× for a 1 ps file), usually past the end of the trace. WaveCrux 1.0.1 converts both ways. A plugin that divided its own output to work around 1.0.0 should stop doing so on 1.0.1.
 
 ## Who owns which strings { #strings }
 

@@ -679,17 +679,68 @@ class FfiDecoderLoader implements DecoderPluginLoader {
             throw FormatException('parameter "$name" is missing "kind"');
           }
           final type = _parameterTypeOf(kind);
+          final enumValues = (entry['enum_values'] as List?)?.cast<String>();
           return DecoderParameter(
             name: name,
             type: type,
             defaultValue: entry['default'] ?? _defaultForType(type),
             description: (entry['description'] as String?) ?? '',
             displayName: entry['display_name'] as String?,
-            enumValues: (entry['enum_values'] as List?)?.cast<String>(),
-            enumLabels: (entry['enum_labels'] as Map?)?.cast<String, String>(),
+            enumValues: enumValues,
+            enumLabels: _decodeEnumLabels(
+              name,
+              entry['enum_labels'],
+              enumValues,
+            ),
           );
         })
         .toList(growable: false);
+  }
+
+  /// `enum_labels` as a value-to-label map. The documented shape is a JSON
+  /// object keyed by value; a JSON array is read as labels for
+  /// `enum_values` in the same order, the shape a plugin author reaches
+  /// for first. Anything else names the parameter in a [FormatException]
+  /// rather than failing a cast.
+  Map<String, String>? _decodeEnumLabels(
+    String parameter,
+    Object? raw,
+    List<String>? enumValues,
+  ) {
+    if (raw == null) return null;
+    if (raw is Map) {
+      return {
+        for (final MapEntry(:key, :value) in raw.entries)
+          '$key': value is String
+              ? value
+              : throw FormatException(
+                  'parameter "$parameter": enum_labels values must be '
+                  'strings',
+                ),
+      };
+    }
+    if (raw is List) {
+      if (enumValues == null || raw.length != enumValues.length) {
+        throw FormatException(
+          'parameter "$parameter": an enum_labels array needs one label '
+          'per enum_values entry; use an object {"<value>": "<label>"} '
+          'otherwise',
+        );
+      }
+      return {
+        for (var i = 0; i < raw.length; i++)
+          enumValues[i]: raw[i] is String
+              ? raw[i] as String
+              : throw FormatException(
+                  'parameter "$parameter": enum_labels entries must be '
+                  'strings',
+                ),
+      };
+    }
+    throw FormatException(
+      'parameter "$parameter": enum_labels must be an object '
+      '{"<value>": "<label>"}',
+    );
   }
 
   DecoderParameterType _parameterTypeOf(String kind) {
@@ -1012,6 +1063,7 @@ class _PluginProtocolDecoder implements ProtocolDecoder {
             txBuffer,
             txCountPtr.value,
             transactions,
+            fsPerTick,
           );
           pending = false;
         }
@@ -1048,6 +1100,7 @@ class _PluginProtocolDecoder implements ProtocolDecoder {
           txBuffer,
           txCountPtr.value,
           transactions,
+          fsPerTick,
         );
         pending = false;
       }
@@ -1106,6 +1159,24 @@ class _PluginProtocolDecoder implements ProtocolDecoder {
       multiplier *= 10;
     }
     return timescale.factor * multiplier;
+  }
+
+  /// [fs] in whole ticks, rounded down. A `uint64` above 2^63 reaches
+  /// Dart as a negative `int`, so that range divides as unsigned.
+  static int _fsToTicksFloor(int fs, int fsPerTick) {
+    if (fs >= 0) return fs ~/ fsPerTick;
+    final unsigned = BigInt.from(fs).toUnsigned(64);
+    return (unsigned ~/ BigInt.from(fsPerTick)).toInt();
+  }
+
+  /// [fs] in whole ticks, rounded up.
+  static int _fsToTicksCeil(int fs, int fsPerTick) {
+    final exact = fs >= 0
+        ? fs % fsPerTick == 0
+        : BigInt.from(fs).toUnsigned(64) % BigInt.from(fsPerTick) ==
+              BigInt.zero;
+    final floor = _fsToTicksFloor(fs, fsPerTick);
+    return exact ? floor : floor + 1;
   }
 
   /// Pack a single binding's value into the WcSample bits buffer using
@@ -1194,10 +1265,19 @@ class _PluginProtocolDecoder implements ProtocolDecoder {
     return sorted;
   }
 
+  /// Copies the plugin's transactions into [out], converting their
+  /// femtosecond times back into the file's ticks.
+  ///
+  /// The header defines `start_fs` / `end_fs` as femtoseconds, the same
+  /// unit `decode` converts `WcSample.timestamp_fs` into, while every
+  /// [DecodedTransaction] is placed in ticks. The start rounds down and
+  /// the end rounds up, so a transaction shorter than one tick still
+  /// covers the tick it happened in.
   void _drainTransactions(
     ffi.Pointer<WcTransaction> buffer,
     int count,
     List<DecodedTransaction> out,
+    int fsPerTick,
   ) {
     for (var i = 0; i < count; i++) {
       final tx = (buffer + i).ref;
@@ -1206,8 +1286,8 @@ class _PluginProtocolDecoder implements ProtocolDecoder {
       final fields = _parseFieldsJson(fieldsJson);
       out.add(
         DecodedTransaction(
-          startTime: tx.start_fs,
-          endTime: tx.end_fs,
+          startTime: _fsToTicksFloor(tx.start_fs, fsPerTick),
+          endTime: _fsToTicksCeil(tx.end_fs, fsPerTick),
           label: label,
           fields: fields,
           isError: tx.is_error != 0,
