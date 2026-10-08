@@ -1,6 +1,6 @@
 # Annotations
 
-Annotations are notes you write directly on a waveform — a balloon on an edge, an arrow at a transition, a shaded band over a window of time. They are anchored to the data rather than to the picture, they travel with the session, and they can be packaged into a single file you can send to a colleague who has never seen your dump. Annotations are part of Open Core and free in every tier. Sharing them *live*, in a session with other people, is described in [Automation & collaboration](automation-and-collaboration.md#collaborative-viewing): anyone can join a session and write notes in it, and hosting one is the Enterprise feature.
+Annotations are notes you write directly on a waveform — a balloon on an edge, an arrow at a transition, a shaded band over a window of time. They are anchored to the data rather than to the picture, they travel with the session, and they can be packaged into a single file you can send to a colleague who has never seen your dump. Annotations are part of Open Core and free in every tier. Sharing them *live*, in a session with other people, is described in [Automation & collaboration](automation-and-collaboration.md#collaborative-viewing): from WaveCrux 1.1, anyone can join a session and write notes in it, and hosting one is the Enterprise feature.
 
 !!! note "Not the same as RTL source annotation"
 
@@ -132,7 +132,7 @@ Open a `.wavecruxpack` the way you open any other file. WaveCrux treats every pa
 
 ## In a live session { #live-sessions }
 
-Everything above is free. In a collaborative session — which anyone can join, and which an **Enterprise** seat hosts — annotations also become a shared surface: notes you write reach everyone in the room, the host carries them so somebody joining late gets the whole conversation rather than only what happens after they arrive, and a chip shows where a colleague is composing before their note exists. When the meeting ends, **File ▸ Export Review Minutes…** writes the session's notes as Markdown or CSV — time-ordered, with author, wall clock, signal path and the time in the file's own timescale — so the review lands in a ticket instead of in somebody's memory.
+Everything above is free. In a collaborative session (from 1.1 anyone can join one, and an **Enterprise** seat hosts it), annotations also become a shared surface: notes you write reach everyone in the room, the host carries them so somebody joining late gets the whole conversation rather than only what happens after they arrive, and a chip shows where a colleague is composing before their note exists. When the meeting ends, **File ▸ Export Review Minutes…** writes the session's notes as Markdown or CSV — time-ordered, with author, wall clock, signal path and the time in the file's own timescale — so the review lands in a ticket instead of in somebody's memory.
 
 Attribution is not negotiable in a session: a participant cannot add a note as somebody else, edit one they did not write, or delete one they neither wrote nor host. The full picture, including how sessions are admitted and encrypted, is in [Automation & collaboration](automation-and-collaboration.md#collaborative-viewing).
 
