@@ -148,6 +148,14 @@ Both include their own walkthrough README, and the open-core test suite builds t
 
     Build against the `wavecrux_decoder.h` from the open-core source at the same version as the WaveCrux build you'll run. An ABI-major mismatch is the most common first-time load failure, and it almost always means the header and the app drifted apart.
 
+## Ready-made plugins, and sharing yours { #publishing }
+
+Open-source decoder plugins live together in [wavecrux-decoders](https://github.com/Ferrite-Engineering/wavecrux-decoders). One CI builds every plugin there for Linux, Windows and macOS, runs it under AddressSanitizer and UndefinedBehaviorSanitizer, fuzzes it, signs the release archives and lists them in one catalog. The first plugin decodes PCI Express at the PIPE interface and at the Data Link Layer.
+
+To share a decoder you have written, add it to that repository (you keep ownership of its directory) or ask for a catalog entry that points at your own repository. Its `CONTRIBUTING.md` sets out the minimum bar, and the coding, testing and release standards the repository holds its own plugins to are published alongside.
+
+Publishing there also gets your plugin a signed macOS build. The notarized macOS app currently loads only plugins signed by Ferrite Engineering, so a plugin you build and sign yourself loads on Linux and Windows but not yet on a Mac.
+
 ## Troubleshooting { #troubleshooting }
 
 When a plugin won't load or behaves oddly, the Decoder Plugins panel and the [logs](interface.md#logs) name the cause. The common ones:
