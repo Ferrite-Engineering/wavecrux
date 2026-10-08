@@ -196,7 +196,7 @@ When the session ends, WaveCrux asks whether to keep what was written — all of
 
 ### Review minutes { #collab-minutes }
 
-**File ▸ Export Review Minutes…** turns the session's annotations into a document you can paste into a ticket: Markdown or CSV, time-ordered, each entry carrying its author, the wall-clock time it was raised, the signal path, and the time in the waveform's own timescale. A raw tick count means nothing in a bug tracker, so the timescale comes from the trace rather than from the session.
+The host's **File ▸ Export Review Minutes…** (Enterprise, like Export Session Recording; from 1.1 guests can join and take part but do not export) turns the session's annotations into a document you can paste into a ticket: Markdown or CSV, time-ordered, each entry carrying its author, the wall-clock time it was raised, the signal path, and the time in the waveform's own timescale. A raw tick count means nothing in a bug tracker, so the timescale comes from the trace rather than from the session.
 
 Minutes are what the meeting *concluded*. A note edited during the review appears once saying what it ended up saying, keeping the timestamp of when the point was first raised — a typo fixed ten minutes later did not raise it again — and a note deleted during the meeting does not appear at all. If you need the raw event log instead, that is the **session recording**, which keeps everything.
 
