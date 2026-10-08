@@ -497,11 +497,22 @@ ActionDescriptor descriptorFor(ShortcutAction action) => switch (action) {
     requiredTier: LicenseTier.enterprise,
   ),
 
-  // ── Collaborative viewing (Enterprise tier) — gated on session state ─
-  ShortcutAction.shareSession ||
-  ShortcutAction.joinSession => const ActionDescriptor(
+  // ── Collaborative viewing — gated on session state ───────────────────
+  // Hosting a session (Share Session) is the only tier-gated step, and it is
+  // the only action here that carries a tier badge. Joining is free in every
+  // edition, so everything a guest does once inside (leave, follow, point,
+  // ask to present) carries no badge either. Join is visible only where a
+  // real collaboration service is bound and the app is a desktop build: the
+  // protocol is compiled out of the open-source build, and the web and mobile
+  // builds do not offer it.
+  ShortcutAction.shareSession => const ActionDescriptor(
     surfaces: _menuOverflowPalette,
     requiredTier: LicenseTier.enterprise,
+    requires: [ActionRequirement.notInSession],
+  ),
+  ShortcutAction.joinSession => const ActionDescriptor(
+    surfaces: _menuOverflowPalette,
+    isVisible: _collaborationJoinable,
     requires: [ActionRequirement.notInSession],
   ),
   ShortcutAction.stopSharing => const ActionDescriptor(
@@ -511,7 +522,6 @@ ActionDescriptor descriptorFor(ShortcutAction action) => switch (action) {
   ),
   ShortcutAction.leaveSession => const ActionDescriptor(
     surfaces: _menuOverflowPalette,
-    requiredTier: LicenseTier.enterprise,
     requires: [ActionRequirement.isParticipant],
   ),
   ShortcutAction.exportSessionRecording ||
@@ -521,22 +531,21 @@ ActionDescriptor descriptorFor(ShortcutAction action) => switch (action) {
     requires: [ActionRequirement.recordingAvailable],
   ),
 
-  // ── Presenter Mode (Enterprise) — gated on session state ─────────────
+  // ── Presenter Mode — gated on session state, free for every participant ─
   // Handing off, resuming follow, and dropping pointers are meaningful only
   // inside a live session. "Request control" additionally requires being a
   // non-host participant (the host already drives by default), so it reuses
-  // the participant predicate.
+  // the participant predicate. None of them carries a tier: a guest without a
+  // licence follows, points and asks to present like anyone else.
   ShortcutAction.handoffPresenter ||
   ShortcutAction.resumeFollowing ||
   ShortcutAction.dropPing ||
   ShortcutAction.dropPin => const ActionDescriptor(
     surfaces: _menuOverflowPalette,
-    requiredTier: LicenseTier.enterprise,
     requires: [ActionRequirement.inSession],
   ),
   ShortcutAction.requestPresenter => const ActionDescriptor(
     surfaces: _menuOverflowPalette,
-    requiredTier: LicenseTier.enterprise,
     requires: [ActionRequirement.isParticipant],
   ),
 
@@ -674,6 +683,7 @@ bool _tabletOrDesktop(ActionContext c) => !c.deviceClass.isPhoneClass;
 bool _desktopOnly(ActionContext c) => c.deviceClass == DeviceClass.desktop;
 bool _desktopApp(ActionContext c) => _desktopOnly(c) && !c.isWeb;
 bool _notWeb(ActionContext c) => !c.isWeb;
+bool _collaborationJoinable(ActionContext c) => c.collaborationAvailable;
 bool _splitPaneAllowed(ActionContext c) =>
     _tabletOrDesktop(c) && c.splitPaneAllowed;
 bool _aiAvailable(ActionContext c) => c.aiAvailable;

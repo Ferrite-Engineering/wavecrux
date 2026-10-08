@@ -482,18 +482,66 @@ void main() {
       });
     });
 
-    group('collaboration gating (Enterprise)', () {
+    group('collaboration gating (hosting is Enterprise, joining is free)', () {
       test('share/join require not being in a session', () {
         for (final a in [
           ShortcutAction.shareSession,
           ShortcutAction.joinSession,
         ]) {
           final d = descriptorFor(a);
-          expect(d.requiredTier, LicenseTier.enterprise, reason: '$a');
           expect(d.isEnabled(_ctx()), isTrue, reason: '$a');
           expect(d.isEnabled(_ctx(inSession: true)), isFalse, reason: '$a');
         }
       });
+
+      test('only Share Session carries the Enterprise badge', () {
+        expect(
+          descriptorFor(ShortcutAction.shareSession).requiredTier,
+          LicenseTier.enterprise,
+        );
+        expect(
+          descriptorFor(ShortcutAction.joinSession).requiredTier,
+          LicenseTier.openCore,
+        );
+      });
+
+      test(
+        'Join Session is hidden where no collaboration service is bound',
+        () {
+          const joinable = ActionContext(
+            fileLoaded: false,
+            deviceClass: DeviceClass.desktop,
+          );
+          const unavailable = ActionContext(
+            fileLoaded: false,
+            deviceClass: DeviceClass.desktop,
+            collaborationAvailable: false,
+          );
+          for (final surface in [ActionSurface.menu, ActionSurface.palette]) {
+            expect(
+              isActionVisibleIn(ShortcutAction.joinSession, surface, joinable),
+              isTrue,
+            );
+            expect(
+              isActionVisibleIn(
+                ShortcutAction.joinSession,
+                surface,
+                unavailable,
+              ),
+              isFalse,
+            );
+            // Share stays visible as the upsell.
+            expect(
+              isActionVisibleIn(
+                ShortcutAction.shareSession,
+                surface,
+                unavailable,
+              ),
+              isTrue,
+            );
+          }
+        },
+      );
 
       test('stop sharing requires hosting', () {
         final d = descriptorFor(ShortcutAction.stopSharing);
@@ -517,8 +565,8 @@ void main() {
       });
     });
 
-    group('Presenter Mode gating (Enterprise)', () {
-      test('all presenter-mode actions require the Enterprise tier', () {
+    group('Presenter Mode gating (free for every participant)', () {
+      test('no presenter-mode action carries a tier', () {
         for (final a in [
           ShortcutAction.handoffPresenter,
           ShortcutAction.requestPresenter,
@@ -528,7 +576,7 @@ void main() {
         ]) {
           expect(
             descriptorFor(a).requiredTier,
-            LicenseTier.enterprise,
+            LicenseTier.openCore,
             reason: '$a',
           );
         }
@@ -684,6 +732,14 @@ void main() {
         expect(
           descriptorFor(ShortcutAction.shareSession).requiredTier,
           LicenseTier.enterprise,
+        );
+        expect(
+          descriptorFor(ShortcutAction.joinSession).requiredTier,
+          LicenseTier.openCore,
+        );
+        expect(
+          descriptorFor(ShortcutAction.leaveSession).requiredTier,
+          LicenseTier.openCore,
         );
       });
 

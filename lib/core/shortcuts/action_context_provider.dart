@@ -5,6 +5,7 @@ import 'package:crux_license/crux_license.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/core/providers/ai_model_client_provider.dart';
+import 'package:wavecrux/core/providers/collaboration_available_provider.dart';
 import 'package:wavecrux/core/providers/collaboration_service_provider.dart';
 import 'package:wavecrux/core/providers/tier_gated_actions_available_provider.dart';
 import 'package:wavecrux/core/shortcuts/action_context.dart';
@@ -118,5 +119,8 @@ final actionContextProvider = Provider<ActionContext>((ref) {
     tierGatedActionsAvailable: ref.watch(tierGatedActionsAvailableProvider),
     isWeb: kIsWeb,
     splitPaneAllowed: ref.watch(splitPaneAllowedProvider),
+    // Join Session is free, so no tier badge hides it where it cannot work:
+    // it needs a real collaboration service on a desktop host.
+    collaborationAvailable: ref.watch(collaborationAvailableProvider),
   );
 });

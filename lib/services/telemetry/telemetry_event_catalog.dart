@@ -448,6 +448,10 @@ const List<String> kWavecruxGateFeatureIds = <String>[
   // surfaces the dialog; error toasts are for failures, not for not having
   // bought something) and made this the one gate denial no counter could see.
   'pcap_to_vcd',
+  // Share Session: hosting a collaborative session is the Enterprise step.
+  // Joining is free in every edition, so this id means "tried to host" and
+  // never fires for a guest.
+  'collaboration',
 ];
 
 /// `DebugAdvisorRuleId.values` after [telemetryEnumToken]. Named because both

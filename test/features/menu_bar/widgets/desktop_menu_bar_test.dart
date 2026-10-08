@@ -217,10 +217,13 @@ void main() {
       // to a leaf label. We check by count to avoid l10n coupling. Visibility
       // is independent of file/diagnostics state on desktop, so any desktop
       // context yields the same count.
+      // The harness binds the no-op collaboration service, so Join Session
+      // (free, hidden where no real service is bound) is not on the menu.
       const ctx = ActionContext(
         fileLoaded: true,
         deviceClass: DeviceClass.desktop,
         diagnosticsEnabled: true,
+        collaborationAvailable: false,
       );
       final expectedCount = groupedActionsFor(
         ActionSurface.menu,
@@ -590,10 +593,13 @@ void main() {
           final labels = _allMaterialItems(
             bar,
           ).map((b) => (b.child! as Text).data).toList();
+          // The harness binds the no-op collaboration service, so Join
+          // Session (free, hidden where no real service is bound) is absent.
           const ctx = ActionContext(
             fileLoaded: true,
             deviceClass: DeviceClass.desktop,
             diagnosticsEnabled: true,
+            collaborationAvailable: false,
           );
           final expected = groupedActionsFor(ActionSurface.menu, ctx).values
               .expand((x) => x)

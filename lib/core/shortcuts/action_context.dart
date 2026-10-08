@@ -47,6 +47,7 @@ class ActionContext {
     this.tierGatedActionsAvailable = true,
     this.isWeb = false,
     this.splitPaneAllowed = true,
+    this.collaborationAvailable = true,
   });
 
   /// Whether the active tab has a waveform file loaded.
@@ -171,6 +172,17 @@ class ActionContext {
   /// builds an [ActionContext] — is unchanged.
   final bool tierGatedActionsAvailable;
 
+  /// Whether this build binds a real collaboration service
+  /// (`collaborationServiceProvider` is not the no-op default).
+  ///
+  /// Also false on the web and on mobile hosts, which do not offer
+  /// collaboration. Gates Join Session, which carries no tier badge and so is
+  /// not covered by the tier-badge rule that hides inert actions: without this,
+  /// a build with no collaboration protocol would offer a Join action that
+  /// does nothing.
+  /// Defaults to true so every existing [ActionContext] literal is unchanged.
+  final bool collaborationAvailable;
+
   /// Whether this is the browser build.
   ///
   /// Hides the actions whose result is a file on disk the browser cannot give
@@ -214,7 +226,8 @@ class ActionContext {
       other.canZoomIn == canZoomIn &&
       other.tierGatedActionsAvailable == tierGatedActionsAvailable &&
       other.isWeb == isWeb &&
-      other.splitPaneAllowed == splitPaneAllowed;
+      other.splitPaneAllowed == splitPaneAllowed &&
+      other.collaborationAvailable == collaborationAvailable;
 
   @override
   int get hashCode => Object.hash(
@@ -245,6 +258,7 @@ class ActionContext {
         isWeb,
         splitPaneAllowed,
         signalsDisplayed,
+        collaborationAvailable,
       ),
     ),
   );

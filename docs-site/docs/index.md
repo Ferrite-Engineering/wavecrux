@@ -12,7 +12,7 @@ WaveCrux ships as a single application. The free **Open Core** viewer is fully f
 
 - **Open Core** — no badge. Free and open. No account, no license key, no time limit.
 - <span class="tier tier-pro">Pro</span> Advanced protocol decoders, the curated Stage widget pack and Pro boards, the Debug Advisor, SystemVerilog assertion visualization, the Pro translator pack, and the AI Waveform Assistant.
-- <span class="tier tier-enterprise">Enterprise</span> Collaborative viewing, plus organization-wide settings from a policy file, an audit log, and the Ethernet RGMII decoder and PCAP-to-VCD conversion.
+- <span class="tier tier-enterprise">Enterprise</span> Hosting collaborative viewing sessions (joining one is free in every edition), plus organization-wide settings from a policy file, an audit log, and the Ethernet RGMII decoder and PCAP-to-VCD conversion.
 - <span class="tier tier-edu">EDU</span> Every Pro feature, free for verified students and faculty, non-commercial.
 
 !!! info "What the badges mean"
