@@ -161,9 +161,17 @@ const ThemeTokenCategory canvasTokens = ThemeTokenCategory(
       lightDefault: Color(0xFF8888A0),
       darkDefault: WavecruxColors.timeRulerTick,
     ),
+    // Despite the id, this colors group-header, comment and empty-canvas
+    // text, not the ruler's major ticks (those paint from
+    // `WavecruxColorExtension.timeRulerMajorTick`). The id stays so existing
+    // theme packs keep resolving.
+    // Despite the id, this colors group-header, comment and empty-canvas
+    // text, not the ruler's major ticks (those paint from
+    // `WavecruxColorExtension.timeRulerMajorTick`). The id stays so existing
+    // theme packs keep resolving.
     ThemeTokenDescriptor(
       id: 'ruler.tickMajor',
-      displayName: 'Major tick',
+      displayName: 'Group header and comment text',
       lightDefault: Color(0xFF555555),
       darkDefault: Color(0xFF999999),
     ),
