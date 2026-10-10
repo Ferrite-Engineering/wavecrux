@@ -4,7 +4,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:wavecrux/core/utils/speakable_text.dart';
 import 'package:wavecrux/features/decoders/providers/transaction_table_provider.dart';
@@ -30,9 +29,19 @@ import 'package:wavecrux/l10n/generated/l10n.dart';
 /// those labels are pinned by fixture snapshots, so the arrow is turned into
 /// a word here, where it is spoken, rather than where it is produced.
 ///
-/// The visible table is the `DataTable` it always was. Row clicks are
-/// resolved against the laid-out rows rather than per-cell ink wells, so the
-/// whole row stays clickable without putting a focus node in every cell.
+/// **Only the rows on screen are built.** Decoders run over the whole trace,
+/// so a UART capture alone can be tens of thousands of transactions, and a
+/// `DataTable` lays out every row and sizes its columns by walking all of
+/// them. The headers are still a `DataTable`, with no rows and fixed column
+/// widths, so they look, sort and read as they always did; the rows below
+/// are a fixed-height lazy list that uses the same widths. Widths come from
+/// measuring the few longest values in each column rather than every cell,
+/// and a row's position is its index times the row height, so moving the
+/// keyboard to any row, the last of twenty thousand included, scrolls
+/// straight to it.
+///
+/// Each row is one gesture detector, so the whole row stays clickable
+/// without putting a focus node in every cell.
 class TransactionTableBody extends StatefulWidget {
   const TransactionTableBody({
     required this.rows,
@@ -72,14 +81,30 @@ class TransactionTableBody extends StatefulWidget {
 
 class _TransactionTableBodyState extends State<TransactionTableBody> {
   final _verticalScrollController = ScrollController();
-  final GlobalKey _tableKey = GlobalKey();
   final FocusNode _rowsFocus = FocusNode(debugLabel: 'Transaction rows');
 
   /// The row the keyboard is on, and where it was last found.
   TableTransaction? _current;
   int _currentIndex = 0;
 
+  /// Column widths, and what they were measured for.
+  List<double> _widths = const [];
+  Object? _widthsKey;
+
   static const double _horizontalStep = 48;
+  static const double _headingHeight = 32;
+  static const double _rowHeight = 28;
+  static const double _horizontalMargin = 12;
+  static const double _columnSpacing = 16;
+
+  /// The sort arrow and its gap beside a sortable header's label.
+  static const double _sortArrowWidth = 18;
+
+  /// The error icon and its gap before an error row's label.
+  static const double _errorIconWidth = 18;
+
+  /// How many of a column's longest values are measured for its width.
+  static const int _measuredPerColumn = 16;
 
   @override
   void initState() {
@@ -133,6 +158,9 @@ class _TransactionTableBodyState extends State<TransactionTableBody> {
     4 => TransactionSortColumn.label,
     _ => null,
   };
+
+  static bool _isNumeric(int column) =>
+      column == 0 || column == 2 || column == 3;
 
   // ── rows and keys ─────────────────────────────────────────────────────────
 
@@ -204,45 +232,36 @@ class _TransactionTableBodyState extends State<TransactionTableBody> {
     return KeyEventResult.handled;
   }
 
-  RenderTable? get _renderTable {
-    RenderTable? find(RenderObject object) {
-      if (object is RenderTable) return object;
-      RenderTable? found;
-      object.visitChildren((child) => found ??= find(child));
-      return found;
-    }
-
-    final root = _tableKey.currentContext?.findRenderObject();
-    return root == null ? null : find(root);
+  /// Height the rows have below the pinned headers.
+  double? get _rowsViewport {
+    if (!_verticalScrollController.hasClients) return null;
+    return _verticalScrollController.position.viewportDimension -
+        _headingHeight;
   }
 
   int get _pageRows {
-    final table = _renderTable;
-    if (table == null ||
-        table.rows < 2 ||
-        !_verticalScrollController.hasClients) {
-      return 1;
-    }
-    final rowHeight = table.getRowBox(1).height;
-    final viewport = _verticalScrollController.position.viewportDimension;
-    return math.max(1, (viewport / rowHeight).floor() - 1);
+    final viewport = _rowsViewport;
+    if (viewport == null) return 1;
+    return math.max(1, (viewport / _rowHeight).floor() - 1);
   }
 
-  /// Scrolls the least distance that brings row [index] fully into view.
+  /// Scrolls the least distance that brings row [index] fully into view
+  /// below the headers.
+  ///
+  /// The headers are pinned above the rows, so row `index` is visible while
+  /// the scroll offset lies between its bottom less the rows' viewport and
+  /// its top.
   void _reveal(int index) {
-    final table = _renderTable;
-    if (table == null ||
-        index + 1 >= table.rows ||
-        !_verticalScrollController.hasClients) {
-      return;
-    }
-    final row = table.getRowBox(index + 1);
+    final viewport = _rowsViewport;
+    if (viewport == null) return;
     final position = _verticalScrollController.position;
+    final top = index * _rowHeight;
+    final bottom = top + _rowHeight;
     final double target;
-    if (row.top < position.pixels) {
-      target = row.top;
-    } else if (row.bottom > position.pixels + position.viewportDimension) {
-      target = row.bottom - position.viewportDimension;
+    if (top < position.pixels) {
+      target = top;
+    } else if (bottom > position.pixels + viewport) {
+      target = bottom - viewport;
     } else {
       return;
     }
@@ -263,21 +282,92 @@ class _TransactionTableBodyState extends State<TransactionTableBody> {
     );
   }
 
-  /// A click anywhere on a data row, resolved against the laid-out rows.
-  void _onTapUp(TapUpDetails details) {
-    final table = _renderTable;
-    if (table == null) return;
-    final local = table.globalToLocal(details.globalPosition);
-    for (var y = 1; y < table.rows; y++) {
-      if (table.getRowBox(y).contains(local)) {
-        final index = y - 1;
-        if (index >= widget.rows.length) return;
-        _setCurrent(index);
-        widget.onRowTap(widget.rows[index]);
-        return;
+  // ── column widths ─────────────────────────────────────────────────────────
+
+  /// Each column's width, padding included: the wider of its header and
+  /// its longest value.
+  ///
+  /// Only the [_measuredPerColumn] longest values of a column, by character
+  /// count, are laid out as text; measuring every cell is the walk this
+  /// table exists to avoid. A shorter value that is wider in a proportional
+  /// font is ellipsized rather than overflowing its cell.
+  List<double> _columnWidths({
+    required List<String> headers,
+    required TextStyle headingStyle,
+    required TextStyle dataStyle,
+    required TextScaler textScaler,
+    required TextDirection textDirection,
+  }) {
+    final key = (
+      widget.rows,
+      Object.hashAll(widget.fieldKeys),
+      Object.hashAll(headers),
+      headingStyle,
+      dataStyle,
+      textScaler,
+      textDirection,
+    );
+    if (key == _widthsKey) return _widths;
+
+    final fieldKeys = widget.fieldKeys;
+    final columnCount = 5 + fieldKeys.length;
+    final longest = [
+      for (var c = 0; c < columnCount; c++) _Longest(_measuredPerColumn),
+    ];
+    final longestErrorLabels = _Longest(_measuredPerColumn);
+    for (final row in widget.rows) {
+      final tx = row.transaction;
+      longest[0].add('${row.rowIndex}');
+      longest[1].add(row.decoderDisplayName);
+      longest[2].add('${tx.startTime}');
+      longest[3].add('${tx.endTime}');
+      (tx.isError ? longestErrorLabels : longest[4]).add(tx.label);
+      for (var f = 0; f < fieldKeys.length; f++) {
+        longest[5 + f].add(tx.fields[fieldKeys[f]] ?? '');
       }
     }
+
+    double measure(String text, TextStyle style) {
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: style),
+        textDirection: textDirection,
+        textScaler: textScaler,
+        maxLines: 1,
+      )..layout();
+      final width = painter.width.ceilToDouble();
+      painter.dispose();
+      return width;
+    }
+
+    double widest(Iterable<String> texts) =>
+        texts.fold(0, (w, t) => math.max(w, measure(t, dataStyle)));
+
+    final widths = <double>[];
+    for (var c = 0; c < columnCount; c++) {
+      final header =
+          measure(headers[c], headingStyle) + (c < 5 ? _sortArrowWidth : 0);
+      var content = widest(longest[c].values);
+      if (c == 4) {
+        final errors = longestErrorLabels.values;
+        if (errors.isNotEmpty) {
+          content = math.max(content, widest(errors) + _errorIconWidth);
+        }
+      }
+      final start = c == 0 ? _horizontalMargin : _columnSpacing / 2;
+      final end = c == columnCount - 1 ? _horizontalMargin : _columnSpacing / 2;
+      // One pixel of slack: a text measured to the pixel can still round
+      // past it when laid out inside the cell.
+      widths.add(start + math.max(header, content) + 1 + end);
+    }
+    _widthsKey = key;
+    return _widths = widths;
   }
+
+  EdgeInsetsDirectional _cellPadding(int column, int columnCount) =>
+      EdgeInsetsDirectional.only(
+        start: column == 0 ? _horizontalMargin : _columnSpacing / 2,
+        end: column == columnCount - 1 ? _horizontalMargin : _columnSpacing / 2,
+      );
 
   // ── build ─────────────────────────────────────────────────────────────────
 
@@ -295,10 +385,36 @@ class _TransactionTableBodyState extends State<TransactionTableBody> {
       TargetPlatform.fuchsia => false,
     };
 
-    DataColumn sortable(String text, int index, {bool numeric = false}) {
+    final dataTableTheme = DataTableTheme.of(context);
+    final headingStyle = DefaultTextStyle.of(context).style.merge(
+      dataTableTheme.headingTextStyle ?? theme.textTheme.titleSmall,
+    );
+    final dataStyle =
+        dataTableTheme.dataTextStyle ?? theme.textTheme.bodyMedium!;
+
+    final headers = [
+      l10n.transactionTableColumnIndex,
+      l10n.transactionTableColumnDecoder,
+      l10n.transactionTableColumnStartTime,
+      l10n.transactionTableColumnEndTime,
+      l10n.transactionTableColumnLabel,
+      ...widget.fieldKeys,
+    ];
+    final widths = _columnWidths(
+      headers: headers,
+      headingStyle: headingStyle,
+      dataStyle: dataStyle,
+      textScaler: MediaQuery.textScalerOf(context),
+      textDirection: Directionality.of(context),
+    );
+    final tableWidth = widths.fold<double>(0, (sum, w) => sum + w);
+
+    DataColumn sortable(int index) {
+      final text = headers[index];
       final sorted = index == _sortColumnIndex;
       return DataColumn(
-        numeric: numeric,
+        numeric: _isNumeric(index),
+        columnWidth: FixedColumnWidth(widths[index]),
         label: Semantics(
           button: true,
           label: text,
@@ -316,37 +432,59 @@ class _TransactionTableBodyState extends State<TransactionTableBody> {
       );
     }
 
-    final columns = [
-      sortable(l10n.transactionTableColumnIndex, 0, numeric: true),
-      sortable(l10n.transactionTableColumnDecoder, 1),
-      sortable(l10n.transactionTableColumnStartTime, 2, numeric: true),
-      sortable(l10n.transactionTableColumnEndTime, 3, numeric: true),
-      sortable(l10n.transactionTableColumnLabel, 4),
-      for (final key in widget.fieldKeys) DataColumn(label: Text(key)),
-    ];
+    // The column headers: a `DataTable` with no rows, so the headers keep
+    // their look, sort arrows and focus behaviour, at the rows' widths.
+    final headings = DataTable(
+      sortColumnIndex: _sortColumnIndex,
+      sortAscending: widget.filter.sortAscending,
+      showCheckboxColumn: false,
+      columns: [
+        for (var i = 0; i < 5; i++) sortable(i),
+        for (var f = 0; f < widget.fieldKeys.length; f++)
+          DataColumn(
+            columnWidth: FixedColumnWidth(widths[5 + f]),
+            label: Text(widget.fieldKeys[f]),
+          ),
+      ],
+      rows: const [],
+      headingRowHeight: _headingHeight,
+      horizontalMargin: _horizontalMargin,
+      columnSpacing: _columnSpacing,
+    );
 
-    final rows = [
-      for (var i = 0; i < widget.rows.length; i++)
-        _buildRow(i, theme, l10n, words, isDesktop: isDesktop),
-    ];
-
-    final table = MouseRegion(
+    final divider = Divider.createBorderSide(context, width: 1);
+    final rows = MouseRegion(
       cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTapUp: _onTapUp,
-        child: DataTable(
-          key: _tableKey,
-          sortColumnIndex: _sortColumnIndex,
-          sortAscending: widget.filter.sortAscending,
-          showCheckboxColumn: false,
-          columns: columns,
-          rows: rows,
-          headingRowHeight: 32,
-          dataRowMinHeight: 28,
-          dataRowMaxHeight: 32,
-          horizontalMargin: 12,
-          columnSpacing: 16,
-        ),
+      child: CustomScrollView(
+        controller: _verticalScrollController,
+        slivers: [
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _HeadingsDelegate(
+              height: _headingHeight,
+              // Rows scroll under the pinned headers.
+              child: ColoredBox(
+                color: theme.colorScheme.surface,
+                child: headings,
+              ),
+            ),
+          ),
+          SliverFixedExtentList(
+            itemExtent: _rowHeight,
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => _buildRow(
+                index,
+                theme,
+                l10n,
+                words,
+                widths: widths,
+                divider: divider,
+                dataStyle: dataStyle,
+              ),
+              childCount: widget.rows.length,
+            ),
+          ),
+        ],
       ),
     );
 
@@ -364,18 +502,22 @@ class _TransactionTableBodyState extends State<TransactionTableBody> {
           // would be a second, nameless focus.
           includeSemantics: false,
           onKeyEvent: _onKeyEvent,
-          child: Scrollbar(
-            controller: widget.horizontalScrollController,
-            thumbVisibility: true,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
+          child: LayoutBuilder(
+            builder: (context, constraints) => Scrollbar(
               controller: widget.horizontalScrollController,
-              child: Scrollbar(
-                controller: _verticalScrollController,
-                thumbVisibility: true,
-                child: SingleChildScrollView(
-                  controller: _verticalScrollController,
-                  child: table,
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                controller: widget.horizontalScrollController,
+                child: SizedBox(
+                  // At least the pane's width, so the vertical scrollbar
+                  // sits at the pane's edge when the columns are narrow.
+                  width: math.max(tableWidth, constraints.maxWidth),
+                  child: Scrollbar(
+                    controller: _verticalScrollController,
+                    thumbVisibility: true,
+                    child: rows,
+                  ),
                 ),
               ),
             ),
@@ -385,12 +527,14 @@ class _TransactionTableBodyState extends State<TransactionTableBody> {
     );
   }
 
-  DataRow _buildRow(
+  Widget _buildRow(
     int index,
     ThemeData theme,
     L10N l10n,
     SpeakableGlyphWords words, {
-    required bool isDesktop,
+    required List<double> widths,
+    required BorderSide divider,
+    required TextStyle dataStyle,
   }) {
     final row = widget.rows[index];
     final tx = row.transaction;
@@ -427,73 +571,152 @@ class _TransactionTableBodyState extends State<TransactionTableBody> {
             speakableText(message, words),
           );
 
-    return DataRow(
-      selected: isSelected,
-      color: WidgetStateProperty.resolveWith<Color?>((states) {
-        final Color? base;
-        if (isSelected) {
-          base = theme.colorScheme.primaryContainer.withValues(alpha: 0.45);
-        } else if (tx.isError) {
-          base = theme.colorScheme.errorContainer.withValues(alpha: 0.35);
-        } else {
-          base = null;
-        }
-        if (!isCurrent) return base;
-        // The keyboard's row: a stronger primary tint over whatever the row
-        // already shows, so it reads as focused on selected and error rows.
-        return Color.alphaBlend(
-          theme.colorScheme.primary.withValues(alpha: 0.24),
-          base ?? theme.colorScheme.surface,
-        );
-      }),
-      cells: [
-        DataCell(
-          Semantics(
-            container: true,
-            button: true,
-            selected: isSelected,
-            label: spoken,
-            focusable: true,
-            focused: isCurrent,
-            onFocus: theme.platform == TargetPlatform.iOS
-                ? null
-                : () => _focusRow(index),
-            onTap: () {
-              _setCurrent(index);
-              widget.onRowTap(row);
-            },
-            child: ExcludeSemantics(child: Text('${row.rowIndex}')),
-          ),
+    final Color? base;
+    if (isSelected) {
+      base = theme.colorScheme.primaryContainer.withValues(alpha: 0.45);
+    } else if (tx.isError) {
+      base = theme.colorScheme.errorContainer.withValues(alpha: 0.35);
+    } else {
+      base = null;
+    }
+    // The keyboard's row: a stronger primary tint over whatever the row
+    // already shows, so it reads as focused on selected and error rows.
+    final color = !isCurrent
+        ? base
+        : Color.alphaBlend(
+            theme.colorScheme.primary.withValues(alpha: 0.24),
+            base ?? theme.colorScheme.surface,
+          );
+
+    final cells = <Widget>[
+      Semantics(
+        container: true,
+        button: true,
+        selected: isSelected,
+        label: spoken,
+        focusable: true,
+        focused: isCurrent,
+        onFocus: theme.platform == TargetPlatform.iOS
+            ? null
+            : () => _focusRow(index),
+        onTap: () {
+          _setCurrent(index);
+          widget.onRowTap(row);
+        },
+        child: ExcludeSemantics(child: Text('${row.rowIndex}')),
+      ),
+      ExcludeSemantics(child: Text(row.decoderDisplayName)),
+      ExcludeSemantics(child: Text('${tx.startTime}')),
+      ExcludeSemantics(child: Text('${tx.endTime}')),
+      ExcludeSemantics(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (tx.isError)
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Icon(
+                  Icons.error_outline,
+                  size: 14,
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            Flexible(
+              child: Text(tx.label, overflow: TextOverflow.ellipsis),
+            ),
+          ],
         ),
-        DataCell(ExcludeSemantics(child: Text(row.decoderDisplayName))),
-        DataCell(ExcludeSemantics(child: Text('${tx.startTime}'))),
-        DataCell(ExcludeSemantics(child: Text('${tx.endTime}'))),
-        DataCell(
-          ExcludeSemantics(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (tx.isError)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: Icon(
-                      Icons.error_outline,
-                      size: 14,
-                      color: theme.colorScheme.error,
+      ),
+      for (final key in widget.fieldKeys)
+        ExcludeSemantics(child: Text(tx.fields[key] ?? '')),
+    ];
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      // The row-number cell already carries the row's tap action.
+      excludeFromSemantics: true,
+      onTap: () {
+        _setCurrent(index);
+        widget.onRowTap(row);
+      },
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: color,
+          border: Border(top: divider),
+        ),
+        child: DefaultTextStyle(
+          style: dataStyle,
+          softWrap: false,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          child: Row(
+            children: [
+              for (var c = 0; c < cells.length; c++)
+                SizedBox(
+                  width: widths[c],
+                  child: Padding(
+                    padding: _cellPadding(c, cells.length),
+                    child: Align(
+                      alignment: _isNumeric(c)
+                          ? AlignmentDirectional.centerEnd
+                          : AlignmentDirectional.centerStart,
+                      child: cells[c],
                     ),
                   ),
-                Flexible(
-                  child: Text(tx.label, overflow: TextOverflow.ellipsis),
                 ),
-              ],
-            ),
+            ],
           ),
         ),
-        for (final key in widget.fieldKeys)
-          DataCell(ExcludeSemantics(child: Text(tx.fields[key] ?? ''))),
-      ],
+      ),
     );
   }
+}
+
+/// The few longest strings added, by character count.
+class _Longest {
+  _Longest(this.limit);
+
+  final int limit;
+  final List<String> values = [];
+  int _shortestKept = -1;
+
+  void add(String value) {
+    if (values.length == limit && value.length <= _shortestKept) return;
+    values.add(value);
+    if (values.length > limit) {
+      values
+        ..sort((a, b) => b.length.compareTo(a.length))
+        ..removeLast();
+    }
+    if (values.length == limit) {
+      _shortestKept = values.map((v) => v.length).reduce(math.min);
+    }
+  }
+}
+
+/// The column headers, pinned above the rows.
+class _HeadingsDelegate extends SliverPersistentHeaderDelegate {
+  _HeadingsDelegate({required this.height, required this.child});
+
+  final double height;
+  final Widget child;
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) => child;
+
+  // The headers carry the sort state, so they rebuild with the table.
+  @override
+  bool shouldRebuild(_HeadingsDelegate oldDelegate) => true;
 }
 
 /// Reading order for the table, with the rows' single Tab stop after every

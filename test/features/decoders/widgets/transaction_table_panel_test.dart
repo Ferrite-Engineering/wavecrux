@@ -1218,43 +1218,28 @@ void main() {
     },
   );
 
-  // ── render cap ──────────────────────────────────────────────────────────
+  // ── every row ───────────────────────────────────────────────────────────
 
-  group('TransactionTablePanel — render cap', () {
+  group('TransactionTablePanel — every row', () {
     // Decoders run over the WHOLE trace, so the row count is a property of
     // the capture, not of the pane: a UART at 115 200 baud over one second
-    // is ~11 500 transactions. `DataTable` materializes a row per
-    // transaction and sizes its columns intrinsically; measured on this
-    // machine the pane's first frame costs ~1.8 s at 100 rows, 8.5 s at
-    // 2 000, and 20 000 rows had not finished laying out after fifteen
-    // minutes. The panel therefore renders at most `renderLimit` rows and
-    // says so.
+    // is ~11 500 transactions. The table used to stop at a fixed number of
+    // rows because it laid every row out; it now builds only the rows on
+    // screen, so the panel hands it the whole filtered set.
     //
-    // PRIMARY MUTATION TARGET: passing the full `rows` to
-    // `TransactionTableBody` again renders every row and drops the notice.
-    Widget wrapLimited(List<ActiveDecoder> decoders, int limit) =>
-        ProviderScope(
-          overrides: [
-            productTelemetryConfig,
-            activeDecodersProvider.overrideWith(
-              () => _FixedDecodersNotifier(decoders),
-            ),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: L10N.localizationsDelegates,
-            supportedLocales: L10N.supportedLocales,
-            home: Scaffold(body: TransactionTablePanel(renderLimit: limit)),
-          ),
-        );
-
-    testWidgets('renders at most the cap, and says how many it is showing', (
+    // PRIMARY MUTATION TARGET: slicing `rows` before `TransactionTableBody`
+    // again hides the tail of the sort order from the table.
+    testWidgets('the table gets every filtered row, in sort order', (
       tester,
     ) async {
       final txs = <DecodedTransaction>[
-        for (var i = 0; i < 40; i++) _tx(i * 10, i * 10 + 5, 'tx$i'),
+        for (var i = 0; i < 3000; i++) _tx(i * 10, i * 10 + 5, 'tx$i'),
       ];
       await tester.pumpWidget(
-        wrapLimited([_decoder('d1', 'uart', txs)], 5),
+        _wrap(
+          const TransactionTablePanel(),
+          decoders: [_decoder('d1', 'uart', txs)],
+        ),
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
@@ -1262,32 +1247,9 @@ void main() {
       final body = tester.widget<TransactionTableBody>(
         find.byType(TransactionTableBody),
       );
-      expect(body.rows, hasLength(5));
-      final l10n = tester
-          .element(find.byType(TransactionTablePanel))
-          .let(L10N.of);
-      expect(find.text(l10n.transactionTableTruncated(5, 40)), findsOneWidget);
-      // The rows shown are the head of the active sort order.
+      expect(body.rows, hasLength(3000));
+      expect(body.rows.last.transaction.label, 'tx2999');
       expect(find.text('tx0'), findsOneWidget);
-      expect(find.text('tx39'), findsNothing);
-    });
-
-    testWidgets('no notice when everything fits', (tester) async {
-      final txs = <DecodedTransaction>[
-        for (var i = 0; i < 3; i++) _tx(i * 10, i * 10 + 5, 'tx$i'),
-      ];
-      await tester.pumpWidget(
-        wrapLimited([_decoder('d1', 'uart', txs)], 5),
-      );
-      await tester.pumpAndSettle();
-      final body = tester.widget<TransactionTableBody>(
-        find.byType(TransactionTableBody),
-      );
-      expect(body.rows, hasLength(3));
-      final l10n = tester
-          .element(find.byType(TransactionTablePanel))
-          .let(L10N.of);
-      expect(find.text(l10n.transactionTableTruncated(3, 3)), findsNothing);
     });
   });
 }

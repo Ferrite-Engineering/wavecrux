@@ -548,11 +548,19 @@ void main() {
 
     testWidgets('only the focused row is tinted as focused', (tester) async {
       await _pump(tester);
-      Color? colorOf(int index) => tester
-          .widget<DataTable>(find.byType(DataTable))
-          .rows[index]
-          .color
-          ?.resolve(const {});
+      // The row's fill is the nearest decoration above its number cell.
+      Color? colorOf(int index) {
+        final box = tester.widget<DecoratedBox>(
+          find
+              .ancestor(
+                of: find.text('${index + 1}'),
+                matching: find.byType(DecoratedBox),
+              )
+              .first,
+        );
+        return (box.decoration as BoxDecoration).color;
+      }
+
       expect(colorOf(1), isNull);
 
       await _tabToRows(tester);
@@ -578,6 +586,70 @@ void main() {
       expect(_rowsFocused, isTrue);
       expect(describeFocus(tester).name, startsWith('2, APB #1'));
       handle.dispose();
+    });
+  });
+
+  group('TransactionTableBody — twenty thousand rows', () {
+    // A DataTable laid out every row: 8.5 s to the first frame at 2,000
+    // rows, and 20,000 had not finished after fifteen minutes, so the panel
+    // stopped at 2,000. The rows are now built only where they are on
+    // screen; the cost is the screenful, not the trace.
+    Finder rowNamed(int n) =>
+        find.bySemanticsLabel(RegExp('^$n, APB #1, ')).hitTestable();
+
+    testWidgets('open quickly, and the keyboard reaches every row', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final h = _Harness()..rows.value = _rows(20000);
+      final clock = Stopwatch()..start();
+      await _pump(tester, harness: h, size: const Size(900, 3000));
+      clock.stop();
+      expect(clock.elapsed, lessThan(const Duration(seconds: 5)));
+      expect(tester.takeException(), isNull);
+      // Only about a screenful of rows exists.
+      final built = find.bySemanticsLabel(RegExp(r'^\d+, APB #1, '));
+      expect(built.evaluate().length, lessThan(200));
+
+      // Page Down from the first row to the last. Each page lands on a row
+      // that shares the screen with the one before it, so the pages cover
+      // every row between them and Up and Down reach any of them.
+      await _tabToRows(tester);
+      expect(rowNamed(1), findsOneWidget);
+      var previous = 1;
+      while (previous < 20000) {
+        await _key(tester, LogicalKeyboardKey.pageDown);
+        final current = int.parse(
+          describeFocus(tester).name.split(',').first,
+        );
+        expect(current, greaterThan(previous));
+        expect(rowNamed(previous), findsOneWidget, reason: 'row $previous');
+        expect(rowNamed(current), findsOneWidget, reason: 'row $current');
+        previous = current;
+      }
+      expect(describeFocus(tester).name, startsWith('20000, APB #1, '));
+
+      await _key(tester, LogicalKeyboardKey.home);
+      expect(describeFocus(tester).name, startsWith('1, APB #1, '));
+      expect(rowNamed(1), findsOneWidget);
+      await _key(tester, LogicalKeyboardKey.end);
+      await _key(tester, LogicalKeyboardKey.arrowUp);
+      expect(describeFocus(tester).name, startsWith('19999, APB #1, '));
+      expect(rowNamed(19999), findsOneWidget);
+      handle.dispose();
+    });
+
+    testWidgets('a click on a scrolled-to row activates that row', (
+      tester,
+    ) async {
+      final h = _Harness()..rows.value = _rows(20000);
+      await _pump(tester, harness: h);
+      await _tabToRows(tester);
+      await _key(tester, LogicalKeyboardKey.end);
+
+      await tester.tap(find.text('R 0x19998 → 0xFF'));
+      await tester.pump();
+      expect(h.activated.map((r) => r.rowIndex), [19998]);
     });
   });
 }

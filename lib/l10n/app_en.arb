@@ -2632,18 +2632,6 @@
   "@transactionTableEmptyNoTransactions": {
     "description": "Empty state message shown in the transaction table when active decoders have no transactions matching the current filter"
   },
-  "transactionTableTruncated": "Showing the first {shown} of {total} transactions. Sort or search to narrow the list.",
-  "@transactionTableTruncated": {
-    "description": "Notice above the transaction table when the decoded transaction count exceeds the render cap: only the first N rows are rendered.",
-    "placeholders": {
-      "shown": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
   "transactionTableExportCsv": "Export CSV",
   "@transactionTableExportCsv": {
     "description": "Button label that exports the visible transaction table rows to a CSV file"

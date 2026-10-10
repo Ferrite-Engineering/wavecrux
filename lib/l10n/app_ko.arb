@@ -2499,18 +2499,6 @@
   "@transactionTableEmptyNoTransactions": {
     "description": "Empty state message shown in the transaction table when active decoders have no transactions matching the current filter"
   },
-  "transactionTableTruncated": "처음 {shown}개 / 전체 {total}개를 표시하고 있습니다. 정렬하거나 검색해 범위를 좁히세요.",
-  "@transactionTableTruncated": {
-    "description": "Notice above the transaction table when the decoded transaction count exceeds the render cap: only the first N rows are rendered.",
-    "placeholders": {
-      "shown": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
   "transactionTableExportCsv": "CSV 내보내기",
   "@transactionTableExportCsv": {
     "description": "Button label that exports the visible transaction table rows to a CSV file"

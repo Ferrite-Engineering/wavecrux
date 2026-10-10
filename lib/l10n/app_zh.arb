@@ -2499,18 +2499,6 @@
   "@transactionTableEmptyNoTransactions": {
     "description": "Empty state message shown in the transaction table when active decoders have no transactions matching the current filter"
   },
-  "transactionTableTruncated": "仅显示前 {shown} 条（共 {total} 条）。请排序或搜索以缩小范围。",
-  "@transactionTableTruncated": {
-    "description": "Notice above the transaction table when the decoded transaction count exceeds the render cap: only the first N rows are rendered.",
-    "placeholders": {
-      "shown": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
   "transactionTableExportCsv": "导出 CSV",
   "@transactionTableExportCsv": {
     "description": "Button label that exports the visible transaction table rows to a CSV file"

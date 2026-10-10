@@ -29,15 +29,6 @@ import 'package:wavecrux/plugins/decoder_registry.dart';
 import 'package:wavecrux/plugins/transaction_table_exporters_provider.dart';
 import 'package:wavecrux/shared/widgets/wavecrux_feature_tier_badge.dart';
 
-/// Maximum transaction rows rendered into the table at once.
-///
-/// Sized from measurement, not taste: the `DataTable` costs roughly 3–4 ms
-/// per row to lay out, so a couple of thousand rows is the most that keeps
-/// the pane's first frame inside a second or so. The filtered set is sorted
-/// before it is capped, so the rows shown are the top of whatever order the
-/// user chose.
-const int kTransactionTableRenderLimit = 2000;
-
 /// Spreadsheet-style table showing all decoded transactions from all active
 /// decoders.
 ///
@@ -52,30 +43,15 @@ const int kTransactionTableRenderLimit = 2000;
 /// [TransactionTableBody]; the decoder filter is a named button whose menu
 /// opens on its first item from the keyboard.
 ///
-/// An "Export CSV" button at the top-right writes all visible rows to a
-/// user-chosen CSV file — every filtered row, not just the rendered ones.
+/// An "Export CSV" button at the top-right writes all filtered rows to a
+/// user-chosen CSV file.
 ///
-/// **Rendered rows are capped at [kTransactionTableRenderLimit].** Decoders
-/// run over the whole trace, so a UART at 115 200 baud over a one-second
-/// capture is already ~11 500 transactions and a bus capture is far more.
-/// [TransactionTableBody] is a `DataTable`, which materializes a row per
-/// transaction and sizes its columns intrinsically — i.e. it walks every row,
-/// per column, per layout pass. Measured on this machine: ~1.8 s to first
-/// frame at 100 rows, 8.5 s at 2 000, and 20 000 rows had not finished its
-/// first layout after fifteen minutes. The cap keeps the pane responsive;
-/// sort and search are how the user reaches the rest, and export still writes
-/// everything. Lifting it properly means virtualizing the table body, which
-/// carries its own keyboard-navigation and screen-reader contract.
+/// Every filtered row is in the table. Decoders run over the whole trace, so
+/// a UART at 115 200 baud over a one-second capture is already ~11 500
+/// transactions and a bus capture is far more; [TransactionTableBody] builds
+/// only the rows on screen, so the row count does not set the pane's cost.
 class TransactionTablePanel extends ConsumerStatefulWidget {
-  const TransactionTablePanel({
-    super.key,
-    this.renderLimit = kTransactionTableRenderLimit,
-  });
-
-  /// Maximum rows handed to [TransactionTableBody]. Defaults to
-  /// [kTransactionTableRenderLimit]; a test lowers it so the capped path can
-  /// be exercised without laying out two thousand rows.
-  final int renderLimit;
+  const TransactionTablePanel({super.key});
 
   @override
   ConsumerState<TransactionTablePanel> createState() =>
@@ -204,11 +180,6 @@ class _TransactionTablePanelState extends ConsumerState<TransactionTablePanel> {
     final decoders = ref.watch(activeDecodersProvider);
     final filter = ref.watch(transactionTableFilterProvider);
     final rows = ref.watch(filteredTransactionsProvider);
-    // What the table renders. `rows` — the whole filtered, sorted set — is
-    // what export writes and what the empty-state check reads.
-    final rendered = rows.length > widget.renderLimit
-        ? rows.sublist(0, widget.renderLimit)
-        : rows;
     final filterNotifier = ref.read(transactionTableFilterProvider.notifier);
     final selected = ref.watch(selectedTransactionProvider);
     final extraExporters = ref.watch(transactionTableExportersProvider);
@@ -324,7 +295,7 @@ class _TransactionTablePanelState extends ConsumerState<TransactionTablePanel> {
                   ),
                 )
               : TransactionTableBody(
-                  rows: rendered,
+                  rows: rows,
                   fieldKeys: fieldKeys,
                   filter: filter,
                   selectedRow: selected,
@@ -333,23 +304,6 @@ class _TransactionTablePanelState extends ConsumerState<TransactionTablePanel> {
                   onRowTap: _onRowTap,
                 ),
         ),
-        // Says so when the table is not showing everything the filter
-        // matched. Below the table, where the rows run out.
-        if (rendered.length < rows.length)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              border: Border(top: BorderSide(color: theme.dividerColor)),
-            ),
-            child: Text(
-              l10n.transactionTableTruncated(rendered.length, rows.length),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
       ],
     );
   }

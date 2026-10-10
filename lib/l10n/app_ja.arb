@@ -2499,18 +2499,6 @@
   "@transactionTableEmptyNoTransactions": {
     "description": "Empty state message shown in the transaction table when active decoders have no transactions matching the current filter"
   },
-  "transactionTableTruncated": "先頭の {shown} 件（全 {total} 件）を表示しています。並べ替えまたは検索で絞り込んでください。",
-  "@transactionTableTruncated": {
-    "description": "Notice above the transaction table when the decoded transaction count exceeds the render cap: only the first N rows are rendered.",
-    "placeholders": {
-      "shown": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
   "transactionTableExportCsv": "CSV エクスポート",
   "@transactionTableExportCsv": {
     "description": "Button label that exports the visible transaction table rows to a CSV file"

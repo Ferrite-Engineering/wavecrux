@@ -104,7 +104,7 @@ void main() {
     ),
     const _Exemption(
       file: 'lib/features/decoders/widgets/transaction_table_panel.dart',
-      line: 546,
+      line: 500,
       expectedTrimmed: 'color: Theme.of(context).colorScheme.outline,',
       reason:
           "Border.all() color for the decoder filter button's cell border "

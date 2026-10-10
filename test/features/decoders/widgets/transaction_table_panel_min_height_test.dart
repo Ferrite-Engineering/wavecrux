@@ -61,11 +61,12 @@ void main() {
     }
   });
 
-  // The truncation notice is an extra fixed-height child under the table's
-  // Expanded, so it is the kind of thing that reintroduces the 1 px overflow
-  // the case above exists for — at a dock height where nothing fits at all.
-  testWidgets('squeezed with the render cap in effect, the truncation notice '
-      'does not overflow either', (tester) async {
+  // The column headers are pinned above the lazily built rows, inside the
+  // rows' own scroll view, so a dock height below the header row's clips
+  // the table rather than overflowing a column around it.
+  testWidgets('squeezed with many rows, the pinned headers do not overflow', (
+    tester,
+  ) async {
     for (final height in [80.0, 48.0, 40.0]) {
       await tester.pumpWidget(
         ProviderScope(
@@ -87,9 +88,7 @@ void main() {
                         id: 'transactions',
                         icon: Icons.table_chart_outlined,
                         label: 'Transactions',
-                        builder: (_) => const TransactionTablePanel(
-                          renderLimit: 5,
-                        ),
+                        builder: (_) => const TransactionTablePanel(),
                       ),
                     ],
                     activeId: 'transactions',
@@ -105,7 +104,7 @@ void main() {
       expect(
         tester.takeException(),
         isNull,
-        reason: 'overflow at dock height $height with the cap in effect',
+        reason: 'overflow at dock height $height with many rows',
       );
     }
   });
