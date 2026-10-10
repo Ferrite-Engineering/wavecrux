@@ -41,6 +41,34 @@ const String _kTypeMarker = 'Marker';
 /// Registry key prefix for marker items.
 const String _kMarkerRefPrefix = 'marker:';
 
+/// Colour names `set_item_color` accepts besides hex, keyed lower case: the
+/// CSS basic colours plus the other everyday names WCP clients send.
+const Map<String, int> _kNamedColors = {
+  'black': 0xFF000000,
+  'white': 0xFFFFFFFF,
+  'gray': 0xFF808080,
+  'grey': 0xFF808080,
+  'silver': 0xFFC0C0C0,
+  'red': 0xFFFF0000,
+  'maroon': 0xFF800000,
+  'green': 0xFF00FF00,
+  'lime': 0xFF00FF00,
+  'olive': 0xFF808000,
+  'blue': 0xFF0000FF,
+  'navy': 0xFF000080,
+  'yellow': 0xFFFFFF00,
+  'orange': 0xFFFFA500,
+  'purple': 0xFF800080,
+  'violet': 0xFFEE82EE,
+  'pink': 0xFFFFC0CB,
+  'magenta': 0xFFFF00FF,
+  'fuchsia': 0xFFFF00FF,
+  'cyan': 0xFF00FFFF,
+  'aqua': 0xFF00FFFF,
+  'teal': 0xFF008080,
+  'brown': 0xFFA52A2A,
+};
+
 class _WcpItem {
   const _WcpItem({
     required this.id,
@@ -574,16 +602,19 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
     Map<String, dynamic> data,
   ) async {
     final id = data['id'];
-    final colorHex = data['color'];
+    final rawColor = data['color'];
     if (id is! int) {
       throw const WcpException('"id" must be an integer', code: 3);
     }
-    if (colorHex is! String) {
-      throw const WcpException('"color" must be a hex color string', code: 3);
+    if (rawColor is! String) {
+      throw const WcpException(
+        '"color" must be a hex color or a color name',
+        code: 3,
+      );
     }
-    final color = _parseColor(colorHex);
+    final color = _parseColor(rawColor);
     if (color == null) {
-      throw WcpException('Invalid color: $colorHex', code: 3);
+      throw WcpException('Invalid color: $rawColor', code: 3);
     }
     final item = _registry.byId(id);
     if (item == null) throw WcpException('Item not found: $id', code: 6);
@@ -875,8 +906,17 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
     'bit_width': v.bitWidth,
   };
 
-  Color? _parseColor(String hex) {
-    final clean = hex.startsWith('#') ? hex.substring(1) : hex;
+  /// Parses a `set_item_color` colour: `#RGB`, `#RRGGBB` or `#RRGGBBAA`
+  /// (the `#` optional), or a common colour name in any case, the form
+  /// clients written against Surfer send.
+  Color? _parseColor(String raw) {
+    final named = _kNamedColors[raw.trim().toLowerCase()];
+    if (named != null) return Color(named);
+    final hex = raw.trim();
+    var clean = hex.startsWith('#') ? hex.substring(1) : hex;
+    if (clean.length == 3) {
+      clean = [for (final c in clean.split('')) '$c$c'].join();
+    }
     if (clean.length != 6 && clean.length != 8) return null;
     final value = int.tryParse(
       clean.length == 6 ? 'FF$clean' : clean,

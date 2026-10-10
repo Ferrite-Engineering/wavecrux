@@ -1379,6 +1379,37 @@ void main() {
       expect(color['type'], 'response');
     });
 
+    test('set_item_color accepts colour names and short hex', () async {
+      final ws = await connect();
+      final add = await send(ws, 'add_items', {'item_path': 'top.a'});
+      final id =
+          (((add['data'] as Map)['items'] as List).first as Map)['id'] as int;
+      final tab = tcm.containerFor(container.read(activeTabIdProvider));
+      int? argb() => tab.read(signalGroupsProvider).entries.first.argbColor;
+
+      for (final (name, expected) in [
+        ('Green', 0xFF00FF00),
+        ('  ORANGE ', 0xFFFFA500),
+        ('grey', 0xFF808080),
+        ('#0f0', 0xFF00FF00),
+        ('#00ff0080', 0x00FF0080),
+      ]) {
+        final msg = await send(ws, 'set_item_color', {
+          'id': id,
+          'color': name,
+        });
+        expect(msg['type'], 'response', reason: name);
+        expect(argb(), expected, reason: name);
+      }
+
+      final bad = await send(ws, 'set_item_color', {
+        'id': id,
+        'color': 'chartreuse-ish',
+      });
+      expect(bad['type'], 'error');
+      expect(bad['code'], 3);
+    });
+
     test('get_item_info returns info for an added signal id', () async {
       final ws = await connect();
       final add = await send(ws, 'add_items', {'item_path': 'top.a'});
