@@ -114,7 +114,11 @@ class _ValueColumnPanelState extends ConsumerState<ValueColumnPanel> {
     // the canvas. Matches [SignalListPanel]'s padding so the three columns
     // share an identical scroll extent and stay vertically aligned when the
     // user scrolls all the way to the canvas's transaction-lane region.
-    final activeDecoderCount = ref.watch(activeDecodersProvider).length;
+    // Held decoders (session entries this build cannot load) get a blank lane
+    // each after the active ones, matching their rows in the signal list.
+    final activeDecoderCount =
+        ref.watch(activeDecodersProvider).length +
+        ref.watch(heldDecodersProvider).length;
     final bottomPadding = activeDecoderCount * transactionLaneHeight;
 
     // Pre-flatten into the per-list-item shape ListView.builder needs.

@@ -2447,6 +2447,20 @@
   "@decoderLaneRemove": {
     "description": "Context menu item on a transaction overlay lane label that removes the decoder instance"
   },
+  "decoderNotAvailableInBuild": "このビルドでは利用できません",
+  "@decoderNotAvailableInBuild": {
+    "description": "Shown in the signal list on the row of a decoder the opened session names but this build cannot load (a Pro decoder in the Open Core viewer, or one from a missing plugin)"
+  },
+  "decoderNotAvailableTooltip": "「{decoder}」はこのセッションに保存されていますが、このビルドでは読み込めません。セッションに残り、保存時にそのまま書き戻されます。",
+  "@decoderNotAvailableTooltip": {
+    "description": "Tooltip on the row of a decoder this build cannot load, explaining that it is kept in the session",
+    "placeholders": {
+      "decoder": {
+        "type": "String",
+        "example": "pro.usb #1"
+      }
+    }
+  },
   "decoderLaneConfigure": "設定…",
   "@decoderLaneConfigure": {
     "description": "Context menu item on a transaction overlay lane label that opens the config dialog for that decoder instance"

@@ -13,6 +13,7 @@ import 'package:wavecrux/core/theme/wavecrux_theme.dart';
 import 'package:wavecrux/domain/enums/device_class.dart';
 import 'package:wavecrux/domain/models/active_decoder.dart';
 import 'package:wavecrux/domain/models/app_settings.dart';
+import 'package:wavecrux/domain/models/persisted_decoder.dart';
 import 'package:wavecrux/domain/models/signal_group.dart';
 import 'package:wavecrux/domain/models/variable.dart';
 import 'package:wavecrux/features/comparison/constants/diff_constants.dart';
@@ -150,6 +151,10 @@ class SignalListPanel extends ConsumerWidget {
     // used to be painted at the left edge of the canvas transaction lane,
     // where it overlapped transactions starting near t=0.
     final activeDecoders = ref.watch(activeDecodersProvider);
+    // Session decoders this build cannot load follow the active ones, one
+    // "not available in this build" row each; the canvas and value column
+    // reserve a blank lane per entry to match.
+    final heldDecoders = ref.watch(heldDecodersProvider);
     // Map of opaque signalRef → Variable, used to resolve a signal's full
     // hierarchical path for tooltips and the Show-Full-Path menu item.
     // SignalEntry only stores the opaque signalRef (a VCD identifier code
@@ -192,6 +197,7 @@ class SignalListPanel extends ConsumerWidget {
               metrics: metrics,
               defaultLaneHeight: defaultLaneHeight,
               activeDecoders: activeDecoders,
+              heldDecoders: heldDecoders,
               variablesMap: variablesMap,
               childRowCounts: childRowCounts,
             ),
@@ -214,6 +220,7 @@ class SignalListPanel extends ConsumerWidget {
     required MobileMetrics metrics,
     required int defaultLaneHeight,
     required List<ActiveDecoder> activeDecoders,
+    required List<PersistedDecoder> heldDecoders,
     required Map<String, Variable> variablesMap,
     required Map<String, int> childRowCounts,
   }) {
@@ -266,7 +273,8 @@ class SignalListPanel extends ConsumerWidget {
                   : newIndex;
               notifier.reorderSignal(oldIndex, clampedNewIndex);
             },
-            itemCount: entries.length + activeDecoders.length,
+            itemCount:
+                entries.length + activeDecoders.length + heldDecoders.length,
             itemBuilder: (context, index) {
               if (index < entries.length) {
                 return _buildEntryTile(
@@ -286,6 +294,14 @@ class SignalListPanel extends ConsumerWidget {
                 );
               }
               final decoderIndex = index - entries.length;
+              if (decoderIndex >= activeDecoders.length) {
+                final heldIndex = decoderIndex - activeDecoders.length;
+                return HeldDecoderListEntry(
+                  key: ValueKey('held_dec_$heldIndex'),
+                  decoder: heldDecoders[heldIndex],
+                  index: heldIndex,
+                );
+              }
               final decoder = activeDecoders[decoderIndex];
               return DecoderListEntry(
                 key: ValueKey('dec_${decoder.id}'),

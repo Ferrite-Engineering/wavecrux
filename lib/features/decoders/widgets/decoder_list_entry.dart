@@ -9,6 +9,7 @@ import 'package:wavecrux/core/mobile_metrics.dart';
 import 'package:wavecrux/core/theme/wavecrux_colors.dart';
 import 'package:wavecrux/core/theme/wavecrux_theme.dart';
 import 'package:wavecrux/domain/models/active_decoder.dart';
+import 'package:wavecrux/domain/models/persisted_decoder.dart';
 import 'package:wavecrux/features/decoders/constants/transaction_lane_constants.dart';
 import 'package:wavecrux/features/decoders/providers/active_decoders_provider.dart';
 import 'package:wavecrux/features/decoders/providers/transaction_table_provider.dart';
@@ -304,3 +305,168 @@ class DecoderListEntry extends ConsumerWidget {
 }
 
 enum _DecoderRowMenuAction { configure, remove }
+
+/// One row in the [SignalListPanel]'s decoder band for a session decoder this
+/// build cannot load: a Pro decoder in the Open Core viewer, or one from a
+/// plugin that is missing or failed to load.
+///
+/// It has no definition, so it is named by its id and instance number, and
+/// says "not available in this build" where a decoder's label would be. Its
+/// lane on the canvas is left blank (no factory, nothing to decode); the row
+/// keeps the band aligned with it at [transactionLaneHeight]. The entry is
+/// still the user's and is written back on save, so the only action is
+/// Remove, which drops it from the session (desktop close button, or the
+/// long-press / right-click menu).
+class HeldDecoderListEntry extends ConsumerWidget {
+  const HeldDecoderListEntry({
+    required this.decoder,
+    required this.index,
+    super.key,
+  });
+
+  /// The held entry, exactly as the session stored it.
+  final PersistedDecoder decoder;
+
+  /// Position of [decoder] in [heldDecodersProvider]'s list.
+  final int index;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = L10N.of(context);
+    final theme = Theme.of(context);
+    final deviceClass = ref.watch(deviceClassProvider);
+    final metrics = MobileMetrics.of(context, deviceClass);
+    final muted = theme.colorScheme.onSurfaceVariant;
+
+    final label = l10n.decoderInstanceLabel(
+      decoder.decoderId,
+      decoder.instanceNumber,
+    );
+    final note = l10n.decoderNotAvailableInBuild;
+
+    return PlatformContextMenu(
+      onContextMenu: (pos) => _showContextMenu(context, ref, pos, label),
+      child: Semantics(
+        label: '$label, $note',
+        excludeSemantics: true,
+        child: SizedBox(
+          height: transactionLaneHeight,
+          child: Row(
+            children: [
+              // Outline where an active decoder has its lane-colour swatch:
+              // there is no lane colour, because there is no lane content.
+              SizedBox(
+                width: metrics.touchTarget,
+                height: transactionLaneHeight,
+                child: Center(
+                  child: Container(
+                    width: metrics.colorSwatch,
+                    height: metrics.colorSwatch,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: muted),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Tooltip(
+                  message: l10n.decoderNotAvailableTooltip(label),
+                  waitDuration: const Duration(milliseconds: 600),
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: label,
+                          style: TextStyle(
+                            fontFamily: WavecruxColors.monoFontFamily,
+                            fontFamilyFallback:
+                                WavecruxColors.monoFontFamilyFallback,
+                            fontSize: metrics.monoText,
+                          ),
+                        ),
+                        const TextSpan(text: '  '),
+                        TextSpan(
+                          text: note,
+                          style: const TextStyle(fontStyle: FontStyle.italic),
+                        ),
+                      ],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                  ),
+                ),
+              ),
+              if (!metrics.isTouch)
+                Tooltip(
+                  message: l10n.decoderLaneRemove,
+                  triggerMode: TooltipTriggerMode.manual,
+                  child: GestureDetector(
+                    onTap: () => _remove(ref),
+                    behavior: HitTestBehavior.translucent,
+                    child: SizedBox(
+                      width: metrics.touchTarget,
+                      height: metrics.touchTarget,
+                      child: Center(
+                        child: Icon(
+                          Icons.close,
+                          size: metrics.iconSize * 0.7,
+                          color: muted,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showContextMenu(
+    BuildContext context,
+    WidgetRef ref,
+    Offset position,
+    String label,
+  ) async {
+    final l10n = L10N.of(context);
+    final overlay =
+        Overlay.of(context).context.findRenderObject()! as RenderBox;
+    final remove = await showMenu<bool>(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromLTWH(position.dx, position.dy, 0, 0),
+        Offset.zero & overlay.size,
+      ),
+      items: [
+        PopupMenuItem<bool>(
+          enabled: false,
+          height: 28,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontFamily: WavecruxColors.monoFontFamily,
+              fontFamilyFallback: WavecruxColors.monoFontFamilyFallback,
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem<bool>(
+          value: true,
+          child: Text(
+            l10n.decoderLaneRemove,
+            style: const TextStyle(fontSize: 13),
+          ),
+        ),
+      ],
+    );
+    if (remove ?? false) _remove(ref);
+  }
+
+  void _remove(WidgetRef ref) =>
+      ref.read(activeDecodersProvider.notifier).removeHeldDecoder(index);
+}

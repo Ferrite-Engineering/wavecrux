@@ -50,9 +50,10 @@ class ActiveDecodersNotifier extends _$ActiveDecodersNotifier {
   /// [restoreDecoders] to [snapshot] so a save does not delete them.
   ///
   /// They are not [ActiveDecoder]s and deliberately never reach [state]: there
-  /// is no factory for them, nothing to decode, and no row to render. They are
-  /// luggage. The session document is the only thing that knows they exist, and
-  /// this list is how it keeps knowing.
+  /// is no factory for them and nothing to decode. [heldDecodersProvider]
+  /// publishes them so the signal list can show each one as "not available in
+  /// this build" with its id; every change to this list is made together with
+  /// a [state] assignment, which is what lets that provider follow it.
   ///
   /// Without it, opening a session in a build missing one of its decoders and
   /// then saving destroyed that decoder's configuration permanently — the
@@ -167,6 +168,20 @@ class ActiveDecodersNotifier extends _$ActiveDecodersNotifier {
     state = state.where((d) => d.id != id).toList();
   }
 
+  /// The persisted decoders this build cannot instantiate, held for
+  /// [snapshot]. Read it through [heldDecodersProvider], which rebuilds when
+  /// it changes.
+  List<PersistedDecoder> get heldDecoders => _unavailable;
+
+  /// Drops the held decoder at [index] of [heldDecoders], so the next save no
+  /// longer writes it. The user's explicit choice; nothing else discards one.
+  void removeHeldDecoder(int index) {
+    if (index < 0 || index >= _unavailable.length) return;
+    _unavailable = List.unmodifiable([..._unavailable]..removeAt(index));
+    // A fresh list notifies [heldDecodersProvider]; the decoders are unchanged.
+    state = [...state];
+  }
+
   /// Removes all active decoders and clears all decoded transactions.
   ///
   /// Called by [WaveformSourceNotifier] whenever a new file is opened or the
@@ -178,6 +193,7 @@ class ActiveDecodersNotifier extends _$ActiveDecodersNotifier {
     // Held-but-unrenderable decoders belong to the session being closed. Left
     // here they would be written into the *next* file's session, which is the
     // one way this preservation could invent decoders rather than keep them.
+    final hadHeld = _unavailable.isNotEmpty;
     _unavailable = const [];
     // Only emit when there is actually something to clear. openFile() calls
     // clearAll() synchronously while a mobile drawer's per-tab
@@ -187,7 +203,7 @@ class ActiveDecodersNotifier extends _$ActiveDecodersNotifier {
     // which watches this provider — throw "markNeedsBuild during build". A no-op
     // when already empty avoids the spurious notify and is behaviorally
     // identical on every platform (clearing nothing changes nothing).
-    if (state.isNotEmpty) state = const [];
+    if (state.isNotEmpty || hadHeld) state = const [];
   }
 
   /// Captures the live decoder set as a list of [PersistedDecoder]
@@ -574,4 +590,21 @@ class ActiveDecodersNotifier extends _$ActiveDecodersNotifier {
 
     state = finalState;
   }
+}
+
+/// The session decoders this build cannot load (a Pro decoder on the Open Core
+/// viewer, or one from a plugin that is missing or failed to load), held by
+/// [ActiveDecodersNotifier] so a save writes them back.
+///
+/// The signal list renders one "not available in this build" row per entry,
+/// after the active decoders, and the canvas and value column reserve a
+/// matching blank lane so the three columns stay aligned. A collaboration
+/// follower holds none ([ActiveDecodersNotifier.applyCompositionRecipe]), so
+/// it neither shows nor saves them.
+@Riverpod(keepAlive: true)
+List<PersistedDecoder> heldDecoders(Ref ref) {
+  // The notifier changes its held list only together with a state assignment,
+  // so watching the state is what re-reads it.
+  ref.watch(activeDecodersProvider);
+  return ref.read(activeDecodersProvider.notifier).heldDecoders;
 }

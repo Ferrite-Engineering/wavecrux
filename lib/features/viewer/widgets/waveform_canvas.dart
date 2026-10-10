@@ -353,6 +353,7 @@ class _WaveformCanvasState extends ConsumerState<WaveformCanvas> {
   SignalGroup? _memoSignalGroup;
   DiffState? _memoDiff;
   List<ActiveDecoder>? _memoDecoders;
+  int? _memoHeldDecoderCount;
   Map<String, int>? _memoChildRowCounts;
   double _memoMinLaneHeight = -1;
 
@@ -832,6 +833,7 @@ class _WaveformCanvasState extends ConsumerState<WaveformCanvas> {
     LaneMetrics metrics,
     Map<String, int> childRowCounts,
     List<ActiveDecoder> decoders,
+    int heldDecoderCount,
   ) {
     final tops = <double>[];
     final heights = <double>[];
@@ -880,6 +882,10 @@ class _WaveformCanvasState extends ConsumerState<WaveformCanvas> {
     for (final decoder in decoders) {
       add(WaveformLaneKind.transaction, decoder, transactionLaneHeight);
     }
+    // Session decoders this build cannot load have a "not available" row in
+    // the signal list but nothing to paint: reserve their blank lanes so the
+    // columns stay aligned, without adding a lane.
+    y += heldDecoderCount * transactionLaneHeight;
 
     return LaneGeometryIndex(
       tops: Float64List.fromList(tops),
@@ -1521,6 +1527,7 @@ class _WaveformCanvasState extends ConsumerState<WaveformCanvas> {
     // Accent color mirrors the value/name pane row highlight (Theme primary).
     final selectionColor = Theme.of(context).colorScheme.primary;
     final activeDecoders = ref.watch(activeDecodersProvider);
+    final heldDecoderCount = ref.watch(heldDecodersProvider).length;
     final selectedTxRecord = ref.watch(selectedTransactionProvider);
     final selectedTx = selectedTxRecord?.$1;
     final diff = ref.watch(diffProvider);
@@ -1652,6 +1659,7 @@ class _WaveformCanvasState extends ConsumerState<WaveformCanvas> {
         identical(_memoSignalGroup, signalGroup) &&
         identical(_memoDiff, diff) &&
         identical(_memoDecoders, activeDecoders) &&
+        _memoHeldDecoderCount == heldDecoderCount &&
         identical(_memoChildRowCounts, childRowCounts) &&
         _memoMinLaneHeight == laneMetrics.minLaneHeight;
     final LaneGeometryIndex geometry;
@@ -1664,11 +1672,13 @@ class _WaveformCanvasState extends ConsumerState<WaveformCanvas> {
         laneMetrics,
         childRowCounts,
         activeDecoders,
+        heldDecoderCount,
       );
       _memoGeometry = geometry;
       _memoSignalGroup = signalGroup;
       _memoDiff = diff;
       _memoDecoders = activeDecoders;
+      _memoHeldDecoderCount = heldDecoderCount;
       _memoChildRowCounts = childRowCounts;
       _memoMinLaneHeight = laneMetrics.minLaneHeight;
     }

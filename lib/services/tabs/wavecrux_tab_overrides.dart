@@ -280,6 +280,9 @@ List<Override> wavecruxTabOverrides(crux.TabId tabId) {
 
     // Protocol decoders and transaction view.
     activeDecodersProvider.overrideWith(ActiveDecodersNotifier.new),
+    // Derived from this tab's decoder notifier: the session decoders this
+    // build cannot load. Root-scoped it would read the empty root notifier.
+    heldDecodersProvider.overrideWith(heldDecoders),
     transactionTableFilterProvider.overrideWith(
       TransactionTableFilterNotifier.new,
     ),
