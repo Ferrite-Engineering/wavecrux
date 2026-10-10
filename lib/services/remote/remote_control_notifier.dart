@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'dart:async';
+import 'dart:io' show stderr, stdout;
 import 'package:crux_license/crux_license.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1007,6 +1008,17 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
 
 // ── App-lifecycle bridge ──────────────────────────────────────────────────────
 
+/// The WCP port given for this process by `--wcp-port` or
+/// `WAVECRUX_WCP_PORT`, or null when neither was.
+///
+/// When set, [WcpLifecycleBridge] runs the server on this port from launch
+/// whatever `AppSettings.remoteControlEnabled` and `remoteControlPort` say,
+/// and writes neither, so a script, a CI job or a second instance can listen
+/// without touching the preference every instance shares. An organization
+/// policy that turns the server off still wins. `bootstrap()` overrides it.
+@Riverpod(keepAlive: true)
+int? wcpPortOverride(Ref ref) => null;
+
 /// Mirrors `AppSettings.remoteControlEnabled` into the WCP server lifecycle.
 ///
 /// Starts the server on launch when the setting is true and reacts to
@@ -1062,15 +1074,16 @@ class WcpLifecycleBridge {
   ) {
     final settings = next.value;
     if (settings == null) return;
+    final portOverride = _ref.read(wcpPortOverrideProvider);
     // The ORG's answer, not just the engineer's: a locked
     // `products.wavecrux.wcpServer: false` outranks the Settings switch, and
     // an administrator who turned this off is entitled to have it stay off.
     // Until this read existed the key was documented, registered and inert.
     final enabled = resolveWcpServerPolicy(
       _ref.read(cruxPolicyProvider).document,
-      userSetting: settings.remoteControlEnabled,
+      userSetting: portOverride != null || settings.remoteControlEnabled,
     ).value;
-    final port = settings.remoteControlPort;
+    final port = portOverride ?? settings.remoteControlPort;
     if (enabled == _previouslyEnabled && port == _previousPort) return;
     _previouslyEnabled = enabled;
     _previousPort = port;
@@ -1081,11 +1094,34 @@ class WcpLifecycleBridge {
       // on this path, so it is logged here or not at all.
       unawaited(
         notifier.startServer(port).then((error) {
-          if (error == null) return;
+          if (error == null) {
+            // A port given on the command line is the caller's to connect
+            // to, and with port 0 only this line says which one it got.
+            if (portOverride != null) {
+              final bound = _ref.read(remoteControlProvider).port;
+              stdout.writeln(
+                'WaveCrux: WCP remote control listening on '
+                '127.0.0.1:$bound',
+              );
+            }
+            return;
+          }
           _log.warning('WCP server did not start on port $port: $error');
+          if (portOverride != null) {
+            stderr.writeln(
+              'WaveCrux: WCP remote control could not start on port '
+              '$port: $error',
+            );
+          }
         }),
       );
     } else {
+      if (portOverride != null) {
+        stderr.writeln(
+          'WaveCrux: WCP remote control is turned off by organization '
+          'policy; --wcp-port is ignored.',
+        );
+      }
       unawaited(notifier.stopServer());
     }
   }

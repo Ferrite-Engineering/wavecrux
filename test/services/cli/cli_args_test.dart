@@ -173,5 +173,41 @@ void main() {
       expect(help, contains('.wavecrux'));
       expect(help, contains('.crux-project'));
     });
+
+    test('--wcp-port takes the next argument as the port', () {
+      expect(parseCliArgs(const ['--wcp-port', '9000']).wcpPort, 9000);
+      expect(parseCliArgs(const ['--wcp-port=0', 'dump.fst']).wcpPort, 0);
+      expect(
+        parseCliArgs(const ['--wcp-port', '0', 'dump.fst']).initialFiles,
+        ['dump.fst'],
+      );
+    });
+
+    test('a --wcp-port value that is not a port is ignored', () {
+      expect(parseCliArgs(const ['--wcp-port', 'abc']).wcpPort, isNull);
+      expect(parseCliArgs(const ['--wcp-port=70000']).wcpPort, isNull);
+      expect(parseCliArgs(const ['--wcp-port=-1']).wcpPort, isNull);
+      expect(parseCliArgs(const ['--wcp-port']).wcpPort, isNull);
+      expect(parseCliArgs(const []).wcpPort, isNull);
+    });
+  });
+
+  group('resolveWcpPortOverride', () {
+    test('the flag wins over the environment', () {
+      final cli = parseCliArgs(const ['--wcp-port', '9000']);
+      expect(resolveWcpPortOverride(cli, {kWcpPortEnvVar: '9001'}), 9000);
+    });
+
+    test('the environment applies when the flag is absent', () {
+      final cli = parseCliArgs(const []);
+      expect(resolveWcpPortOverride(cli, {kWcpPortEnvVar: ' 0 '}), 0);
+      expect(resolveWcpPortOverride(cli, {kWcpPortEnvVar: 'x'}), isNull);
+      expect(resolveWcpPortOverride(cli, const {}), isNull);
+    });
+
+    test('the help text documents the flag', () {
+      expect(cliHelpText(), contains('--wcp-port <n>'));
+      expect(cliHelpText(), contains(kWcpPortEnvVar));
+    });
   });
 }

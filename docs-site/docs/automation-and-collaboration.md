@@ -16,6 +16,8 @@ The point of WCP is integration. Use it from a continuous-integration job to ope
 
 The WCP server is **off by default**. Turn it on in **Settings → Remote Control → Enable Remote Control**; the same section sets the **Port** (default `54321`) and shows the server's **Status** and connected clients. The server runs in the desktop and mobile apps, not in the browser build, and listens only on `127.0.0.1`.
 
+From 1.1, a script or CI job can turn the server on for one launch without changing the stored setting: start WaveCrux with `--wcp-port <n>`, or set the environment variable `WAVECRUX_WCP_PORT=<n>` (the flag wins if both are given). The server then listens on port `n` for that process only, whatever **Enable Remote Control** and **Port** say, so a second instance can listen on its own port next to the one you are using. Port `0` asks the system for a free port; WaveCrux prints the one it bound on standard output, as `WaveCrux: WCP remote control listening on 127.0.0.1:<port>`. An organization policy that turns the WCP server off still applies.
+
 Connect, and the server immediately sends a `greeting` frame announcing its protocol version (integer `0`, serialized as the string `"0"`) and the list of commands it supports, so a client can feature-detect before sending anything.
 
 Each message is a JSON object terminated by a single null byte (`\x00`) — that byte is the frame delimiter. You send commands; the server replies and may also broadcast events.

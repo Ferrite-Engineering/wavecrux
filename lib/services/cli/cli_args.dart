@@ -22,6 +22,7 @@ class CliArgs {
     this.pipePath,
     this.reset = false,
     this.noRestore = false,
+    this.wcpPort,
   });
 
   /// Bare positional waveform paths (`wavecrux a.fst b.vcd`).
@@ -63,7 +64,31 @@ class CliArgs {
   /// launches cleanly, the previous session was the culprit and `--reset`
   /// clears it permanently.
   final bool noRestore;
+
+  /// `--wcp-port <n>` (or `--wcp-port=<n>`): run the WCP remote-control
+  /// server for this process on port `n`, whatever Settings say, without
+  /// writing the setting. `0` asks the OS for a free port, which is printed
+  /// on stdout once bound. Null when the flag is absent or its value is not
+  /// a port number; see [resolveWcpPortOverride] for the environment
+  /// fallback.
+  final int? wcpPort;
 }
+
+/// Environment variable that enables WCP for one process the way
+/// `--wcp-port` does. The flag wins when both are given.
+const String kWcpPortEnvVar = 'WAVECRUX_WCP_PORT';
+
+/// Parses a WCP port value: an integer from 0 to 65535, else null.
+int? parseWcpPort(String? raw) {
+  final port = int.tryParse(raw?.trim() ?? '');
+  if (port == null || port < 0 || port > 65535) return null;
+  return port;
+}
+
+/// The per-process WCP port: `--wcp-port` from [cli] if given, else
+/// [kWcpPortEnvVar] from [environment], else null (Settings decide).
+int? resolveWcpPortOverride(CliArgs cli, Map<String, String> environment) =>
+    cli.wcpPort ?? parseWcpPort(environment[kWcpPortEnvVar]);
 
 /// Returns true if [path] ends with `.wavecrux-workspace` (case-insensitive).
 bool isWorkspaceFilePath(String path) =>
@@ -77,6 +102,7 @@ bool isWorkspaceFilePath(String path) =>
 /// * `--workspace <path>` → named workspace (`.wavecrux-workspace`).
 /// * `--interactive` / `--stdin` → read VCD from stdin.
 /// * `--pipe <path>` → read VCD from named pipe.
+/// * `--wcp-port <n>` / `--wcp-port=<n>` → per-process WCP port.
 /// * Bare positional arguments are auto-routed:
 ///   - `.wavecrux-workspace` → [CliArgs.initialWorkspace]
 ///   - `.wavecrux` / `.wavecruxpack` → [CliArgs.initialSession]
@@ -97,6 +123,7 @@ CliArgs parseCliArgs(List<String> args) {
   String? pipePath;
   var reset = false;
   var noRestore = false;
+  int? wcpPort;
 
   for (var i = 0; i < args.length; i++) {
     final a = args[i];
@@ -115,6 +142,11 @@ CliArgs parseCliArgs(List<String> args) {
       reset = true;
     } else if (a == '--no-restore') {
       noRestore = true;
+    } else if (a == '--wcp-port' && i + 1 < args.length) {
+      i++;
+      wcpPort = parseWcpPort(args[i]);
+    } else if (a.startsWith('--wcp-port=')) {
+      wcpPort = parseWcpPort(a.substring('--wcp-port='.length));
     } else if (!a.startsWith('--')) {
       if (isWorkspaceFilePath(a)) {
         initialWorkspace = a;
@@ -135,6 +167,7 @@ CliArgs parseCliArgs(List<String> args) {
     pipePath: pipePath,
     reset: reset,
     noRestore: noRestore,
+    wcpPort: wcpPort,
   );
 }
 
@@ -157,6 +190,10 @@ Options:
   --no-restore        Launch without reopening the previous session's
                       waveforms (nothing is deleted). Try this first if the
                       app hangs on startup.
+  --wcp-port <n>      Run the WCP remote-control server on port <n> for this
+                      launch only; the Remote Control setting is not
+                      changed. 0 picks a free port and prints it. The
+                      WAVECRUX_WCP_PORT environment variable does the same.
   --reset             Clear all saved session/workspace state (workspace,
                       per-tab sessions, legacy manifest) and launch empty.
                       Settings, keymap, and recent files are kept.

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'dart:async' show StreamSubscription, unawaited;
-import 'dart:io' show File, exit, stderr, stdout;
+import 'dart:io' show File, Platform, exit, stderr, stdout;
 
 import 'package:crux_eula/crux_eula.dart';
 import 'package:crux_ide_layout/crux_ide_layout.dart'
@@ -381,6 +381,11 @@ Future<bool> bootstrap({
   final initialWorkspace = cli.initialWorkspace;
   final stdinMode = cli.stdinMode;
   final pipePath = cli.pipePath;
+  // `--wcp-port` / WAVECRUX_WCP_PORT: WCP on for this process only, on that
+  // port, without touching the stored Remote Control setting.
+  final wcpPortOverride = kIsWeb
+      ? null
+      : resolveWcpPortOverride(cli, Platform.environment);
 
   // On mobile, check whether the app was cold-started by a share-sheet / "Open
   // With" action.  This is a no-op on desktop and web.
@@ -481,6 +486,8 @@ Future<bool> bootstrap({
         initialWorkspacePathProvider.overrideWithValue(initialWorkspace),
       if (stdinMode) initialStdinModeProvider.overrideWithValue(true),
       if (pipePath != null) initialPipePathProvider.overrideWithValue(pipePath),
+      if (wcpPortOverride != null)
+        wcpPortOverrideProvider.overrideWithValue(wcpPortOverride),
       tabContainerManagerProvider.overrideWithValue(tcm),
       paneContainerManagerProvider.overrideWithValue(pcm),
       // A mobile store build is not distributed as a public beta, so nothing

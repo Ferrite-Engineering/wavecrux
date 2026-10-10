@@ -15,13 +15,22 @@ import 'package:wavecrux/services/settings/settings_service.dart';
 
 class _MockSettingsService extends Mock implements WaveCruxSettingsService {}
 
-/// Builds a container whose persisted settings are exactly [settings].
-ProviderContainer _containerWith(AppSettings settings) {
-  final mock = _MockSettingsService();
+/// Builds a container whose persisted settings are exactly [settings], with
+/// [portOverride] standing in for `--wcp-port`.
+ProviderContainer _containerWith(
+  AppSettings settings, {
+  int? portOverride,
+  _MockSettingsService? service,
+}) {
+  final mock = service ?? _MockSettingsService();
   when(mock.load).thenAnswer((_) async => settings);
   when(() => mock.save(any())).thenAnswer((_) async {});
   return ProviderContainer(
-    overrides: [settingsServiceProvider.overrideWithValue(mock)],
+    overrides: [
+      settingsServiceProvider.overrideWithValue(mock),
+      if (portOverride != null)
+        wcpPortOverrideProvider.overrideWithValue(portOverride),
+    ],
   );
 }
 
@@ -146,6 +155,49 @@ void main() {
           .read(appSettingsProvider.notifier)
           .setRemoteControlPort(portB);
       await _until(() => container.read(remoteControlProvider).port == portB);
+      expect(container.read(remoteControlProvider).isRunning, isTrue);
+    });
+
+    test('a --wcp-port override starts the server with the setting off, '
+        'and writes no setting', () async {
+      final port = await _freePort();
+      final service = _MockSettingsService();
+      container = _containerWith(
+        const AppSettings(),
+        portOverride: port,
+        service: service,
+      );
+
+      await _boot(container);
+      await _until(() => container.read(remoteControlProvider).isRunning);
+      expect(container.read(remoteControlProvider).port, port);
+      verifyNever(() => service.save(any()));
+    });
+
+    test('a --wcp-port override of 0 binds a free port', () async {
+      container = _containerWith(
+        const AppSettings(remoteControlEnabled: true, remoteControlPort: 1),
+        portOverride: 0,
+      );
+
+      await _boot(container);
+      await _until(() => container.read(remoteControlProvider).isRunning);
+      expect(container.read(remoteControlProvider).port, greaterThan(1));
+    });
+
+    test('with a --wcp-port override, turning the setting off does not '
+        'stop the server', () async {
+      container = _containerWith(
+        const AppSettings(remoteControlEnabled: true),
+        portOverride: 0,
+      );
+
+      await _boot(container);
+      await _until(() => container.read(remoteControlProvider).isRunning);
+      await container
+          .read(appSettingsProvider.notifier)
+          .setRemoteControlEnabled(enabled: false);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
       expect(container.read(remoteControlProvider).isRunning, isTrue);
     });
 
