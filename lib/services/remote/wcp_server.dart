@@ -117,8 +117,11 @@ class _WcpConnection {
 ///   `{"type":"error","id":N,"code":C,"message":…}`.
 /// - Events nest their fields: `{"type":"event","event":<name>,"data":{...}}`.
 ///
-/// A `command` frame carrying an integer `id` selects the id dialect; an
-/// id-less frame selects the spec envelope. Detection is per message, so one
+/// A `command` frame carrying an `id` selects the id dialect when it also
+/// nests its parameters under `data`, or when the command's spec parameters
+/// do not themselves include an `id`. `focus_item` and `set_item_color` take an item `id` as a
+/// spec parameter, so for those two an `id` without `data` is that parameter
+/// and the frame is spec-envelope. Detection is per message, so one
 /// connection may mix both; broadcast events follow the envelope of the most
 /// recent style latched for the connection (legacy until a spec-envelope
 /// command is seen).
@@ -178,6 +181,14 @@ class WcpServer {
     'wavecrux.getState',
     'wavecrux.setActiveTab',
   ];
+
+  /// Spec commands with a top-level parameter named `id` (an item id, not a
+  /// correlation id). An `id` on one of these selects the id dialect only
+  /// when the frame also nests its parameters under `data`.
+  static const Set<String> _specCommandsWithIdParam = {
+    'focus_item',
+    'set_item_color',
+  };
 
   /// Deprecated spec commands dispatched as `add_items` with their
   /// parameters mapped to the canonical shape. Responses echo the original
@@ -379,9 +390,13 @@ class WcpServer {
 
     final id = msg['id'];
     final command = msg['command'];
+    final isIdDialect =
+        id != null &&
+        (msg.containsKey('data') ||
+            !_specCommandsWithIdParam.contains(command));
 
     if (command is! String) {
-      if (id is int) {
+      if (isIdDialect && id is int) {
         _writeMsg(socket, {
           'type': 'error',
           'id': id,
@@ -399,7 +414,7 @@ class WcpServer {
       return;
     }
 
-    if (id == null) {
+    if (!isIdDialect) {
       conn.usesSpecEnvelope = true;
       final params = Map<String, dynamic>.from(msg)
         ..remove('type')

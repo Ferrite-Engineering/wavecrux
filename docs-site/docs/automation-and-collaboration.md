@@ -25,7 +25,7 @@ Each message is a JSON object terminated by a single null byte (`\x00`) — that
 WaveCrux speaks two wire dialects over the same socket, detected per message, so one connection may even mix them:
 
 - **Spec envelope (default).** The upstream Waveform Control Protocol shape (as implemented by the Surfer project) and the default for third-party WCP clients. Commands are *id-less*, with parameters as top-level fields; replies are correlated by order (each command gets exactly one response/error frame, in request order, enforced by a per-connection serial dispatch queue).
-- **Legacy id dialect.** WaveCrux's original envelope, used by the `wavecrux_ctl` command-line client in the open-core source. Commands carry a mandatory integer `id` and nest their parameters under `data`; replies echo the `id`. A `command` frame that carries an integer `id` selects this dialect; an id-less frame selects the spec envelope.
+- **Legacy id dialect.** WaveCrux's original envelope, used by the `wavecrux_ctl` command-line client in the open-core source. Commands carry a mandatory integer `id` and nest their parameters under `data`; replies echo the `id`. A `command` frame that carries an `id` selects this dialect; an id-less frame selects the spec envelope. From 1.1, `focus_item` and `set_item_color`, whose spec parameters include an item `id`, select this dialect only when the frame also carries `data`, so a spec client can send them with `id` as a top-level parameter.
 
 Broadcast events follow whichever envelope the connection most recently latched (legacy until a spec-envelope command is seen).
 

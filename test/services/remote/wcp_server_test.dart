@@ -752,6 +752,60 @@ void main() {
       expect((msg['data'] as Map<String, dynamic>)['source'], '/tmp/a.vcd');
     });
 
+    test('focus_item with a top-level item id is a spec command', () async {
+      final ws = await connect();
+      ws.send({'type': 'command', 'command': 'focus_item', 'id': 3});
+      final msg = await ws.next();
+
+      expect(msg['type'], 'response');
+      expect(msg['command'], 'ack');
+      expect(msg.containsKey('id'), isFalse);
+      expect(received.single.$1, 'focus_item');
+      expect(received.single.$2['id'], 3);
+    });
+
+    test('set_item_color with a top-level item id is a spec command', () async {
+      final ws = await connect();
+      ws.send({
+        'type': 'command',
+        'command': 'set_item_color',
+        'id': 2,
+        'color': '#00ff00',
+      });
+      final msg = await ws.next();
+
+      expect(msg['command'], 'ack');
+      expect(received.single.$1, 'set_item_color');
+      expect(received.single.$2, {'id': 2, 'color': '#00ff00'});
+    });
+
+    test('focus_item with id and data stays in the id dialect', () async {
+      final ws = await connect();
+      ws.send({
+        'type': 'command',
+        'id': 9,
+        'command': 'focus_item',
+        'data': {'id': 3},
+      });
+      final msg = await ws.next();
+
+      expect(msg['type'], 'response');
+      expect(msg['id'], 9);
+      expect(received.single.$2, {'id': 3});
+    });
+
+    test(
+      'an id without data on other commands is still the id dialect',
+      () async {
+        final ws = await connect();
+        ws.send({'type': 'command', 'id': 4, 'command': 'zoom_to_fit'});
+        final msg = await ws.next();
+
+        expect(msg['type'], 'response');
+        expect(msg['id'], 4);
+      },
+    );
+
     test('one connection can mix both envelopes', () async {
       final ws = await connect();
       ws
