@@ -189,10 +189,19 @@ void main() {
 /// for it. Remove this key only together with a launch of a
 /// Hardened-Runtime-signed release build that does not carry it.
 /// DebugProfile keeps it because the Dart VM JIT-compiles in debug builds.
+///
+/// Release also carries `com.apple.security.cs.disable-library-validation`,
+/// on purpose: under the Hardened Runtime dyld refuses to map a library not
+/// signed by Apple or by the app's own team, so without it `DynamicLibrary.open`
+/// fails for every decoder plugin Ferrite did not sign. Plugin loading is
+/// already gated by the user's safety notice and the optional content-hash
+/// allowlist, which are the right controls. DebugProfile is ad-hoc signed and
+/// not hardened, so it does not need the key.
 const _pinnedEntitlements = <String, Map<String, Object>>{
   'Release': {
     'com.apple.security.app-sandbox': false,
     'com.apple.security.cs.allow-jit': true,
+    'com.apple.security.cs.disable-library-validation': true,
     'com.apple.security.network.server': true,
     'com.apple.security.files.user-selected.read-write': true,
   },
