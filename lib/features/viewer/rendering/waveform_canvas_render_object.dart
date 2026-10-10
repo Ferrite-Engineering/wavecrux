@@ -17,6 +17,7 @@ import 'package:wavecrux/features/viewer/rendering/visible_changes.dart';
 import 'package:wavecrux/features/viewer/rendering/waveform_lane_data.dart';
 import 'package:wavecrux/features/viewer/widgets/render_stats_collector.dart';
 import 'package:wavecrux/services/value_format/analog_value_extractor.dart';
+import 'package:wavecrux/services/waveform/display_changes.dart';
 import 'package:wavecrux/services/waveform_geom/time_mapper.dart';
 
 /// Internal [LeafRenderObjectWidget] that wires [WaveformCanvasRenderObject]
@@ -661,7 +662,7 @@ class WaveformCanvasRenderObject extends RenderBox {
           final visible = sc == null
               ? 0
               : visibleChangeCount(
-                  lane.changes,
+                  DisplayChanges.of(lane.changes),
                   _timeMapper,
                   laneRect.left,
                   laneRect.right,

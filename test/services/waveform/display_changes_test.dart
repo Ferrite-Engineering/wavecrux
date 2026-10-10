@@ -270,4 +270,59 @@ void main() {
       );
     });
   });
+
+  group('DisplayChanges', () {
+    final changes = [
+      for (var i = 0; i < 500; i++)
+        SignalChange(
+          // Past 2^32, so a narrowed tick would show.
+          time: 5000000000 + i * 7,
+          value: i % 3 == 0 ? 'b1010' : (i.isEven ? '1' : 'x'),
+        ),
+    ];
+
+    test('timeAt / valueAt agree with the list view, packed or copied', () {
+      final packed = WellenProvider()..injectLoadedSignal('1', changes);
+      for (final result in [
+        packed.changesForDisplay('1', 0, 6000000000, ticksPerColumn: 20),
+        decimateChanges(changes, ticksPerColumn: 20),
+      ]) {
+        expect(result, isNotEmpty);
+        for (var i = 0; i < result.length; i++) {
+          expect(result.timeAt(i), result[i].time);
+          expect(result.valueAt(i), result[i].value);
+          // A second read answers from the decoded value.
+          expect(result.valueAt(i), result[i].value);
+        }
+      }
+    });
+
+    test('a packed result keeps every change at its own tick', () {
+      final packed = WellenProvider()..injectLoadedSignal('1', changes);
+      final result = packed.changesForDisplay(
+        '1',
+        0,
+        6000000000,
+        ticksPerColumn: 1,
+      );
+      expect(_pairs(result), _pairs(changes));
+    });
+
+    test(
+      'of() returns a DisplayChanges as is and copies a plain list once',
+      () {
+        final result = decimateChanges(changes, ticksPerColumn: 20);
+        expect(identical(DisplayChanges.of(result), result), isTrue);
+        final copy = DisplayChanges.of(changes);
+        expect(_pairs(copy), _pairs(changes));
+        expect(identical(DisplayChanges.of(changes), copy), isTrue);
+      },
+    );
+
+    test('is unmodifiable', () {
+      final result = DisplayChanges.of(changes);
+      expect(() => result.add(changes.first), throwsUnsupportedError);
+      expect(() => result[0] = changes.first, throwsUnsupportedError);
+    });
+  });
 }

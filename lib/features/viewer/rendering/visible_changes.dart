@@ -1,7 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
-import 'package:wavecrux/domain/models/signal_change.dart';
+import 'package:wavecrux/services/waveform/display_changes.dart';
 import 'package:wavecrux/services/waveform_geom/time_mapper.dart';
 
 /// Index of the first of [changes] (ordered by time) that lands at or right
@@ -13,7 +13,7 @@ import 'package:wavecrux/services/waveform_geom/time_mapper.dart';
 /// it (if any) as the value entering the viewport. Binary search, so the band
 /// costs nothing per frame.
 int firstChangeAtOrAfterPixel(
-  List<SignalChange> changes,
+  DisplayChanges changes,
   TimeMapper timeMapper,
   double xMin,
 ) {
@@ -21,7 +21,7 @@ int firstChangeAtOrAfterPixel(
   var hi = changes.length;
   while (lo < hi) {
     final mid = (lo + hi) >>> 1;
-    if (timeMapper.timeToPixel(changes[mid].time) < xMin) {
+    if (timeMapper.timeToPixel(changes.timeAt(mid)) < xMin) {
       lo = mid + 1;
     } else {
       hi = mid;
@@ -34,7 +34,7 @@ int firstChangeAtOrAfterPixel(
 /// `[xMin, xMax)` under [timeMapper]: the visible part of a lane's change
 /// list, without the band either side. Two binary searches.
 int visibleChangeCount(
-  List<SignalChange> changes,
+  DisplayChanges changes,
   TimeMapper timeMapper,
   double xMin,
   double xMax,

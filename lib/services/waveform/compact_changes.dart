@@ -105,12 +105,21 @@ class CompactChanges {
   /// Decodes the value bytes for [idx] as an ASCII string. Wellen
   /// guarantees ASCII for every source format; non-ASCII bytes never
   /// reach `valueBuf`, so the UTF-8 decoder is intentionally skipped.
+  ///
+  /// A one-byte value (every scalar: `0`, `1`, `x`, `z`, …) comes from a
+  /// shared table rather than a fresh [String], so reading a 1-bit lane
+  /// allocates nothing.
   String valueAt(int idx) {
     final start = valueOffsets[idx];
     final end = valueOffsets[idx + 1];
     if (start == end) return '';
+    if (end - start == 1) return _oneByte[valueBuf[start]];
     return String.fromCharCodes(valueBuf, start, end);
   }
+
+  static final List<String> _oneByte = List<String>.unmodifiable(
+    List<String>.generate(256, String.fromCharCode),
+  );
 
   /// Whether the value at [idx] carries an unknown bit (`x` or `X`) —
   /// the byte-level form of `value.toLowerCase().contains('x')`, without
@@ -205,9 +214,11 @@ class CompactChanges {
       final idx = startIdx + i;
       final vStart = off[idx];
       final vEnd = off[idx + 1];
-      final value = vStart == vEnd
-          ? ''
-          : String.fromCharCodes(buf, vStart, vEnd);
+      final value = switch (vEnd - vStart) {
+        0 => '',
+        1 => _oneByte[buf[vStart]],
+        _ => String.fromCharCodes(buf, vStart, vEnd),
+      };
       result[i] = SignalChange(time: t[idx], value: value);
     }
     return result;

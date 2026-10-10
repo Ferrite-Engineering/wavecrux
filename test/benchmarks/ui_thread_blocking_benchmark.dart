@@ -123,6 +123,7 @@ void main() {
             ]) {
           final dataUs = <int>[];
           final paintUs = <int>[];
+          final repaintUs = <int>[];
           var materialized = 0;
           for (var frame = 0; frame < 5; frame++) {
             final sw = Stopwatch()..start();
@@ -147,11 +148,26 @@ void main() {
               );
             }
             paintUs.add(sw.elapsedMicroseconds);
+            // A pan inside the cached band: the same caches, painted again.
+            sw
+              ..reset()
+              ..start();
+            for (var i = 0; i < lanes; i++) {
+              ScalarSignalPainter.debugBuildSegments(
+                changes: caches['$i']!,
+                valueAtStart: initial['$i'],
+                timeMapper: mapper,
+                xMin: 0,
+                xMax: width,
+              );
+            }
+            repaintUs.add(sw.elapsedMicroseconds);
           }
           print(
             'canvas refresh, $label, $path: data ${_medianMs(dataUs)} ms, '
             'segment build ${_medianMs(paintUs)} ms, '
-            '$materialized SignalChange objects '
+            'repaint ${_medianMs(repaintUs)} ms, '
+            '$materialized changes kept '
             '($lanes lanes, ${width.toInt()} px)',
           );
         }

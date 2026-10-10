@@ -18,9 +18,16 @@
 // O(columns × log changes-per-column) rather than O(changes). The same
 // shape — binary search on the sorted store plus a cached per-signal index —
 // is what the transaction lane already does.
+//
+// Nor does a packed source's result build the changes it keeps: it is a
+// [DisplayChanges] over the store and the kept indexes, and the painters read
+// each change's time and value from the store by index. Only a consumer that
+// indexes it as a `List<SignalChange>` gets objects, one per access.
 
+import 'dart:collection';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:wavecrux/domain/interfaces/waveform_data_source.dart';
 import 'package:wavecrux/domain/models/signal_change.dart';
 import 'package:wavecrux/services/waveform/compact_changes.dart';
@@ -50,7 +57,7 @@ extension WaveformDataSourceDisplayQueries on WaveformDataSource {
   /// See [decimateChanges] for what a column keeps. [magnitude], when given,
   /// also keeps each column's smallest and largest value by that measure —
   /// what an analog lane needs to draw a column's full swing.
-  List<SignalChange> changesForDisplay(
+  DisplayChanges changesForDisplay(
     String signalRef,
     int start,
     int end, {
@@ -63,7 +70,7 @@ extension WaveformDataSourceDisplayQueries on WaveformDataSource {
       final compact = (self as CompactChangesSource).compactChangesFor(
         signalRef,
       );
-      if (compact == null || compact.isEmpty) return const [];
+      if (compact == null || compact.isEmpty) return DisplayChanges.empty;
       return _decimate(
         _CompactView(compact),
         compact.lowerBoundGE(start),
@@ -73,13 +80,123 @@ extension WaveformDataSourceDisplayQueries on WaveformDataSource {
         magnitude: magnitude,
       );
     }
-    return decimateChanges(
-      changesInRange(signalRef, start, end),
+    final changes = changesInRange(signalRef, start, end);
+    return _decimate(
+      _ListView(changes),
+      0,
+      changes.length,
       ticksPerColumn: ticksPerColumn,
       columnOrigin: columnOrigin,
       magnitude: magnitude,
     );
   }
+}
+
+/// A lane's time-ordered changes as the column queries return them.
+///
+/// A `List<SignalChange>` for any consumer, plus [timeAt] and [valueAt],
+/// which read one field without building the change. The painters read
+/// through these two, so a result over a packed store never builds the
+/// objects: it holds the kept changes' times, gathered up front (every frame
+/// reads them, and picks spread over a store of millions of changes would
+/// otherwise cost a cache miss each), and decodes a value on its first
+/// [valueAt], keeping it. A repaint from the same result, which is every
+/// frame of a pan inside the cached band, decodes nothing, and the part of
+/// the band no frame reaches is never decoded at all.
+///
+/// One concrete class, so the painters' per-change reads stay monomorphic.
+/// Unmodifiable.
+final class DisplayChanges extends ListBase<SignalChange> {
+  DisplayChanges._(this._times, this._values, this._store, this._picks);
+
+  /// The changes of [store] at [picks] (ascending indexes).
+  DisplayChanges._picked(CompactChanges store, List<int> picks)
+    : this._(
+        _gather(store.times, picks),
+        List<String?>.filled(picks.length, null),
+        store,
+        Uint32List.fromList(picks),
+      );
+
+  /// [changes], copied into the same layout.
+  factory DisplayChanges.fromList(List<SignalChange> changes) {
+    final n = changes.length;
+    final times = _newTimes(n);
+    final values = List<String?>.filled(n, null);
+    for (var i = 0; i < n; i++) {
+      final c = changes[i];
+      times[i] = c.time;
+      values[i] = c.value;
+    }
+    return DisplayChanges._(times, values, null, null);
+  }
+
+  /// [changes] itself when it is already a [DisplayChanges], else a copy —
+  /// what lets a painter take any `List<SignalChange>`. The copy is kept
+  /// with the list, so a lane that repaints from the same plain list (the
+  /// diff lane's XOR trace) copies it once rather than every frame; lane
+  /// data is immutable, and a list whose length changed is copied afresh.
+  factory DisplayChanges.of(List<SignalChange> changes) {
+    if (changes is DisplayChanges) return changes;
+    if (changes.isEmpty) return empty;
+    final cached = _copies[changes];
+    if (cached != null && cached.length == changes.length) return cached;
+    return _copies[changes] = DisplayChanges.fromList(changes);
+  }
+
+  static final Expando<DisplayChanges> _copies = Expando<DisplayChanges>(
+    'display changes copy',
+  );
+
+  /// No changes.
+  static final DisplayChanges empty = DisplayChanges.fromList(const []);
+
+  /// Times in a `Uint64List` on native, which keeps large ticks unboxed; the
+  /// web has no 64-bit typed array (see [CompactChanges.times]).
+  static List<int> _newTimes(int n) =>
+      kIsWeb ? List<int>.filled(n, 0) : Uint64List(n);
+
+  static List<int> _gather(List<int> times, List<int> picks) {
+    final n = picks.length;
+    final out = _newTimes(n);
+    for (var i = 0; i < n; i++) {
+      out[i] = times[picks[i]];
+    }
+    return out;
+  }
+
+  final List<int> _times;
+
+  /// Decoded values; null until first read for a packed result.
+  final List<String?> _values;
+
+  /// The store a packed result decodes from, and the index in it of each
+  /// change; null for a result copied from a list, whose values are all set.
+  final CompactChanges? _store;
+  final Uint32List? _picks;
+
+  @override
+  int get length => _times.length;
+
+  /// The time of change [i].
+  int timeAt(int i) => _times[i];
+
+  /// The value of change [i].
+  String valueAt(int i) => _values[i] ?? _decode(i);
+
+  String _decode(int i) => _values[i] = _store!.valueAt(_picks![i]);
+
+  @override
+  SignalChange operator [](int index) =>
+      SignalChange(time: _times[index], value: valueAt(index));
+
+  @override
+  set length(int newLength) =>
+      throw UnsupportedError('DisplayChanges is unmodifiable');
+
+  @override
+  void operator []=(int index, SignalChange value) =>
+      throw UnsupportedError('DisplayChanges is unmodifiable');
 }
 
 /// Reduces [changes] (time-ordered) to what a lane drawing [ticksPerColumn]
@@ -102,7 +219,7 @@ extension WaveformDataSourceDisplayQueries on WaveformDataSource {
 /// So a column costs at most six entries however many transitions it holds,
 /// and a result is bounded by the column count rather than the change count.
 /// A non-positive or non-finite [ticksPerColumn] returns [changes] unchanged.
-List<SignalChange> decimateChanges(
+DisplayChanges decimateChanges(
   List<SignalChange> changes, {
   required double ticksPerColumn,
   double columnOrigin = 0,
@@ -116,7 +233,7 @@ List<SignalChange> decimateChanges(
   magnitude: magnitude,
 );
 
-List<SignalChange> _decimate(
+DisplayChanges _decimate(
   _ChangeView view,
   int startIdx,
   int endIdx, {
@@ -124,11 +241,11 @@ List<SignalChange> _decimate(
   required double columnOrigin,
   required double Function(String value)? magnitude,
 }) {
-  if (endIdx <= startIdx) return const [];
+  if (endIdx <= startIdx) return DisplayChanges.empty;
   if (!(ticksPerColumn > 0) || !ticksPerColumn.isFinite) {
     return view.slice(startIdx, endIdx);
   }
-  final out = <SignalChange>[];
+  final out = <int>[];
   final picks = <int>[];
   var i = startIdx;
   while (i < endIdx) {
@@ -142,17 +259,15 @@ List<SignalChange> _decimate(
     if (j - i <= 2) {
       // The common case at any zoom where changes are not denser than
       // pixels: keep the column as it is.
-      out.add(view.changeAt(i));
-      if (j - i == 2) out.add(view.changeAt(i + 1));
+      out.add(i);
+      if (j - i == 2) out.add(i + 1);
     } else {
       _pickColumn(view, i, j, magnitude, picks);
-      for (final k in picks) {
-        out.add(view.changeAt(k));
-      }
+      out.addAll(picks);
     }
     i = j;
   }
-  return out;
+  return view.pick(out);
 }
 
 /// Fills [picks] with the indexes a column of three or more changes,
@@ -218,7 +333,6 @@ void _pickColumn(
 abstract class _ChangeView {
   int timeAt(int i);
   String valueAt(int i);
-  SignalChange changeAt(int i);
   bool hasX(int i);
   bool sameValue(int a, int b);
 
@@ -255,9 +369,11 @@ abstract class _ChangeView {
     return a;
   }
 
-  List<SignalChange> slice(int from, int to) => [
-    for (var i = from; i < to; i++) changeAt(i),
-  ];
+  /// The changes `[from, to)`.
+  DisplayChanges slice(int from, int to);
+
+  /// The changes at [indexes], ascending.
+  DisplayChanges pick(List<int> indexes);
 }
 
 final class _CompactView extends _ChangeView {
@@ -270,10 +386,6 @@ final class _CompactView extends _ChangeView {
 
   @override
   String valueAt(int i) => c.valueAt(i);
-
-  @override
-  SignalChange changeAt(int i) =>
-      SignalChange(time: c.times[i], value: c.valueAt(i));
 
   @override
   bool hasX(int i) => c.valueContainsX(i);
@@ -299,7 +411,11 @@ final class _CompactView extends _ChangeView {
   }
 
   @override
-  List<SignalChange> slice(int from, int to) => c.sliceToList(from, to);
+  DisplayChanges slice(int from, int to) =>
+      DisplayChanges._picked(c, [for (var i = from; i < to; i++) i]);
+
+  @override
+  DisplayChanges pick(List<int> indexes) => DisplayChanges._picked(c, indexes);
 }
 
 final class _ListView extends _ChangeView {
@@ -312,9 +428,6 @@ final class _ListView extends _ChangeView {
 
   @override
   String valueAt(int i) => changes[i].value;
-
-  @override
-  SignalChange changeAt(int i) => changes[i];
 
   @override
   bool hasX(int i) => _stringHasX(changes[i].value);
@@ -331,8 +444,13 @@ final class _ListView extends _ChangeView {
   }
 
   @override
-  List<SignalChange> slice(int from, int to) =>
-      from == 0 && to == changes.length ? changes : changes.sublist(from, to);
+  DisplayChanges slice(int from, int to) => DisplayChanges.of(
+    from == 0 && to == changes.length ? changes : changes.sublist(from, to),
+  );
+
+  @override
+  DisplayChanges pick(List<int> indexes) =>
+      DisplayChanges.fromList([for (final k in indexes) changes[k]]);
 }
 
 bool _stringHasX(String value) {

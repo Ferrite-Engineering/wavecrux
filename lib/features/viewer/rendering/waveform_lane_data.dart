@@ -130,6 +130,9 @@ class WaveformLaneData {
   /// Value changes covering the visible time range, in time order. The canvas
   /// passes a range wider than the view, reduced to the zoom's pixel columns
   /// (`changesForDisplay`); the painters skip what lies left of the viewport.
+  /// The canvas passes a `DisplayChanges`, which the painters read by index
+  /// without building a [SignalChange] per change; any other list is copied
+  /// into one once.
   final List<SignalChange> changes;
 
   /// Signal value just before the first of [changes], returned by

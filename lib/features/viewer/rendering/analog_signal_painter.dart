@@ -9,6 +9,7 @@ import 'package:wavecrux/domain/enums/analog_interpolation.dart';
 import 'package:wavecrux/domain/models/signal_change.dart';
 import 'package:wavecrux/features/viewer/rendering/visible_changes.dart';
 import 'package:wavecrux/services/value_format/analog_value_extractor.dart';
+import 'package:wavecrux/services/waveform/display_changes.dart';
 import 'package:wavecrux/services/waveform_geom/analog_scale_service.dart';
 import 'package:wavecrux/services/waveform_geom/time_mapper.dart';
 
@@ -330,8 +331,9 @@ abstract final class AnalogSignalPainter {
     List<_ColumnExtent> extents,
   ) {
     final points = <_DataPoint>[];
-    final first = firstChangeAtOrAfterPixel(changes, timeMapper, xMin);
-    final entering = first > 0 ? changes[first - 1].value : valueAtStart;
+    final view = DisplayChanges.of(changes);
+    final first = firstChangeAtOrAfterPixel(view, timeMapper, xMin);
+    final entering = first > 0 ? view.valueAt(first - 1) : valueAtStart;
 
     // Left-edge anchor.
     if (entering != null) {
@@ -350,11 +352,11 @@ abstract final class AnalogSignalPainter {
       colMax = double.negativeInfinity;
     }
 
-    for (var i = first; i < changes.length; i++) {
-      final change = changes[i];
-      final x = timeMapper.timeToPixel(change.time).clamp(xMin, xMax);
+    for (var i = first; i < view.length; i++) {
+      final value = view.valueAt(i);
+      final x = timeMapper.timeToPixel(view.timeAt(i)).clamp(xMin, xMax);
       final col = x.floor();
-      final v = extract(change.value);
+      final v = extract(value);
 
       if (points.isNotEmpty && col <= lastCol) {
         // Same pixel column — coalesce. NaN is sticky: any NaN within the

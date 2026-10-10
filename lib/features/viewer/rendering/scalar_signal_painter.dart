@@ -7,6 +7,7 @@ import 'package:flutter/painting.dart';
 import 'package:meta/meta.dart';
 import 'package:wavecrux/domain/models/signal_change.dart';
 import 'package:wavecrux/features/viewer/rendering/visible_changes.dart';
+import 'package:wavecrux/services/waveform/display_changes.dart';
 import 'package:wavecrux/services/waveform_geom/time_mapper.dart';
 
 /// Paints a 1-bit digital signal lane onto a [Canvas].
@@ -239,8 +240,9 @@ abstract final class ScalarSignalPainter {
     List<double> glitches,
   ) {
     final segments = <_Segment>[];
-    final first = firstChangeAtOrAfterPixel(changes, timeMapper, xMin);
-    var currentValue = first > 0 ? changes[first - 1].value : initialValue;
+    final view = DisplayChanges.of(changes);
+    final first = firstChangeAtOrAfterPixel(view, timeMapper, xMin);
+    var currentValue = first > 0 ? view.valueAt(first - 1) : initialValue;
     var currentX = xMin;
     var currentCol = xMin.floor();
     // The previous change's value while it sits in the current column, and
@@ -248,30 +250,30 @@ abstract final class ScalarSignalPainter {
     String? columnLast;
     var columnGlitched = false;
 
-    for (var i = first; i < changes.length; i++) {
-      final change = changes[i];
-      final x = timeMapper.timeToPixel(change.time).clamp(xMin, xMax);
+    for (var i = first; i < view.length; i++) {
+      final value = view.valueAt(i);
+      final x = timeMapper.timeToPixel(view.timeAt(i)).clamp(xMin, xMax);
       final col = x.floor();
       if (col <= currentCol) {
         // Same pixel column — coalesce. Promote to X if seen.
-        if (columnLast != null && columnLast != change.value) {
+        if (columnLast != null && columnLast != value) {
           columnGlitched = true;
         }
-        columnLast = change.value;
-        if (_hasXState(change.value)) {
-          currentValue = change.value;
+        columnLast = value;
+        if (_hasXState(value)) {
+          currentValue = value;
         } else if (currentValue == null || !_hasXState(currentValue)) {
-          currentValue = change.value;
+          currentValue = value;
         }
         continue;
       }
       if (columnGlitched) glitches.add(currentX);
       columnGlitched = false;
-      columnLast = change.value;
+      columnLast = value;
       if (currentValue != null) {
         segments.add(_Segment(xStart: currentX, xEnd: x, value: currentValue));
       }
-      currentValue = change.value;
+      currentValue = value;
       currentX = x;
       currentCol = col;
       if (currentX >= xMax) break;
