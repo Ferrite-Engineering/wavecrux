@@ -303,15 +303,19 @@ ActionDescriptor descriptorFor(ShortcutAction action) => switch (action) {
     ],
   ),
 
-  // ── Command palette opener — menu + overflow only ──────────────────
-  // Self-referential in the palette itself (you can't open the palette
-  // from the palette), so it is excluded from the palette surface — but it
+  // ── Command palette opener — toolbar (touch), menu, overflow ────────
+  // The toolbar button is rendered on touch form factors only: the overflow
+  // menu paints only when the strip overflows, so a wide tablet with no
+  // keyboard would otherwise have no way in.
+  //
+  // Self-referential in the palette itself (you can't open the palette from
+  // the palette), so it is excluded from the palette surface — but it
   // MUST stay reachable from the menu bar / overflow menu, otherwise
   // unbinding its keyboard shortcut (or losing it to a conflict) would make
   // the command palette permanently inaccessible with no recovery path
   // (issue #38).
   ShortcutAction.openCommandPalette => const ActionDescriptor(
-    surfaces: _menuOverflow,
+    surfaces: {ActionSurface.toolbar, ..._menuOverflow},
   ),
 
   // ── Keyboard-only / context-menu-only — hidden from every surface ───

@@ -89,8 +89,9 @@ class ViewerToolbar extends ConsumerWidget {
         ? streamingState.elapsed
         : Duration.zero;
 
-    final metrics =
-        deviceClass.isPhoneClass || deviceClass == DeviceClass.tablet
+    final isTouch =
+        deviceClass.isPhoneClass || deviceClass == DeviceClass.tablet;
+    final metrics = isTouch
         ? CruxToolbarMetrics.touch
         : CruxToolbarMetrics.desktop;
 
@@ -137,6 +138,14 @@ class ViewerToolbar extends ConsumerWidget {
         button(ShortcutAction.openSettings, Icons.settings_outlined),
       ],
       specific: [
+        // Touch only. The overflow menu paints only when the strip overflows,
+        // so on a tablet wide enough to fit every button the palette would be
+        // reachable by a hardware-keyboard chord alone. Desktop has the menu
+        // bar and its chord.
+        if (isTouch) ...[
+          button(ShortcutAction.openCommandPalette, Icons.keyboard_command_key),
+          const CruxToolbarSeparatorItem(),
+        ],
         button(ShortcutAction.exportWaveform, Icons.file_upload_outlined),
         const CruxToolbarSeparatorItem(),
         button(ShortcutAction.zoomIn, Icons.zoom_in),

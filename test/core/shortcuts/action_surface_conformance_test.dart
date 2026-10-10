@@ -372,7 +372,10 @@ void main() {
         ShortcutAction.values.where(
           (a) =>
               descriptorFor(a).surfaces.contains(ActionSurface.toolbar) &&
-              descriptorFor(a).isVisible(ctx),
+              descriptorFor(a).isVisible(ctx) &&
+              // Rendered on touch form factors only; see ViewerToolbar and
+              // the tablet test in viewer_toolbar_test.dart.
+              a != ShortcutAction.openCommandPalette,
         );
 
     testWidgets('every toolbar action has a button, enabled per descriptor', (

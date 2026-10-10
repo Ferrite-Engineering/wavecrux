@@ -150,6 +150,74 @@ void main() {
       }
     });
 
+    group('command palette on touch form factors', () {
+      const tablet = ActionContext(
+        fileLoaded: true,
+        deviceClass: DeviceClass.tablet,
+        diagnosticsEnabled: true,
+        cursorPresent: true,
+        hasSelection: true,
+        stageViewVisible: true,
+      );
+
+      testWidgets('a tablet wide enough not to overflow opens the palette by '
+          'touch, with no keyboard', (tester) async {
+        // 1600 dp fits the whole strip, so the overflow menu is not painted:
+        // the strip button is the only touch path.
+        tester.view.physicalSize = const Size(1600, 400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final dispatched = <ShortcutAction>[];
+        await tester.pumpWidget(
+          _wrap(
+            ctx: tablet,
+            platform: TargetPlatform.iOS,
+            width: 1600,
+            onShortcutAction: dispatched.add,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byIcon(Icons.more_vert),
+          findsNothing,
+          reason: 'precondition: the strip does not overflow at this width',
+        );
+        final button = find.byKey(
+          const ValueKey<ShortcutAction>(ShortcutAction.openCommandPalette),
+        );
+        expect(button, findsOneWidget);
+
+        await tester.tap(button);
+        await tester.pump();
+        expect(dispatched, <ShortcutAction>[ShortcutAction.openCommandPalette]);
+      });
+
+      testWidgets('the button is on a phone strip too, and not on desktop', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _wrap(
+            ctx: const ActionContext(
+              fileLoaded: true,
+              deviceClass: DeviceClass.phone,
+            ),
+            platform: TargetPlatform.android,
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(_rendered(tester), contains(ShortcutAction.openCommandPalette));
+
+        await tester.pumpWidget(_wrap());
+        await tester.pumpAndSettle();
+        expect(
+          _rendered(tester),
+          isNot(contains(ShortcutAction.openCommandPalette)),
+        );
+      });
+    });
+
     testWidgets('Save Session As is deliberately NOT on the strip', (
       tester,
     ) async {
