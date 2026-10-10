@@ -344,19 +344,12 @@ bool _stringHasX(String value) {
 }
 
 /// Indexes of the changes whose value carries an unknown bit, per packed
-/// store. Built on the first column query that needs it — one pass over the
-/// value bytes — and dropped with the store when the signal is unloaded.
-/// Sparse: a signal with no `x` anywhere costs an empty list.
+/// store. A store loaded by the FFI provider carries one built in the worker
+/// isolate ([CompactChanges.xChangeIndex]); any other is indexed on the first
+/// column query that needs it — one pass over the value bytes — and the
+/// index is dropped with the store when the signal is unloaded.
 final Expando<Uint32List> _xIndexes = Expando<Uint32List>('x change index');
 
-Uint32List _xIndex(CompactChanges c) {
-  final cached = _xIndexes[c];
-  if (cached != null) return cached;
-  final hits = <int>[];
-  for (var i = 0; i < c.length; i++) {
-    if (c.valueContainsX(i)) hits.add(i);
-  }
-  final index = Uint32List.fromList(hits);
-  _xIndexes[c] = index;
-  return index;
-}
+Uint32List _xIndex(CompactChanges c) =>
+    c.xChangeIndex ??
+    (_xIndexes[c] ??= buildXChangeIndex(c.valueOffsets, c.valueBuf));

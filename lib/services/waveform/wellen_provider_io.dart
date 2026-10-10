@@ -201,6 +201,7 @@ class WellenProvider implements WaveformDataSource, CompactChangesSource {
         times: times,
         valueOffsets: result['valueOffsets'] as Uint32List,
         valueBuf: result['valueBuf'] as Uint8List,
+        xChangeIndex: result['xChangeIndex'] as Uint32List?,
       );
     } else {
       _loadedSignals[ref] = buildCompactFromList(
@@ -523,6 +524,7 @@ void _wellenWorkerEntry(SendPort mainPort) {
             'times': payload.times,
             'valueOffsets': payload.valueOffsets,
             'valueBuf': payload.valueBuf,
+            'xChangeIndex': payload.xChangeIndex,
           });
 
         case 'unloadSignal':
@@ -734,18 +736,22 @@ Variable _buildVariable(
 
 // ── Signal data fetching (worker) ─────────────────────────────────────────────
 
-/// Three flat typed arrays describing a signal's change list. Built in the
-/// worker isolate, copied over [SendPort], and wrapped in [CompactChanges]
-/// on the main isolate.
+/// Three flat typed arrays describing a signal's change list, plus the index
+/// of its changes that carry an unknown bit. Built in the worker isolate,
+/// copied over [SendPort], and wrapped in [CompactChanges] on the main
+/// isolate. Building the `x` index here keeps that O(bytes) scan off the UI
+/// isolate; see [CompactChanges.xChangeIndex].
 class CompactChangesPayload {
   CompactChangesPayload({
     required this.times,
     required this.valueOffsets,
     required this.valueBuf,
+    required this.xChangeIndex,
   });
   final Uint64List times;
   final Uint32List valueOffsets;
   final Uint8List valueBuf;
+  final Uint32List xChangeIndex;
 }
 
 /// Fetches all value changes for [signalRef] by calling [wellen_signal_changes]
@@ -793,6 +799,7 @@ CompactChangesPayload _fetchAllChanges(
           times: Uint64List(0),
           valueOffsets: Uint32List(1),
           valueBuf: Uint8List(0),
+          xChangeIndex: Uint32List(0),
         );
       }
 
@@ -840,6 +847,7 @@ CompactChangesPayload _fetchAllChanges(
         times: times,
         valueOffsets: compactOffsets,
         valueBuf: compactValueBuf,
+        xChangeIndex: buildXChangeIndex(compactOffsets, compactValueBuf),
       );
     });
 

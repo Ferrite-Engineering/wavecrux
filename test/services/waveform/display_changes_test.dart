@@ -5,6 +5,7 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wavecrux/domain/models/signal_change.dart';
+import 'package:wavecrux/services/waveform/compact_changes.dart';
 import 'package:wavecrux/services/waveform/display_changes.dart';
 import 'package:wavecrux/services/waveform/wellen_provider.dart';
 
@@ -21,6 +22,30 @@ Map<int, List<String>> _byColumn(List<SignalChange> changes, double tpc) {
     (out[(c.time / tpc).floor()] ??= <String>[]).add(c.value);
   }
   return out;
+}
+
+/// A packed source whose stores carry no precomputed x index, so the column
+/// queries build it lazily.
+class _UnindexedPackedSource extends FakeWaveformDataSource
+    implements CompactChangesSource {
+  _UnindexedPackedSource(Map<String, List<SignalChange>> signals)
+    : _stores = {
+        for (final e in signals.entries)
+          e.key: () {
+            final c = buildCompactFromList(e.value);
+            return CompactChanges(
+              times: c.times,
+              valueOffsets: c.valueOffsets,
+              valueBuf: c.valueBuf,
+            );
+          }(),
+      },
+      super(signals: signals);
+
+  final Map<String, CompactChanges> _stores;
+
+  @override
+  CompactChanges? compactChangesFor(String signalRef) => _stores[signalRef];
 }
 
 double _real(String v) => double.tryParse(v) ?? double.nan;
@@ -206,6 +231,35 @@ void main() {
           ),
           reason: 'trial $trial',
         );
+      }
+    });
+
+    test('a store without a precomputed x index answers the same', () {
+      final changes = [
+        for (var i = 0; i < 2000; i++)
+          SignalChange(
+            time: i * 3,
+            value: i % 97 == 0 ? 'x' : (i.isEven ? '1' : '0'),
+          ),
+      ];
+      final indexed = WellenProvider()..injectLoadedSignal('3', changes);
+      final unindexed = _UnindexedPackedSource({'3': changes});
+      expect(unindexed.compactChangesFor('3')!.xChangeIndex, isNull);
+      for (final tpc in [1.0, 7.5, 40.0, 300.0]) {
+        final got = unindexed.changesForDisplay(
+          '3',
+          0,
+          6000,
+          ticksPerColumn: tpc,
+        );
+        expect(
+          _pairs(got),
+          _pairs(
+            indexed.changesForDisplay('3', 0, 6000, ticksPerColumn: tpc),
+          ),
+          reason: '$tpc',
+        );
+        expect(got.map((c) => c.value), contains('x'), reason: '$tpc');
       }
     });
 

@@ -55,6 +55,7 @@ class CompactChanges {
     required this.times,
     required this.valueOffsets,
     required this.valueBuf,
+    this.xChangeIndex,
   }) : assert(
          valueOffsets.length == times.length + 1,
          'valueOffsets must carry a trailing sentinel',
@@ -84,6 +85,16 @@ class CompactChanges {
   final List<int> times;
   final Uint32List valueOffsets;
   final Uint8List valueBuf;
+
+  /// Ascending indexes of the changes whose value carries an unknown bit
+  /// (`x` / `X`), as [buildXChangeIndex] computes it, or null when the
+  /// builder of this store did not compute one.
+  ///
+  /// The FFI provider builds it in the worker isolate while it compacts the
+  /// value bytes, so the column queries in `display_changes.dart` never scan
+  /// a signal's bytes on the UI isolate. A store without one gets it built
+  /// lazily, on the first column query that needs it.
+  final Uint32List? xChangeIndex;
 
   int get length => times.length;
 
@@ -207,6 +218,25 @@ class CompactChanges {
   static const _placeholder = SignalChange(time: 0, value: '');
 }
 
+/// The ascending indexes of the changes in a compact store whose value bytes
+/// carry an unknown bit (`x` or `X`). One pass over [valueBuf]; sparse, so a
+/// signal with no `x` anywhere costs an empty list.
+Uint32List buildXChangeIndex(Uint32List valueOffsets, Uint8List valueBuf) {
+  final hits = <int>[];
+  final n = valueOffsets.length - 1;
+  for (var i = 0; i < n; i++) {
+    final end = valueOffsets[i + 1];
+    for (var b = valueOffsets[i]; b < end; b++) {
+      final c = valueBuf[b];
+      if (c == 0x78 || c == 0x58) {
+        hits.add(i);
+        break;
+      }
+    }
+  }
+  return Uint32List.fromList(hits);
+}
+
 /// Builds a [CompactChanges] from a pre-existing `List<SignalChange>`.
 ///
 /// Used by the `injectLoadedSignal` testing helpers on both providers so
@@ -245,9 +275,12 @@ CompactChanges buildCompactFromList(List<SignalChange> changes) {
     cursor += lengths[i];
   }
   offsets[n] = cursor;
+  // Indexed here, like the worker's load path, so a test seam exercises the
+  // same query path a loaded signal does.
   return CompactChanges(
     times: times,
     valueOffsets: offsets,
     valueBuf: valueBuf,
+    xChangeIndex: buildXChangeIndex(offsets, valueBuf),
   );
 }

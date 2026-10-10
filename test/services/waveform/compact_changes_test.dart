@@ -112,4 +112,22 @@ void main() {
     // No assumption that `times` is a Uint64List — only that it's a List<int>.
     expect(c.times, isA<List<int>>());
   });
+
+  test('buildXChangeIndex lists the changes carrying an unknown bit', () {
+    final c = _build(
+      [0, 1, 2, 3, 4, 5],
+      ['0', 'x', 'b10', 'b1X0', '', 'z'],
+    );
+    expect(buildXChangeIndex(c.valueOffsets, c.valueBuf), [1, 3]);
+    expect(buildXChangeIndex(Uint32List(1), Uint8List(0)), isEmpty);
+  });
+
+  test('buildCompactFromList carries the x index, as a load does', () {
+    final c = buildCompactFromList(const [
+      SignalChange(time: 0, value: '0'),
+      SignalChange(time: 5, value: 'X'),
+      SignalChange(time: 9, value: '1'),
+    ]);
+    expect(c.xChangeIndex, [1]);
+  });
 }

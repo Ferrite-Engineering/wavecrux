@@ -590,10 +590,13 @@ class WellenWasmProvider implements WaveformDataSource, CompactChangesSource {
       cursor += s.length;
     }
     offsets[n] = cursor;
+    // No worker isolate on the web; indexing at load still keeps the scan
+    // out of the first paint of the lane.
     return CompactChanges(
       times: times,
       valueOffsets: offsets,
       valueBuf: valueBuf,
+      xChangeIndex: buildXChangeIndex(offsets, valueBuf),
     );
   }
 

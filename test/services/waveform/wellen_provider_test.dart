@@ -15,6 +15,7 @@ import 'package:wavecrux/domain/models/scope.dart';
 import 'package:wavecrux/domain/models/signal_change.dart';
 import 'package:wavecrux/domain/models/signal_filter.dart';
 import 'package:wavecrux/domain/models/variable.dart';
+import 'package:wavecrux/services/waveform/display_changes.dart';
 import 'package:wavecrux/services/waveform/wellen_provider.dart';
 
 import '../../helpers/wellen_ffi_library_gate.dart';
@@ -1406,4 +1407,46 @@ void main() {
       expect(provider.signalTransitionCount('0'), 0);
     });
   });
+
+  if (requireWellenFfiLibrary('WellenProvider worker x index')) {
+    test('the worker builds the x change index at load time', () async {
+      final dir = Directory.systemTemp.createTempSync('wavecrux_xindex_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final vcd = File('${dir.path}/x.vcd')
+        ..writeAsStringSync(
+          [
+            r'$timescale 1 ns $end',
+            r'$scope module top $end',
+            r'$var wire 4 # bus $end',
+            r'$upscope $end',
+            r'$enddefinitions $end',
+            '#0',
+            'b0000 #',
+            '#10',
+            'bx #',
+            '#20',
+            'b0101 #',
+            '#30',
+            'b01x1 #',
+            '#40',
+            'b1111 #',
+            '',
+          ].join('\n'),
+        );
+      final provider = WellenProvider();
+      addTearDown(provider.close);
+      await provider.openFile(vcd.path);
+      final ref = provider.rootScopes.first.variables.single.signalRef;
+      await provider.loadSignal(ref);
+      // A downcast: the analyzer resolves `wellen_provider.dart` to its stub.
+      final WaveformDataSource source = provider;
+      final store = (source as CompactChangesSource).compactChangesFor(ref)!;
+      expect(store.xChangeIndex, isNotNull);
+      expect(store.xChangeIndex, [
+        for (var i = 0; i < store.length; i++)
+          if (store.valueContainsX(i)) i,
+      ]);
+      expect(store.xChangeIndex, hasLength(2));
+    });
+  }
 }
