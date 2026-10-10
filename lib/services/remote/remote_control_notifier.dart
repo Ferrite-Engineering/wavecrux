@@ -74,7 +74,7 @@ class _WcpItem {
     required this.id,
     required this.name,
     required this.path,
-    required this.signalRef,
+    required this.key,
     required this.type,
   });
 
@@ -82,51 +82,53 @@ class _WcpItem {
   final String name;
   final String path;
 
-  /// The key used to look up this item in the signal groups or marker state.
-  /// Markers use the `marker:<letter>` prefix.
-  final String signalRef;
+  /// What this item is in the tab: a variable's [SignalEntry.id], so each
+  /// displayed row is its own item even when one signal is shown twice, or
+  /// `marker:<letter>` for a marker.
+  final String key;
 
   /// [_kTypeVariable] or [_kTypeMarker].
   final String type;
 }
 
 /// Assigns stable monotonic integer IDs to all displayed items visible over
-/// WCP (`DisplayedItemRef` in the upstream spec). IDs are never reused: an
-/// item that is removed and re-added receives a fresh id.
+/// WCP (`DisplayedItemRef` in the upstream spec), one per displayed row. IDs
+/// are never reused: an item that is removed and re-added receives a fresh
+/// id.
 class _DisplayedItemRegistry {
   int _nextId = 1;
   final Map<int, _WcpItem> _byId = {};
-  final Map<String, int> _byRef = {};
+  final Map<String, int> _byKey = {};
 
   _WcpItem register(
-    String signalRef,
+    String key,
     String name,
     String path, {
     required String type,
   }) {
-    final existingId = _byRef[signalRef];
+    final existingId = _byKey[key];
     if (existingId != null) return _byId[existingId]!;
     final id = _nextId++;
     final item = _WcpItem(
       id: id,
       name: name,
       path: path,
-      signalRef: signalRef,
+      key: key,
       type: type,
     );
     _byId[id] = item;
-    _byRef[signalRef] = id;
+    _byKey[key] = id;
     return item;
   }
 
   _WcpItem? byId(int id) => _byId[id];
 
-  int? idFor(String signalRef) => _byRef[signalRef];
+  int? idFor(String key) => _byKey[key];
 
   bool remove(int id) {
     final item = _byId.remove(id);
     if (item == null) return false;
-    _byRef.remove(item.signalRef);
+    _byKey.remove(item.key);
     return true;
   }
 
@@ -134,7 +136,7 @@ class _DisplayedItemRegistry {
 
   void clear() {
     _byId.clear();
-    _byRef.clear();
+    _byKey.clear();
   }
 }
 
@@ -410,13 +412,28 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
       toAdd.addAll(_resolveItemPath(path, allVars, recursive: recursive));
     }
 
+    final before = {
+      for (final e in _signalEntries(tab.read(signalGroupsProvider).entries))
+        e.id,
+    };
     if (toAdd.isNotEmpty) {
       tab.read(signalGroupsProvider.notifier).addSignals(toAdd);
     }
+    // Each variable added is a new row with its own entry id, so a signal
+    // that is already displayed gets a second item rather than sharing the
+    // first row's. The organisation's signal groups may have placed the new
+    // rows inside groups, so they are matched by ref, not by position.
+    final newRows = [
+      for (final e in _signalEntries(tab.read(signalGroupsProvider).entries))
+        if (!before.contains(e.id)) e,
+    ];
     final addedItems = <Map<String, dynamic>>[];
     for (final v in toAdd) {
+      final rowIndex = newRows.indexWhere((e) => e.signalRef == v.signalRef);
+      if (rowIndex < 0) continue;
+      final row = newRows.removeAt(rowIndex);
       final item = _registry.register(
-        v.signalRef,
+        row.id,
         v.name,
         v.fullPath,
         type: _kTypeVariable,
@@ -457,30 +474,27 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
     }
     final ids = rawIds.whereType<int>().toList();
     final tab = _activeTab;
-    final entries = tab.read(signalGroupsProvider).entries;
 
-    // Collect all indices before removing to avoid shifting issues.
-    final indices = <int>[];
+    final rowIds = <String>{};
     for (final id in ids) {
       final item = _registry.byId(id);
       if (item == null) continue; // silently ignore unknown IDs
-      if (item.signalRef.startsWith(_kMarkerRefPrefix)) {
+      if (item.type == _kTypeMarker) {
         tab
             .read(markerStateProvider.notifier)
             .removeMarker(_markerLetter(item));
       } else {
-        final idx = _findEntryIndex(entries, item.signalRef);
-        if (idx >= 0) indices.add(idx);
+        rowIds.add(item.key);
       }
       _registry.remove(id);
     }
 
-    // Remove in descending order to preserve lower indices during iteration.
-    indices
-      ..sort((a, b) => b.compareTo(a))
-      ..forEach(
-        tab.read(signalGroupsProvider.notifier).removeSignal,
-      );
+    // One pass over the whole tree, so rows inside groups go too.
+    if (rowIds.isNotEmpty) {
+      tab
+          .read(signalGroupsProvider.notifier)
+          .removeSignalsWhere((e) => rowIds.contains(e.id));
+    }
     return null;
   }
 
@@ -496,21 +510,21 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
   /// monotonic and are never reused, so a removed-then-re-added item gets a
   /// fresh id.
   void _syncRegistryWithDisplayedState(ProviderContainer tab) {
-    final displayedRefs = <String>[];
-    _collectSignalRefs(tab.read(signalGroupsProvider).entries, displayedRefs);
+    final rows = _signalEntries(tab.read(signalGroupsProvider).entries);
     final markers = tab.read(markerStateProvider).markers;
     final live = <String>{
-      ...displayedRefs,
+      for (final row in rows) row.id,
       for (final name in markers.keys) '$_kMarkerRefPrefix$name',
     };
     for (final item in _registry.allItems) {
-      if (!live.contains(item.signalRef)) _registry.remove(item.id);
+      if (!live.contains(item.key)) _registry.remove(item.id);
     }
 
     final source = tab.read(waveformSourceProvider).value;
     List<Variable>? allVars;
-    for (final ref in displayedRefs) {
-      if (_registry.idFor(ref) != null) continue;
+    for (final row in rows) {
+      if (_registry.idFor(row.id) != null) continue;
+      final ref = row.signalRef;
       allVars ??=
           source?.findVariables(const SignalFilter()) ?? const <Variable>[];
       Variable? match;
@@ -521,9 +535,9 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
         }
       }
       _registry.register(
-        ref,
-        match?.name ?? ref,
-        match?.fullPath ?? ref,
+        row.id,
+        match?.name ?? row.displayName ?? ref ?? row.id,
+        match?.fullPath ?? row.signalPath ?? ref ?? row.id,
         type: _kTypeVariable,
       );
     }
@@ -621,7 +635,11 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
 
     final tab = _activeTab;
     final entries = tab.read(signalGroupsProvider).entries;
-    final idx = _findEntryIndex(entries, item.signalRef);
+    final idx = item.type == _kTypeVariable
+        ? entries.indexWhere(
+            (e) => e.kind == SignalEntryKind.signal && e.id == item.key,
+          )
+        : -1;
     if (idx < 0) throw WcpException('Item not in viewer: $id', code: 6);
 
     tab.read(signalGroupsProvider.notifier).setSignalColor(idx, color);
@@ -638,7 +656,7 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
     final item = _registry.byId(id);
     if (item == null) throw WcpException('Item not found: $id', code: 6);
 
-    ref.read(selectedSignalProvider.notifier).select(item.signalRef);
+    ref.read(selectedSignalProvider.notifier).select(_focusRef(item));
     return null;
   }
 
@@ -733,9 +751,21 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
     return {'items': addedItems};
   }
 
-  /// The marker letter an item occupies, from its `marker:<letter>` ref.
+  /// The marker letter an item occupies, from its `marker:<letter>` key.
   String _markerLetter(_WcpItem item) =>
-      item.signalRef.substring(_kMarkerRefPrefix.length);
+      item.key.substring(_kMarkerRefPrefix.length);
+
+  /// What `focus_item` selects: a variable's current signal ref (looked up
+  /// from its row, since a reload may have re-resolved it), or a marker's
+  /// `marker:<letter>` key.
+  String? _focusRef(_WcpItem item) {
+    if (item.type == _kTypeMarker) return item.key;
+    final rows = _signalEntries(_activeTab.read(signalGroupsProvider).entries);
+    for (final row in rows) {
+      if (row.id == item.key) return row.signalRef;
+    }
+    return null;
+  }
 
   String _firstFreeMarkerName(Set<String> used) {
     for (var c = 'a'.codeUnitAt(0); c <= 'z'.codeUnitAt(0); c++) {
@@ -868,15 +898,14 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
 
   // ── lookup helpers ─────────────────────────────────────────────────────────
 
-  int _findEntryIndex(List<SignalEntry> entries, String signalRef) {
-    for (var i = 0; i < entries.length; i++) {
-      if (entries[i].kind == SignalEntryKind.signal &&
-          entries[i].signalRef == signalRef) {
-        return i;
-      }
-    }
-    return -1;
-  }
+  /// Every signal row in [entries], groups flattened, in display order.
+  List<SignalEntry> _signalEntries(List<SignalEntry> entries) => [
+    for (final entry in entries)
+      if (entry.kind == SignalEntryKind.signal)
+        entry
+      else if (entry.kind == SignalEntryKind.group)
+        ..._signalEntries(entry.children),
+  ];
 
   void _collectSignalRefs(List<SignalEntry> entries, List<String> out) {
     for (final entry in entries) {

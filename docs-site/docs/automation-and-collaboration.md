@@ -49,7 +49,7 @@ These follow the shared Waveform Control Protocol vocabulary, so a client writte
 | `load` | `source` (file path) | Opens a waveform file in the active tab; broadcasts `waveforms_loaded`. |
 | `reload` | — | Re-reads the current file; broadcasts `waveforms_loaded`. |
 | `clear` | — | Removes all displayed signals. |
-| `add_items` | `items[]` (or `paths[]` / `item_path`); `recursive` (opt) | Adds signals (or a scope's signals — its whole subtree when recursive). Returns each item's stable integer `id`; all-or-nothing if any entry fails to resolve. |
+| `add_items` | `items[]` (or `paths[]` / `item_path`); `recursive` (opt) | Adds signals (or a scope's signals — its whole subtree when recursive). Returns each item's stable integer `id`; all-or-nothing if any entry fails to resolve. Each displayed row is its own item: from 1.1, adding a signal that is already shown adds a second row with its own `id`. |
 | `remove_items` | `ids[]` | Removes signals by the IDs returned from `add_items`. |
 | `get_item_list` | — | Lists every displayed signal and marker with IDs. |
 | `get_item_info` | `ids[]` | Returns name and path for specific items. |

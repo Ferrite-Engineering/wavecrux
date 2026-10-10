@@ -1379,6 +1379,47 @@ void main() {
       expect(color['type'], 'response');
     });
 
+    test('a signal displayed twice has one item id per row', () async {
+      final ws = await connect();
+      List<int> idsOf(Map<String, dynamic> msg) => [
+        for (final i in (msg['data'] as Map)['items'] as List)
+          (i as Map)['id'] as int,
+      ];
+      final first = idsOf(
+        await send(ws, 'add_variables', {
+          'variables': ['top.a', 'top.b'],
+        }),
+      );
+      final second = idsOf(await send(ws, 'add_scope', {'scope': 'top'}));
+      expect(first, hasLength(2));
+      expect(second, hasLength(2));
+      expect({...first, ...second}, hasLength(4));
+
+      final tab = tcm.containerFor(container.read(activeTabIdProvider));
+      expect(tab.read(signalGroupsProvider).signalCount, 4);
+      final list = idsOf(await send(ws, 'get_item_list'));
+      expect(list, unorderedEquals([...first, ...second]));
+
+      // Removing one id removes exactly its row; the other row of the same
+      // signal keeps its id.
+      await send(ws, 'remove_items', {
+        'ids': [second.first],
+      });
+      expect(tab.read(signalGroupsProvider).signalCount, 3);
+      expect(
+        idsOf(await send(ws, 'get_item_list')),
+        unorderedEquals([...first, second.last]),
+      );
+
+      final color = await send(ws, 'set_item_color', {
+        'id': first.first,
+        'color': 'red',
+      });
+      expect(color['type'], 'response');
+      final rows = tab.read(signalGroupsProvider).entries;
+      expect(rows.first.argbColor, 0xFFFF0000);
+    });
+
     test('set_item_color accepts colour names and short hex', () async {
       final ws = await connect();
       final add = await send(ws, 'add_items', {'item_path': 'top.a'});
