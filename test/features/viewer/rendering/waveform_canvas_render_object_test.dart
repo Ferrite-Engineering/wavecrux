@@ -1070,6 +1070,36 @@ void main() {
     // ── stats collector ───────────────────────────────────────────────────
 
     group('RenderStatsCollector integration', () {
+      testWidgets('visibleTransitions counts only the visible slice', (
+        tester,
+      ) async {
+        final collector = RenderStatsCollector();
+        addTearDown(collector.dispose);
+        // 1 tick per pixel on an 800 px canvas: ticks 800 and up are the
+        // off-screen band the canvas caches for panning.
+        const lane = WaveformLaneData(
+          kind: WaveformLaneKind.signal,
+          y: 0,
+          height: 30,
+          signalRef: 'top.clk',
+          displayName: 'clk',
+          isScalar: true,
+          changes: [
+            SignalChange(time: 100, value: '1'),
+            SignalChange(time: 500, value: '0'),
+            SignalChange(time: 900, value: '1'),
+            SignalChange(time: 950, value: '0'),
+          ],
+        );
+        await tester.pumpWidget(
+          _buildCanvas(lanes: [lane], statsCollector: collector),
+        );
+        await tester.pump();
+
+        expect(collector.stats?.visibleTransitions, 2);
+        expect(collector.stats?.lineSegmentsDrawn, 2);
+      });
+
       testWidgets('empty lanes zeros all stats counters', (tester) async {
         final collector = RenderStatsCollector();
         addTearDown(collector.dispose);

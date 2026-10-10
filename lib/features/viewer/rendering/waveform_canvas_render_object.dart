@@ -13,6 +13,7 @@ import 'package:wavecrux/features/viewer/rendering/canvas_draw_command.dart';
 import 'package:wavecrux/features/viewer/rendering/scalar_signal_painter.dart';
 import 'package:wavecrux/features/viewer/rendering/transaction_painter.dart';
 import 'package:wavecrux/features/viewer/rendering/vector_signal_painter.dart';
+import 'package:wavecrux/features/viewer/rendering/visible_changes.dart';
 import 'package:wavecrux/features/viewer/rendering/waveform_lane_data.dart';
 import 'package:wavecrux/features/viewer/widgets/render_stats_collector.dart';
 import 'package:wavecrux/services/value_format/analog_value_extractor.dart';
@@ -655,9 +656,19 @@ class WaveformCanvasRenderObject extends RenderBox {
 
       switch (lane.kind) {
         case WaveformLaneKind.signal:
-          _paintSignalLane(canvas, laneRect, lane, sc);
+          // The lane's changes include a band either side of the view;
+          // the stats count only the part inside it.
+          final visible = sc == null
+              ? 0
+              : visibleChangeCount(
+                  lane.changes,
+                  _timeMapper,
+                  laneRect.left,
+                  laneRect.right,
+                );
+          _paintSignalLane(canvas, laneRect, lane, sc, visible);
           visibleSignalRows++;
-          visibleTransitions += lane.changes.length;
+          visibleTransitions += visible;
         case WaveformLaneKind.group:
           _paintGroupHeader(canvas, laneRect, lane);
         case WaveformLaneKind.separator:
@@ -949,9 +960,8 @@ class WaveformCanvasRenderObject extends RenderBox {
     Rect bounds,
     WaveformLaneData lane,
     RenderStatsCollector? sc,
+    int segCount,
   ) {
-    final segCount = sc != null ? lane.changes.length : 0;
-
     if (lane.isAnalog) {
       if (sc != null) {
         final sw = Stopwatch()..start();

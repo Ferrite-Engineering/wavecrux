@@ -29,3 +29,15 @@ int firstChangeAtOrAfterPixel(
   }
   return lo;
 }
+
+/// How many of [changes] (ordered by time) land in the pixel span
+/// `[xMin, xMax)` under [timeMapper]: the visible part of a lane's change
+/// list, without the band either side. Two binary searches.
+int visibleChangeCount(
+  List<SignalChange> changes,
+  TimeMapper timeMapper,
+  double xMin,
+  double xMax,
+) =>
+    firstChangeAtOrAfterPixel(changes, timeMapper, xMax) -
+    firstChangeAtOrAfterPixel(changes, timeMapper, xMin);

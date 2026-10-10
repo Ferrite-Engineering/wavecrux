@@ -24,7 +24,9 @@ class RenderPipelineStats {
   /// Number of signal lanes currently visible in the viewport.
   final int visibleSignalRows;
 
-  /// Total value changes within the visible time range.
+  /// Value changes the signal lanes hold inside the visible time range, as
+  /// drawn: after reduction to pixel columns, and without the off-screen band
+  /// either side that the canvas caches for panning.
   final int visibleTransitions;
 
   /// Number of line segments drawn during the last paint call.
