@@ -256,7 +256,7 @@ class _TransactionTablePanelState extends ConsumerState<TransactionTablePanel> {
                   // active tab would silently keep its old config. The sibling
                   // call sites (decoder_picker_dialog, decoder_list_entry)
                   // already pass these; this one did not.
-                  signalMap: ref.read(signalVariablesMapProvider),
+                  signalMap: ref.read(signalVariablesByPathProvider),
                   decodersNotifier: ref.read(activeDecodersProvider.notifier),
                 ),
               );
