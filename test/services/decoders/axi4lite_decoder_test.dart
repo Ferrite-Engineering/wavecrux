@@ -95,6 +95,39 @@ List<(int, String)> makeClock({
   return result;
 }
 
+/// All-idle channel changes for [numEdges] clock transitions, reset released.
+/// Tests overwrite the channels they exercise.
+Map<String, List<(int, String)>> _idleChanges({required int numEdges}) => {
+  'aclk': makeClock(numEdges: numEdges),
+  'aresetn': [(0, '1')],
+  'awaddr': [(0, _bits32(0))],
+  'awvalid': [(0, '0')],
+  'awready': [(0, '0')],
+  'wdata': [(0, _bits32(0))],
+  'wvalid': [(0, '0')],
+  'wready': [(0, '0')],
+  'wstrb': [(0, 'b0000')],
+  'bresp': [(0, 'b00')],
+  'bvalid': [(0, '0')],
+  'bready': [(0, '0')],
+  'araddr': [(0, _bits32(0))],
+  'arvalid': [(0, '0')],
+  'arready': [(0, '0')],
+  'rdata': [(0, _bits32(0))],
+  'rresp': [(0, 'b00')],
+  'rvalid': [(0, '0')],
+  'rready': [(0, '0')],
+};
+
+/// A 32-bit VCD vector literal for [value].
+String _bits32(int value) => 'b${value.toRadixString(2).padLeft(32, '0')}';
+
+/// A 1-bit signal high for 3 ticks either side of each rising edge in [edges].
+List<(int, String)> _pulses(List<int> edges) => [
+  (0, '0'),
+  for (final t in edges) ...[(t - 3, '1'), (t + 3, '0')],
+];
+
 // ── fixture signal changes (derived from axi4lite_basic.vcd) ─────────────────
 
 // Clock: 10ns period, rising edges at t=5,15,25,35,45,55,65,75,85,95
@@ -666,106 +699,119 @@ void main() {
         );
       });
 
-      test('second AW while write outstanding: violation transaction', () {
-        // AW at t=5 (write outstanding), AW again at t=15 before B.
-        final changes = {
-          'aclk': makeClock(numEdges: 8),
-          'aresetn': [(0, '1')],
-          'awaddr': [
-            (0, 'b00000000000000000000000000000000'),
-            (2, 'b00000000000000000000000000000100'),
-          ],
-          'awvalid': [
-            (0, '0'), (2, '1'), (8, '0'),
-            (12, '1'), (18, '0'), // second AW at t=15
-          ],
-          'awready': [
-            (0, '0'),
-            (2, '1'),
-            (8, '0'),
-            (12, '1'),
-            (18, '0'),
-          ],
-          'wdata': [(0, 'b00000000000000000000000000000000')],
-          'wvalid': [(0, '0')],
-          'wready': [(0, '0')],
-          'wstrb': [(0, 'b0000')],
-          'bresp': [(0, 'b00')],
-          'bvalid': [(0, '0')],
-          'bready': [(0, '0')],
-          'araddr': [(0, 'b00000000000000000000000000000000')],
-          'arvalid': [(0, '0')],
-          'arready': [(0, '0')],
-          'rdata': [(0, 'b00000000000000000000000000000000')],
-          'rresp': [(0, 'b00')],
-          'rvalid': [(0, '0')],
-          'rready': [(0, '0')],
-        };
-        final decoder = makeDecoder();
-        final txs = decoder.decode(
+      test(
+        'pipelined writes: B completes the oldest AW with the oldest W, '
+        'the rest are listed as unanswered',
+        () {
+          // Rising edges at t=5,15,...,55. AW 0x08 at 5, W 0x22222222 at 15,
+          // AW 0x0C + W 0x33333333 at 25, AW 0x10 + W 0x44444444 at 35,
+          // one B OKAY at 45.
+          final changes = _idleChanges(numEdges: 12)
+            ..['awaddr'] = [
+              (0, _bits32(0)),
+              (2, _bits32(0x08)),
+              (22, _bits32(0x0C)),
+              (32, _bits32(0x10)),
+            ]
+            ..['awvalid'] = _pulses([5, 25, 35])
+            ..['awready'] = _pulses([5, 25, 35])
+            ..['wdata'] = [
+              (0, _bits32(0)),
+              (12, _bits32(0x22222222)),
+              (22, _bits32(0x33333333)),
+              (32, _bits32(0x44444444)),
+            ]
+            ..['wvalid'] = _pulses([15, 25, 35])
+            ..['wready'] = _pulses([15, 25, 35])
+            ..['bvalid'] = _pulses([45])
+            ..['bready'] = _pulses([45]);
+          final txs = makeDecoder(withWstrb: false).decode(
+            0,
+            70,
+            makeQuery(changes),
+            makeChangesQuery(changes),
+          );
+          expect(txs.where((t) => t.isError), isEmpty);
+          expect(txs.map((t) => t.label), [
+            'W 0x00000008 = 0x22222222 [OKAY]',
+            'W 0x0000000C = 0x33333333 [no response]',
+            'W 0x00000010 = 0x44444444 [no response]',
+          ]);
+          expect(txs[0].startTime, 5);
+          expect(txs[0].endTime, 45);
+          expect(txs[1].startTime, 25);
+          expect(txs[1].endTime, 55); // last rising edge
+          expect(txs[2].fields['response'], 'no response');
+        },
+      );
+
+      test('pipelined reads: each R completes the oldest AR', () {
+        final changes = _idleChanges(numEdges: 10)
+          ..['araddr'] = [
+            (0, _bits32(0)),
+            (2, _bits32(0x08)),
+            (12, _bits32(0x0C)),
+          ]
+          ..['arvalid'] = _pulses([5, 15])
+          ..['arready'] = _pulses([5, 15])
+          ..['rdata'] = [
+            (0, _bits32(0)),
+            (22, _bits32(0xAAAA5555)),
+            (32, _bits32(0x12345678)),
+          ]
+          ..['rvalid'] = _pulses([25, 35])
+          ..['rready'] = _pulses([25, 35]);
+        final txs = makeDecoder().decode(
           0,
-          40,
+          60,
           makeQuery(changes),
           makeChangesQuery(changes),
         );
-        expect(txs, hasLength(1));
-        expect(txs.first.isError, isTrue);
-        expect(txs.first.startTime, 15); // second AW edge
-        expect(
-          txs.first.errorMessage,
-          contains('new write address while write outstanding'),
-        );
+        expect(txs.where((t) => t.isError), isEmpty);
+        expect(txs.map((t) => t.label), [
+          'R 0x00000008 = 0xAAAA5555 [OKAY]',
+          'R 0x0000000C = 0x12345678 [OKAY]',
+        ]);
+        expect(txs[0].startTime, 5);
+        expect(txs[0].endTime, 25);
+        expect(txs[1].startTime, 15);
+        expect(txs[1].endTime, 35);
       });
 
-      test('second AR while read outstanding: violation transaction', () {
-        // AR at t=5, AR again at t=15 before R data.
-        final changes = {
-          'aclk': makeClock(numEdges: 8),
-          'aresetn': [(0, '1')],
-          'awaddr': [(0, 'b00000000000000000000000000000000')],
-          'awvalid': [(0, '0')],
-          'awready': [(0, '0')],
-          'wdata': [(0, 'b00000000000000000000000000000000')],
-          'wvalid': [(0, '0')],
-          'wready': [(0, '0')],
-          'wstrb': [(0, 'b0000')],
-          'bresp': [(0, 'b00')],
-          'bvalid': [(0, '0')],
-          'bready': [(0, '0')],
-          'araddr': [
-            (0, 'b00000000000000000000000000000000'),
-            (2, 'b00000000000000000000000000001000'),
-          ],
-          'arvalid': [
-            (0, '0'), (2, '1'), (8, '0'),
-            (12, '1'), (18, '0'), // second AR at t=15
-          ],
-          'arready': [
-            (0, '0'),
-            (2, '1'),
-            (8, '0'),
-            (12, '1'),
-            (18, '0'),
-          ],
-          'rdata': [(0, 'b00000000000000000000000000000000')],
-          'rresp': [(0, 'b00')],
-          'rvalid': [(0, '0')],
-          'rready': [(0, '0')],
-        };
-        final decoder = makeDecoder();
-        final txs = decoder.decode(
+      test(
+        'read with no R by the end of the trace is listed as unanswered',
+        () {
+          final changes = _idleChanges(numEdges: 6)
+            ..['araddr'] = [(0, _bits32(0)), (2, _bits32(0x20))]
+            ..['arvalid'] = _pulses([5])
+            ..['arready'] = _pulses([5]);
+          final txs = makeDecoder().decode(
+            0,
+            40,
+            makeQuery(changes),
+            makeChangesQuery(changes),
+          );
+          expect(txs, hasLength(1));
+          expect(txs.single.label, 'R 0x00000020 [no response]');
+          expect(txs.single.isError, isFalse);
+          expect(txs.single.startTime, 5);
+          expect(txs.single.endTime, 25);
+        },
+      );
+
+      test('W beat with no AW by the end of the trace is unanswered', () {
+        final changes = _idleChanges(numEdges: 4)
+          ..['wdata'] = [(0, _bits32(0)), (2, _bits32(0xCAFEF00D))]
+          ..['wvalid'] = _pulses([5])
+          ..['wready'] = _pulses([5]);
+        final txs = makeDecoder(withWstrb: false).decode(
           0,
-          40,
+          30,
           makeQuery(changes),
           makeChangesQuery(changes),
         );
         expect(txs, hasLength(1));
-        expect(txs.first.isError, isTrue);
-        expect(txs.first.startTime, 15);
-        expect(
-          txs.first.errorMessage,
-          contains('new read address while read outstanding'),
-        );
+        expect(txs.single.label, 'W 0x???????? = 0xCAFEF00D [no response]');
       });
     });
 

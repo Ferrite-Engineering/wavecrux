@@ -50,7 +50,7 @@ These decoders are part of the free Open Core viewer — no badge, no license �
 | <span id="spi_flash"></span>SPI Flash | JEDEC SPI NOR flash commands, stacked on an SPI decoder, with vendor presets. |
 | <span id="i2c"></span>I²C | 7-bit or 10-bit addressing, ACK/NACK, and repeated start. |
 | <span id="uart"></span>UART | Configurable bit timing (baud rate, clocks per bit, or auto-detect), data bits (5–9), parity, stop bits and bit order; TX, RX or both. See [UART bit timing](#uart-timing). |
-| <span id="axi4_lite"></span>AXI4-Lite | Single-beat reads and writes across the five channels. |
+| <span id="axi4_lite"></span>AXI4-Lite | Single-beat reads and writes across the five channels. From 1.1, several writes and reads can be outstanding at once and each response completes the oldest one, as the protocol allows; a write or read still waiting for its response at the end of the trace is listed with the response `no response`. |
 | <span id="apb"></span>APB | AMBA APB3 / APB4 read and write cycles. |
 | <span id="ahb_lite"></span>AHB-Lite | Two-phase pipelined transfers with every HBURST variant (single, incrementing and wrapping bursts). |
 | <span id="wishbone"></span>Wishbone | Wishbone B3 (classic, with registered-feedback bursts) and B4 (pipelined) reads and writes. |

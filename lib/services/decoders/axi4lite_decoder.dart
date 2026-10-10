@@ -22,9 +22,13 @@ import 'package:wavecrux/services/decoders/decoder_value_helpers.dart';
 /// W may occur in any order relative to each other). Read transactions require
 /// AR + R channel handshakes.
 ///
+/// AXI4-Lite allows several outstanding transactions per direction, answered
+/// in order. AW addresses, W beats and AR addresses are therefore queued, and
+/// each B completes the oldest AW with the oldest W, each R the oldest AR.
+/// Writes and reads still waiting for a response at the end of the trace are
+/// listed as unanswered rows ending at the last clock edge.
+///
 /// Protocol violations detected:
-/// - Second write address (AW) while a write is already outstanding.
-/// - Second read address (AR) while a read is already outstanding.
 /// - Write response (B) without a prior AW + W handshake (orphan response).
 /// - Read data (R) without a prior AR handshake (orphan response).
 /// - EXOKAY response code, which is not valid in AXI4-Lite.
@@ -184,63 +188,61 @@ class Axi4LiteDecoder implements ProtocolDecoder {
 
     final transactions = <DecodedTransaction>[];
 
-    // Write-side state.
-    _AwPhase? pendingAw; // AW handshake captured, waiting for W and B.
-    _WPhase? pendingW; // W handshake captured (may precede AW).
-    var writeOutstanding = false; // true from AW handshake until B handshake.
+    // Write-side state: AW addresses and W beats queue independently (W may
+    // precede its AW); each B completes the oldest of each.
+    final pendingAw = <_AwPhase>[];
+    final pendingW = <_WPhase>[];
 
-    // Read-side state.
-    _ArPhase? pendingAr; // AR handshake captured, waiting for R.
-    var readOutstanding = false;
+    // Read-side state: AR addresses waiting for R, oldest first.
+    final pendingAr = <_ArPhase>[];
+
+    var lastEdge = clkChanges.first.$1;
 
     for (final (edgeTime, edgeVal) in clkChanges) {
       if (!isVcdHigh(edgeVal)) continue; // only rising edges
+      lastEdge = edgeTime;
 
       // During reset: clear any in-flight state and skip channel processing.
       if (!isVcdHigh(query('aresetn', edgeTime))) {
-        pendingAw = null;
-        pendingW = null;
-        writeOutstanding = false;
-        pendingAr = null;
-        readOutstanding = false;
+        pendingAw.clear();
+        pendingW.clear();
+        pendingAr.clear();
         continue;
       }
 
       // ── AW channel ────────────────────────────────────────────────────────
       if (isVcdHigh(query('awvalid', edgeTime)) &&
           isVcdHigh(query('awready', edgeTime))) {
-        if (writeOutstanding) {
-          transactions.add(
-            _makeViolation(
-              edgeTime,
-              edgeTime,
-              'AXI4-Lite violation: new write address while write outstanding',
-            ),
-          );
-        } else {
-          pendingAw = _AwPhase(
+        pendingAw.add(
+          _AwPhase(
             startTime: edgeTime,
             addr: parseVcdVectorInt(query('awaddr', edgeTime)),
             prot: parseVcdVectorInt(query('awprot', edgeTime)),
-          );
-          writeOutstanding = true;
-        }
+          ),
+        );
       }
 
       // ── W channel ─────────────────────────────────────────────────────────
       if (isVcdHigh(query('wvalid', edgeTime)) &&
           isVcdHigh(query('wready', edgeTime))) {
-        pendingW = _WPhase(
-          captureTime: edgeTime,
-          data: parseVcdVectorInt(query('wdata', edgeTime)),
-          strb: parseVcdVectorInt(query('wstrb', edgeTime)),
+        pendingW.add(
+          _WPhase(
+            captureTime: edgeTime,
+            data: parseVcdVectorInt(query('wdata', edgeTime)),
+            strb: parseVcdVectorInt(query('wstrb', edgeTime)),
+          ),
         );
       }
 
       // ── B channel ─────────────────────────────────────────────────────────
       if (isVcdHigh(query('bvalid', edgeTime)) &&
           isVcdHigh(query('bready', edgeTime))) {
-        if (pendingAw == null || pendingW == null) {
+        if (pendingAw.isEmpty || pendingW.isEmpty) {
+          // A response before both halves of the write arrived. Whatever half
+          // did arrive is consumed with it, so it is not also listed as
+          // unanswered at the end of the trace.
+          if (pendingAw.isNotEmpty) pendingAw.removeAt(0);
+          if (pendingW.isNotEmpty) pendingW.removeAt(0);
           transactions.add(
             _makeViolation(
               edgeTime,
@@ -261,59 +263,38 @@ class Axi4LiteDecoder implements ProtocolDecoder {
             if (isExokay) 'AXI4-Lite violation: EXOKAY not valid in AXI4-Lite',
           ];
 
-          final aw = pendingAw;
-          final w = pendingW;
-          final hasWstrb =
-              w.strb != null && _config.signalBindings.containsKey('wstrb');
+          final aw = pendingAw.removeAt(0);
+          final w = pendingW.removeAt(0);
 
           transactions.add(
-            DecodedTransaction(
-              startTime: aw.startTime,
-              endTime: edgeTime,
-              label: 'W ${_fmtAddr(aw.addr)} = ${_fmtData(w.data)} [$respCode]',
-              fields: {
-                'type': 'Write',
-                'address': _fmtAddr(aw.addr),
-                'data': _fmtData(w.data),
-                'response': respCode,
-                if (hasWstrb) 'wstrb': _fmtStrobe(w.strb),
-              },
-              isError: errors.isNotEmpty,
-              errorMessage: errors.isNotEmpty ? errors.join('; ') : null,
+            _makeWrite(
+              aw.startTime,
+              edgeTime,
+              aw.addr,
+              w,
+              respCode,
+              errors,
             ),
           );
-
-          pendingAw = null;
-          pendingW = null;
-          writeOutstanding = false;
         }
       }
 
       // ── AR channel ────────────────────────────────────────────────────────
       if (isVcdHigh(query('arvalid', edgeTime)) &&
           isVcdHigh(query('arready', edgeTime))) {
-        if (readOutstanding) {
-          transactions.add(
-            _makeViolation(
-              edgeTime,
-              edgeTime,
-              'AXI4-Lite violation: new read address while read outstanding',
-            ),
-          );
-        } else {
-          pendingAr = _ArPhase(
+        pendingAr.add(
+          _ArPhase(
             startTime: edgeTime,
             addr: parseVcdVectorInt(query('araddr', edgeTime)),
             prot: parseVcdVectorInt(query('arprot', edgeTime)),
-          );
-          readOutstanding = true;
-        }
+          ),
+        );
       }
 
       // ── R channel ─────────────────────────────────────────────────────────
       if (isVcdHigh(query('rvalid', edgeTime)) &&
           isVcdHigh(query('rready', edgeTime))) {
-        if (pendingAr == null) {
+        if (pendingAr.isEmpty) {
           transactions.add(
             _makeViolation(
               edgeTime,
@@ -333,7 +314,7 @@ class Axi4LiteDecoder implements ProtocolDecoder {
             if (isExokay) 'AXI4-Lite violation: EXOKAY not valid in AXI4-Lite',
           ];
 
-          final ar = pendingAr;
+          final ar = pendingAr.removeAt(0);
           final rdata = parseVcdVectorInt(query('rdata', edgeTime));
 
           transactions.add(
@@ -351,14 +332,76 @@ class Axi4LiteDecoder implements ProtocolDecoder {
               errorMessage: errors.isNotEmpty ? errors.join('; ') : null,
             ),
           );
-
-          pendingAr = null;
-          readOutstanding = false;
         }
       }
     }
 
+    // ── unanswered at end of trace ─────────────────────────────────────────
+    // A write is listed from whichever of its AW or W arrived first; a W beat
+    // with no AW yet has no address, and an AW with no W has no data.
+    final unansweredWrites = pendingAw.length > pendingW.length
+        ? pendingAw.length
+        : pendingW.length;
+    for (var i = 0; i < unansweredWrites; i++) {
+      final aw = i < pendingAw.length ? pendingAw[i] : null;
+      final w = i < pendingW.length ? pendingW[i] : null;
+      final start = switch ((aw, w)) {
+        (final a?, final b?) =>
+          a.startTime < b.captureTime ? a.startTime : b.captureTime,
+        (final a?, null) => a.startTime,
+        (null, final b?) => b.captureTime,
+        (null, null) => lastEdge,
+      };
+      transactions.add(
+        _makeWrite(start, lastEdge, aw?.addr, w, _kNoResponse, const []),
+      );
+    }
+    for (final ar in pendingAr) {
+      transactions.add(
+        DecodedTransaction(
+          startTime: ar.startTime,
+          endTime: lastEdge,
+          label: 'R ${_fmtAddr(ar.addr)} [$_kNoResponse]',
+          fields: {
+            'type': 'Read',
+            'address': _fmtAddr(ar.addr),
+            'response': _kNoResponse,
+          },
+        ),
+      );
+    }
+
     return transactions;
+  }
+
+  /// Response label for a write or read still waiting at the end of the trace.
+  static const _kNoResponse = 'no response';
+
+  DecodedTransaction _makeWrite(
+    int startTime,
+    int endTime,
+    int? addr,
+    _WPhase? w,
+    String respCode,
+    List<String> errors,
+  ) {
+    final hasWstrb =
+        w?.strb != null && _config.signalBindings.containsKey('wstrb');
+    final data = w == null ? '0x????????' : _fmtData(w.data);
+    return DecodedTransaction(
+      startTime: startTime,
+      endTime: endTime,
+      label: 'W ${_fmtAddr(addr)} = $data [$respCode]',
+      fields: {
+        'type': 'Write',
+        'address': _fmtAddr(addr),
+        'data': data,
+        'response': respCode,
+        if (hasWstrb) 'wstrb': _fmtStrobe(w?.strb),
+      },
+      isError: errors.isNotEmpty,
+      errorMessage: errors.isNotEmpty ? errors.join('; ') : null,
+    );
   }
 
   // ── private helpers ────────────────────────────────────────────────────────
