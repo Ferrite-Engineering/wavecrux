@@ -13,6 +13,9 @@ dependencies:
   # zip-style bundles. The bundle loader is part of the open-core Stage
   # widget SDK capability (free — see ARCHITECTURE §10).
   archive: ^4.0.0
+  # The canvas's scroll-load throttle reads `clock.now()` rather than
+  # `DateTime.now()`, so widget tests on fake time see mid-gesture refreshes.
+  clock: ^1.1.3
   # Stable mergeSort for the signal-tree natural sort (List.sort is
   # unstable; gate-level twins with identical names must keep dump order).
   collection: ^1.19.0

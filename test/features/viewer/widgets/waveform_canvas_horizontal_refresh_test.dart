@@ -11,6 +11,7 @@
 // range. The caches now cover a band either side of the view: a pan inside it
 // repaints from the caches, and only leaving it (or zooming) refreshes,
 // through the same throttle + trailing debounce the vertical scroll uses.
+// The throttle reads `package:clock`, so these tests see it on fake time.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -136,9 +137,39 @@ void main() {
 
     final reads = source.rangeReads - before;
     expect(reads, greaterThan(0), reason: 'the band has to follow the view');
-    // At most one refresh per 150 ms of wall time while the fling lasts,
+    // At most one refresh per 150 ms while the fling lasts,
     // plus the trailing one — against one per frame before.
     expect(reads, lessThanOrEqualTo(6), reason: '$reads reads for 30 frames');
+  });
+
+  testWidgets('a long fling refreshes mid-gesture, not only after it', (
+    tester,
+  ) async {
+    final (container, source) = await _mount(tester);
+    final before = source.rangeReads;
+
+    // 480 ms of fake time at 60 px a frame. The throttle reads
+    // `package:clock`, which fake time drives, so it fires on its 150 ms
+    // cadence inside the gesture rather than leaving everything to the
+    // trailing refresh.
+    for (var frame = 0; frame < 30; frame++) {
+      container.read(timeMapperProvider.notifier).pan(60);
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    final midGesture = source.rangeReads - before;
+    expect(
+      midGesture,
+      greaterThanOrEqualTo(3),
+      reason: '$midGesture reads during a 480 ms fling',
+    );
+
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+    expect(
+      source.rangeReads - before,
+      greaterThan(midGesture),
+      reason: 'the trailing refresh catches the resting position',
+    );
   });
 
   testWidgets('a zoom refreshes the caches at the new resolution', (

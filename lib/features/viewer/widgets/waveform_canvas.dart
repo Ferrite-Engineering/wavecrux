@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:clock/clock.dart';
 import 'package:crux_async/crux_async.dart';
 import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:crux_theme/crux_theme.dart';
@@ -239,7 +240,8 @@ class _WaveformCanvasState extends ConsumerState<WaveformCanvas> {
   /// for the trailing debounce.
   static const Duration _kScrollLoadThrottle = Duration(milliseconds: 150);
 
-  /// Wall-clock of the last scroll-driven load, for the throttle above.
+  /// When the last scroll-driven load ran, for the throttle above. Read from
+  /// `package:clock`, so a test on fake time drives the throttle too.
   DateTime _lastScrollLoad = DateTime.fromMillisecondsSinceEpoch(0);
 
   // ── horizontal cache band ───────────────────────────────────────────────────
@@ -436,14 +438,14 @@ class _WaveformCanvasState extends ConsumerState<WaveformCanvas> {
   /// and horizontal pan/zoom, which both only need the caches to catch up
   /// with where the viewport ended up.
   void _throttledRefresh() {
-    final now = DateTime.now();
+    final now = clock.now();
     if (now.difference(_lastScrollLoad) >= _kScrollLoadThrottle) {
       _lastScrollLoad = now;
       _scheduleRefresh();
     }
     _scrollLoadSettle.run(() {
       if (!mounted) return;
-      _lastScrollLoad = DateTime.now();
+      _lastScrollLoad = clock.now();
       _scheduleRefresh();
     });
   }
