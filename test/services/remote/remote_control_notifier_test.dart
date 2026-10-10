@@ -19,6 +19,7 @@ import 'package:wavecrux/domain/models/workspace.dart';
 import 'package:wavecrux/features/cursors/providers/cursor_providers.dart';
 import 'package:wavecrux/features/tabs/providers/tab_providers.dart';
 import 'package:wavecrux/features/viewer/providers/signal_group_providers.dart';
+import 'package:wavecrux/features/viewer/providers/time_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
 import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
 import 'package:wavecrux/services/remote/remote_control_notifier.dart';
@@ -277,11 +278,11 @@ void main() {
       expect(msg['code'], 5);
     });
 
-    test('zoom_to_fit returns response', () async {
+    test('zoom_to_fit with no waveform returns error code 5', () async {
       final ws = await connect();
       final msg = await sendCommand(ws, 'zoom_to_fit');
-      expect(msg['type'], 'response');
-      expect(msg['data'], isA<Map<String, dynamic>>());
+      expect(msg['type'], 'error');
+      expect(msg['code'], 5);
     });
 
     test('get_item_list returns empty list when nothing added', () async {
@@ -544,6 +545,81 @@ void main() {
   // Tests that exercise handler paths not reachable from the existing
   // "no waveform loaded" group. All of these work without a waveform file.
 
+  group('RemoteControlNotifier — load with no tab open', () {
+    late Directory tempDir;
+    late ProviderContainer container;
+    late TabContainerManager tcm;
+    late int port;
+
+    setUp(() async {
+      tempDir = await Directory.systemTemp.createTemp('wcp_load_no_tab_');
+      final source = _MockSource();
+      when(() => source.startTime).thenReturn(0);
+      when(() => source.endTime).thenReturn(100);
+      tcm = TabContainerManager(
+        extraTabOverrides: [
+          waveformSourceProvider.overrideWith(
+            () => _ReloadableFakeNotifier(source),
+          ),
+        ],
+      );
+      container = ProviderContainer(
+        overrides: [
+          productTelemetryConfig,
+          tabContainerManagerProvider.overrideWithValue(tcm),
+          workspaceServiceProvider.overrideWithValue(
+            WorkspaceService(
+              codec: const WaveCruxWorkspaceCodec(),
+              directoryFactory: () async => tempDir,
+              logger: (_) {},
+            ),
+          ),
+        ],
+      );
+      tcm.init(container);
+      await container.read(workspaceProvider.future);
+      await container.read(remoteControlProvider.notifier).startServer(0);
+      port = container.read(remoteControlProvider).port;
+    });
+
+    tearDown(() async {
+      await container.read(remoteControlProvider.notifier).stopServer();
+      tcm.dispose();
+      container.dispose();
+      try {
+        await tempDir.delete(recursive: true);
+      } on FileSystemException catch (_) {}
+    });
+
+    test('load opens and activates a tab for the file', () async {
+      expect(container.read(workspaceProvider).requireValue.tabs, isEmpty);
+      final socket = await Socket.connect('127.0.0.1', port);
+      addTearDown(socket.destroy);
+      final ws = _WcpSocket(socket);
+      await ws.next(); // greeting
+      ws.send({
+        'type': 'command',
+        'command': 'load',
+        'source': '/tmp/run.vcd',
+      });
+      var msg = await ws.next();
+      while (msg['type'] == 'event') {
+        msg = await ws.next();
+      }
+      expect(msg['type'], 'response');
+
+      final workspace = container.read(workspaceProvider).requireValue;
+      expect(workspace.tabs, hasLength(1));
+      final tabId = workspace.tabs.single.id;
+      expect(container.read(activeTabIdProvider), tabId);
+      final notifier =
+          tcm.containerFor(tabId).read(waveformSourceProvider.notifier)
+              as _ReloadableFakeNotifier;
+      expect(notifier.openCalls, 1);
+      expect(notifier.currentFilePath, '/tmp/run.vcd');
+    });
+  });
+
   group('RemoteControlNotifier — command handler coverage', () {
     late ProviderContainer container;
     late TabContainerManager tcm;
@@ -600,13 +676,14 @@ void main() {
 
     // ── set_viewport_range ────────────────────────────────────────────────
 
-    test('set_viewport_range with valid integers succeeds', () async {
+    test('set_viewport_range with no waveform returns error code 5', () async {
       final ws = await connect();
       final msg = await sendCmd(ws, 'set_viewport_range', {
         'start': 0,
         'end': 1000,
       });
-      expect(msg['type'], 'response');
+      expect(msg['type'], 'error');
+      expect(msg['code'], 5);
     });
 
     // ── set_viewport_to ───────────────────────────────────────────────────
@@ -621,10 +698,11 @@ void main() {
       },
     );
 
-    test('set_viewport_to with valid timestamp succeeds', () async {
+    test('set_viewport_to with no waveform returns error code 5', () async {
       final ws = await connect();
       final msg = await sendCmd(ws, 'set_viewport_to', {'timestamp': 500});
-      expect(msg['type'], 'response');
+      expect(msg['type'], 'error');
+      expect(msg['code'], 5);
     });
 
     // ── get_item_info ─────────────────────────────────────────────────────
@@ -1111,6 +1189,45 @@ void main() {
         final msg = await send(ws, 'wavecrux.getState');
         expect(msg['type'], 'response');
         expect((msg['data'] as Map)['is_loaded'], isTrue);
+      },
+    );
+
+    test('a viewport command errors while no canvas has laid the trace '
+        'out', () async {
+      final ws = await connect();
+      final msg = await send(ws, 'zoom_to_fit');
+      expect(msg['type'], 'error');
+      expect(msg['code'], 5);
+      expect(msg['message'], contains('not displayed'));
+    });
+
+    test(
+      'viewport commands act once a canvas has laid the trace out',
+      () async {
+        when(() => source.endTime).thenReturn(10000);
+        final tab = tcm.containerFor(container.read(activeTabIdProvider));
+        // Stand in for the canvas: keep the mapper alive and initialise it.
+        final sub = tab.listen(timeMapperProvider, (_, _) {});
+        addTearDown(sub.close);
+        tab
+            .read(timeMapperProvider.notifier)
+            .initialize(startTime: 0, endTime: 10000, viewportWidth: 1000);
+
+        final ws = await connect();
+        final range = await send(ws, 'set_viewport_range', {
+          'start': 2000,
+          'end': 4000,
+        });
+        expect(range['type'], 'response');
+        final mapper = tab.read(timeMapperProvider);
+        expect(mapper.panOffsetTicks, closeTo(2000, 1));
+        expect(mapper.ticksPerPixel, closeTo(2, 0.01));
+
+        final to = await send(ws, 'set_viewport_to', {'timestamp': 8000});
+        expect(to['type'], 'response');
+        final fit = await send(ws, 'zoom_to_fit');
+        expect(fit['type'], 'response');
+        expect(tab.read(timeMapperProvider).panOffsetTicks, 0);
       },
     );
 

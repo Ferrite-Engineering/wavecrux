@@ -327,7 +327,7 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
     if (source is! String || source.isEmpty) {
       throw const WcpException('"source" must be a non-empty string', code: 3);
     }
-    final tab = _activeTab;
+    final tab = await _tabForLoad(source);
     await tab.read(waveformSourceProvider.notifier).openFile(source);
     final sourceAsync = tab.read(waveformSourceProvider);
     if (sourceAsync is AsyncError) {
@@ -335,6 +335,43 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
     }
     _server?.broadcastEvent('waveforms_loaded', {'source': source});
     return null;
+  }
+
+  /// The tab a `load` lands in: the active tab, or a new one opened for
+  /// [source] when the workspace has no tab at all. With no tab open the
+  /// active id is a synthetic fallback that no pane displays, so a file
+  /// loaded there is never laid out and the viewport commands that follow
+  /// have nothing to act on.
+  Future<ProviderContainer> _tabForLoad(String source) async {
+    final workspace = ref.read(workspaceProvider).value;
+    if (workspace == null || workspace.tabs.isNotEmpty) return _activeTab;
+    final tabId = await ref.wavecruxWorkspace.openFile(source);
+    return ref.read(tabContainerManagerProvider).containerFor(tabId);
+  }
+
+  /// Throws unless a viewport command on [tab] can take effect: a waveform
+  /// must be loaded and laid out in a pane. Without this the command would be
+  /// acknowledged and change nothing.
+  ///
+  /// The canvas initialises the time mapper a frame or more after the source
+  /// arrives, so a command sent straight after `load` waits a bounded moment
+  /// for it before giving up.
+  Future<void> _requireViewport(ProviderContainer tab) async {
+    if (tab.read(waveformSourceProvider).value == null) {
+      throw const WcpException('No waveform file loaded', code: 5);
+    }
+    final deadline = DateTime.now().add(const Duration(seconds: 2));
+    bool laidOut() => tab.read(timeMapperProvider.notifier).isLaidOut;
+    while (!laidOut() && DateTime.now().isBefore(deadline)) {
+      await Future<void>.delayed(const Duration(milliseconds: 16));
+    }
+    if (!laidOut()) {
+      throw const WcpException(
+        'The waveform is not displayed in a pane yet, so the viewport '
+        'cannot change',
+        code: 5,
+      );
+    }
   }
 
   Future<Map<String, dynamic>?> _handleReload() async {
@@ -592,7 +629,9 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
     if (start is! int || end is! int) {
       throw const WcpException('"start" and "end" must be integers', code: 3);
     }
-    _activeTab.read(navigationProvider.notifier).fitRange(start, end);
+    final tab = _activeTab;
+    await _requireViewport(tab);
+    tab.read(navigationProvider.notifier).fitRange(start, end);
     return null;
   }
 
@@ -603,12 +642,16 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
     if (timestamp is! int) {
       throw const WcpException('"timestamp" must be an integer', code: 3);
     }
-    _activeTab.read(navigationProvider.notifier).jumpToTime(timestamp);
+    final tab = _activeTab;
+    await _requireViewport(tab);
+    tab.read(navigationProvider.notifier).jumpToTime(timestamp);
     return null;
   }
 
   Future<Map<String, dynamic>?> _handleZoomToFit() async {
-    _activeTab.read(navigationProvider.notifier).fitAll();
+    final tab = _activeTab;
+    await _requireViewport(tab);
+    tab.read(navigationProvider.notifier).fitAll();
     return null;
   }
 

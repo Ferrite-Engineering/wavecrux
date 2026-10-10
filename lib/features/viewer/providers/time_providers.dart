@@ -29,6 +29,15 @@ class TimeMapperNotifier extends _$TimeMapperNotifier {
   /// the current zoom level.
   bool _isFitAll = true;
 
+  /// Whether a canvas has laid this mapper out for a loaded source.
+  ///
+  /// False until the first [initialize]: before that the state is the
+  /// [TimeMapper.empty] placeholder, and zoom or pan applied to it changes
+  /// nothing anyone can see. Remote viewport commands check it so they can
+  /// report that rather than acknowledge a no-op.
+  bool get isLaidOut => _isLaidOut;
+  bool _isLaidOut = false;
+
   @override
   TimeMapper build() => TimeMapper.empty();
 
@@ -46,6 +55,7 @@ class TimeMapperNotifier extends _$TimeMapperNotifier {
     required double viewportWidth,
     bool fitAll = true,
   }) {
+    _isLaidOut = true;
     if (_pendingTicksPerPixel != null) {
       final tpp = _pendingTicksPerPixel!;
       final pan = _pendingPanOffsetTicks ?? startTime.toDouble();

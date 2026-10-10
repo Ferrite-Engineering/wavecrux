@@ -40,13 +40,15 @@ Legacy-dialect error `code` values: `1` parse error, `2` unknown command, `3` in
 
 All times are integer tick counts in the loaded trace's timescale. Commands act on the active pane's active tab; use `wavecrux.setActiveTab` to retarget first when several tabs are open.
 
+From 1.1, the viewport commands (`set_viewport_range`, `set_viewport_to`, `zoom_to_fit`) return an error rather than an acknowledgement when they cannot take effect: when no waveform is loaded, or when the waveform is not yet displayed in a pane. A command sent straight after `load` waits briefly for the pane to lay the file out.
+
 ### Base commands { #wcp-base-commands }
 
 These follow the shared Waveform Control Protocol vocabulary, so a client written against the common WCP surface drives WaveCrux without modification. The deprecated spec commands `add_variables` and `add_scope` are accepted as aliases of `add_items`.
 
 | Command | Parameters | What it does |
 |---|---|---|
-| `load` | `source` (file path) | Opens a waveform file in the active tab; broadcasts `waveforms_loaded`. |
+| `load` | `source` (file path) | Opens a waveform file in the active tab; broadcasts `waveforms_loaded`. From 1.1, when no tab is open it opens the file in a new tab. |
 | `reload` | — | Re-reads the current file; broadcasts `waveforms_loaded`. |
 | `clear` | — | Removes all displayed signals. |
 | `add_items` | `items[]` (or `paths[]` / `item_path`); `recursive` (opt) | Adds signals (or a scope's signals — its whole subtree when recursive). Returns each item's stable integer `id`; all-or-nothing if any entry fails to resolve. Each displayed row is its own item: from 1.1, adding a signal that is already shown adds a second row with its own `id`. |
