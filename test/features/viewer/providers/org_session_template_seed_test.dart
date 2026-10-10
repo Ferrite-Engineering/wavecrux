@@ -1,11 +1,13 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wavecrux/core/license/license_resolved_provider.dart';
 import 'package:wavecrux/features/viewer/providers/org_session_template_seed.dart';
 import 'package:wavecrux/features/viewer/providers/session_providers.dart';
 import 'package:wavecrux/services/policy/org_share_resource.dart';
@@ -139,6 +141,74 @@ void main() {
       isNot(contains('not-an-object')),
       reason: 'the document’s contents must not reach the log',
     );
+  });
+
+  group('cold start: the tier resolves after the waveform opened', () {
+    // Until the keychain answers every launch reads as Open Core, and the
+    // template reference is gated on the tier. A seed that read it at once
+    // would see "no template" on an Enterprise seat and never look again.
+    late File template;
+    setUp(() {
+      template = File('${temp.path}/house.wavecrux')
+        ..writeAsStringSync(
+          jsonEncode(<String, Object?>{
+            'version': 1,
+            'panels': <String, Object?>{'signalTree': false},
+          }),
+        );
+    });
+
+    test('the seed waits for the licence, then applies the template', () async {
+      final resolved = Completer<void>();
+      var enterprise = false;
+      final container = ProviderContainer(
+        overrides: [
+          licenseResolvedProvider.overrideWith((ref) => resolved.future),
+          orgSessionTemplateProvider.overrideWith(
+            (ref) => enterprise ? refTo(template.path) : null,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final seeding = seedOrgSessionTemplate(container);
+      // The keychain answers: the tier moves to Enterprise, then the
+      // licence service reports it has resolved.
+      await Future<void>.delayed(Duration.zero);
+      enterprise = true;
+      container.invalidate(orgSessionTemplateProvider);
+      resolved.complete();
+
+      final outcome = await seeding;
+      expect(outcome.seeded, isTrue);
+      expect(outcome.problem, isNull);
+    });
+
+    test('a licence that never resolves does not hold the seed', () async {
+      final container = ProviderContainer(
+        overrides: [
+          licenseResolvedProvider.overrideWith(
+            (ref) => Completer<void>().future,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final sw = Stopwatch()..start();
+      await awaitLicenseResolved(
+        container,
+        timeout: const Duration(milliseconds: 50),
+      );
+      expect(sw.elapsed, lessThan(const Duration(seconds: 5)));
+    });
+
+    test('open core is resolved from the start', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await expectLater(
+        container.read(licenseResolvedProvider.future),
+        completes,
+      );
+    });
   });
 
   test('both call sites still seed', () {

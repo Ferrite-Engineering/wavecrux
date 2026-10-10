@@ -63,6 +63,24 @@
 /// against a backend that is not there yet, and the layout would be inert. The
 /// restore path re-resolves refs against the *active* source, so the waveform
 /// has to be open first.
+///
+/// ### Why it waits for the licence first
+///
+/// The template is an Enterprise key, and the tier resolves after startup.
+/// On the first tab of a cold start the waveform can finish opening before
+/// the keychain answers, and a seed that read the reference then would see
+/// Open Core, find no template, and never look again: the seat would open
+/// without it until the next restart. So the seed awaits
+/// `licenseResolvedProvider` (bounded by `kLicenseResolvedWait`) before it
+/// reads the reference.
+///
+/// A barrier rather than the late-apply listener the theme pack has, because
+/// a template is per tab and one-shot. A theme is global and idempotent, so
+/// applying it late is harmless. A template applied late would have to find
+/// the tabs that opened fresh before the tier resolved and replay a layout
+/// over whatever the engineer had started doing in them, the clobbering that
+/// `org_session_template.dart` rules out. Waiting keeps the seed exactly where
+/// it is, in the branch that proves the session is new.
 library;
 
 import 'dart:convert';
@@ -70,6 +88,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
+import 'package:wavecrux/core/license/license_resolved_provider.dart';
 import 'package:wavecrux/features/viewer/providers/session_providers.dart';
 import 'package:wavecrux/services/policy/org_session_template.dart';
 import 'package:wavecrux/services/policy/org_share_resource.dart';
@@ -103,6 +122,9 @@ final class OrgSessionTemplateOutcome {
 /// and taking it explicitly is what keeps this off the root container and out
 /// of the scope-leak guard's way.
 ///
+/// Waits for the licence tier to resolve before reading the template's
+/// policy reference; see the library comment.
+///
 /// Returns [OrgSessionTemplateOutcome.none] when no policy file names a
 /// template, so a default install opens exactly the empty session it always
 /// did.
@@ -116,6 +138,7 @@ final class OrgSessionTemplateOutcome {
 Future<OrgSessionTemplateOutcome> seedOrgSessionTemplate(
   ProviderContainer tab,
 ) async {
+  await awaitLicenseResolved(tab);
   final reference = tab.read(orgSessionTemplateProvider);
   if (reference == null) return OrgSessionTemplateOutcome.none;
 
