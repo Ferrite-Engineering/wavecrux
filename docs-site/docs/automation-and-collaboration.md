@@ -59,7 +59,7 @@ These follow the shared Waveform Control Protocol vocabulary, so a client writte
 | `zoom_to_fit` | — | Zooms to fit the whole trace. |
 | `set_item_color` | `id`, `color` (`#RRGGBB[AA]`) | Sets a signal's waveform color. |
 | `focus_item` | `id` | Selects a signal. |
-| `add_markers` | `markers[]` (`time`; `name` a–z, optional) | Places named markers (a missing name takes the first free letter); returns their item IDs. |
+| `add_markers` | `markers[]` (`time`; `name`, optional) | Places named markers and returns their item IDs. Markers occupy the letters a–z: a single lowercase letter places that marker, and a missing name takes the first free letter. From 1.1, `name` may be any string, such as `enable_rises`; the marker takes the first free letter and WCP reports it under the given name, and placing the same name again moves it. |
 | `shutdown` | — | Stops the WCP server and closes connections. |
 
 ### WaveCrux extension commands { #wcp-extension-commands }

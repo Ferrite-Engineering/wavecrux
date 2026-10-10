@@ -437,7 +437,9 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
       final item = _registry.byId(id);
       if (item == null) continue; // silently ignore unknown IDs
       if (item.signalRef.startsWith(_kMarkerRefPrefix)) {
-        tab.read(markerStateProvider.notifier).removeMarker(item.name);
+        tab
+            .read(markerStateProvider.notifier)
+            .removeMarker(_markerLetter(item));
       } else {
         final idx = _findEntryIndex(entries, item.signalRef);
         if (idx >= 0) indices.add(idx);
@@ -609,12 +611,16 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
     return null;
   }
 
-  /// Places named markers (a–z, GTKWave convention).
+  /// Places named markers.
   ///
-  /// Each marker object carries a `time` and an optional `name`; a missing
-  /// name is auto-assigned the first free letter (spec marker names are
-  /// optional). The spec's `move_focus` field is accepted and ignored.
-  /// Validation is atomic: every marker is checked before any is placed.
+  /// WaveCrux markers occupy the letters a–z (GTKWave convention). Each
+  /// marker object carries a `time` and an optional `name`: a single
+  /// lowercase letter places that letter; any other non-empty string is a
+  /// free name, carried as the item's name over WCP, on the first free
+  /// letter (or on the letter it already holds, so placing a named marker
+  /// again moves it); a missing name takes the first free letter. The
+  /// spec's `move_focus` field is accepted and ignored. Validation is
+  /// atomic: every marker is checked before any is placed.
   Future<Map<String, dynamic>?> _handleAddMarkers(
     Map<String, dynamic> data,
   ) async {
@@ -624,24 +630,38 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
     }
 
     final tab = _activeTab;
-    final usedNames = <String>{
-      ...tab.read(markerStateProvider).markers.keys,
+    final placed = tab.read(markerStateProvider).markers;
+    final usedNames = <String>{...placed.keys};
+    // Free names already on a placed letter, so naming one again moves it.
+    final letterForName = <String, String>{
+      for (final item in _registry.allItems)
+        if (item.type == _kTypeMarker &&
+            placed.containsKey(_markerLetter(item)) &&
+            item.name != _markerLetter(item))
+          item.name: _markerLetter(item),
     };
-    final toPlace = <(String, int)>[];
+    final toPlace = <(String, String, int)>[];
     for (final m in rawMarkers) {
       if (m is! Map<String, dynamic>) {
         throw const WcpException('Each marker must be an object', code: 3);
       }
       final rawName = m['name'];
       final time = m['time'];
+      final String letter;
       final String name;
       if (rawName == null) {
-        name = _firstFreeMarkerName(usedNames);
+        letter = _firstFreeMarkerName(usedNames);
+        name = letter;
       } else if (rawName is String && RegExp(r'^[a-z]$').hasMatch(rawName)) {
+        letter = rawName;
         name = rawName;
+      } else if (rawName is String && rawName.trim().isNotEmpty) {
+        letter = letterForName[rawName] ?? _firstFreeMarkerName(usedNames);
+        name = rawName;
+        letterForName[rawName] = letter;
       } else {
         throw const WcpException(
-          '"name" must be a single lowercase letter (a–z)',
+          '"name" must be a non-empty string when provided',
           code: 3,
         );
       }
@@ -653,17 +673,23 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
       } else {
         throw const WcpException('"time" must be an integer', code: 3);
       }
-      usedNames.add(name);
-      toPlace.add((name, tick));
+      usedNames.add(letter);
+      toPlace.add((letter, name, tick));
     }
 
     final addedItems = <Map<String, dynamic>>[];
-    for (final (name, tick) in toPlace) {
-      tab.read(markerStateProvider.notifier).setMarker(name, tick);
+    for (final (letter, name, tick) in toPlace) {
+      tab.read(markerStateProvider.notifier).setMarker(letter, tick);
+      final markerRef = '$_kMarkerRefPrefix$letter';
+      // A letter taken over under a new name is a new item.
+      final existingId = _registry.idFor(markerRef);
+      if (existingId != null && _registry.byId(existingId)!.name != name) {
+        _registry.remove(existingId);
+      }
       final item = _registry.register(
-        '$_kMarkerRefPrefix$name',
+        markerRef,
         name,
-        '$_kMarkerRefPrefix$name',
+        markerRef,
         type: _kTypeMarker,
       );
       addedItems.add({
@@ -675,6 +701,10 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
     }
     return {'items': addedItems};
   }
+
+  /// The marker letter an item occupies, from its `marker:<letter>` ref.
+  String _markerLetter(_WcpItem item) =>
+      item.signalRef.substring(_kMarkerRefPrefix.length);
 
   String _firstFreeMarkerName(Set<String> used) {
     for (var c = 'a'.codeUnitAt(0); c <= 'z'.codeUnitAt(0); c++) {

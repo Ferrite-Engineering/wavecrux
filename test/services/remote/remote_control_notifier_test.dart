@@ -338,11 +338,11 @@ void main() {
       expect(data.containsKey('signal_count'), isTrue);
     });
 
-    test('add_markers with uppercase name returns error code 3', () async {
+    test('add_markers with an empty name returns error code 3', () async {
       final ws = await connect();
       final msg = await sendCommand(ws, 'add_markers', {
         'markers': [
-          {'name': 'Z', 'time': 100},
+          {'name': '', 'time': 100},
         ],
       });
       expect(msg['type'], 'error');
@@ -803,7 +803,7 @@ void main() {
       final msg = await sendCmd(ws, 'add_markers', {
         'markers': [
           {'name': 'f', 'time': 10},
-          {'name': 'BAD', 'time': 20},
+          {'name': 42, 'time': 20},
         ],
       });
       expect(msg['type'], 'error');
@@ -837,6 +837,73 @@ void main() {
         expect(tab.read(markerStateProvider).getMarker('g'), isNull);
       },
     );
+
+    test('add_markers carries a free-string name on a free letter', () async {
+      final ws = await connect();
+      final tab = tcm.containerFor(container.read(activeTabIdProvider));
+      final sub = tab.listen(markerStateProvider, (_, _) {});
+      addTearDown(sub.close);
+
+      final msg = await sendCmd(ws, 'add_markers', {
+        'markers': [
+          {'name': 'a', 'time': 5},
+          {'name': 'enable_rises', 'time': 100},
+        ],
+      });
+      expect(msg['type'], 'response');
+      final items = (msg['data'] as Map)['items'] as List;
+      final named = items.last as Map;
+      expect(named['name'], 'enable_rises');
+      expect(tab.read(markerStateProvider).getMarker('b'), 100);
+
+      final info = await sendCmd(ws, 'get_item_info', {
+        'ids': [named['id']],
+      });
+      expect(((info['data'] as Map)['items'] as List).single, {
+        'id': named['id'],
+        'name': 'enable_rises',
+        'path': 'marker:b',
+        'type': 'Marker',
+      });
+
+      // The name survives a get_item_list reconciliation.
+      final list = await sendCmd(ws, 'get_item_list');
+      final names = [
+        for (final i in (list['data'] as Map)['items'] as List)
+          (i as Map)['name'],
+      ];
+      expect(names, containsAll(['a', 'enable_rises']));
+    });
+
+    test('add_markers with a free name again moves that marker', () async {
+      final ws = await connect();
+      final tab = tcm.containerFor(container.read(activeTabIdProvider));
+      final sub = tab.listen(markerStateProvider, (_, _) {});
+      addTearDown(sub.close);
+
+      final first = await sendCmd(ws, 'add_markers', {
+        'markers': [
+          {'name': 'handshake stalls', 'time': 100},
+        ],
+      });
+      final second = await sendCmd(ws, 'add_markers', {
+        'markers': [
+          {'name': 'handshake stalls', 'time': 250},
+        ],
+      });
+      final id1 =
+          (((first['data'] as Map)['items'] as List).single as Map)['id'];
+      final id2 =
+          (((second['data'] as Map)['items'] as List).single as Map)['id'];
+      expect(id2, id1);
+      expect(tab.read(markerStateProvider).markers, {'a': 250});
+
+      final removed = await sendCmd(ws, 'remove_items', {
+        'ids': [id1],
+      });
+      expect(removed['type'], 'response');
+      expect(tab.read(markerStateProvider).markers, isEmpty);
+    });
 
     test('focus_item with registered marker id succeeds', () async {
       final ws = await connect();
