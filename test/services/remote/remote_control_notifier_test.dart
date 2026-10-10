@@ -98,6 +98,11 @@ class _ReloadableFakeNotifier extends WaveformSourceNotifier {
   @override
   Future<void> openFile(String path, {bool preserveDecoders = false}) async {
     openCalls++;
+    // Clear the view as the real openFile does, so a reload that keeps it
+    // has to restore it.
+    ref.read(signalGroupsProvider.notifier).clear();
+    ref.read(cursorStateProvider.notifier).clearAll();
+    ref.invalidate(markerStateProvider);
     currentFilePath = path;
     state = AsyncData(_source);
   }
@@ -1631,6 +1636,63 @@ void main() {
       }
       expect(msg['type'], 'response');
       expect(tabNotifier().openCalls, 1);
+    });
+
+    test('reload keeps displayed items, cursor and markers, dropping only '
+        'items whose path is gone', () async {
+      final ws = await connect();
+      final tab = tcm.containerFor(container.read(activeTabIdProvider));
+      final subs = [
+        tab.listen(markerStateProvider, (_, _) {}),
+        tab.listen(cursorStateProvider, (_, _) {}),
+      ];
+      addTearDown(() {
+        for (final sub in subs) {
+          sub.close();
+        }
+      });
+      tabNotifier().currentFilePath = '/tmp/loaded.vcd';
+
+      List<int> idsOf(Map<String, dynamic> msg) => [
+        for (final i in (msg['data'] as Map)['items'] as List)
+          (i as Map)['id'] as int,
+      ];
+      final added = idsOf(
+        await send(ws, 'add_items', {
+          'items': ['top.a', 'top.b', 'top.a'],
+        }),
+      );
+      final marker = idsOf(
+        await send(ws, 'add_markers', {
+          'markers': [
+            {'name': 'handshake', 'time': 40},
+          ],
+        }),
+      );
+      await send(ws, 'set_cursor', {'timestamp': 25});
+
+      // The design changed: top.b no longer exists after the re-simulation.
+      when(() => source.findVariables(const SignalFilter())).thenReturn([sigA]);
+
+      var msg = await send(ws, 'reload');
+      while (msg['type'] == 'event') {
+        msg = await ws.next();
+      }
+      expect(msg['type'], 'response');
+      expect(tabNotifier().openCalls, 1);
+
+      final rows = tab.read(signalGroupsProvider).entries;
+      expect(rows.map((e) => e.signalPath), ['top.a', 'top.a']);
+      expect(tab.read(cursorStateProvider).primaryCursorTime, 25);
+      expect(tab.read(markerStateProvider).markers, {'a': 40});
+
+      final list = idsOf(await send(ws, 'get_item_list'));
+      expect(list, unorderedEquals([added[0], added[2], ...marker]));
+      final info = await send(ws, 'get_item_info', {'ids': marker});
+      expect(
+        (((info['data'] as Map)['items'] as List).single as Map)['name'],
+        'handshake',
+      );
     });
 
     test('load opens the requested source and returns a response', () async {

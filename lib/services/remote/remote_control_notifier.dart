@@ -19,6 +19,7 @@ import 'package:wavecrux/features/cursors/providers/cursor_providers.dart';
 import 'package:wavecrux/features/settings/providers/settings_providers.dart';
 import 'package:wavecrux/features/tabs/providers/tab_providers.dart';
 import 'package:wavecrux/features/viewer/providers/navigation_provider.dart';
+import 'package:wavecrux/features/viewer/providers/session_providers.dart';
 import 'package:wavecrux/features/viewer/providers/signal_group_providers.dart';
 import 'package:wavecrux/features/viewer/providers/time_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
@@ -374,13 +375,18 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
     }
   }
 
+  /// Re-reads the current file and keeps the view: displayed items, cursors,
+  /// markers and zoom survive, each item resolved against the reloaded
+  /// hierarchy by path and dropped only if it no longer exists. This is the
+  /// file watcher's auto-reload path, so a script's reload and an on-disk
+  /// change behave the same, and item ids stay valid across it.
   Future<Map<String, dynamic>?> _handleReload() async {
     final tab = _activeTab;
     final path = tab.read(waveformSourceProvider.notifier).currentFilePath;
     if (path == null || path.isEmpty) {
       throw const WcpException('No waveform file loaded', code: 5);
     }
-    await tab.read(waveformSourceProvider.notifier).openFile(path);
+    await tab.read(sessionProvider.notifier).reloadCurrentFile();
     final sourceAsync = tab.read(waveformSourceProvider);
     if (sourceAsync is AsyncError) {
       throw WcpException('Reload failed: ${sourceAsync.error}', code: 4);

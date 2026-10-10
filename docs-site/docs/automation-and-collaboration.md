@@ -49,7 +49,7 @@ These follow the shared Waveform Control Protocol vocabulary, so a client writte
 | Command | Parameters | What it does |
 |---|---|---|
 | `load` | `source` (file path) | Opens a waveform file in the active tab; broadcasts `waveforms_loaded`. From 1.1, when no tab is open it opens the file in a new tab. |
-| `reload` | — | Re-reads the current file; broadcasts `waveforms_loaded`. |
+| `reload` | — | Re-reads the current file; broadcasts `waveforms_loaded`. From 1.1, the displayed items, cursors, markers and zoom are kept and item IDs stay valid; each item is found again by its path, and only items that no longer exist in the file are dropped. |
 | `clear` | — | Removes all displayed signals. |
 | `add_items` | `items[]` (or `paths[]` / `item_path`); `recursive` (opt) | Adds signals (or a scope's signals — its whole subtree when recursive). Returns each item's stable integer `id`; all-or-nothing if any entry fails to resolve. Each displayed row is its own item: from 1.1, adding a signal that is already shown adds a second row with its own `id`. |
 | `remove_items` | `ids[]` | Removes signals by the IDs returned from `add_items`. |
