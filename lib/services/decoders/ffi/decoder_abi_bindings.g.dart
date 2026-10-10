@@ -35,7 +35,10 @@ class WavecruxDecoderAbi {
     ffi.Pointer<WcDecoderDef> out_defs,
     ffi.Pointer<ffi.Size> inout_count,
   ) {
-    return _wavecrux_decoder_register(out_defs, inout_count);
+    return _wavecrux_decoder_register(
+      out_defs,
+      inout_count,
+    );
   }
 
   late final _wavecrux_decoder_registerPtr =
@@ -48,6 +51,29 @@ class WavecruxDecoderAbi {
       .asFunction<
         int Function(ffi.Pointer<WcDecoderDef>, ffi.Pointer<ffi.Size>)
       >();
+
+  ffi.Pointer<ffi.Char> wavecrux_decoder_plugin_name() {
+    return _wavecrux_decoder_plugin_name();
+  }
+
+  late final _wavecrux_decoder_plugin_namePtr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<ffi.Char> Function()>>(
+        'wavecrux_decoder_plugin_name',
+      );
+  late final _wavecrux_decoder_plugin_name = _wavecrux_decoder_plugin_namePtr
+      .asFunction<ffi.Pointer<ffi.Char> Function()>();
+
+  ffi.Pointer<ffi.Char> wavecrux_decoder_plugin_description() {
+    return _wavecrux_decoder_plugin_description();
+  }
+
+  late final _wavecrux_decoder_plugin_descriptionPtr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<ffi.Char> Function()>>(
+        'wavecrux_decoder_plugin_description',
+      );
+  late final _wavecrux_decoder_plugin_description =
+      _wavecrux_decoder_plugin_descriptionPtr
+          .asFunction<ffi.Pointer<ffi.Char> Function()>();
 }
 
 typedef WcDecoderHandle = ffi.Pointer<ffi.Void>;
@@ -136,9 +162,9 @@ final class WcDecoderDef extends ffi.Struct {
 
 const int WAVECRUX_DECODER_ABI_MAJOR = 1;
 
-const int WAVECRUX_DECODER_ABI_MINOR = 0;
+const int WAVECRUX_DECODER_ABI_MINOR = 2;
 
-const int WAVECRUX_DECODER_ABI_VERSION = 65536;
+const int WAVECRUX_DECODER_ABI_VERSION = 65538;
 
 const int WC_DECODER_OK = 0;
 

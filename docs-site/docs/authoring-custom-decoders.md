@@ -32,7 +32,7 @@ int32_t  wavecrux_decoder_register(WcDecoderDef* out_defs,
                                    size_t* inout_count);
 ```
 
-`wavecrux_decoder_abi_version()` returns the macro `WAVECRUX_DECODER_ABI_VERSION` from `wavecrux_decoder.h`, encoded as `(major << 16) | minor`. The current ABI is **1.1**. The loader rejects any plugin whose **major** version differs from the host's; **minor** is backward-compatible, so a 1.0 plugin runs fine in a 1.1 host and trailing struct fields the plugin doesn't set default to zero.
+`wavecrux_decoder_abi_version()` returns the macro `WAVECRUX_DECODER_ABI_VERSION` from `wavecrux_decoder.h`, encoded as `(major << 16) | minor`. The current ABI is **1.2** (from WaveCrux 1.1). The loader rejects any plugin whose **major** version differs from the host's; **minor** is backward-compatible, so a 1.0 or 1.1 plugin runs fine in a 1.2 host and trailing struct fields the plugin doesn't set default to zero.
 
 `wavecrux_decoder_register()` uses a **two-call pattern** so the host can size its buffer:
 
@@ -52,11 +52,22 @@ Each `WcDecoderDef` carries the decoder's `id` (by convention lowercase and name
 
 | Key | Meaning |
 |---|---|
-| `signals` | Array of required bindings: `{ "name", "bit_width"?, "description"? }`. |
+| `signals` | Array of required bindings: `{ "name", "bit_width"?, "width_param"?, "width_scale"?, "description"? }`. See [widths set by a parameter](#width-param). |
 | `optional_signals` | Array of optional bindings, same shape. |
 | `parameters` | Array of `{ "name", "kind", "default"?, "description"?, "display_name"?, "enum_values"?, "enum_labels"? }`, where `kind` is `bool`, `int`, `enum` or `string`. `enum_labels` is an object keyed by value, `{ "tx": "Downstream", "rx": "Upstream" }`, or an array with one label per `enum_values` entry, in the same order. |
 | `description` | Optional text shown in the picker. |
 | `category` | Optional picker category; anything unrecognized falls back to **User Plugins**. |
+
+#### Widths set by a parameter { #width-param }
+
+From 1.1 (ABI 1.2), a signal's width can follow one of the decoder's parameters, so one decoder serves a bus that comes in several widths instead of one decoder per width. Name the parameter in `width_param`, and give `width_scale` when the signal is a fixed fraction or multiple of it:
+
+```json
+{"name": "data",  "bit_width": 64, "width_param": "data_width", "width_scale": 1}
+{"name": "datak", "bit_width": 8,  "width_param": "data_width", "width_scale": 0.125}
+```
+
+The host packs the signal at the parameter's value times `width_scale` (default `1`, rounded up), offers only signals of that width in the binding picker, and auto-binds against it. When the parameter has no integer value it falls back to `bit_width`. `width_param` must name a parameter the manifest declares, and `width_scale` must be a positive number. A host older than 1.1 ignores both keys and packs at `bit_width`, so the decoder still works there when bound to signals of that width.
 
 ## The four lifecycle callbacks { #lifecycle }
 
@@ -86,7 +97,7 @@ Each `feed` call receives a `WcSample` whose `bits_ptr` packs every bound signal
 | Even (offset 0, 2, 4 …) | Level — `0` or `1`. |
 | Odd (offset 1, 3, 5 …) | Unknown flag — set if the source sample was `X` or `Z`. |
 
-For a 1-bit signal, `bits_ptr[0] & 1` is the level and `(bits_ptr[0] >> 1) & 1` is the unknown flag. For a multi-bit binding, signal bit *i* lives at buffer-bit `2*i` (level) / `2*i + 1` (unknown). When several bindings are declared, the declaration order sets the packing order — required signals first, then optional ones: the first binding's bits start at offset 0, the next at `2 × binding[0].bit_width`, and so on. Mask the unused high bits of the final byte.
+For a 1-bit signal, `bits_ptr[0] & 1` is the level and `(bits_ptr[0] >> 1) & 1` is the unknown flag. For a multi-bit binding, signal bit *i* lives at buffer-bit `2*i` (level) / `2*i + 1` (unknown). When several bindings are declared, the declaration order sets the packing order — required signals first, then optional ones: the first binding's bits start at offset 0, the next at `2 × binding[0].bit_width`, and so on. A binding with a [`width_param`](#width-param) occupies its configured width, so read that parameter from the `create` configuration to find the offsets. Mask the unused high bits of the final byte.
 
 !!! note "Always check the unknown flag"
 
@@ -164,7 +175,7 @@ When a plugin won't load or behaves oddly, the Decoder Plugins panel and the [lo
 |---|---|
 | **ABI version mismatch** | The plugin's major ABI differs from the host. Rebuild against the matching header. |
 | **Missing entry point** | `wavecrux_decoder_abi_version` or `wavecrux_decoder_register` isn't exported. |
-| **Invalid manifest** | The `manifest_json` isn't a valid JSON object, or an entry is malformed (missing `name`, non-integer `bit_width`, unknown parameter `kind`). |
+| **Invalid manifest** | The `manifest_json` isn't a valid JSON object, or an entry is malformed (missing `name`, non-integer `bit_width`, a `width_param` that names no declared parameter, a `width_scale` that is not a positive number, unknown parameter `kind`). |
 | **Load failed** | The library could not be opened, or registration failed; the message says which. |
 | **Disabled** / **Not approved** | You switched it off, or the organization's policy does not list its hash. |
 | No decoders from the plugin | `register` left `*inout_count` at 0. Set it to your decoder count on the first call. |

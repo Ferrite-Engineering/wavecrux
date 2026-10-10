@@ -272,7 +272,7 @@ class DecoderAutoBindService {
 
     for (final binding in bindings) {
       final hits = <_TierAHit>[];
-      final expectedWidth = _expectedWidthFor(
+      final expectedWidth = expectedWidthFor(
         binding: binding,
         currentParameters: currentParameters,
         definition: definition,
@@ -455,7 +455,7 @@ class DecoderAutoBindService {
     required Map<String, dynamic> currentParameters,
     required DecoderDefinition definition,
   }) {
-    final expectedWidth = _expectedWidthFor(
+    final expectedWidth = expectedWidthFor(
       binding: binding,
       currentParameters: currentParameters,
       definition: definition,
@@ -490,7 +490,7 @@ class DecoderAutoBindService {
     final aliases = _knownAliases[binding.name.toLowerCase()];
     if (aliases == null || aliases.isEmpty) return null;
 
-    final expectedWidth = _expectedWidthFor(
+    final expectedWidth = expectedWidthFor(
       binding: binding,
       currentParameters: currentParameters,
       definition: definition,
@@ -520,7 +520,7 @@ class DecoderAutoBindService {
     required Map<String, dynamic> currentParameters,
     required DecoderDefinition definition,
   }) {
-    final expectedWidth = _expectedWidthFor(
+    final expectedWidth = expectedWidthFor(
       binding: binding,
       currentParameters: currentParameters,
       definition: definition,
@@ -560,8 +560,10 @@ class DecoderAutoBindService {
   // ── width helpers ─────────────────────────────────────────────────────────
 
   /// Resolves the expected bit-width for [binding], factoring in
-  /// parameter-driven widths (`addr_width`, `data_width`, `wstrb` →
-  /// `data_width / 8`).
+  /// parameter-driven widths: a binding's own [SignalBinding.widthParam]
+  /// (a plugin manifest's `width_param` / `width_scale`), then the built-in
+  /// name patterns (`addr_width`, `data_width`, `wstrb` → `data_width / 8`).
+  /// The decoder dialog's signal pickers filter by the same width.
   ///
   /// Parameter-driven widths take precedence over the binding's literal
   /// [SignalBinding.bitWidth] when the binding name matches one of the
@@ -571,11 +573,17 @@ class DecoderAutoBindService {
   ///
   /// Falls back to the literal [SignalBinding.bitWidth] when no parameter
   /// pattern applies, and to `null` (any width) when neither applies.
-  int? _expectedWidthFor({
+  int? expectedWidthFor({
     required SignalBinding binding,
     required Map<String, dynamic> currentParameters,
     required DecoderDefinition definition,
   }) {
+    final widthParam = binding.widthParam;
+    if (widthParam != null) {
+      return binding.widthFor(
+        _intParam(widthParam, currentParameters, definition),
+      );
+    }
     final lower = binding.name.toLowerCase();
     final isAddr =
         lower.endsWith('addr') &&

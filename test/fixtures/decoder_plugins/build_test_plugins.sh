@@ -57,5 +57,6 @@ build_one "test_plugin_corrupt_manifest" "test_corrupt_manifest"
 build_one "test_plugin_named"            "test_named"
 build_one "test_plugin_config"           "test_config"
 build_one "test_plugin_lifecycle"        "test_lifecycle"
+build_one "test_plugin_width"            "test_width"
 
 echo "all decoder-plugin test fixtures built"

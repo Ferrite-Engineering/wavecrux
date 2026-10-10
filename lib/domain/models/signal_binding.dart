@@ -18,10 +18,13 @@ class SignalBinding {
     this.visibleWhenKey,
     this.visibleWhenValue,
     this.visibleWhenValues,
+    this.widthParam,
+    this.widthScale = 1,
   }) : assert(
          visibleWhenValue == null || visibleWhenValues == null,
          'set at most one of visibleWhenValue / visibleWhenValues',
-       );
+       ),
+       assert(widthScale > 0, 'widthScale must be positive');
 
   /// Logical name used by the decoder (e.g. `"mosi"`, `"cs"`).
   final String name;
@@ -30,7 +33,21 @@ class SignalBinding {
   final String description;
 
   /// Expected bit-width of the bound signal, or `null` to accept any width.
+  ///
+  /// With [widthParam] set, this is the fallback used when that parameter has
+  /// no integer value.
   final int? bitWidth;
+
+  /// Name of the decoder parameter that sets this signal's width, or `null`
+  /// when the width is the fixed [bitWidth]. The width is the parameter's
+  /// value times [widthScale] (see [widthFor]), so one decoder can serve a
+  /// bus that comes in several widths.
+  final String? widthParam;
+
+  /// Multiplier applied to [widthParam]'s value: `1` for a data bus that is
+  /// the parameter's width, `0.125` for a byte-enable or K-character mask
+  /// with one bit per byte. Ignored without [widthParam].
+  final double widthScale;
 
   /// Conditional visibility, mirroring `ConfigParam.visibleWhenKey`: when set,
   /// a pin-enumerating surface (the Stage bindings pane) renders this pin only
@@ -63,6 +80,24 @@ class SignalBinding {
 
   // ── computed ───────────────────────────────────────────────────────────────
 
+  /// The width this signal has when [widthParam] is [parameterValue]:
+  /// `parameterValue * widthScale`, rounded up so a partial byte still counts.
+  /// Returns [bitWidth] when there is no [widthParam], when the value is not
+  /// an integer (or an integer string), or when the result is not positive.
+  int? widthFor(Object? parameterValue) {
+    if (widthParam == null) return bitWidth;
+    final value = switch (parameterValue) {
+      final int v => v,
+      final String v => int.tryParse(v),
+      _ => null,
+    };
+    if (value == null) return bitWidth;
+    // The epsilon keeps an exact product (64 * 0.125) from rounding up past
+    // itself through floating-point error.
+    final width = (value * widthScale - 1e-9).ceil();
+    return width > 0 ? width : bitWidth;
+  }
+
   /// Whether [config] currently satisfies this pin's visibility predicate.
   /// Returns `true` when no predicate is set.
   bool isVisibleIn(Map<String, Object?> config) {
@@ -83,6 +118,8 @@ class SignalBinding {
     Object? visibleWhenValue,
     Set<Object?>? visibleWhenValues,
     bool clearVisibleWhen = false,
+    String? widthParam,
+    double? widthScale,
   }) => SignalBinding(
     name: name ?? this.name,
     description: description ?? this.description,
@@ -96,6 +133,8 @@ class SignalBinding {
     visibleWhenValues: clearVisibleWhen
         ? null
         : (visibleWhenValues ?? this.visibleWhenValues),
+    widthParam: widthParam ?? this.widthParam,
+    widthScale: widthScale ?? this.widthScale,
   );
 
   // ── equality ───────────────────────────────────────────────────────────────
@@ -110,7 +149,9 @@ class SignalBinding {
           bitWidth == other.bitWidth &&
           visibleWhenKey == other.visibleWhenKey &&
           visibleWhenValue == other.visibleWhenValue &&
-          _setEquals(visibleWhenValues, other.visibleWhenValues);
+          _setEquals(visibleWhenValues, other.visibleWhenValues) &&
+          widthParam == other.widthParam &&
+          widthScale == other.widthScale;
 
   @override
   int get hashCode => Object.hash(
@@ -122,6 +163,8 @@ class SignalBinding {
     // Order-independent so two equal sets built in different insertion
     // orders still hash the same.
     visibleWhenValues?.fold<int>(0, (acc, v) => acc ^ v.hashCode),
+    widthParam,
+    widthScale,
   );
 
   @override

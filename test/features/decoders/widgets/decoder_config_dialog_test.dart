@@ -4,10 +4,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wavecrux/domain/enums/decoder_parameter_type.dart';
 import 'package:wavecrux/domain/enums/var_direction.dart';
 import 'package:wavecrux/domain/enums/var_type.dart';
 import 'package:wavecrux/domain/models/decoder_config.dart';
 import 'package:wavecrux/domain/models/decoder_definition.dart';
+import 'package:wavecrux/domain/models/decoder_parameter.dart';
 import 'package:wavecrux/domain/models/signal_binding.dart';
 import 'package:wavecrux/domain/models/variable.dart';
 import 'package:wavecrux/features/decoders/providers/active_decoders_provider.dart';
@@ -335,6 +337,61 @@ void main() {
       expect(find.text('top.clk'), findsWidgets);
       expect(find.text('top.bus'), findsNothing);
     });
+
+    testWidgets(
+      'a width_param binding filters by the width the parameter sets',
+      (
+        tester,
+      ) async {
+        const defWithWidthParam = DecoderDefinition(
+          id: 'plugin.pipe',
+          displayName: 'PIPE',
+          description: 'PIPE',
+          requiredSignals: [
+            SignalBinding(
+              name: 'data',
+              description: 'Data',
+              bitWidth: 64,
+              widthParam: 'data_width',
+            ),
+          ],
+          parameters: [
+            DecoderParameter(
+              name: 'data_width',
+              type: DecoderParameterType.integer,
+              defaultValue: 16,
+              description: 'Data width',
+            ),
+          ],
+        );
+
+        final signalMap = {
+          '0': makeVar('top', 'pipe16', '0', bitWidth: 16),
+          '1': makeVar('top', 'pipe64', '1', bitWidth: 64),
+        };
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              signalVariablesByPathProvider.overrideWith((ref) => signalMap),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: L10N.localizationsDelegates,
+              supportedLocales: L10N.supportedLocales,
+              home: Scaffold(
+                body: DecoderConfigDialog(definition: defWithWidthParam),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(DropdownButton<String>).first);
+        await tester.pumpAndSettle();
+
+        expect(find.text('top.pipe16'), findsWidgets);
+        expect(find.text('top.pipe64'), findsNothing);
+      },
+    );
   });
 
   group('DecoderConfigDialog — reconfigure (issue #47 regression)', () {

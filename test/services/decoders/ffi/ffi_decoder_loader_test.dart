@@ -30,6 +30,7 @@ const _fixtureSubdirs = <String, String>{
   'named': 'test_plugin_named',
   'config': 'test_plugin_config',
   'lifecycle': 'test_plugin_lifecycle',
+  'width': 'test_plugin_width',
 };
 
 const _libraryBasenames = <String, String>{
@@ -40,6 +41,7 @@ const _libraryBasenames = <String, String>{
   'named': 'test_named',
   'config': 'test_config',
   'lifecycle': 'test_lifecycle',
+  'width': 'test_width',
 };
 
 void main() {
@@ -191,6 +193,54 @@ void main() {
         'tx': 'Downstream',
         'rx': 'Upstream',
       });
+    });
+
+    test('width_param / width_scale: the manifest ties signal widths to a '
+        'parameter, and the host packs at the configured width', () async {
+      if (_skipIfToolchainAbsent(toolchainAvailable)) return;
+
+      final dir = await _stageDirectory(
+        sources: {'width': pluginRoot},
+        ext: fixtureExtension,
+      );
+      final registry = DecoderRegistry.forTesting();
+      final loader = FfiDecoderLoader(
+        resolver: _resolverFor(dir),
+        registry: registry,
+      );
+      addTearDown(loader.dispose);
+
+      final infos = await loader.scan();
+      expect(infos.single.loadStatus, DecoderPluginLoadStatus.loaded);
+
+      final signals = registry
+          .getDefinition('test_width_param')!
+          .requiredSignals;
+      expect(signals.map((s) => s.widthParam), ['data_width', 'data_width']);
+      expect(signals.map((s) => s.widthScale), [1.0, 0.125]);
+      expect(signals.map((s) => s.bitWidth), [64, 8]);
+
+      String packedWidth(Map<String, dynamic> parameters) => registry
+          .getFactory('test_width_param')!(
+            DecoderConfig(
+              signalBindings: const {'data': 'top.d', 'datak': 'top.k'},
+              parameters: parameters,
+            ),
+          )
+          .decode(
+            0,
+            100,
+            (name, time) => '0',
+            (name, start, end) => const <(int, String)>[(0, '0')],
+          )
+          .single
+          .label;
+
+      // data 32 + datak 32 * 0.125.
+      expect(packedWidth({'data_width': 32}), 'bits=36');
+      expect(packedWidth({'data_width': 8}), 'bits=9');
+      // No value: the parameter's manifest default (64 + 8).
+      expect(packedWidth(const {}), 'bits=72');
     });
 
     test('reports abiMismatch and does not register the decoder', () async {

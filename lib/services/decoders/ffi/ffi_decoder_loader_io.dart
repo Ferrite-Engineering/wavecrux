@@ -594,6 +594,16 @@ class FfiDecoderLoader implements DecoderPluginLoader {
     final required = _decodeBindings(manifest['signals']);
     final optional = _decodeBindings(manifest['optional_signals']);
     final params = _decodeParameters(manifest['parameters']);
+    final paramDefaults = {for (final p in params) p.name: p.defaultValue};
+    for (final b in [...required, ...optional]) {
+      final widthParam = b.widthParam;
+      if (widthParam != null && !paramDefaults.containsKey(widthParam)) {
+        throw FormatException(
+          'signal "${b.name}" has width_param "$widthParam", which is not '
+          'a declared parameter',
+        );
+      }
+    }
     final category = _decodeCategory(manifest['category']);
     final tier = _decodeTier(manifest['required_tier']);
 
@@ -604,9 +614,17 @@ class FfiDecoderLoader implements DecoderPluginLoader {
     // host's binding dialog presents them.
     raw.attachBindings(<_BindingSpec>[
       for (final b in required)
-        _BindingSpec(name: b.name, bitWidth: b.bitWidth ?? 1, optional: false),
+        _BindingSpec(
+          binding: b,
+          optional: false,
+          paramDefault: paramDefaults[b.widthParam],
+        ),
       for (final b in optional)
-        _BindingSpec(name: b.name, bitWidth: b.bitWidth ?? 1, optional: true),
+        _BindingSpec(
+          binding: b,
+          optional: true,
+          paramDefault: paramDefaults[b.widthParam],
+        ),
     ]);
 
     return DecoderDefinition(
@@ -649,10 +667,35 @@ class FfiDecoderLoader implements DecoderPluginLoader {
               'signal "$name" has non-integer bit_width: $width',
             );
           }
+          // ABI 1.2: `width_param` names the parameter that sets the
+          // width, `width_scale` (default 1) multiplies it. An older host
+          // ignores both keys and packs at `bit_width`.
+          final widthParam = entry['width_param'];
+          if (widthParam != null &&
+              (widthParam is! String || widthParam.isEmpty)) {
+            throw FormatException(
+              'signal "$name" has a width_param that is not a parameter '
+              'name: $widthParam',
+            );
+          }
+          final scale = entry['width_scale'];
+          final double widthScale;
+          if (scale == null) {
+            widthScale = 1;
+          } else if (scale is num && scale > 0) {
+            widthScale = scale.toDouble();
+          } else {
+            throw FormatException(
+              'signal "$name" has a width_scale that is not a positive '
+              'number: $scale',
+            );
+          }
           return SignalBinding(
             name: name,
             description: description,
             bitWidth: bitWidth,
+            widthParam: widthParam as String?,
+            widthScale: widthScale,
           );
         })
         .toList(growable: false);
@@ -863,13 +906,31 @@ class _RawDecoderDef {
 /// can pack signal values into `WcSample.bits_ptr` deterministically.
 class _BindingSpec {
   const _BindingSpec({
-    required this.name,
-    required this.bitWidth,
+    required this.binding,
     required this.optional,
+    this.paramDefault,
   });
-  final String name;
-  final int bitWidth;
+
+  /// The manifest's declaration of this signal.
+  final SignalBinding binding;
   final bool optional;
+
+  /// Default of the binding's `width_param`, used when an instance's
+  /// configuration carries no value for it.
+  final Object? paramDefault;
+
+  String get name => binding.name;
+
+  /// Packed width for an instance configured with [parameters]: the
+  /// `width_param` value scaled by `width_scale` when the manifest names one,
+  /// else `bit_width`, else 1.
+  int bitWidthFor(Map<String, dynamic> parameters) {
+    final widthParam = binding.widthParam;
+    final width = widthParam == null
+        ? binding.bitWidth
+        : binding.widthFor(parameters[widthParam] ?? paramDefault);
+    return width ?? 1;
+  }
 }
 
 /// Plugin-backed [ProtocolDecoder] adapter. Each invocation of
@@ -960,12 +1021,13 @@ class _PluginProtocolDecoder implements ProtocolDecoder {
     // signal-bit count drives both `WcSample.bit_width` and the buffer
     // size (the documented 4-state encoding uses 2 buffer bits per
     // signal bit, so the buffer is `(2 * bitsPerSample + 7) / 8` bytes).
-    final activeBindings = <_BindingSpec>[];
+    final activeBindings = <(_BindingSpec, int)>[];
     var bitsPerSample = 0;
     for (final spec in _raw.bindings) {
       if (config.signalBindings.containsKey(spec.name)) {
-        activeBindings.add(spec);
-        bitsPerSample += spec.bitWidth;
+        final width = spec.bitWidthFor(config.parameters);
+        activeBindings.add((spec, width));
+        bitsPerSample += width;
       }
     }
     // 32-byte minimum keeps the legacy test_plugin.c (which doesn't read
@@ -1013,16 +1075,16 @@ class _PluginProtocolDecoder implements ProtocolDecoder {
           (bitsPtr + i).value = 0;
         }
         var bitOffset = 0;
-        for (final spec in activeBindings) {
+        for (final (spec, width) in activeBindings) {
           final raw = query(spec.name, ts);
           _packBindingValue(
             buffer: bitsPtr,
             bufferLenBytes: scratchBytes,
             bitOffset: bitOffset,
-            bitWidth: spec.bitWidth,
+            bitWidth: width,
             value: raw,
           );
-          bitOffset += spec.bitWidth;
+          bitOffset += width;
         }
         final tsFs = ts < 0 ? 0 : ts * fsPerTick;
         samplePtr.ref

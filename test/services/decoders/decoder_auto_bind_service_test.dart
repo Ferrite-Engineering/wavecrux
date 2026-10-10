@@ -2,10 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wavecrux/domain/enums/decoder_parameter_type.dart';
 import 'package:wavecrux/domain/enums/var_direction.dart';
 import 'package:wavecrux/domain/enums/var_type.dart';
 import 'package:wavecrux/domain/models/auto_bind_candidate.dart';
 import 'package:wavecrux/domain/models/decoder_definition.dart';
+import 'package:wavecrux/domain/models/decoder_parameter.dart';
+import 'package:wavecrux/domain/models/signal_binding.dart';
 import 'package:wavecrux/domain/models/variable.dart';
 import 'package:wavecrux/services/decoders/apb_decoder.dart';
 import 'package:wavecrux/services/decoders/axi4lite_decoder.dart';
@@ -549,6 +552,86 @@ void main() {
         currentParameters: const {},
       );
       expect(result.isEmpty, isTrue);
+    });
+  });
+
+  // A plugin manifest's `width_param` / `width_scale` set a binding's expected
+  // width from a parameter, the way the built-in AXI decoders' data_width does.
+  group('width_param bindings', () {
+    const pipeDef = DecoderDefinition(
+      id: 'plugin.pipe',
+      displayName: 'PIPE',
+      description: '',
+      requiredSignals: [
+        SignalBinding(
+          name: 'txdata',
+          description: '',
+          bitWidth: 64,
+          widthParam: 'data_width',
+        ),
+        SignalBinding(
+          name: 'txdatak',
+          description: '',
+          bitWidth: 8,
+          widthParam: 'data_width',
+          widthScale: 0.125,
+        ),
+      ],
+      parameters: [
+        DecoderParameter(
+          name: 'data_width',
+          type: DecoderParameterType.integer,
+          defaultValue: 64,
+          description: '',
+        ),
+      ],
+    );
+    final signals = availableFromPaths([
+      makeVar('tb.dut.txdata', bitWidth: 16),
+      makeVar('tb.dut.txdatak', bitWidth: 2),
+    ]);
+
+    test('binds at the configured width', () {
+      final result = const DecoderAutoBindService().computeBindings(
+        definition: pipeDef,
+        availableSignals: signals,
+        currentParameters: const {'data_width': 16},
+      );
+      expect(
+        findCandidate(result.candidates, 'txdata').signalRef,
+        'tb.dut.txdata',
+      );
+      expect(
+        findCandidate(result.candidates, 'txdatak').signalRef,
+        'tb.dut.txdatak',
+      );
+    });
+
+    test(
+      'does not bind at the default width when the signals are narrower',
+      () {
+        final result = const DecoderAutoBindService().computeBindings(
+          definition: pipeDef,
+          availableSignals: signals,
+          currentParameters: const {},
+        );
+        expect(
+          findCandidate(result.candidates, 'txdata').confidence,
+          AutoBindConfidence.noMatch,
+        );
+      },
+    );
+
+    test('expectedWidthFor scales and rounds up', () {
+      const service = DecoderAutoBindService();
+      int? width(int dataWidth) => service.expectedWidthFor(
+        binding: pipeDef.requiredSignals[1],
+        currentParameters: {'data_width': dataWidth},
+        definition: pipeDef,
+      );
+      expect(width(64), 8);
+      expect(width(8), 1);
+      expect(width(12), 2);
     });
   });
 }

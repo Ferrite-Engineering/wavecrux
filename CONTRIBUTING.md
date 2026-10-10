@@ -167,7 +167,7 @@ The header defines two independent version components:
 
 ```c
 #define WAVECRUX_DECODER_ABI_MAJOR 1
-#define WAVECRUX_DECODER_ABI_MINOR 0
+#define WAVECRUX_DECODER_ABI_MINOR 2
 ```
 
 These are combined into a single `uint32_t` via

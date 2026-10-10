@@ -10,6 +10,7 @@ Tiny native plugins used by [`test/services/decoders/ffi/ffi_decoder_loader_test
 | `test_plugin_corrupt_manifest/` | Returns malformed JSON from `register`. Loader must report `manifestInvalid`. |
 | `test_plugin_named/` | Exports the optional ABI 1.1 plugin name and description. |
 | `test_plugin_config/` | Refuses a `create` configuration that does not carry its `decoder_id`, and echoes the configuration back from `flush`. |
+| `test_plugin_width/` | Ties its `data` and `datak` widths to the `data_width` parameter (`width_param` / `width_scale`) and reports the sample width the host packed. |
 | `test_plugin_lifecycle/` | Counts `create` and `destroy` per instance; its `fail` parameter makes `create`, `feed` or `flush` fail. The host must destroy every instance exactly once. |
 
 ## Building

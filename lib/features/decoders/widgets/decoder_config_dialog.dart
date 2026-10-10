@@ -263,6 +263,17 @@ class _DecoderConfigDialogState extends ConsumerState<DecoderConfigDialog> {
     return _firstPathByRef[signalRef] ?? signalRef;
   }
 
+  /// The width [binding]'s picker filters by under the current parameters,
+  /// the same width auto-bind matches: a parameter-driven width (a plugin's
+  /// `width_param`, or an AXI / APB data or address width) or the literal
+  /// [SignalBinding.bitWidth].
+  int? _expectedWidth(SignalBinding binding) =>
+      const DecoderAutoBindService().expectedWidthFor(
+        binding: binding,
+        currentParameters: _params,
+        definition: widget.definition,
+      );
+
   void _onPicked(String name, String? value) {
     setState(() {
       _bindingPaths[name] = value;
@@ -447,6 +458,7 @@ class _DecoderConfigDialogState extends ConsumerState<DecoderConfigDialog> {
                     signalBinding: s,
                     isRequired: true,
                     currentValue: _pickerValueFor(s.name),
+                    expectedWidth: _expectedWidth(s),
                     signalMap: signalMap,
                     onChanged: (v) => _onPicked(s.name, v),
                   ),
@@ -457,6 +469,7 @@ class _DecoderConfigDialogState extends ConsumerState<DecoderConfigDialog> {
                     signalBinding: s,
                     isRequired: false,
                     currentValue: _pickerValueFor(s.name),
+                    expectedWidth: _expectedWidth(s),
                     signalMap: signalMap,
                     onChanged: (v) => _onPicked(s.name, v),
                   ),
@@ -579,6 +592,7 @@ class _SignalBindingRow extends StatelessWidget {
     required this.signalBinding,
     required this.isRequired,
     required this.currentValue,
+    required this.expectedWidth,
     required this.signalMap,
     required this.onChanged,
   });
@@ -590,6 +604,9 @@ class _SignalBindingRow extends StatelessWidget {
   /// The selected [Variable.fullPath], or a raw signalRef the trace does not
   /// resolve.
   final String? currentValue;
+
+  /// Width a signal must have to be offered, or `null` for any width.
+  final int? expectedWidth;
 
   /// Available signals keyed by [Variable.fullPath].
   final Map<String, Variable> signalMap;
@@ -605,8 +622,8 @@ class _SignalBindingRow extends StatelessWidget {
         signalMap.keys
             .where(
               (path) =>
-                  signalBinding.bitWidth == null ||
-                  signalMap[path]?.bitWidth == signalBinding.bitWidth,
+                  expectedWidth == null ||
+                  signalMap[path]?.bitWidth == expectedWidth,
             )
             .toList()
           ..sort();

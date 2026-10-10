@@ -23,6 +23,7 @@ call :build test_plugin_corrupt_manifest test_corrupt_manifest  || exit /b 1
 call :build test_plugin_named           test_named              || exit /b 1
 call :build test_plugin_config          test_config             || exit /b 1
 call :build test_plugin_lifecycle       test_lifecycle          || exit /b 1
+call :build test_plugin_width           test_width              || exit /b 1
 
 echo all decoder-plugin test fixtures built
 exit /b 0
