@@ -458,7 +458,10 @@ Same terms as this repository's own LICENSE.
                                       the desktop window; its macOS, Windows
                                       and Linux plugins ship in the desktop
                                       apps.
-  - clock                     1.1.2   (transitive; test/tooling)
+  - clock                     1.1.3   Copyright 2018 Google Inc. The
+                                      waveform canvas's scroll-load
+                                      throttle reads its clock; ships in
+                                      every app.
   - fake_async                1.3.3   (transitive; test only)
 
 
