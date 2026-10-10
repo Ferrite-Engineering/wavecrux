@@ -63,6 +63,11 @@ class DecoderAutoBindService {
   /// and the user's current [currentParameters] (which may constrain the
   /// expected bit-width of width-parameterized bindings).
   ///
+  /// Only the values of [availableSignals] are read. Pass one entry per name
+  /// (`signalVariablesByPathProvider`) so every name of an aliased signal is
+  /// a candidate; matching is by name, and the candidate stores the shared
+  /// [Variable.signalRef] with the matched [AutoBindCandidate.fullPath].
+  ///
   /// [existingBindings] is honored: any logical name that is already
   /// non-null in this map is left untouched in the returned candidates
   /// (its candidate is a passthrough with confidence
@@ -288,6 +293,7 @@ class DecoderAutoBindService {
             scopePath: variable.scopePath,
             prefix: prefix,
             signalRef: variable.signalRef,
+            fullPath: variable.fullPath,
           ),
         );
       }
@@ -387,6 +393,7 @@ class DecoderAutoBindService {
         signalRef: hit.signalRef,
         confidence: AutoBindConfidence.exactSuffix,
         matchReason: reason,
+        fullPath: hit.fullPath,
       );
     }
 
@@ -464,6 +471,7 @@ class DecoderAutoBindService {
     if (best == null) return null;
     return AutoBindCandidate(
       signalRef: best.signalRef,
+      fullPath: best.fullPath,
       confidence: AutoBindConfidence.caseInsensitive,
       matchReason:
           "leaf name '${best.name}' matches binding '${binding.name}' "
@@ -495,6 +503,7 @@ class DecoderAutoBindService {
         if (!_widthCompatible(variable, expectedWidth)) continue;
         return AutoBindCandidate(
           signalRef: variable.signalRef,
+          fullPath: variable.fullPath,
           confidence: AutoBindConfidence.knownAlias,
           matchReason: "matched alias '$alias' for binding '${binding.name}'",
         );
@@ -539,6 +548,7 @@ class DecoderAutoBindService {
 
     return AutoBindCandidate(
       signalRef: best.signalRef,
+      fullPath: best.fullPath,
       confidence: AutoBindConfidence.fuzzyMatch,
       matchReason:
           "fuzzy match: '${best.name}' is "
@@ -655,12 +665,14 @@ class _TierAHit {
     required this.scopePath,
     required this.prefix,
     required this.signalRef,
+    required this.fullPath,
   });
 
   final String bindingName;
   final String scopePath;
   final String prefix;
   final String signalRef;
+  final String fullPath;
 }
 
 @immutable

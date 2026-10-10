@@ -274,7 +274,7 @@ class DecoderListEntry extends ConsumerWidget {
       decoder.decoderId,
     );
     if (definition == null) return;
-    final signalMap = ref.read(signalVariablesMapProvider);
+    final signalMap = ref.read(signalVariablesByPathProvider);
     // Read the notifier via ref (which resolves from the nearest ancestor scope
     // — the tab's UncontrolledProviderScope) BEFORE pushing the dialog route.
     // The dialog context is a child of the Navigator (above the tab scope), so

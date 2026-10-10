@@ -76,7 +76,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           overrides: [
-            signalVariablesMapProvider.overrideWith((_) => _vars),
+            signalVariablesByPathProvider.overrideWith((_) => _vars),
           ],
           home: Scaffold(
             body: Builder(
@@ -120,7 +120,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           overrides: [
-            signalVariablesMapProvider.overrideWith((_) => variables),
+            signalVariablesByPathProvider.overrideWith((_) => variables),
           ],
           home: Scaffold(
             body: Builder(
@@ -165,7 +165,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           overrides: [
-            signalVariablesMapProvider.overrideWith((_) => variables),
+            signalVariablesByPathProvider.overrideWith((_) => variables),
           ],
           home: Scaffold(
             body: Builder(
@@ -207,7 +207,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           overrides: [
-            signalVariablesMapProvider.overrideWith((_) => variables),
+            signalVariablesByPathProvider.overrideWith((_) => variables),
           ],
           home: Scaffold(
             body: Builder(
@@ -244,7 +244,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           overrides: [
-            signalVariablesMapProvider.overrideWith((_) => variables),
+            signalVariablesByPathProvider.overrideWith((_) => variables),
           ],
           home: Scaffold(
             body: Builder(
@@ -282,7 +282,7 @@ void main() {
             _wrap(
               locale: locale,
               overrides: [
-                signalVariablesMapProvider.overrideWith((_) => variables),
+                signalVariablesByPathProvider.overrideWith((_) => variables),
               ],
               home: Scaffold(
                 body: Builder(
@@ -317,7 +317,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           overrides: [
-            signalVariablesMapProvider.overrideWith((_) => variables),
+            signalVariablesByPathProvider.overrideWith((_) => variables),
           ],
           home: Scaffold(
             body: Builder(

@@ -74,7 +74,7 @@ Widget _wrap({
   final app = ProviderScope(
     overrides: [
       productTelemetryConfig,
-      signalVariablesMapProvider.overrideWith((ref) => signalMap),
+      signalVariablesByPathProvider.overrideWith((ref) => signalMap),
     ],
     child: MaterialApp(
       locale: locale,
@@ -197,7 +197,7 @@ void main() {
         ProviderScope(
           overrides: [
             productTelemetryConfig,
-            signalVariablesMapProvider.overrideWith((ref) => signals),
+            signalVariablesByPathProvider.overrideWith((ref) => signals),
           ],
           child: Builder(
             builder: (ctx) {
@@ -252,7 +252,7 @@ void main() {
         ProviderScope(
           overrides: [
             productTelemetryConfig,
-            signalVariablesMapProvider.overrideWith((ref) => signals),
+            signalVariablesByPathProvider.overrideWith((ref) => signals),
           ],
           child: Builder(
             builder: (ctx) {
@@ -311,7 +311,7 @@ void main() {
         ProviderScope(
           overrides: [
             productTelemetryConfig,
-            signalVariablesMapProvider.overrideWith((ref) => signals),
+            signalVariablesByPathProvider.overrideWith((ref) => signals),
           ],
           child: Builder(
             builder: (ctx) {

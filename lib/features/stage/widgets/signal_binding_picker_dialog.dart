@@ -39,7 +39,7 @@ class SignalBindingPickerDialog extends ConsumerStatefulWidget {
   final String? currentSignalRef;
 
   /// Pass [tabContainer] so the picker reads the active tab's
-  /// `signalVariablesMapProvider` (the bindable signal list). The dialog is
+  /// `signalVariablesByPathProvider` (the bindable signal list). The dialog is
   /// pushed by the root navigator, outside the per-tab
   /// [UncontrolledProviderScope], so without this the signal list is empty.
   static Future<SignalBindingPickerResult?> show(
@@ -76,7 +76,9 @@ class _SignalBindingPickerDialogState
   @override
   Widget build(BuildContext context) {
     final l10n = L10N.of(context);
-    final variables = ref.watch(signalVariablesMapProvider);
+    // One row per name: aliased names share a signalRef, and a ref-keyed map
+    // would list only one of them.
+    final variables = ref.watch(signalVariablesByPathProvider);
 
     final entries = variables.entries.toList()
       ..sort(

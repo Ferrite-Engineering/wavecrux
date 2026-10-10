@@ -55,7 +55,9 @@ class StageBindingsPane extends ConsumerWidget {
     required StageAutoBindService service,
     String? title,
   }) async {
-    final variables = ref.read(signalVariablesMapProvider);
+    // One entry per name, so auto-bind can match any name of an aliased
+    // signal; the binding still stores the shared signalRef.
+    final variables = ref.read(signalVariablesByPathProvider);
     final result = service.autoBind(
       widget: widget,
       availableSignals: variables,

@@ -235,7 +235,7 @@ Future<_StreamCoordinateOutcome> _resolveStreamCoordinate(
     );
   }
   final available = <String, Variable>{
-    for (final v in source.findVariables(const SignalFilter())) v.signalRef: v,
+    for (final v in source.findVariables(const SignalFilter())) v.fullPath: v,
   };
   final detection = const RvfiDetectionService().detect(available);
   if (detection.bindings.allRefs.isEmpty) {

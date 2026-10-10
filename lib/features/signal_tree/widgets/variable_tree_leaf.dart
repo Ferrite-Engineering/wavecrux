@@ -371,16 +371,17 @@ class VariableTreeLeaf extends ConsumerWidget {
     WidgetRef ref,
     Set<String> selection,
   ) {
-    // Resolve the EXACT rows the user selected (fullPath → Variable), then
-    // key the dialog's map by signalRef as its contract requires. Resolving
-    // through the ref-keyed map instead used to surface an arbitrary ALIAS
-    // of each selected net (FST aliasing), so the config dialog displayed
-    // names from scopes the user never clicked and auto-bind matched almost
-    // nothing (the wb_streamer beta report).
+    // Resolve the EXACT rows the user selected (fullPath → Variable), keyed
+    // by fullPath as the dialog expects. Resolving through the ref-keyed map
+    // instead used to surface an arbitrary ALIAS of each selected net (FST
+    // aliasing), so the config dialog displayed names from scopes the user
+    // never clicked and auto-bind matched almost nothing (the wb_streamer
+    // beta report). Keying by signalRef would also collapse two selected
+    // aliases of one net into one.
     final byPath = ref.read(signalVariablesByPathProvider);
     final subset = <String, Variable>{
       for (final variable in selection.map((path) => byPath[path]).nonNulls)
-        variable.signalRef: variable,
+        variable.fullPath: variable,
     };
     if (subset.isEmpty) return;
     unawaited(

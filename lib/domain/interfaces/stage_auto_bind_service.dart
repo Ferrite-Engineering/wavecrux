@@ -34,8 +34,10 @@ abstract class StageAutoBindService {
 
   /// Proposes bindings for [widget]'s pins.
   ///
-  /// [availableSignals] is the loaded design's variable map keyed the same
-  /// way `signalVariablesMapProvider` keys it. [existingBindings] are the
+  /// [availableSignals] is the loaded design's variables, one entry per name
+  /// as `signalVariablesByPathProvider` keys them, so every name of an
+  /// aliased signal can match; implementations read the values and bind the
+  /// shared [Variable.signalRef]. [existingBindings] are the
   /// instance's current bindings — an implementation must not silently
   /// overwrite a binding the user made by hand. [configuration] is the
   /// instance's live config map, which widgets with a configurable pin count

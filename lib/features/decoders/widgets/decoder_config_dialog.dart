@@ -67,6 +67,11 @@ class DecoderConfigDialog extends ConsumerStatefulWidget {
   /// from the root container (no file loaded). Passing the map here avoids
   /// that Navigator-scope gap. When null, falls back to reading the provider
   /// (e.g. in edit mode opened from within the tab scope).
+  ///
+  /// Only the values are read, and the pickers list one entry per
+  /// [Variable.fullPath]. Pass `signalVariablesByPathProvider` (one entry per
+  /// name) rather than `signalVariablesMapProvider`, whose signalRef keys keep
+  /// one name per alias group and would hide the others.
   final Map<String, Variable>? signalMap;
 
   /// Pre-captured [ActiveDecodersNotifier] from the per-tab provider scope.
@@ -199,10 +204,22 @@ class _DecoderConfigDialogState extends ConsumerState<DecoderConfigDialog> {
   /// Current signal binding selections: logical name → signalRef or null.
   late final Map<String, String?> _bindings;
 
+  /// The name each binding was picked by: logical name → [Variable.fullPath].
+  ///
+  /// Aliased names share one signalRef, so [_bindings] alone cannot say which
+  /// of them the user chose. Display only: the binding stores the signalRef.
+  final Map<String, String?> _bindingPaths = {};
+
+  /// First name (in path order) for each signalRef, used to show a binding
+  /// that has no entry in [_bindingPaths] (an existing config, a manual
+  /// binding the auto-bind passed through).
+  late final Map<String, String> _firstPathByRef;
+
   /// Current parameter values: parameter name → current value.
   late final Map<String, dynamic> _params;
 
-  /// Snapshot of available signals taken when the dialog opens.
+  /// Snapshot of available signals taken when the dialog opens, keyed by
+  /// [Variable.fullPath] so every name of an aliased signal is listed.
   ///
   /// Using ref.read (not ref.watch) so that provider updates triggered by
   /// the canvas or signal loading don't cause mid-gesture rebuilds of the
@@ -228,7 +245,30 @@ class _DecoderConfigDialogState extends ConsumerState<DecoderConfigDialog> {
     setState(() {
       for (final entry in outcome.appliedBindings.entries) {
         _bindings[entry.key] = entry.value;
+        _bindingPaths[entry.key] = outcome.appliedPaths[entry.key];
       }
+    });
+  }
+
+  /// The picker value for [name]: the name it was picked by, else the first
+  /// name of its signalRef, else the raw signalRef (a binding to a signal the
+  /// trace no longer has, which the row still shows rather than dropping).
+  String? _pickerValueFor(String name) {
+    final signalRef = _bindings[name];
+    if (signalRef == null) return null;
+    final picked = _bindingPaths[name];
+    if (picked != null && _signalMap[picked]?.signalRef == signalRef) {
+      return picked;
+    }
+    return _firstPathByRef[signalRef] ?? signalRef;
+  }
+
+  void _onPicked(String name, String? value) {
+    setState(() {
+      _bindingPaths[name] = value;
+      _bindings[name] = value == null
+          ? null
+          : (_signalMap[value]?.signalRef ?? value);
     });
   }
 
@@ -263,7 +303,14 @@ class _DecoderConfigDialogState extends ConsumerState<DecoderConfigDialog> {
     };
     // Use the pre-captured map when provided (avoids the Navigator-scope gap
     // where dialog contexts are above the per-tab UncontrolledProviderScope).
-    _signalMap = widget.signalMap ?? ref.read(signalVariablesMapProvider);
+    final available =
+        widget.signalMap ??
+        ref.read<Map<String, Variable>>(signalVariablesByPathProvider);
+    _signalMap = {for (final v in available.values) v.fullPath: v};
+    _firstPathByRef = {};
+    for (final path in _signalMap.keys.toList()..sort()) {
+      _firstPathByRef.putIfAbsent(_signalMap[path]!.signalRef, () => path);
+    }
 
     if (widget.autoBindOnOpen && !widget._isEditMode) {
       final result = const DecoderAutoBindService().computeBindings(
@@ -277,6 +324,7 @@ class _DecoderConfigDialogState extends ConsumerState<DecoderConfigDialog> {
         if (candidate.signalRef != null &&
             candidate.confidence != AutoBindConfidence.noMatch) {
           _bindings[entry.key] = candidate.signalRef;
+          _bindingPaths[entry.key] = candidate.fullPath;
         }
       }
     }
@@ -398,9 +446,9 @@ class _DecoderConfigDialogState extends ConsumerState<DecoderConfigDialog> {
                     decoderId: def.id,
                     signalBinding: s,
                     isRequired: true,
-                    currentValue: _bindings[s.name],
+                    currentValue: _pickerValueFor(s.name),
                     signalMap: signalMap,
-                    onChanged: (v) => setState(() => _bindings[s.name] = v),
+                    onChanged: (v) => _onPicked(s.name, v),
                   ),
                 ),
                 ...def.optionalSignals.map(
@@ -408,9 +456,9 @@ class _DecoderConfigDialogState extends ConsumerState<DecoderConfigDialog> {
                     decoderId: def.id,
                     signalBinding: s,
                     isRequired: false,
-                    currentValue: _bindings[s.name],
+                    currentValue: _pickerValueFor(s.name),
                     signalMap: signalMap,
-                    onChanged: (v) => setState(() => _bindings[s.name] = v),
+                    onChanged: (v) => _onPicked(s.name, v),
                   ),
                 ),
                 // ── Parameters ────────────────────────────────────────────
@@ -538,27 +586,30 @@ class _SignalBindingRow extends StatelessWidget {
   final String decoderId;
   final SignalBinding signalBinding;
   final bool isRequired;
+
+  /// The selected [Variable.fullPath], or a raw signalRef the trace does not
+  /// resolve.
   final String? currentValue;
+
+  /// Available signals keyed by [Variable.fullPath].
   final Map<String, Variable> signalMap;
+
+  /// Called with the picked [Variable.fullPath] (or `null` for none).
   final ValueChanged<String?> onChanged;
 
   @override
   Widget build(BuildContext context) {
     final l10n = L10N.of(context);
 
-    final sortedRefs =
+    final sortedPaths =
         signalMap.keys
             .where(
-              (ref) =>
+              (path) =>
                   signalBinding.bitWidth == null ||
-                  signalMap[ref]?.bitWidth == signalBinding.bitWidth,
+                  signalMap[path]?.bitWidth == signalBinding.bitWidth,
             )
             .toList()
-          ..sort(
-            (a, b) => (signalMap[a]?.fullPath ?? a).compareTo(
-              signalMap[b]?.fullPath ?? b,
-            ),
-          );
+          ..sort();
 
     // The current binding must always be representable as exactly one dropdown
     // item, or DropdownButton asserts ("exactly one item with value X"). When
@@ -567,10 +618,10 @@ class _SignalBindingRow extends StatelessWidget {
     // entirely if the trace changed), which would leave `value` matching zero
     // items. Surface it as a leading item so the existing binding stays visible
     // and selectable rather than crashing the dialog. See issue #47.
-    final dropdownRefs = [
-      if (currentValue != null && !sortedRefs.contains(currentValue))
+    final dropdownValues = [
+      if (currentValue != null && !sortedPaths.contains(currentValue))
         currentValue!,
-      ...sortedRefs,
+      ...sortedPaths,
     ];
 
     return Padding(
@@ -648,11 +699,11 @@ class _SignalBindingRow extends StatelessWidget {
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ),
-                ...dropdownRefs.map(
-                  (ref) => DropdownMenuItem<String>(
-                    value: ref,
+                ...dropdownValues.map(
+                  (value) => DropdownMenuItem<String>(
+                    value: value,
                     child: Text(
-                      signalMap[ref]?.fullPath ?? ref,
+                      value,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontFamily: 'monospace'),
                     ),

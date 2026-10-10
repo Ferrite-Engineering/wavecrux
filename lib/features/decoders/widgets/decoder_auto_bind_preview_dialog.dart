@@ -20,12 +20,21 @@ import 'package:wavecrux/shared/layouts/device_class_provider.dart';
 /// to be merged into the parent [DecoderConfigDialog]'s `_bindings` map.
 @immutable
 class DecoderAutoBindPreviewOutcome {
-  const DecoderAutoBindPreviewOutcome({required this.appliedBindings});
+  const DecoderAutoBindPreviewOutcome({
+    required this.appliedBindings,
+    this.appliedPaths = const {},
+  });
 
   /// `name → signalRef` pairs the user accepted. Only non-null entries are
   /// returned — bindings that the user did not apply are absent so the
   /// caller can preserve any existing manual bindings for those names.
   final Map<String, String> appliedBindings;
+
+  /// `name → fullPath` of the signal name each applied binding matched on,
+  /// for the entries of [appliedBindings] that came from a name match. An
+  /// aliased signal has several names for one signalRef; this keeps the one
+  /// the match was made on.
+  final Map<String, String> appliedPaths;
 }
 
 /// Modal preview of the [DecoderAutoBindService] result with per-binding
@@ -108,25 +117,34 @@ class _DecoderAutoBindPreviewDialogState
   }
 
   void _applyAll() {
-    final bindings = <String, String>{
-      for (final entry in _result.candidates.entries)
-        if (entry.value.signalRef != null) entry.key: entry.value.signalRef!,
-    };
-    Navigator.of(context).pop(
-      DecoderAutoBindPreviewOutcome(appliedBindings: bindings),
-    );
+    _apply((candidate) => candidate.signalRef != null);
   }
 
   void _applyConfirmedOnly() {
-    final bindings = <String, String>{
+    _apply(
+      (candidate) =>
+          candidate.signalRef != null &&
+          candidate.confidence != AutoBindConfidence.fuzzyMatch &&
+          candidate.confidence != AutoBindConfidence.noMatch,
+    );
+  }
+
+  void _apply(bool Function(AutoBindCandidate candidate) accept) {
+    final accepted = {
       for (final entry in _result.candidates.entries)
-        if (entry.value.signalRef != null &&
-            entry.value.confidence != AutoBindConfidence.fuzzyMatch &&
-            entry.value.confidence != AutoBindConfidence.noMatch)
-          entry.key: entry.value.signalRef!,
+        if (accept(entry.value)) entry.key: entry.value,
     };
     Navigator.of(context).pop(
-      DecoderAutoBindPreviewOutcome(appliedBindings: bindings),
+      DecoderAutoBindPreviewOutcome(
+        appliedBindings: {
+          for (final entry in accepted.entries)
+            entry.key: entry.value.signalRef!,
+        },
+        appliedPaths: {
+          for (final entry in accepted.entries)
+            if (entry.value.fullPath != null) entry.key: entry.value.fullPath!,
+        },
+      ),
     );
   }
 
@@ -327,6 +345,20 @@ class _BindingPreviewRow extends StatelessWidget {
   final Map<String, Variable> signalMap;
   final MobileMetrics metrics;
 
+  /// A name for [signalRef] when the candidate carries none (a manual binding
+  /// passed through). [signalMap] may be keyed by path or by reference, so
+  /// this searches its values.
+  String _pathForRef(String signalRef) {
+    final direct = signalMap[signalRef];
+    if (direct != null && direct.signalRef == signalRef) {
+      return direct.fullPath;
+    }
+    for (final v in signalMap.values) {
+      if (v.signalRef == signalRef) return v.fullPath;
+    }
+    return signalRef;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = L10N.of(context);
@@ -336,7 +368,7 @@ class _BindingPreviewRow extends StatelessWidget {
     final signalRef = candidate?.signalRef;
     final resolvedPath = signalRef == null
         ? l10n.decoderAutoBindNoMatchPlaceholder
-        : (signalMap[signalRef]?.fullPath ?? signalRef);
+        : (candidate?.fullPath ?? _pathForRef(signalRef));
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: metrics.isTouch ? 8 : 4),

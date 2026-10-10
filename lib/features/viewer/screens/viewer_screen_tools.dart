@@ -390,7 +390,8 @@ extension _ViewerScreenTools on _ViewerScreenState {
   // `_handleShortcut` in viewer_screen_shortcuts.dart for the single source
   // of truth.
   void _openDecoderPicker() {
-    final signalMap = _activeTabContainer.read(signalVariablesMapProvider);
+    // One entry per name, so every name of an aliased signal is offered.
+    final signalMap = _activeTabContainer.read(signalVariablesByPathProvider);
     unawaited(
       ModalGuard.run(
         'addDecoder',

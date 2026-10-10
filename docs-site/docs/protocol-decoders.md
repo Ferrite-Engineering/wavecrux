@@ -26,6 +26,8 @@ Protocol violations and errors are flagged visually where they occur — for exa
 
     Choosing a decoder opens its configuration dialog. Review the proposed signals in the **Signal Bindings** section and override anything it got wrong; **Auto-bind signals** runs the guess again.
 
+    From 1.1, a signal the waveform declares under several names (an alias, such as the copies Verilator traces for `assign TxData = src_data;`) is listed under every one of those names, and auto-bind can match any of them. They are one signal, so whichever name you pick decodes the same data.
+
 3. **Set the parameters.**
 
     In the same dialog, the **Parameters** section matches the decoder to the hardware — set baud rate, clock polarity and phase, address width, or word size — then choose **Add Decoder**. To change the bindings or parameters later, right-click the decoder's lane (long-press on touch) and choose **Configure…**; **Remove Decoder** takes it off.

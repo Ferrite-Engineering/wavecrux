@@ -34,7 +34,7 @@ const _spiDef = DecoderDefinition(
 
 Widget _wrap(DecoderDefinition definition) => ProviderScope(
   overrides: [
-    signalVariablesMapProvider.overrideWith((ref) => {}),
+    signalVariablesByPathProvider.overrideWith((ref) => {}),
   ],
   child: MaterialApp(
     localizationsDelegates: L10N.localizationsDelegates,
@@ -50,7 +50,7 @@ Future<void> _pumpViaShow(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        signalVariablesMapProvider.overrideWith((ref) => {}),
+        signalVariablesByPathProvider.overrideWith((ref) => {}),
       ],
       child: MaterialApp(
         localizationsDelegates: L10N.localizationsDelegates,
@@ -79,7 +79,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              signalVariablesMapProvider.overrideWith((ref) => {}),
+              signalVariablesByPathProvider.overrideWith((ref) => {}),
             ],
             child: MaterialApp(
               locale: Locale(locale),
@@ -171,7 +171,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            signalVariablesMapProvider.overrideWith((ref) => {}),
+            signalVariablesByPathProvider.overrideWith((ref) => {}),
           ],
           child: Builder(
             builder: (ctx) {
@@ -234,7 +234,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            signalVariablesMapProvider.overrideWith((ref) => signalMap),
+            signalVariablesByPathProvider.overrideWith((ref) => signalMap),
           ],
           child: const MaterialApp(
             localizationsDelegates: L10N.localizationsDelegates,
@@ -267,7 +267,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            signalVariablesMapProvider.overrideWith((ref) => signalMap),
+            signalVariablesByPathProvider.overrideWith((ref) => signalMap),
           ],
           child: const MaterialApp(
             localizationsDelegates: L10N.localizationsDelegates,
@@ -315,7 +315,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            signalVariablesMapProvider.overrideWith((ref) => signalMap),
+            signalVariablesByPathProvider.overrideWith((ref) => signalMap),
           ],
           child: const MaterialApp(
             localizationsDelegates: L10N.localizationsDelegates,
@@ -370,7 +370,7 @@ void main() {
       required DecoderConfig initialConfig,
     }) => ProviderScope(
       overrides: [
-        signalVariablesMapProvider.overrideWith((ref) => signalMap),
+        signalVariablesByPathProvider.overrideWith((ref) => signalMap),
       ],
       child: MaterialApp(
         localizationsDelegates: L10N.localizationsDelegates,
@@ -465,7 +465,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            signalVariablesMapProvider.overrideWith((ref) => signalMap),
+            signalVariablesByPathProvider.overrideWith((ref) => signalMap),
           ],
           child: MaterialApp(
             localizationsDelegates: L10N.localizationsDelegates,

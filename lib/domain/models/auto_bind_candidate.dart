@@ -39,6 +39,7 @@ class AutoBindCandidate {
     required this.confidence,
     required this.matchReason,
     this.alternatives = const [],
+    this.fullPath,
   });
 
   /// The chosen waveform signal reference (`Variable.signalRef`), or `null`
@@ -59,6 +60,15 @@ class AutoBindCandidate {
   /// ambiguous prefix scenarios.
   final List<String> alternatives;
 
+  /// Hierarchical name (`Variable.fullPath`) of the signal that matched, or
+  /// `null` when the candidate did not come from a name match (a manual
+  /// binding passed through, or [AutoBindConfidence.noMatch]).
+  ///
+  /// Several names can share one [signalRef] when a waveform aliases them, so
+  /// the reference alone cannot say which name the match was made on; this
+  /// is what the preview shows.
+  final String? fullPath;
+
   // ── copyWith ───────────────────────────────────────────────────────────────
 
   AutoBindCandidate copyWith({
@@ -66,12 +76,14 @@ class AutoBindCandidate {
     AutoBindConfidence? confidence,
     String? matchReason,
     List<String>? alternatives,
+    String? fullPath,
     bool clearSignalRef = false,
   }) => AutoBindCandidate(
     signalRef: clearSignalRef ? null : (signalRef ?? this.signalRef),
     confidence: confidence ?? this.confidence,
     matchReason: matchReason ?? this.matchReason,
     alternatives: alternatives ?? this.alternatives,
+    fullPath: clearSignalRef ? null : (fullPath ?? this.fullPath),
   );
 
   // ── equality ───────────────────────────────────────────────────────────────
@@ -83,6 +95,7 @@ class AutoBindCandidate {
     if (signalRef != other.signalRef) return false;
     if (confidence != other.confidence) return false;
     if (matchReason != other.matchReason) return false;
+    if (fullPath != other.fullPath) return false;
     if (alternatives.length != other.alternatives.length) return false;
     for (var i = 0; i < alternatives.length; i++) {
       if (alternatives[i] != other.alternatives[i]) return false;
@@ -96,11 +109,12 @@ class AutoBindCandidate {
     confidence,
     matchReason,
     Object.hashAll(alternatives),
+    fullPath,
   );
 
   @override
   String toString() =>
       'AutoBindCandidate(signalRef: $signalRef, '
       'confidence: $confidence, matchReason: $matchReason, '
-      'alternatives: $alternatives)';
+      'alternatives: $alternatives, fullPath: $fullPath)';
 }

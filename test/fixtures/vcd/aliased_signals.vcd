@@ -1,0 +1,19 @@
+$comment
+  One signal under three names, as Verilator traces a pure copy
+  (assign TxData = src_data;) by default: tb.data, tb.u_view.src_data and
+  tb.u_view.TxData share the identifier code #.
+$end
+$timescale 1ns $end
+$scope module tb $end
+$var wire 8 # data [7:0] $end
+$scope module u_view $end
+$var wire 8 # src_data [7:0] $end
+$var wire 8 # TxData [7:0] $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+#0
+b00000000 #
+#10
+b00010001 #
+#20

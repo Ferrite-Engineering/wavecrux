@@ -556,8 +556,8 @@ void main() {
       );
       // The picker must be scoped to the selection subset with auto-bind on.
       expect(picker.signalMap.keys, {
-        harness.sclk.signalRef,
-        harness.mosi.signalRef,
+        harness.sclk.fullPath,
+        harness.mosi.fullPath,
       });
       expect(picker.autoBindOnSelect, isTrue);
     });
@@ -652,17 +652,17 @@ void main() {
         final picker = tester.widget<DecoderPickerDialog>(
           find.byType(DecoderPickerDialog),
         );
-        // The dialog map is ref-keyed (its contract), but each value must be
-        // the Variable of the row the user selected. A ref-keyed resolution
-        // used to return tb.clk here (last-walked alias of ref_shared_clk),
-        // showing wrong-scope names and breaking auto-bind.
+        // The dialog map is path-keyed, and each value must be the Variable
+        // of the row the user selected. A ref-keyed resolution used to
+        // return tb.clk here (last-walked alias of ref_shared_clk), showing
+        // wrong-scope names and breaking auto-bind.
         expect(picker.signalMap.keys, {
-          harness.ramClk.signalRef,
-          harness.ramCyc.signalRef,
+          harness.ramClk.fullPath,
+          harness.ramCyc.fullPath,
         });
         expect(
-          picker.signalMap[harness.ramClk.signalRef]!.fullPath,
-          harness.ramClk.fullPath,
+          picker.signalMap[harness.ramClk.fullPath]!.signalRef,
+          harness.ramClk.signalRef,
         );
       },
     );
