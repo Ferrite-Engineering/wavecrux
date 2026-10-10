@@ -3,7 +3,8 @@
 
 import 'dart:io';
 
-import 'package:crux_io/crux_io.dart' show requireSpawnExecutableForHost;
+import 'package:crux_io/crux_io.dart'
+    show SpawnHost, isAbsoluteSpawnPath, requireSpawnExecutableForHost;
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
@@ -31,16 +32,30 @@ Future<ProcessResult> _defaultProcessRunner(
 ) async =>
     await Process.run(requireSpawnExecutableForHost(executable), arguments);
 
-String? _defaultLocator(String name) {
+String? _defaultLocator(String name) => locateFsdbExecutable(name);
+
+/// Finds [name] on `PATH` and returns its absolute path, or null.
+///
+/// On Windows the search is the shared resolution's, which honours `PATHEXT`
+/// (so a `fsdb2vcd.bat` or `vcd2fst.cmd` wrapper around a vendor toolchain is
+/// found, not just `.exe`). Elsewhere it walks `PATH` for an existing file,
+/// since `execvp` has no resolution to borrow.
+///
+/// [host] carries every fact the search reads, so a test can hand it a
+/// Windows host with a synthetic `PATH`, `PATHEXT` and file probe on any
+/// machine.
+String? locateFsdbExecutable(String name, {SpawnHost? host}) {
   if (kIsWeb) return null;
-  final pathEnv = Platform.environment['PATH'] ?? '';
-  final separator = Platform.isWindows ? ';' : ':';
-  final dirs = pathEnv.split(separator);
-  final executable = Platform.isWindows ? '$name.exe' : name;
-  for (final dir in dirs) {
+  final h = host ?? SpawnHost.current();
+  if (h.windows) {
+    final resolved = h.resolveExecutable(name);
+    return isAbsoluteSpawnPath(resolved) ? resolved : null;
+  }
+  final exists = h.exists ?? (String path) => File(path).existsSync();
+  for (final dir in (h.environment['PATH'] ?? '').split(':')) {
     if (dir.isEmpty) continue;
-    final candidate = p.join(dir, executable);
-    if (File(candidate).existsSync()) return candidate;
+    final candidate = p.join(dir, name);
+    if (exists(candidate)) return candidate;
   }
   return null;
 }

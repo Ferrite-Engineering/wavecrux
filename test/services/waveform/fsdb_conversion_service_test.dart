@@ -3,6 +3,7 @@
 
 import 'dart:io';
 
+import 'package:crux_io/crux_io.dart' show SpawnHost;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:wavecrux/services/waveform/fsdb_conversion_service.dart';
@@ -339,6 +340,67 @@ void main() {
         throwsA(isA<FsdbConversionException>()),
       );
       expect(File(p.join(tempDir.path, 'sim.vcd.tmp')).existsSync(), isFalse);
+    });
+  });
+
+  group('locateFsdbExecutable', () {
+    SpawnHost windows(Set<String> files, {String? pathExt}) => SpawnHost(
+      windows: true,
+      environment: {
+        'PATH': r'C:\vendor\bin;C:\tools',
+        'PATHEXT': ?pathExt,
+      },
+      // Windows file names are case-insensitive; PATHEXT spells `.BAT`.
+      exists: (path) => files.any((f) => f.toLowerCase() == path.toLowerCase()),
+    );
+
+    test('Windows finds a .bat wrapper through PATHEXT', () {
+      final host = windows({
+        r'C:\vendor\bin\fsdb2vcd.bat',
+      }, pathExt: '.COM;.EXE;.BAT;.CMD');
+      expect(
+        locateFsdbExecutable('fsdb2vcd', host: host)?.toLowerCase(),
+        r'c:\vendor\bin\fsdb2vcd.bat',
+      );
+    });
+
+    test('Windows finds a .cmd wrapper in a later PATH directory', () {
+      final host = windows({
+        r'C:\tools\vcd2fst.cmd',
+      }, pathExt: '.COM;.EXE;.BAT;.CMD');
+      expect(
+        locateFsdbExecutable('vcd2fst', host: host)?.toLowerCase(),
+        r'c:\tools\vcd2fst.cmd',
+      );
+    });
+
+    test('Windows falls back to the default PATHEXT when it is unset', () {
+      final host = windows({r'C:\vendor\bin\fsdb2vcd.exe'});
+      expect(
+        locateFsdbExecutable('fsdb2vcd', host: host)?.toLowerCase(),
+        r'c:\vendor\bin\fsdb2vcd.exe',
+      );
+    });
+
+    test(
+      'Windows reports a tool that nothing on PATH answers to as absent',
+      () {
+        final host = windows(<String>{}, pathExt: '.COM;.EXE;.BAT;.CMD');
+        expect(locateFsdbExecutable('fsdb2vcd', host: host), isNull);
+      },
+    );
+
+    test('POSIX walks PATH for an existing file', () {
+      final host = SpawnHost(
+        windows: false,
+        environment: const {'PATH': '/opt/synopsys/bin::/usr/local/bin'},
+        exists: {'/usr/local/bin/vcd2fst'}.contains,
+      );
+      expect(
+        locateFsdbExecutable('vcd2fst', host: host),
+        '/usr/local/bin/vcd2fst',
+      );
+      expect(locateFsdbExecutable('fsdb2vcd', host: host), isNull);
     });
   });
 }
