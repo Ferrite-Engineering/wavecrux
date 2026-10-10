@@ -130,13 +130,88 @@ The Pro catalog adds the full-spec bus protocols and the high-speed and networki
 | <span id="axi4_full"></span>AXI4 Full | The full AXI4 spec — bursts, exclusive access, and ID-tagged transactions. |
 | <span id="can"></span>CAN / CAN-FD | CAN 2.0A/B and ISO or non-ISO CAN-FD — data, remote, error and overload frames, payloads up to 64 bytes with CRC-17 / CRC-21, and all five ISO 11898-1 error classes. |
 | <span id="usb2"></span>USB 2.0 | Low-Speed (1.5 Mb/s) and Full-Speed (12 Mb/s) tokens, data and handshakes, with CRC validation. |
-| <span id="pcie_tlp"></span>PCIe TLP | Transaction Layer Packets on a 32-bit AXI-Stream-style interface — memory, I/O, configuration, completion and message TLPs. |
+| <span id="pcie_tlp"></span>PCIe TLP | Transaction Layer Packets (memory, I/O, configuration, completion and message TLPs) on a streaming interface, 32 bits per beat. From 1.1, 64, 128 and 256-bit beats, request and completion pairing, PCIe Base Spec rule checks, bus statistics, and presets for Xilinx and Intel PCIe cores. See [PCIe TLP analysis](#pcie-tlp-analysis). |
 | <span id="jtag"></span>JTAG | IEEE 1149.1 TAP state machine over TCK/TMS/TDI/TDO, one transaction per IR or DR scan, with the standard opcodes and IDCODE fields. |
 | <span id="mdio"></span>MDIO | Clause 22 and Clause 45 Ethernet PHY register access. |
 | <span id="axi_stream"></span>AXI-Stream | Standalone TVALID/TREADY/TLAST packets with TKEEP, TSTRB, TUSER, TDEST and TID, without an upper framing protocol. |
 | <span id="avalon_mm"></span>Avalon-MM | Intel/Altera memory-mapped — bursts, wait states, pipelined read responses, and byte enables. |
 | <span id="avalon_st"></span>Avalon-ST | Intel/Altera streaming — SOP/EOP framing, `empty`, channel multiplexing, and error signaling. |
 | <span id="ethernet_axis"></span><span id="ethernet_mii"></span><span id="ethernet_rmii"></span><span id="ethernet_gmii"></span>Ethernet front-ends (AXIS, MII, RMII, GMII) | Frame-layer decode at each physical-layer encoding. |
+
+## PCIe TLP analysis <span class="tier tier-pro">Pro</span> { #pcie-tlp-analysis }
+
+From 1.1, the PCIe TLP decoder does more than name each packet. Bind both directions of the link and it pairs every completion with the request it answers, measures the latency between them, and checks the traffic against the PCI Express Base Specification. Three presets read the user interface of a Xilinx or Intel PCIe core directly, and a **Bus Statistics** tab sums the decode up. Everything in this section applies to the generic decoder and to its presets alike.
+
+### The generic interface { #pcie-tlp-generic }
+
+The **PCIe TLP** decoder reads a stream of 32-bit DWs: `tlp_valid`, `tlp_sop`, `tlp_eop` and `tlp_data`, sampled on the rising edge of `clk`, with optional `tlp_ready` and `rst_n` (active low). DW 0 of a beat sits in `tlp_data[31:0]`, each DW carries TLP byte 0 in its bits [31:24], and a TLP starts in DW 0 of the beat where `tlp_sop` is high.
+
+From 1.1, **Data Width (bits)** takes 32, 64, 128 or 256 (1, 2, 4 or 8 DWs per beat). On a wide bus, bind `tlp_keep` (the byte enables of the last beat, bit 0 = byte 0) to mark which DWs of that beat are valid; left unbound, the last beat is trimmed to the length the TLP header announces.
+
+To decode the opposite direction as well, bind `peer_valid`, `peer_sop`, `peer_eop` and `peer_data`, with optional `peer_ready` and `peer_keep`. Every TLP then carries a `direction` field, `tlp` or `peer`, and completions are paired with requests as described in [Requests and completions](#pcie-tlp-pairing).
+
+### Vendor presets { #pcie-tlp-presets }
+
+From 1.1, three presets read a vendor PCIe core's own user interface, with no adapter to a one-DW-per-beat stream. Each one binds by the core's own port names, so auto-bind finds them in a design that instantiates the core. Choose them in the **Add Protocol Decoder** picker like any other decoder.
+
+| Preset | What it reads |
+|---|---|
+| <span id="pcie_tlp_xilinx_7series"></span>PCIe TLP (Xilinx 7 Series AXIS) | The AXI4-Stream interface of the AMD/Xilinx 7 Series Integrated Block for PCI Express (PG054): receive on `m_axis_rx_*`, transmit on `s_axis_tx_*`, 64 or 128 bits, on `user_clk_out` with the active-high `user_reset_out`. The 128-bit receive interface is framed by `rx_is_sof` and `rx_is_eof` in `m_axis_rx_tuser`, including a TLP that starts in the same beat the previous one ends in. The BAR hit is read from `m_axis_rx_tuser` and reported in a `bar_hit` field. Bind the transmit side to pair completions with requests. |
+| <span id="pcie_tlp_xilinx_ultrascale"></span>PCIe TLP (Xilinx UltraScale CQ/CC/RQ/RC) | The four descriptor interfaces of the AMD/Xilinx UltraScale (PG156) and UltraScale+ (PG213) PCI Express cores: completer request `m_axis_cq_*`, completer completion `s_axis_cc_*`, requester request `s_axis_rq_*` and requester completion `m_axis_rc_*`, 64, 128 or 256 bits, on `user_clk` with the active-high `user_reset`. Bind any of the four. Each descriptor is rebuilt into its TLP header, so the packet is named, paired and checked like any other, and the `direction` field names its interface (`CQ`, `CC`, `RQ` or `RC`). CC completions pair with CQ requests, and RC completions with RQ requests, when both interfaces of a pair are bound. The CQ BAR and target function, RC descriptor error codes, and packets the source discontinued through `tuser` are reported too. |
+| <span id="pcie_tlp_intel_avalon_st"></span>PCIe TLP (Intel Avalon-ST) | The Avalon-ST interface for PCI Express of the Intel Arria 10 and Cyclone 10 GX Hard IP (683647): receive on `rx_st_*`, transmit on `tx_st_*`, 64, 128 or 256 bits, on `pld_clk` with the active-high `reset_status`. The qword-alignment pad is removed, payload bytes are put back in TLP order, `rx_st_empty` and `tx_st_empty` trim the last beat, and the BAR hit is read from `rx_st_bar` into a `bar_hit` field. Bind the transmit side to pair completions with requests. |
+
+Each preset's **Data Width (bits)** parameter defaults to **Auto (from the data bus)**, which reads the width from the bound data signal; choose a width to set it yourself. The UltraScale preset also has **Payload Alignment**, **Dword-aligned** (the default) or **Address-aligned**. It is a core setting the waveform does not show, so set it to match how the core was generated.
+
+!!! note "Not decoded yet"
+
+    Two packing modes are not decoded: UltraScale 256-bit requester completion straddle (two completions in one beat, with `m_axis_rc_tlast` tied low), and Avalon-ST with two TLPs in one beat (`rx_st_sop[1]` / `rx_st_eop[1]`). The Avalon-ST preset flags the second case once rather than decoding it.
+
+### Requests and completions { #pcie-tlp-pairing }
+
+With both directions bound, every completion is paired with the non-posted request it answers, by Requester ID and tag:
+
+- The completion carries an `answers` field naming the request, and its label shows the address or register it answers, plus the value for a single-DW read.
+- Request and completion both carry a `latency` field, from the start of the request to the start of its first completion.
+- The request carries a `completion` field with its outcome: `SC`, the unsuccessful status (`UR`, `CA` or `CRS`), `timeout`, `tag reused`, or `pending` when the capture ends before the completion arrives.
+
+These are flagged as errors on the packet concerned:
+
+- A completion timeout (PCIe Base Spec §2.8). **Completion Timeout (ns)** sets the limit; the default, 50,000 ns, is the low end of the range the specification allows, so a short simulation still reports a stuck request.
+- An unexpected completion, with no outstanding request to answer (§2.3.2).
+- A tag reused while a request with that tag is still outstanding (§2.2.6.2).
+- A byte count or lower address that does not match the request, including across split completions (§2.2.9, §2.3.1.1).
+- A successful completion to a read that carries no data, and a completion to a write that carries data (§2.2.9).
+
+Configuration requests name the register they address, such as `Device ID` or `BAR0`, in a `register_name` field and in the label, and report the value in register order in a `value` field. The decoder learns each function's header layout from Header Type reads and its capability list from Capabilities Pointer reads, so registers inside the PCI Express Capability read as `Device Control` or `Link Status`. **Configuration Header** overrides the learned layout: **Learn from Header Type reads** (the default), **Type 0 (endpoint)**, or **Type 1 (bridge, switch, root port)**.
+
+**Labels** sets how much each transaction label says. **Full (Requester ID, tag, status)**, the default, appends the Requester ID and tag and shows a successful completion's status; **Compact (one-endpoint link)** drops them, which reads better on a link with a single endpoint. An unsuccessful completion status is always shown.
+
+Every TLP also carries its name (`MRd32`, `CplD` and so on) in a `tlp` field, so the transaction table has a column to sort and filter by packet type.
+
+### Base Spec rule checks { #pcie-tlp-rules }
+
+From 1.1, each TLP is checked against the transaction rules of the PCI Express Base Specification, and a violation is flagged with the section it breaks:
+
+- A memory request that crosses a 4 KB boundary (§2.2.7).
+- A payload larger than Max_Payload_Size (§2.2.2).
+- A memory read that asks for more than Max_Read_Request_Size (§7.5.3.4).
+- First and Last DW Byte Enables that break the byte enable rules (§2.2.5).
+- A 64-bit address header used for an address below 4 GB (§2.2.4.1).
+
+**Max_Payload_Size** and **Max_Read_Request_Size** default to **Auto (from the trace)**: the values the trace writes to Device Control. Finding Device Control needs the PCI Express Capability, which the decoder learns from configuration reads and their completions, so Auto needs both directions bound; until it has learned a value, Auto skips the check. Choose a size from 128 to 4096 bytes to set the limit yourself.
+
+**Check Read-After-Write Ordering** flags a memory read whose completion data differs from an earlier posted write to the same address on the same link direction: the read passed the write (§2.4.1). It is off by default, because registers with side effects, such as write-1-to-clear or read-only bits, read back differently by design. It is a best-effort check from one link.
+
+### Bus statistics and JSON export { #pcie-tlp-statistics }
+
+From 1.1, the transaction table's **More export options** menu has **Show statistics for** *decoder* for each PCIe TLP decoder. It opens the **Bus Statistics** tab in the bottom dock on that decoder. Choose the **Decoder** at the top of the tab, and the range to measure: **Whole trace**, **Visible range**, or **Between cursors** (place the primary and secondary cursors first). The tab shows:
+
+- **Transactions by type**: a count per TLP type, with the total and how many are flagged.
+- **Payload throughput**: payload bytes and the rate over the range, for each link direction.
+- **Latency**: the number of answered requests, the minimum, mean and maximum latency, and a histogram. Latency needs requests paired with their completions, so bind both directions.
+- **Outstanding requests**: how many requests were waiting for a completion at once, with the peak.
+
+The same menu has **Export** *decoder* **as JSON…** for every decoder, not only PCIe TLP. It writes the decoder's rows as the table currently shows them, with the same filter and order as **Export CSV**: each row's times, label and error, with its decoded fields as a nested object, so a script can read a field without knowing the decoder's column set. Times are in ticks, and the file states the timescale.
 
 ## Enterprise decoders <span class="tier tier-enterprise">Enterprise</span> { #enterprise-decoders }
 
