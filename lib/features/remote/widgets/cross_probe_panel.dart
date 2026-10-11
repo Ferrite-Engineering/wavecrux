@@ -14,7 +14,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/core/router.dart' show rootScaffoldMessengerKey;
 import 'package:wavecrux/domain/enums/editor_host_kind.dart';
 import 'package:wavecrux/features/cursors/providers/cursor_providers.dart';
-import 'package:wavecrux/features/remote/providers/cross_probe_originate_gate_provider.dart';
 import 'package:wavecrux/features/remote/providers/cxp_server_provider.dart';
 import 'package:wavecrux/features/viewer/providers/panel_layout_provider.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
@@ -303,15 +302,10 @@ class WaveCruxCrossProbePanelController
   /// order of the guards: on desktop the reachability check comes before the
   /// path lookup, so a peer that cannot receive anything is reported as
   /// unreachable rather than as "nothing is selected".
+  ///
+  /// Sending is free in every tier, as receiving is: there is no tier check
+  /// on this path.
   Future<void> _sendTo(PeerIdentity peer) async {
-    // Origination is a Pro capability, and this button is a route to it that
-    // ships in open core — so the tier is checked HERE, first, before the
-    // selection is even resolved. A denied press has already been explained
-    // by the gate (the shared upgrade dialog); an unselected row after an
-    // admitted press is the existing quiet-no-op-turned-snackbar below, which
-    // is a different situation from a refusal.
-    if (!_ref.read(crossProbeOriginateGateProvider)(_ref.context)) return;
-
     // No selection → there is nothing to cross-probe. Tell the user instead of
     // a silent no-op (previously the send resolved an empty selection and
     // dropped it on the floor).

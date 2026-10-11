@@ -108,7 +108,7 @@ CXP is the cross-tool peer protocol of the EDACrux suite: it lets WaveCrux excha
 
 ### The Cross-Probe Panel { #cxp-cross-probe }
 
-CXP surfaces in the app as a dockable **Cross-Probe Panel** — open it with **View → Show Cross-Probe Panel**, the toolbar's Cross-Probe button, or ++cmd+shift+x++ / ++ctrl+shift+x++ (tablet and desktop). The panel lists **Connected Peers**, shows **Recent Events** in and out, and flags **Unreachable peers** it found but couldn't reach. With a signal selected, **Send selection to this peer** pushes it across so that tool jumps to the matching net.
+CXP surfaces in the app as a dockable **Cross-Probe Panel** — open it with **View → Show Cross-Probe Panel**, the toolbar's Cross-Probe button, or ++cmd+shift+x++ / ++ctrl+shift+x++ (tablet and desktop). The panel lists **Connected Peers**, shows **Recent Events** in and out, and flags **Unreachable peers** it found but couldn't reach. With a signal selected, **Send selection to this peer** pushes it across so that tool jumps to the matching net. Sending a cross-probe is free in every edition, just as receiving one is (from WaveCrux 1.1; 1.0.x builds admit every edition for the length of the public beta).
 
 The server and its behavior live under **Settings → CXP Cross-Probe** — **Enable CXP server**, **CXP port** (default `54322`, distinct from the WCP port), and **CXP Status** — along with two options that are on by default:
 

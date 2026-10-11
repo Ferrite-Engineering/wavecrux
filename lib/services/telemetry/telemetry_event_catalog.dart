@@ -433,12 +433,6 @@ const List<String> kWavecruxGateFeatureIds = <String>[
   'translator_preset',
   'decoder_pack',
   'stage_widget_pack',
-  // open core — the cross-probe panel's per-peer send button
-  // (`crossProbeOriginateGateProvider`). Origination is priced as Pro; the
-  // panel it lives on ships in open core, so the gate and its deny surface
-  // do too — see the suite ruling "the gate lives beside the code that has
-  // the capability".
-  'cross_probe',
   // Pro overlay — the five gated activations
   'sva_panel',
   'pcap_export',

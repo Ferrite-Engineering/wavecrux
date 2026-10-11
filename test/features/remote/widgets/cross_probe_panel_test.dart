@@ -12,7 +12,6 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wavecrux/core/router.dart' show rootScaffoldMessengerKey;
 import 'package:wavecrux/domain/interfaces/waveform_data_source.dart';
-import 'package:wavecrux/features/remote/providers/cross_probe_originate_gate_provider.dart';
 import 'package:wavecrux/features/remote/providers/cxp_server_provider.dart';
 import 'package:wavecrux/features/remote/widgets/cross_probe_panel.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
@@ -27,12 +26,6 @@ import '../../../support/fake_waveform_source.dart';
 /// Preloads [waveformSourceProvider] with the reference in-memory source so the
 /// panel can translate a selected backend-local `signalRef` (`s_data`) into its
 /// canonical `fullPath` (`top.data`) — the string a peer can actually resolve.
-/// Sending a cross-probe is Pro (the gate group at the end proves both sides
-/// of that), so the tests about what a send does run at a Pro seat.
-final Override _proSeat = licenseTierProvider.overrideWithValue(
-  LicenseTier.pro,
-);
-
 Override _sourceOverride() => waveformSourceProvider.overrideWith(
   () => _PreloadedSourceNotifier(FakeWaveformSource.reference()),
 );
@@ -263,7 +256,6 @@ void main() {
         await tester.pumpWidget(
           wrap(
             overrides: [
-              _proSeat,
               _sourceOverride(),
               cxpServerProvider.overrideWith(() => _FakeServerNotifier(server)),
               cxpPeersProvider.overrideWith(() => _StaticPeers(const [peer])),
@@ -311,7 +303,6 @@ void main() {
         await tester.pumpWidget(
           wrap(
             overrides: [
-              _proSeat,
               _sourceOverride(),
               cxpServerProvider.overrideWith(() => _FakeServerNotifier(server)),
               cxpPeersProvider.overrideWith(() => _StaticPeers(const [peer])),
@@ -353,7 +344,6 @@ void main() {
         await tester.pumpWidget(
           wrap(
             overrides: [
-              _proSeat,
               cxpServerProvider.overrideWith(() => _FakeServerNotifier(server)),
               cxpPeersProvider.overrideWith(() => _StaticPeers(const [peer])),
               // selectedSignalProvider left at its default (null) — no selection.
@@ -383,7 +373,6 @@ void main() {
         await tester.pumpWidget(
           wrap(
             overrides: [
-              _proSeat,
               cxpServerProvider.overrideWith(() => _FakeServerNotifier(server)),
               cxpPeersProvider.overrideWith(() => _StaticPeers(const [peer])),
               selectedSignalProvider.overrideWith(
@@ -421,7 +410,6 @@ void main() {
         await tester.pumpWidget(
           wrap(
             overrides: [
-              _proSeat,
               _sourceOverride(),
               cxpServerProvider.overrideWith(() => _FakeServerNotifier(server)),
               cxpPeersProvider.overrideWith(() => _StaticPeers(const [peer])),
@@ -472,7 +460,6 @@ void main() {
         await tester.pumpWidget(
           wrap(
             overrides: [
-              _proSeat,
               telemetryServiceProvider.overrideWithValue(telemetry),
               _sourceOverride(),
               cxpServerProvider.overrideWith(() => _FakeServerNotifier(server)),
@@ -539,7 +526,6 @@ void main() {
       await tester.pumpWidget(
         wrap(
           overrides: [
-            _proSeat,
             _sourceOverride(),
             cxpServerProvider.overrideWith(() => _FakeServerNotifier(server)),
             cxpPeersProvider.overrideWith(() => _StaticPeers(const [peer])),
@@ -620,7 +606,6 @@ void main() {
         wrap(
           locale: locale,
           overrides: [
-            _proSeat,
             _sourceOverride(),
             cxpServerProvider.overrideWith(() => _FakeServerNotifier(server)),
             cxpPeersProvider.overrideWith(() => _StaticPeers(const [peer])),
@@ -677,25 +662,22 @@ void main() {
     }
   });
 
-  group('the per-peer send button is a route to a Pro capability', () {
-    // Origination is sold as Pro. WaveCrux has no other open-core route to
-    // gate — this panel IS the door — so its send button has to check the
-    // tier itself. Every test here pins a real selection and a reachable
-    // peer so that, absent the gate, the send WOULD go through, which is
-    // what made the button a bypass before `crossProbeOriginateGateProvider`
-    // existed.
+  group('sending a cross-probe is free in every tier', () {
+    // Cross-probing is free across the board, sending as well as receiving.
+    // Every test here runs after the beta, when a tier check would bite, and
+    // pins a real selection and a reachable peer, so a send that does not go
+    // through can only mean something is gating it.
     const peer = PeerIdentity(
       peerId: 'netcrux-1-2',
       productName: 'netcrux',
       productVersion: '0.1.0',
     );
 
-    List<Override> gated({
-      required bool beta,
+    List<Override> postBeta({
       required LicenseTier tier,
       required _FakeCxpServer server,
     }) => [
-      betaPeriodProvider.overrideWithValue(beta),
+      betaPeriodProvider.overrideWithValue(false),
       licenseTierProvider.overrideWithValue(tier),
       _sourceOverride(),
       cxpServerProvider.overrideWith(() => _FakeServerNotifier(server)),
@@ -703,115 +685,43 @@ void main() {
       selectedSignalProvider.overrideWith(() => _StaticSelection('s_data')),
     ];
 
-    testWidgets('post-beta at Open Core: nothing is sent, and the user is '
-        'told why', (tester) async {
+    testWidgets('post-beta at Open Core: the send goes through with no '
+        'upgrade dialog', (tester) async {
       final server = _FakeCxpServer(reachable: const [peer]);
       await tester.pumpWidget(
         wrap(
-          overrides: gated(
-            beta: false,
-            tier: LicenseTier.openCore,
-            server: server,
+          overrides: postBeta(tier: LicenseTier.openCore, server: server),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('cross_probe_send_netcrux-1-2')));
+      await tester.pumpAndSettle();
+
+      expect(server.sent, hasLength(1));
+      expect(find.byType(Dialog), findsNothing);
+      expect(find.textContaining('requires WaveCrux'), findsNothing);
+    });
+
+    for (final tier in LicenseTier.values) {
+      testWidgets('post-beta at ${tier.name}: the send goes through', (
+        tester,
+      ) async {
+        final server = _FakeCxpServer(reachable: const [peer]);
+        await tester.pumpWidget(
+          wrap(
+            overrides: postBeta(tier: tier, server: server),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(const Key('cross_probe_send_netcrux-1-2')));
-      await tester.pumpAndSettle();
-
-      expect(
-        server.sent,
-        isEmpty,
-        reason:
-            'origination is a Pro capability and this button is the only '
-            'route to it that ships in open core; without a gate here '
-            'there is no paywall on it at all',
-      );
-      expect(
-        find.textContaining('requires WaveCrux Pro'),
-        findsOneWidget,
-        reason: 'a denied press is never silent',
-      );
-    });
-
-    testWidgets('post-beta at Pro: the send goes through', (tester) async {
-      final server = _FakeCxpServer(reachable: const [peer]);
-      await tester.pumpWidget(
-        wrap(
-          overrides: gated(beta: false, tier: LicenseTier.pro, server: server),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(const Key('cross_probe_send_netcrux-1-2')));
-      await tester.pumpAndSettle();
-
-      expect(server.sent, hasLength(1));
-      expect(find.textContaining('requires WaveCrux Pro'), findsNothing);
-    });
-
-    testWidgets('EDU is feature-equivalent to Pro', (tester) async {
-      final server = _FakeCxpServer(reachable: const [peer]);
-      await tester.pumpWidget(
-        wrap(
-          overrides: gated(beta: false, tier: LicenseTier.edu, server: server),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('cross_probe_send_netcrux-1-2')));
-      await tester.pumpAndSettle();
-      expect(server.sent, hasLength(1));
-    });
-
-    testWidgets('during the beta every tier sends', (tester) async {
-      final server = _FakeCxpServer(reachable: const [peer]);
-      await tester.pumpWidget(
-        wrap(
-          overrides: gated(
-            beta: true,
-            tier: LicenseTier.openCore,
-            server: server,
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('cross_probe_send_netcrux-1-2')));
-      await tester.pumpAndSettle();
-      expect(server.sent, hasLength(1));
-      expect(find.textContaining('requires WaveCrux Pro'), findsNothing);
-    });
-
-    testWidgets('the panel asks the gate seam rather than the tier directly', (
-      tester,
-    ) async {
-      // Proves the panel is wired to `crossProbeOriginateGateProvider` and
-      // not to a hand-rolled tier check that happens to agree with it today
-      // — the seam is what a future rebinding (a different deny surface, an
-      // overlay) would need to intercept.
-      final server = _FakeCxpServer(reachable: const [peer]);
-      var asked = 0;
-      await tester.pumpWidget(
-        wrap(
-          overrides: [
-            // A tier the default gate would ADMIT, so a send that still
-            // gets through can only mean the seam was bypassed.
-            ...gated(beta: true, tier: LicenseTier.pro, server: server),
-            crossProbeOriginateGateProvider.overrideWith(
-              (ref) => (_) {
-                asked++;
-                return false;
-              },
-            ),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('cross_probe_send_netcrux-1-2')));
-      await tester.pumpAndSettle();
-      expect(asked, 1);
-      expect(server.sent, isEmpty);
-    });
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(const Key('cross_probe_send_netcrux-1-2')),
+        );
+        await tester.pumpAndSettle();
+        expect(server.sent, hasLength(1));
+        expect(find.byType(Dialog), findsNothing);
+      });
+    }
   });
 }
 
