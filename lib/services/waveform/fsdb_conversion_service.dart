@@ -54,7 +54,9 @@ String? locateFsdbExecutable(String name, {SpawnHost? host}) {
   final exists = h.exists ?? (String path) => File(path).existsSync();
   for (final dir in (h.environment['PATH'] ?? '').split(':')) {
     if (dir.isEmpty) continue;
-    final candidate = p.join(dir, name);
+    // posix, not the running machine's separator: [host] may describe a
+    // POSIX host while a test runs on Windows.
+    final candidate = p.posix.join(dir, name);
     if (exists(candidate)) return candidate;
   }
   return null;

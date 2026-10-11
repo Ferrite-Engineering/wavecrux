@@ -1,3 +1,6 @@
+// Copyright 2026 Ferrite Engineering LLC
+// SPDX-License-Identifier: Apache-2.0
+
 // A device-class flip (phone <-> desktop layout) with semantics on and a
 // waveform open.
 //
