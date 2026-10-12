@@ -157,6 +157,7 @@ import 'package:wavecrux/widgets/legacy_conversion_progress_dialog.dart';
 import 'package:wavecrux/widgets/legacy_format_banner.dart';
 
 part 'viewer_screen_file_io.dart';
+part 'viewer_screen_focus.dart';
 part 'viewer_screen_tools.dart';
 part 'viewer_screen_annotations.dart';
 part 'viewer_screen_widgets.dart';
@@ -422,7 +423,14 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
     //    Both Escape bindings are in [kGlobalKeyHandledActions] so the focus
     //    Shortcuts layer cannot dispatch them again against the state this
     //    branch just cleared; that doc carries the argument.
+    //    An open menu that holds focus owns Escape instead: a `MenuAnchor`
+    //    menu (a toolbar split button's sibling menu, a context menu, the
+    //    in-window menu bar) is an overlay entry, not a route, so the route
+    //    check above lets the key through, and one press would close the menu
+    //    AND clear the cursors. Returning false leaves the key to the focus
+    //    layer, where the menu's own DismissIntent closes it.
     if (isDown && event.logicalKey == LogicalKeyboardKey.escape) {
+      if (_isFocusInOpenMenu()) return false;
       final cursors = _activeTabContainer.read(cursorStateProvider.notifier);
       if (HardwareKeyboard.instance.isShiftPressed) {
         cursors.clearSecondary();
@@ -478,24 +486,6 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
     }
     _handleShortcut(action);
     return true;
-  }
-
-  /// Whether a text-input widget ([EditableText]) currently holds focus, in
-  /// which case bare-key shortcuts must not fire (the user is typing). Mirrors
-  /// the guard in `_TextAwareShortcutManager` for the focus Shortcuts layer.
-  static bool _isTextInputFocused() {
-    final focusContext = FocusManager.instance.primaryFocus?.context;
-    if (focusContext == null) return false;
-    if (focusContext.widget is EditableText) return true;
-    var found = false;
-    focusContext.visitAncestorElements((element) {
-      if (element.widget is EditableText) {
-        found = true;
-        return false;
-      }
-      return true;
-    });
-    return found;
   }
 
   /// Undoes [_attachFileDrop]; held so [dispose] needn't touch `ref`.
