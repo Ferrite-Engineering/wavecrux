@@ -19,6 +19,11 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
+# Refuse a release whose version disagrees with the beta flag compiled from
+# the pinned crux-shared (a 1.x build with the beta still on ships every paid
+# feature free). See scripts/check_beta_period.sh.
+"$REPO_ROOT/scripts/check_beta_period.sh"
+
 # Preflight: without the upload key the AAB is debug-signed and Play rejects it.
 # Fail early with the exact fix instead of producing an unusable bundle.
 if [[ ! -f android/key.properties ]]; then
