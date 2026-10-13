@@ -113,10 +113,10 @@ A trace and a bus's value labels are drawn in the signal's own color, which you 
 |---|---|
 | `scaffold.background` | Window background |
 | `panel.background`, `panel.header.background`, `panel.header.foreground` | Panels and their headers |
-| `toolbar.background`, `toolbar.icon`, `toolbar.iconActive` | The toolbar |
+| `toolbar.background`, `toolbar.icon`, `toolbar.iconActive` | The main toolbar: its surface, the icons of its enabled buttons, and the icon of a button that is toggled on. A disabled button keeps its dimmed color. `toolbar.background` and `toolbar.icon` also color the title bars of the Settings, About and issue reporter screens |
 | `statusBar.background`, `statusBar.foreground` | The status bar |
-| `splitter`, `splitter.hover` | Panel splitters and the bar between split panes (`splitter.hover` while the pointer is over it or dragging) |
-| `tabBar.background`, `tabBar.selected`, `tabBar.label` | The file tab bar |
+| `splitter`, `splitter.hover` | The resize bars between the docks and the canvas, and the bar between split panes. `splitter.hover` is used while the pointer is over a bar or dragging it, and while a dock's resize bar has keyboard focus |
+| `tabBar.background`, `tabBar.selected`, `tabBar.label` | The file tab bar above the waveform, one per pane when the view is split: the strip behind the tabs, the active tab's background, and every tab title. The tab strips inside the side and bottom docks keep the panel colors |
 
 !!! note "Strict validation"
 
