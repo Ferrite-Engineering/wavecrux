@@ -106,12 +106,7 @@ Future<void> _scenario(WidgetTester tester, {required bool clientPace}) async {
       );
       // A failed command answers with an `error` frame, not a `response`
       // carrying an error, so wait for either and let the caller check.
-      return waitForFrame(
-        received,
-        (m) =>
-            (m['type'] == 'response' || m['type'] == 'error') && m['id'] == id,
-        tester: tester,
-      );
+      return _awaitReply(tester, received, id);
     }
 
     final load = await send('load', {'source': file});
@@ -168,4 +163,29 @@ Future<void> _scenario(WidgetTester tester, {required bool clientPace}) async {
   }
   // Headless-bundle PNG codec errors are environmental; drain.
   tester.takeException();
+}
+
+/// Waits for the reply (a `response` or an `error` frame) to command [id],
+/// pumping frames while it waits.
+///
+/// The shared `waitForFrame` only sleeps. Under the integration binding's
+/// default frame policy (`fadePointers`) a frame the app requests runs only
+/// when the test pumps, so while a command handler waits for the canvas to
+/// lay out, nothing would ever lay it out. The running app renders those
+/// frames on its own; pumping here gives the handler the same conditions.
+Future<Map<String, dynamic>> _awaitReply(
+  WidgetTester tester,
+  List<Map<String, dynamic>> received,
+  int id,
+) async {
+  final deadline = DateTime.now().add(const Duration(seconds: 10));
+  while (DateTime.now().isBefore(deadline)) {
+    for (final f in received) {
+      if ((f['type'] == 'response' || f['type'] == 'error') && f['id'] == id) {
+        return f;
+      }
+    }
+    await tester.pump(const Duration(milliseconds: 16));
+  }
+  fail('no reply to WCP command $id within 10 s');
 }
