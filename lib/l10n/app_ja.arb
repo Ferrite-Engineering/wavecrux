@@ -7274,6 +7274,7 @@
   "settingsTelemetryInstallationIdDescription": "収集されるデータに付与される唯一の識別子です。ランダムな値で、あなた個人とは結び付いていません。このインストールのデータ削除をご希望の場合は、サポートまでお送りください。",
   "settingsTelemetryInstallationIdCopy": "コピー",
   "settingsTelemetryInstallationIdCopied": "インストール ID をコピーしました。",
+  "settingsTelemetryInstallationIdNone": "インストール ID はありません。使用統計の送信をオンにしたときにのみ作成されます。",
   "decoderPluginStatusNotAllowlisted": "未承認",
   "decoderPluginNotAllowlistedHelp": "所属組織のポリシーは承認済みプラグインをコンテンツハッシュで列挙しており、このファイルは含まれていません。ここでは有効化できません——ポリシーファイルの管理者にお問い合わせください。",
   "settingsShortcutsKeyboardHint": "上下キーでショートカット間を移動します。Enter で変更、Delete で削除、Shift+Delete で既定値に戻します。",

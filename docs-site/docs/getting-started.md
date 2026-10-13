@@ -63,6 +63,7 @@ WaveCrux can send anonymous usage and error counts — which features get used, 
 
 - **You choose on first launch.** A one-time **Help make WaveCrux better** dialog explains what is collected and holds a **Send anonymous usage statistics** switch; **Continue** records your choice. The switch starts **on**, except where your device's region is in the EEA, the UK, Switzerland or South Korea, where it starts **off**. Nothing is sent before you have answered — if you quit without choosing, you are asked again on the next launch.
 - **Change it any time** in **Settings → Privacy → Send anonymous usage statistics**.
+- **Installation ID.** **Settings → Privacy** shows the random installation ID attached to what is collected, so you can ask support to delete that installation's data. The ID appears only after usage statistics have been turned on; until then the row says there is none.
 - **Your organization may decide for you.** The `telemetry` key in an organization's [policy file](https://edacrux.app/policy-reference) can turn usage statistics off, or on, for every seat; where it decides, WaveCrux shows neither the dialog nor the Privacy section. In the regions above, an organization's "on" still leaves the choice to each person.
 
 ## Reporting issues { #reporting-issues }

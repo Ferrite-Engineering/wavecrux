@@ -101,11 +101,37 @@ void main() {
         strings.settingsToggleDescription,
         strings.settingsDocsLabel,
         strings.settingsDocsDescription,
+        strings.settingsInstallationIdLabel,
+        strings.settingsInstallationIdDescription,
+        strings.settingsInstallationIdNone,
+        strings.settingsInstallationIdCopy,
+        strings.settingsInstallationIdCopied,
       ]) {
         expect(value.trim(), isNotEmpty, reason: 'empty string in $locale');
       }
     }
   });
+
+  test(
+    'the no-installation-id getter reads the ARB, not the English default',
+    () async {
+      final english = await L10N.delegate.load(const Locale('en'));
+      expect(
+        WavecruxTelemetryStrings(english).settingsInstallationIdNone,
+        english.settingsTelemetryInstallationIdNone,
+      );
+      for (final locale in _locales.where((l) => l.languageCode != 'en')) {
+        final l10n = await L10N.delegate.load(locale);
+        final value = WavecruxTelemetryStrings(l10n).settingsInstallationIdNone;
+        expect(value, l10n.settingsTelemetryInstallationIdNone);
+        expect(
+          value,
+          isNot(english.settingsTelemetryInstallationIdNone),
+          reason: 'untranslated in $locale',
+        );
+      }
+    },
+  );
 
   testWidgets('an untouched opt-in prompt reports a refusal', (tester) async {
     // WaveCrux's half of counsel's 2026-08-06 ruling: the app wires the gate,

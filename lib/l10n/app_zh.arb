@@ -7274,6 +7274,7 @@
   "settingsTelemetryInstallationIdDescription": "这是与所收集数据关联的唯一标识符。它是随机生成的，与您本人无关。如需删除本次安装的数据，请将其发送给支持人员。",
   "settingsTelemetryInstallationIdCopy": "复制",
   "settingsTelemetryInstallationIdCopied": "已复制安装 ID。",
+  "settingsTelemetryInstallationIdNone": "暂无安装 ID。仅在开启使用统计信息发送后才会创建。",
   "decoderPluginStatusNotAllowlisted": "未批准",
   "decoderPluginNotAllowlistedHelp": "贵组织的策略按内容哈希列出已批准的插件，此文件不在其中。无法在此处启用——请联系维护策略文件的人员。",
   "settingsShortcutsKeyboardHint": "使用上下方向键在快捷键之间移动。按 Enter 更改所选快捷键，按 Delete 移除，按 Shift+Delete 恢复默认值。",

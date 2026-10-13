@@ -62,6 +62,10 @@ class WavecruxTelemetryStrings extends CruxTelemetryStrings {
       _l10n.settingsTelemetryInstallationIdDescription;
 
   @override
+  String get settingsInstallationIdNone =>
+      _l10n.settingsTelemetryInstallationIdNone;
+
+  @override
   String get settingsInstallationIdCopy =>
       _l10n.settingsTelemetryInstallationIdCopy;
 

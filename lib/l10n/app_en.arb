@@ -8164,6 +8164,10 @@
   "@settingsTelemetryInstallationIdCopied": {
     "description": "Confirmation shown after the installation id is copied."
   },
+  "settingsTelemetryInstallationIdNone": "No installation ID. One is created only when usage statistics are turned on.",
+  "@settingsTelemetryInstallationIdNone": {
+    "description": "Shown in the Settings > Privacy installation id row when no id exists yet. An id is created only when the user turns usage statistics on."
+  },
   "decoderPluginStatusNotAllowlisted": "Not approved",
   "@decoderPluginStatusNotAllowlisted": {
     "description": "Chip label for a plugin refused because it is not in the organization's approved-plugin list."
