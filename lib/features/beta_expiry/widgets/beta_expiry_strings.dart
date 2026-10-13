@@ -25,3 +25,28 @@ class WavecruxBetaExpiryStrings extends CruxBetaExpiryStrings {
   @override
   String get dismissLabel => _l10n.betaExpiryDismissLabel;
 }
+
+/// Binds WaveCrux's ARB keys to `crux_license`'s [CruxBetaExpiredStrings],
+/// the strings of the shared blocking modal shown once a beta build expires.
+///
+/// The modal was lifted to `crux_license` from four product copies; these are
+/// the four ARB keys WaveCrux's own copy already used, so nothing changes in
+/// any locale.
+class WavecruxBetaExpiredStrings extends CruxBetaExpiredStrings {
+  /// Wraps the already-resolved [L10N] for the current locale.
+  const WavecruxBetaExpiredStrings(this._l10n);
+
+  final L10N _l10n;
+
+  @override
+  String get title => _l10n.betaExpiryExpiredTitle;
+
+  @override
+  String get body => _l10n.betaExpiryExpiredBody;
+
+  @override
+  String get downloadLabel => _l10n.betaExpiryExpiredAction;
+
+  @override
+  String get quitLabel => _l10n.betaExpiryExpiredQuit;
+}

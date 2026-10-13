@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:wavecrux/features/beta_expiry/widgets/beta_expiry_blocking_overlay.dart';
 import 'package:wavecrux/features/beta_expiry/widgets/beta_expiry_gate.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 
@@ -56,7 +55,7 @@ void main() {
 
     expect(find.text('viewer-content'), findsOneWidget);
     expect(find.byType(CruxBetaExpiryBanner), findsNothing);
-    expect(find.byType(BetaExpiryBlockingOverlay), findsNothing);
+    expect(find.byType(CruxBetaExpiredOverlay), findsNothing);
   });
 
   testWidgets('active renders the child untouched', (tester) async {
@@ -65,7 +64,7 @@ void main() {
 
     expect(find.text('viewer-content'), findsOneWidget);
     expect(find.byType(CruxBetaExpiryBanner), findsNothing);
-    expect(find.byType(BetaExpiryBlockingOverlay), findsNothing);
+    expect(find.byType(CruxBetaExpiredOverlay), findsNothing);
   });
 
   testWidgets('expiringSoon shows the banner above the child', (tester) async {
@@ -76,7 +75,7 @@ void main() {
 
     expect(find.byType(CruxBetaExpiryBanner), findsOneWidget);
     expect(find.text('viewer-content'), findsOneWidget);
-    expect(find.byType(BetaExpiryBlockingOverlay), findsNothing);
+    expect(find.byType(CruxBetaExpiredOverlay), findsNothing);
   });
 
   testWidgets('dismissing the banner hides it for the session', (tester) async {
@@ -117,7 +116,7 @@ void main() {
     await tester.pumpWidget(_wrap(status: BetaExpiryStatus.expired));
     await tester.pumpAndSettle();
 
-    expect(find.byType(BetaExpiryBlockingOverlay), findsOneWidget);
+    expect(find.byType(CruxBetaExpiredOverlay), findsOneWidget);
     expect(find.byType(CruxBetaExpiryBanner), findsNothing);
     // The child remains in the tree, blocked behind the modal barrier.
     expect(find.text('viewer-content'), findsOneWidget);
@@ -135,7 +134,7 @@ void main() {
     await tester.pumpWidget(_wrap(status: BetaExpiryStatus.expired));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(FilledButton));
+    await tester.tap(find.byKey(CruxBetaExpiredOverlay.downloadButtonKey));
     await tester.pump();
 
     expect(launched, isNotNull);
@@ -148,7 +147,7 @@ void main() {
     await tester.pumpWidget(_wrap(status: BetaExpiryStatus.expired));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(TextButton));
+    await tester.tap(find.byKey(CruxBetaExpiredOverlay.quitButtonKey));
     await tester.pump();
 
     expect(quits, 1);

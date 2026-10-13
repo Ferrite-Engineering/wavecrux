@@ -10,7 +10,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wavecrux/core/help_urls.dart';
 import 'package:wavecrux/core/mobile_metrics.dart';
-import 'package:wavecrux/features/beta_expiry/widgets/beta_expiry_blocking_overlay.dart';
 import 'package:wavecrux/features/beta_expiry/widgets/beta_expiry_strings.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
@@ -36,7 +35,7 @@ void Function() betaExpiryExitApp = () => exit(0);
 /// - [BetaExpiryStatus.expiringSoon] → renders a dismissible
 ///   [CruxBetaExpiryBanner] above [child].
 /// - [BetaExpiryStatus.expired] → renders the blocking, non-dismissable
-///   [BetaExpiryBlockingOverlay] over [child].
+///   [CruxBetaExpiredOverlay] over [child].
 /// - [BetaExpiryStatus.active] / [BetaExpiryStatus.notApplicable] → renders
 ///   [child] unchanged (the common case, and every developer / post-beta
 ///   build).
@@ -105,10 +104,18 @@ class _BetaExpiryGateState extends ConsumerState<BetaExpiryGate>
 
     switch (status) {
       case BetaExpiryStatus.expired:
-        return BetaExpiryBlockingOverlay(
-          deviceClass: deviceClass,
+        // The shared modal (crux_license): focus-trapped, announced by its
+        // title, Escape consumed. Sized from MobileMetrics like the banner.
+        final metrics = MobileMetrics.of(context, deviceClass);
+        return CruxBetaExpiredOverlay(
           onDownload: _download,
           onQuit: betaExpiryExitApp,
+          strings: WavecruxBetaExpiredStrings(L10N.of(context)),
+          sizing: CruxBetaExpirySizing(
+            iconSize: metrics.iconSize,
+            touchTarget: metrics.touchTarget,
+            bodyTextSize: metrics.bodyText,
+          ),
           child: widget.child,
         );
       case BetaExpiryStatus.expiringSoon:

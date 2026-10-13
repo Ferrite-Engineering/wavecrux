@@ -1182,11 +1182,11 @@ Picking a preset must repaint EVERY surface, not just the preset card outline. T
 - [ ] **Active / never-expires** — `BETA_EXPIRY=20990101` (or no `--dart-define`) renders no banner and no modal — `[Coverage: UNIT]` (`beta_expiry_provider_test.dart`); `[Coverage: MANUAL]` (§22.17 active path)
 - [ ] **Expiring-soon banner** — a date 1–7 days out shows the dismissible banner with a plural-correct day count and a Download action — `[Coverage: UNIT]` (`beta_expiry_banner_test.dart`, `beta_expiry_gate_test.dart`); `[Coverage: MANUAL]` (§22.17)
 - [ ] **Banner dismiss + resume re-surface** — ✕ hides the banner for the session; resume re-evaluates and re-surfaces it — `[Coverage: UNIT]` (`beta_expiry_gate_test.dart` dismiss); `[Coverage: MANUAL → HYBRID]` (resume re-check, §22.17)
-- [ ] **Expired blocking modal** — today/past date shows a non-dismissable modal over a dimmed, non-interactable viewer; back gesture blocked; Download latest build action — `[Coverage: UNIT]` (`beta_expiry_blocking_overlay_test.dart`, `beta_expiry_gate_test.dart`); `[Coverage: MANUAL]` (§22.17)
+- [ ] **Expired blocking modal** — today/past date shows a non-dismissable modal over a dimmed, non-interactable viewer; back gesture blocked; Download latest build action — `[Coverage: UNIT]` (crux_license `CruxBetaExpiredOverlay` tests; `beta_expiry_gate_test.dart`, `beta_expiry_expired_strings_test.dart`); `[Coverage: MANUAL]` (§22.17)
 - [ ] **Quit from the expired modal** — the Quit WaveCrux button exits the app; verify specifically on Windows/Linux where the custom-chrome close button is blocked behind the modal barrier — `[Coverage: UNIT]` (`beta_expiry_gate_test.dart` `betaExpiryExitApp` seam); `[Coverage: MANUAL]` (process exit, §22.17 expired path step 5)
 - [ ] **Download action** — banner and modal both open `https://wavecrux.app/download` — `[Coverage: UNIT]` (`beta_expiry_gate_test.dart`, injected launcher); `[Coverage: MANUAL]` (§22.17)
 - [ ] **Boundaries** — exact-day = expired; 7 days out = banner, 8 days out = nothing — `[Coverage: UNIT]` (`beta_expiry_test.dart` day-before/exact/day-after)
-- [ ] **Locale sweep** — banner + modal render exception-free in en/zh_CN/ja/ko — `[Coverage: UNIT]` (`beta_expiry_banner_test.dart`, `beta_expiry_blocking_overlay_test.dart`)
+- [ ] **Locale sweep** — banner + modal render exception-free in en/zh_CN/ja/ko — `[Coverage: UNIT]` (`beta_expiry_banner_test.dart`, `beta_expiry_expired_strings_test.dart`)
 - [ ] **Post-beta no-op** — `kBetaPeriod = false` makes `kBetaExpiry` null, so no banner/modal for any tier regardless of `BETA_EXPIRY` — `[Coverage: UNIT]` (`beta_expiry_test.dart` notApplicable); `[Coverage: MANUAL]` (§22.17 no-op path)
 
 ---
