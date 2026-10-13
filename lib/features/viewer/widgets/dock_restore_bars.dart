@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'package:crux_dock/crux_dock.dart';
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/features/viewer/providers/panel_layout_provider.dart';
@@ -57,59 +58,42 @@ class WaveCruxDockRestoreBars extends ConsumerWidget {
     final showRightBar = !layout.valueColumnVisible;
     final showBottomBar = !layout.transactionViewVisible;
 
-    // One tree shape whatever is collapsed. Choosing the wrapper by state
-    // (the bare child, a Column, a Row, a Row around a Column) changed the
-    // widget type above the IDE layout every time a region collapsed or
-    // reopened, and Flutter then discarded the whole layout and built it
-    // again: every dock, the pane scope, the controller's show/hide
-    // animation. The canvas survived only because its RepaintBoundary
-    // carries a GlobalKey, which moves that one element between the two
-    // trees inside a frame, and a GlobalKey move under a freshly built
-    // semantics boundary is what `flushSemantics` asserts on while a screen
-    // reader is attached (`identical(childRenderObject, parentRenderObject)`).
-    // The bars are keyed so one appearing or vanishing is matched by identity
-    // and touches nothing but itself.
-    return Row(
-      children: [
-        if (showLeftBar)
-          CruxDockRestoreBar(
-            key: const ValueKey('dockRestoreBar.left'),
-            edge: CruxDockCollapseDirection.left,
-            entries: _restoreEntries(
-              buildLeftDockEntries(context, ref),
-              notifier.revealLeftDockTab,
-            ),
-            semanticsLabel: l10n.accessibilityLeftDockRegion,
-          ),
-        Expanded(
-          key: const ValueKey('dockRestoreBars.center'),
-          child: Column(
-            children: [
-              Expanded(child: child),
-              if (showBottomBar)
-                CruxDockRestoreBar(
-                  key: const ValueKey('dockRestoreBar.bottom'),
-                  edge: CruxDockCollapseDirection.down,
-                  entries: _restoreEntries(
-                    buildBottomDockEntries(context, ref),
-                    notifier.revealBottomDockTab,
-                  ),
-                  semanticsLabel: l10n.accessibilityBottomDockRegion,
-                ),
-            ],
-          ),
-        ),
-        if (showRightBar)
-          CruxDockRestoreBar(
-            key: const ValueKey('dockRestoreBar.right'),
-            edge: CruxDockCollapseDirection.right,
-            entries: _restoreEntries(
-              buildRightDockEntries(context, ref, onLoadStems: onLoadStems),
-              notifier.revealRightDockTab,
-            ),
-            semanticsLabel: l10n.accessibilityRightDockRegion,
-          ),
-      ],
+    // crux_ide_layout's CruxDockRestoreFrame keeps one tree shape whatever
+    // is collapsed and keys each slot, so a bar appearing or vanishing never
+    // rebuilds the IDE layout beneath it (see the frame's documentation for
+    // the screen-reader assertion that once caused).
+    return CruxDockRestoreFrame(
+      leftBar: showLeftBar
+          ? CruxDockRestoreBar(
+              edge: CruxDockCollapseDirection.left,
+              entries: _restoreEntries(
+                buildLeftDockEntries(context, ref),
+                notifier.revealLeftDockTab,
+              ),
+              semanticsLabel: l10n.accessibilityLeftDockRegion,
+            )
+          : null,
+      bottomBar: showBottomBar
+          ? CruxDockRestoreBar(
+              edge: CruxDockCollapseDirection.down,
+              entries: _restoreEntries(
+                buildBottomDockEntries(context, ref),
+                notifier.revealBottomDockTab,
+              ),
+              semanticsLabel: l10n.accessibilityBottomDockRegion,
+            )
+          : null,
+      rightBar: showRightBar
+          ? CruxDockRestoreBar(
+              edge: CruxDockCollapseDirection.right,
+              entries: _restoreEntries(
+                buildRightDockEntries(context, ref, onLoadStems: onLoadStems),
+                notifier.revealRightDockTab,
+              ),
+              semanticsLabel: l10n.accessibilityRightDockRegion,
+            )
+          : null,
+      child: child,
     );
   }
 }
