@@ -193,13 +193,14 @@ void main() {
         );
         final r1 = await waitForFrame(
           received,
-          (m) => m['type'] == 'response' && m['id'] == 301,
+          (m) => m['id'] == 301 && m['type'] != 'event',
           tester: tester,
         );
+        // A failed command answers with an `error` frame, not a `response`.
         expect(
-          r1['error'],
-          isNull,
-          reason: 'set_viewport_range on active pane L must not error',
+          r1['type'],
+          'response',
+          reason: 'set_viewport_range on active pane L must not error: $r1',
         );
 
         await wsNotifier.setActiveTab(tabB.id);
@@ -220,13 +221,13 @@ void main() {
         );
         final r2 = await waitForFrame(
           received,
-          (m) => m['type'] == 'response' && m['id'] == 302,
+          (m) => m['id'] == 302 && m['type'] != 'event',
           tester: tester,
         );
         expect(
-          r2['error'],
-          isNull,
-          reason: 'set_viewport_range on active pane R must not error',
+          r2['type'],
+          'response',
+          reason: 'set_viewport_range on active pane R must not error: $r2',
         );
 
         final wsAfter = wsNotifier.current;

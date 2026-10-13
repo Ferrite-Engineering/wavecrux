@@ -20,6 +20,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:wavecrux/app.dart';
 import 'package:wavecrux/features/tabs/providers/tab_providers.dart';
+import 'package:wavecrux/features/viewer/providers/time_providers.dart';
 import 'package:wavecrux/services/remote/remote_control_notifier.dart';
 
 import '../helpers/app_driver.dart';
@@ -88,15 +89,19 @@ void main() {
               ) +
               [0],
         );
+        // A failed command answers with an `error` frame, not a `response`
+        // carrying an error, so wait for either and let the caller check.
         return waitForFrame(
           received,
-          (m) => m['type'] == 'response' && m['id'] == id,
+          (m) =>
+              (m['type'] == 'response' || m['type'] == 'error') &&
+              m['id'] == id,
           tester: tester,
         );
       }
 
       final load = await send('load', {'source': file});
-      expect(load['error'], isNull, reason: 'load must succeed');
+      expect(load['type'], 'response', reason: 'load must succeed: $load');
 
       // The load opened a real tab, and it is the active one.
       await pumpUntil(tester, () => root.read(tabListProvider).isNotEmpty);
@@ -105,6 +110,15 @@ void main() {
       expect(root.read(activeTabIdProvider), tabs.single.id);
       await pumpUntilWaveformReady(tester);
 
+      // The pane showing the new tab must have mounted a canvas that laid the
+      // trace out. This is the half of #17 the headless tests cannot see.
+      final tab = activeTabContainer(tester);
+      final laidOut = await pumpUntil(
+        tester,
+        () => tab.read(timeMapperProvider.notifier).isLaidOut,
+      );
+      expect(laidOut, isTrue, reason: 'no canvas laid out the loaded trace');
+
       // Narrow the view to [20, 40]: the canvas has laid the trace out, so
       // the command takes effect instead of erroring (code 5) or acking a
       // no-op.
@@ -112,13 +126,13 @@ void main() {
         'start': 20,
         'end': 40,
       });
-      expect(range['error'], isNull, reason: 'canvas must have laid out');
+      expect(range['type'], 'response', reason: '$range');
       await tester.pump();
       final afterRange = (await send('wavecrux.getState'))['data'] as Map;
       expect(afterRange['is_loaded'], isTrue);
 
       final viewportTo = await send('set_viewport_to', {'timestamp': 80});
-      expect(viewportTo['error'], isNull);
+      expect(viewportTo['type'], 'response', reason: '$viewportTo');
       await tester.pump();
       final afterTo = (await send('wavecrux.getState'))['data'] as Map;
 
