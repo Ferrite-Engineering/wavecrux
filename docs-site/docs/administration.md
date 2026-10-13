@@ -58,7 +58,7 @@ Precedence is the suite's, with no local variation:
 
 ### What a locked value looks like to the engineer { #what-locking-looks-like }
 
-Not a mysteriously greyed control. A locked decoder parameter renders read-only **with its source named** — “Fixed by your organization's policy file.” — beside it. That distinction is worth knowing before you lock anything, because a greyed control with no explanation becomes a support ticket, and one that explains itself does not.
+Not a mysteriously greyed control. Every locked setting (a server switch, the theme, a decoder parameter) stays on screen, dimmed and read-only, **with its source named** beside it: “Your organization's policy file sets this, so it can't be changed here. Ask your administrator.” That distinction is worth knowing before you lock anything, because a greyed control with no explanation becomes a support ticket, and one that explains itself does not.
 
 **An unlocked value is a starting point, not an override.** It replaces WaveCrux's own built-in default for anyone who has not chosen; anyone who *has* chosen keeps their choice. If you want your value to win over an engineer's existing setting, you want `locked`. Deploying an unlocked default expecting it to reset everyone would silently do nothing, which is the single most common way to misread this file.
 

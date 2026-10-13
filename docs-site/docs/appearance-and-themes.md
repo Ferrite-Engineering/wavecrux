@@ -118,6 +118,27 @@ A trace and a bus's value labels are drawn in the signal's own color, which you 
 | `splitter`, `splitter.hover` | The resize bars between the docks and the canvas, and the bar between split panes. `splitter.hover` is used while the pointer is over a bar or dragging it, and while a dock's resize bar has keyboard focus |
 | `tabBar.background`, `tabBar.selected`, `tabBar.label` | The file tab bar above the waveform, one per pane when the view is split: the strip behind the tabs, the active tab's background, and every tab title. The tab strips inside the side and bottom docks keep the panel colors |
 
+### Built-in chrome colors { #builtin-chrome }
+
+Crux Dark and Crux Light set no chrome tokens: every surface keeps the app's standard look. The four branded presets set the values below. A dash means the preset leaves that token unset, so the surface keeps its standard color. In each branded preset the active toolbar icon and the hovered splitter take the preset's accent color, and the splitter at rest takes its ruler tick color, lightened where needed to stay visible against the panels.
+
+| Token | Solarized Dark | High Contrast Dark | Oscilloscope | OLED XR |
+|---|---|---|---|---|
+| `scaffold.background` | `#002B36` | `#000000` | `#000000` | `#000000` |
+| `panel.background` | `#073642` | `#000000` | `#020A02` | `#050505` |
+| `panel.header.background` | `#002B36` | `#000000` | `#000000` | `#000000` |
+| `panel.header.foreground` | `#93A1A1` | `#FFFFFF` | `#00FF41` | `#F2F2F2` |
+| `toolbar.background` | `#002B36` | `#000000` | `#000000` | `#000000` |
+| `toolbar.icon` | `#839496` | `#FFFFFF` | `#00CC33` | `#9AA0A6` |
+| `toolbar.iconActive` | `#B58900` | `#FFFF00` | `#00FF41` | `#FFD400` |
+| `statusBar.background` | `#002B36` | `#000000` | `#000000` | `#000000` |
+| `statusBar.foreground` | `#93A1A1` | `#FFFFFF` | `#00FF41BF` | `#F2F2F2BF` |
+| `splitter` | `#657F87` | `#666666` | `#256A25` | `#5C5C5C` |
+| `splitter.hover` | `#B58900` | `#FFFF00` | `#00FF41` | `#FFD400` |
+| `tabBar.background` | - | `#000000` | - | - |
+| `tabBar.selected` | `#002B36` | `#000000` | `#000000` | `#000000` |
+| `tabBar.label` | - | `#FFFFFF` | - | - |
+
 !!! note "Strict validation"
 
     Imports are checked before anything is installed. A file that is not valid JSON, has the wrong `schemaVersion`, an unsafe `id`, an empty `displayName`, an unknown `brightness`, or any color that is not `#RRGGBB` / `#RRGGBBAA` is rejected as a whole, and the reason is shown in a message. Nothing is half-imported.
