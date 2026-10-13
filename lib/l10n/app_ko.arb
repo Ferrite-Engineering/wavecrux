@@ -2982,10 +2982,7 @@
   "@settingsRemoteControlEnabledLabel": {
     "description": "Label for the toggle that enables the WCP remote control server"
   },
-  "settingsServerLockedByPolicy": "이 서버의 실행 여부는 조직의 정책 파일에서 결정하므로 여기에서 변경할 수 없습니다.",
-  "@settingsServerLockedByPolicy": {
-    "description": "Lock note beside a server switch in Settings when the organization's policy file fixes whether that server may run. Used for both the WCP remote-control server and the CXP peer server."
-  },
+  "policyLockedNote": "조직의 정책 파일에서 설정한 항목이므로 여기에서 변경할 수 없습니다. 관리자에게 문의하세요.",
   "settingsRemoteControlEnabledDescription": "외부 도구가 TCP를 통한 WCP(파형 제어 프로토콜)로 WaveCrux를 제어할 수 있도록 허용합니다",
   "@settingsRemoteControlEnabledDescription": {
     "description": "Description for the remote control enable toggle"
@@ -7279,7 +7276,6 @@
   "settingsTelemetryInstallationIdCopied": "설치 ID가 복사되었습니다.",
   "decoderPluginStatusNotAllowlisted": "미승인",
   "decoderPluginNotAllowlistedHelp": "조직의 정책은 승인된 플러그인을 콘텐츠 해시로 나열하며 이 파일은 포함되어 있지 않습니다. 여기서는 활성화할 수 없습니다 — 정책 파일 담당자에게 문의하세요.",
-  "decoderParameterLockedByPolicy": "조직의 정책 파일에 의해 고정되었습니다.",
   "settingsShortcutsKeyboardHint": "위아래 화살표 키로 단축키 사이를 이동합니다. Enter는 변경, Delete는 제거, Shift+Delete는 기본값으로 복원합니다.",
   "settingsShortcutNotBoundSpoken": "단축키 없음",
   "a11yWaveformOpened": "{fileName}을(를) 열었습니다",

@@ -5,7 +5,8 @@ import 'package:crux_telemetry/crux_telemetry.dart'
     show
         kTelemetryUncaughtErrorKinds,
         kTelemetryUncaughtErrorLibraries,
-        kTelemetryUncaughtErrorSources;
+        kTelemetryUncaughtErrorSources,
+        kTelemetryUncleanShutdownEvent;
 import 'package:meta/meta.dart';
 
 /// One entry of the WaveCrux event catalog: an event name and the closed
@@ -303,6 +304,14 @@ kWavecruxEventCatalog = <TelemetryCatalogEvent>[
     },
     boolProperties: <String>['silent'],
   ),
+
+  // `crux_telemetry`'s `TelemetryUncleanShutdownDetector` records this at the
+  // launch after a desktop session that ended without a clean exit, so no
+  // call site in either repository spells it. No properties: the envelope is
+  // the whole record. The name is the package's own constant, referenced
+  // rather than copied. While `kCruxUncleanShutdownEventEnabled` is off the
+  // detector still rotates its marker but never records the event.
+  TelemetryCatalogEvent(kTelemetryUncleanShutdownEvent),
 
   // ── the commercial group ───────────────────────────────────────────────
   TelemetryCatalogEvent(

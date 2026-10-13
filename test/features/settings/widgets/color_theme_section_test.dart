@@ -3,6 +3,9 @@
 
 import 'dart:io';
 
+import 'package:crux_policy/crux_policy.dart' show PolicySource;
+import 'package:crux_settings_ui/crux_settings_ui.dart'
+    show CruxPolicyLockNote, kCruxPolicyLockNoteEn;
 import 'package:crux_theme/crux_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -232,7 +235,7 @@ void main() {
           overrides: [
             settingsServiceProvider.overrideWithValue(service),
             wavecruxCruxColorThemeOverride,
-            orgThemeLockedProvider.overrideWithValue(true),
+            orgThemeSourceProvider.overrideWithValue(PolicySource.policyLocked),
           ],
           child: MaterialApp(
             localizationsDelegates: L10N.localizationsDelegates,
@@ -252,8 +255,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      final l10n = L10N.of(tester.element(find.byType(ColorThemeSection)));
-      expect(find.text(l10n.appearanceThemeLockedByPolicy), findsOneWidget);
+      // No scope is mounted here, so the shared lock note reads the English
+      // sentence.
+      expect(find.byType(CruxPolicyLockNote), findsOneWidget);
+      expect(find.text(kCruxPolicyLockNoteEn), findsOneWidget);
       // Still visible: an engineer can see what the organization chose.
       final card = find.ancestor(
         of: find.text('Oscilloscope'),

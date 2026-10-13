@@ -3115,9 +3115,9 @@
   "@settingsRemoteControlEnabledLabel": {
     "description": "Label for the toggle that enables the WCP remote control server"
   },
-  "settingsServerLockedByPolicy": "Your organization's policy file decides whether this server runs, so it can't be changed here.",
-  "@settingsServerLockedByPolicy": {
-    "description": "Lock note beside a server switch in Settings when the organization's policy file fixes whether that server may run. Used for both the WCP remote-control server and the CXP peer server."
+  "policyLockedNote": "Your organization's policy file sets this, so it can't be changed here. Ask your administrator.",
+  "@policyLockedNote": {
+    "description": "The one sentence shown under every setting whose value the organization's policy file locked (servers, theme, decoder parameters). The control stays visible but dimmed and inert. Same voice as the licence panel's refused-policy notice: what the file did, what it means here, who to ask."
   },
   "settingsRemoteControlEnabledDescription": "Allow external tools to control WaveCrux via WCP (Waveform Control Protocol) over TCP",
   "@settingsRemoteControlEnabledDescription": {
@@ -8171,10 +8171,6 @@
   "decoderPluginNotAllowlistedHelp": "Your organization's policy lists approved plugins by content hash, and this file is not among them. It cannot be enabled here — ask whoever maintains the policy file.",
   "@decoderPluginNotAllowlistedHelp": {
     "description": "Explains a policy refusal, and that Settings cannot override it."
-  },
-  "decoderParameterLockedByPolicy": "Fixed by your organization's policy file.",
-  "@decoderParameterLockedByPolicy": {
-    "description": "Lock note under a decoder parameter the organization has locked."
   },
   "settingsShortcutsKeyboardHint": "Up and Down move between shortcuts. Enter changes the selected shortcut, Delete removes it, and Shift+Delete restores its default.",
   "@settingsShortcutsKeyboardHint": {

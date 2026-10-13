@@ -111,9 +111,13 @@ const Set<String> _proOnlyEvents = <String>{
 
 /// Catalog entries recorded by a shared package rather than by a call site in
 /// either repository. `crux_telemetry` records `app.uncaught_error` from the
-/// global error handlers, so no scan of this repository's `lib/` can find it,
-/// and it is excused from the "still recorded" rule.
-const Set<String> _sharedEvents = <String>{'app.uncaught_error'};
+/// global error handlers and `app.unclean_shutdown` from its launch-time
+/// detector, so no scan of this repository's `lib/` can find either, and both
+/// are excused from the "still recorded" rule.
+const Set<String> _sharedEvents = <String>{
+  'app.uncaught_error',
+  'app.unclean_shutdown',
+};
 
 void main() {
   const catalog = kWavecruxEventCatalog;
@@ -314,6 +318,18 @@ void main() {
         valuesFor('debug_advisor.suggestion.accepted', 'rule_id'),
       );
     });
+  });
+
+  test('app.unclean_shutdown is the shared constant, with no properties', () {
+    // Recorded by `crux_telemetry`'s detector, not by this repository. The
+    // catalog references the package's constant, and the envelope is the
+    // whole record: a property here would be one the detector never sends.
+    expect(kTelemetryUncleanShutdownEvent, 'app.unclean_shutdown');
+    final entry = catalog.firstWhere(
+      (e) => e.name == kTelemetryUncleanShutdownEvent,
+    );
+    expect(entry.propertyKeys, isEmpty);
+    expect(_sharedEvents, contains(kTelemetryUncleanShutdownEvent));
   });
 
   test('app.uncaught_error carries the shared counter vocabulary', () {

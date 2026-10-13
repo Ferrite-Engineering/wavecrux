@@ -6,7 +6,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:crux_settings_ui/crux_settings_ui.dart' show CruxPolicyLockNote;
+import 'package:crux_settings_ui/crux_settings_ui.dart' show CruxPolicyLock;
 import 'package:crux_theme/crux_theme.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -143,7 +143,7 @@ class _ColorThemeSectionState extends ConsumerState<ColorThemeSection> {
 
     // A theme the organization locked stays visible — an engineer has to be
     // able to see what was chosen — but nothing below the note can change it.
-    final locked = ref.watch(orgThemeLockedProvider);
+    final themeSource = ref.watch(orgThemeSourceProvider);
 
     final pickers = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -183,21 +183,7 @@ class _ColorThemeSectionState extends ConsumerState<ColorThemeSection> {
         // Aligns with the 16 dp ListTile inset of the surrounding Appearance
         // card so the subsection labels line up with the rows above them.
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-        child: locked
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  CruxPolicyLockNote(
-                    message: l10n.appearanceThemeLockedByPolicy,
-                  ),
-                  const SizedBox(height: 8),
-                  Opacity(
-                    opacity: 0.6,
-                    child: IgnorePointer(child: ExcludeFocus(child: pickers)),
-                  ),
-                ],
-              )
-            : pickers,
+        child: CruxPolicyLock(source: themeSource, child: pickers),
       ),
     );
   }

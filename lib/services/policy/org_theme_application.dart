@@ -21,6 +21,7 @@
 /// my theme different" into a support ticket with nothing to look at.
 library;
 
+import 'package:crux_policy/crux_policy.dart' show PolicySource;
 import 'package:crux_theme/crux_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
@@ -105,11 +106,24 @@ OrgThemeOutcome applyOrgThemePack(
   return OrgThemeOutcome(applied: true, locked: reference.locked);
 }
 
-/// Whether the Appearance picker should be read-only.
+/// Where the theme in force came from, as the policy resolver would say it:
+/// [PolicySource.policyLocked] for a locked organization pack,
+/// [PolicySource.policyDefault] for an unlocked one, otherwise
+/// [PolicySource.userSetting].
 ///
-/// Read by Settings ▸ Appearance. Locked, not hidden.
+/// Settings ▸ Appearance hands it to `CruxPolicyLock`. Locked, not hidden.
+final orgThemeSourceProvider = Provider<PolicySource>((ref) {
+  final reference = ref.watch(orgThemePackProvider);
+  if (reference == null) return PolicySource.userSetting;
+  return reference.locked
+      ? PolicySource.policyLocked
+      : PolicySource.policyDefault;
+}, name: 'orgThemeSourceProvider');
+
+/// Whether the theme is locked: the theme toggle and the Appearance picker
+/// refuse to change it.
 final orgThemeLockedProvider = Provider<bool>((ref) {
-  return ref.watch(orgThemePackProvider)?.locked ?? false;
+  return ref.watch(orgThemeSourceProvider) == PolicySource.policyLocked;
 }, name: 'orgThemeLockedProvider');
 
 /// Applies the organization's theme pack when its reference **appears** after

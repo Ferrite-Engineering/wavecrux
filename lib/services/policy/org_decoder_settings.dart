@@ -29,7 +29,7 @@
 ///   yielded to a saved session would be a lock in name only.
 ///
 /// The UI's job is then to say so: a locked parameter renders read-only with
-/// `CruxPolicyLockNote`, because a control that invites an edit which does
+/// the shared `CruxPolicyLock`, because a control that invites an edit which does
 /// nothing is worse than one that is plainly unavailable.
 library;
 

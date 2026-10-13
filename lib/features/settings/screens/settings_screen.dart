@@ -632,51 +632,57 @@ class _RemoteControlSectionState extends ConsumerState<_RemoteControlSection> {
 
     return CruxSettingsCard(
       children: [
-        SwitchListTile(
-          title: Row(
-            children: [
-              // Flexible so the label shrinks (and ellipsises) before the
-              // help-icon trailing the row gets pushed off-screen on
-              // narrow viewports (e.g. SettingsScreen.openAdaptive at
-              // 500×500 — Issue 9).
-              Flexible(
-                child: Text(
-                  l10n.settingsRemoteControlEnabledLabel,
-                  overflow: TextOverflow.ellipsis,
-                ),
+        // While locked, the tile's own inset moves out to this padding so
+        // the lock note below lines up with the switch's label.
+        Padding(
+          padding: wcpLocked
+              ? const EdgeInsets.fromLTRB(16, 0, 16, 8)
+              : EdgeInsets.zero,
+          child: CruxPolicyLock(
+            source: wcpAllowed.source,
+            placement: CruxPolicyLockNotePlacement.below,
+            child: SwitchListTile(
+              contentPadding: wcpLocked ? EdgeInsets.zero : null,
+              title: Row(
+                children: [
+                  // Flexible so the label shrinks (and ellipsises) before the
+                  // help-icon trailing the row gets pushed off-screen on
+                  // narrow viewports (e.g. SettingsScreen.openAdaptive at
+                  // 500x500, Issue 9).
+                  Flexible(
+                    child: Text(
+                      l10n.settingsRemoteControlEnabledLabel,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  HelpLink(
+                    url: HelpUrls.remoteApi,
+                    tooltip: l10n.helpLinkRemoteApi,
+                  ),
+                ],
               ),
-              const SizedBox(width: 4),
-              HelpLink(
-                url: HelpUrls.remoteApi,
-                tooltip: l10n.helpLinkRemoteApi,
-              ),
-            ],
-          ),
-          subtitle: Text(l10n.settingsRemoteControlEnabledDescription),
-          value: wcpAllowed.value,
-          // A locked org policy decides this, and the switch stops deciding
-          // anything. Null disables it — and the note below says why, because
-          // a dead switch with no reason given is a support ticket.
-          onChanged: wcpLocked
-              ? null
-              : (enabled) async {
-                  await settingsNotifier.setRemoteControlEnabled(
-                    enabled: enabled,
-                  );
-                  // The WcpLifecycleBridge listens for the settings change and
-                  // starts / stops the server automatically; no direct call
-                  // needed here. Starting it from this callback as well would
-                  // double-start (startServer stops-then-rebinds) and race the
-                  // bridge for the port.
-                },
-        ),
-        if (wcpLocked)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: CruxPolicyLockNote(
-              message: l10n.settingsServerLockedByPolicy,
+              subtitle: Text(l10n.settingsRemoteControlEnabledDescription),
+              value: wcpAllowed.value,
+              // A locked org policy decides this, and the switch stops
+              // deciding anything. Null disables it, and the lock note says
+              // why, because a dead switch with no reason given is a support
+              // ticket.
+              onChanged: wcpLocked
+                  ? null
+                  : (enabled) async {
+                      await settingsNotifier.setRemoteControlEnabled(
+                        enabled: enabled,
+                      );
+                      // The WcpLifecycleBridge listens for the settings
+                      // change and starts / stops the server automatically;
+                      // no direct call needed here. Starting it from this
+                      // callback as well would double-start (startServer
+                      // stops-then-rebinds) and race the bridge for the port.
+                    },
             ),
           ),
+        ),
         if (wcpAllowed.value) ...[
           ListTile(
             title: Text(l10n.settingsRemoteControlPortLabel),
@@ -761,97 +767,81 @@ class _CxpControlsBlock extends ConsumerWidget {
       ref.watch(cruxPolicyProvider).document,
       userSetting: settings.cxpServerEnabled,
     );
-    final cxpLocked = cxpAllowed.source == PolicySource.policyLocked;
 
     return CruxSettingsSectionCard(
       children: [
-        if (cxpLocked)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: CruxPolicyLockNote(
-              message: l10n.settingsServerLockedByPolicy,
-            ),
-          ),
-        // Shown either way, dimmed and inert when the organization decided —
+        // Shown either way, dimmed and inert when the organization decided:
         // the port and cross-probe preferences are still worth reading.
-        Opacity(
-          opacity: cxpLocked ? 0.6 : 1,
-          child: IgnorePointer(
-            ignoring: cxpLocked,
-            child: ExcludeFocus(
-              excluding: cxpLocked,
-              child: CruxCxpSettingsControls(
-                strings: CruxCxpSettingsStrings(
-                  enableLabel: l10n.settingsCxpEnabledLabel,
-                  enableHelp: l10n.settingsCxpEnabledDescription,
-                  portLabel: l10n.settingsCxpPortLabel,
-                  portHelp: l10n.settingsCxpPortDescription,
-                  portError: l10n.settingsCxpPortError,
-                  attentionLabel:
-                      l10n.settingsRequestAttentionOnCrossProbeLabel,
-                  attentionHelp:
-                      l10n.settingsRequestAttentionOnCrossProbeDescription,
-                  broadcastLabel:
-                      l10n.settingsBroadcastSelectionOnCrossProbeLabel,
-                  broadcastHelp:
-                      l10n.settingsBroadcastSelectionOnCrossProbeDescription,
-                ),
-                enabled: cxpAllowed.value,
-                port: settings.cxpServerPort,
-                requestAttention: settings.requestAttentionOnCrossProbe,
-                broadcastSelection: settings.broadcastSelectionOnCrossProbe,
-                onEnabledChanged: (enabled) => unawaited(
-                  settingsNotifier.setCxpServerEnabled(enabled: enabled),
-                ),
-                onPortSubmitted: (port) =>
-                    unawaited(settingsNotifier.setCxpServerPort(port)),
-                onRequestAttentionChanged: (enabled) => unawaited(
-                  settingsNotifier.setRequestAttentionOnCrossProbe(
-                    enabled: enabled,
+        CruxPolicyLock(
+          source: cxpAllowed.source,
+          child: CruxCxpSettingsControls(
+            strings: CruxCxpSettingsStrings(
+              enableLabel: l10n.settingsCxpEnabledLabel,
+              enableHelp: l10n.settingsCxpEnabledDescription,
+              portLabel: l10n.settingsCxpPortLabel,
+              portHelp: l10n.settingsCxpPortDescription,
+              portError: l10n.settingsCxpPortError,
+              attentionLabel: l10n.settingsRequestAttentionOnCrossProbeLabel,
+              attentionHelp:
+                  l10n.settingsRequestAttentionOnCrossProbeDescription,
+              broadcastLabel: l10n.settingsBroadcastSelectionOnCrossProbeLabel,
+              broadcastHelp:
+                  l10n.settingsBroadcastSelectionOnCrossProbeDescription,
+            ),
+            enabled: cxpAllowed.value,
+            port: settings.cxpServerPort,
+            requestAttention: settings.requestAttentionOnCrossProbe,
+            broadcastSelection: settings.broadcastSelectionOnCrossProbe,
+            onEnabledChanged: (enabled) => unawaited(
+              settingsNotifier.setCxpServerEnabled(enabled: enabled),
+            ),
+            onPortSubmitted: (port) =>
+                unawaited(settingsNotifier.setCxpServerPort(port)),
+            onRequestAttentionChanged: (enabled) => unawaited(
+              settingsNotifier.setRequestAttentionOnCrossProbe(
+                enabled: enabled,
+              ),
+            ),
+            onBroadcastSelectionChanged: (enabled) => unawaited(
+              settingsNotifier.setBroadcastSelectionOnCrossProbe(
+                enabled: enabled,
+              ),
+            ),
+            statusTile: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.settingsCxpStatus),
+                  trailing: Text(
+                    cxpState.isRunning
+                        ? l10n.settingsCxpStatusRunning(cxpState.port)
+                        : l10n.settingsCxpStatusStopped,
+                    style: TextStyle(
+                      color: cxpState.isRunning
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
-                onBroadcastSelectionChanged: (enabled) => unawaited(
-                  settingsNotifier.setBroadcastSelectionOnCrossProbe(
-                    enabled: enabled,
-                  ),
-                ),
-                statusTile: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(l10n.settingsCxpStatus),
-                      trailing: Text(
-                        cxpState.isRunning
-                            ? l10n.settingsCxpStatusRunning(cxpState.port)
-                            : l10n.settingsCxpStatusStopped,
-                        style: TextStyle(
-                          color: cxpState.isRunning
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.onSurfaceVariant,
-                        ),
+                if (cxpState.isRunning)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    trailing: Text(
+                      l10n.settingsCxpPeersConnected(
+                        cxpState.connectedPeerCount,
                       ),
                     ),
-                    if (cxpState.isRunning)
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        trailing: Text(
-                          l10n.settingsCxpPeersConnected(
-                            cxpState.connectedPeerCount,
-                          ),
-                        ),
-                      ),
-                    if (cxpState.lastError != null)
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(
-                          cxpState.lastError!,
-                          style: TextStyle(color: theme.colorScheme.error),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
+                  ),
+                if (cxpState.lastError != null)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      cxpState.lastError!,
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
+                  ),
+              ],
             ),
           ),
         ),

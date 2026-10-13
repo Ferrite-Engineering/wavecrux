@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'dart:async';
+import 'package:crux_policy/crux_policy.dart' show PolicySource;
 import 'package:crux_settings_ui/crux_settings_ui.dart';
 import 'package:flutter/foundation.dart' show mapEquals;
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
@@ -813,25 +814,17 @@ class _ParameterRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // `IgnorePointer` plus `Opacity` rather than each input's own
-                // `enabled`/`onChanged: null`: the five input types below take
-                // five different disable spellings, and one wrapper cannot be
-                // got wrong for a type somebody adds later.
-                Opacity(
-                  opacity: lockedByPolicy ? 0.6 : 1,
-                  child: IgnorePointer(
-                    ignoring: lockedByPolicy,
-                    child: _buildInput(context),
-                  ),
-                ),
-                if (lockedByPolicy)
-                  CruxPolicyLockNote(
-                    message: l10n.decoderParameterLockedByPolicy,
-                  ),
-              ],
+            // The shared lock dims the input and takes it out of pointer and
+            // focus, rather than each input's own `enabled`/`onChanged: null`:
+            // the five input types below take five different disable
+            // spellings, and one wrapper cannot be got wrong for a type
+            // somebody adds later.
+            child: CruxPolicyLock(
+              source: lockedByPolicy
+                  ? PolicySource.policyLocked
+                  : PolicySource.userSetting,
+              placement: CruxPolicyLockNotePlacement.below,
+              child: _buildInput(context),
             ),
           ),
         ],

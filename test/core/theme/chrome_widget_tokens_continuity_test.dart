@@ -1,26 +1,24 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
-// Every built-in preset must paint WaveCrux's shared chrome exactly as it
-// always has. The status bar, splitter, document tab bar and active toolbar
-// glyph chrome tokens reach their shared widgets through `applyChromeTokens`;
-// before that they reached nothing, and the widgets painted from the Material
-// theme `app.dart` builds: the status bar `surfaceContainerHighest` behind
-// `onSurface` at 75 %, the pane resizers `outlineVariant` and `primary` on
-// hover, the active document tab `surfaceContainerHighest` under `bodyMedium`
-// titles on an unfilled strip, and a toggled toolbar glyph `primary`.
+// Every built-in preset paints WaveCrux's shared chrome from its own chrome
+// tokens, and from the Material theme `app.dart` builds wherever it leaves a
+// token unset. The status bar, splitter, document tab bar and active toolbar
+// glyph tokens reach their shared widgets through `applyChromeTokens`; with a
+// token unset the widgets paint the status bar `surfaceContainerHighest`
+// behind `onSurface` at 75 %, the pane resizers `outlineVariant` and
+// `primary` on hover, the active document tab `surfaceContainerHighest`
+// under `bodyMedium` titles on an unfilled strip, and a toggled toolbar glyph
+// `primary`.
 //
 // This pumps those widgets under every theme `app.dart` can show for each
 // preset (the normal and the high-contrast variant of its brightness), built
-// the same way, and asserts exactly those colours. It holds before and after
-// the widgets read the tokens, which is the point: an unedited preset must not
-// change. Text reaches the engine as 32-bit ARGB, so text colour is compared
+// the same way, and asserts each surface paints the preset's declared value or,
+// unset, that Material default. Crux Dark and Crux Light declare no chrome, so
+// for them every surface is the default; the branded presets complete their
+// chrome from their own palettes, and crux_theme pins those values and their
+// contrast. Text reaches the engine as 32-bit ARGB, so text colour is compared
 // that way.
-//
-// One departure is deliberate and checked against the colour it paints now:
-// Solarized Dark's status bar text. At 75 % it blended to 3.76:1 on its
-// background, under WCAG AA's 4.5:1, so the shared preset now paints its
-// declared opaque #93A1A1 (5.61:1). crux_theme's contrast suite measures it.
 
 import 'dart:io';
 
@@ -143,8 +141,8 @@ void main() {
 
   for (final preset in builtinPresets().values) {
     for (final variant in _appThemes(preset).entries) {
-      testWidgets('${preset.id} (${variant.key}) paints the chrome it always '
-          'painted', (tester) async {
+      testWidgets('${preset.id} (${variant.key}) paints its declared chrome, '
+          'else the Material default', (tester) async {
         final container = ProviderContainer();
         addTearDown(container.dispose);
         final ws = await container.read(provider.future);
@@ -198,6 +196,13 @@ void main() {
 
         final theme = Theme.of(tester.element(find.byType(CruxStatusBar)));
         final scheme = theme.colorScheme;
+        // The preset's declared chrome token, or null where it leaves the
+        // token unset (or transparent) and the widget keeps its default.
+        Color? token(String id) {
+          final c = preset.color('chrome', id);
+          if (c == null || c.a == 0) return null;
+          return c;
+        }
 
         // Toolbar: a toggled-on glyph.
         expect(
@@ -209,7 +214,7 @@ void main() {
                 ),
               )
               .color,
-          scheme.primary,
+          token('toolbar.iconActive') ?? scheme.primary,
         );
 
         // Document tab bar: no strip fill, the active tab, the titles.
@@ -221,7 +226,10 @@ void main() {
               )
               .first,
         );
-        expect((strip.decoration as BoxDecoration).color, isNull);
+        expect(
+          (strip.decoration as BoxDecoration).color,
+          token('tabBar.background'),
+        );
         Color? chip(String title) =>
             (tester
                         .widget<Container>(
@@ -235,12 +243,18 @@ void main() {
                         .decoration!
                     as BoxDecoration)
                 .color;
-        expect(chip('beta'), scheme.surfaceContainerHighest);
+        expect(
+          chip('beta'),
+          token('tabBar.selected') ?? scheme.surfaceContainerHighest,
+        );
         expect(chip('alpha'), isNull);
         for (final title in ['alpha', 'beta']) {
+          final label = token('tabBar.label');
           expect(
             tester.widget<Text>(find.text(title)).style,
-            theme.textTheme.bodyMedium,
+            label == null
+                ? theme.textTheme.bodyMedium
+                : theme.textTheme.bodyMedium?.copyWith(color: label),
           );
         }
 
@@ -259,13 +273,13 @@ void main() {
             )
             .elementAt(1)
             .color;
-        expect(resizerBar(), scheme.outlineVariant);
+        expect(resizerBar(), token('splitter') ?? scheme.outlineVariant);
         final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
         await mouse.addPointer(location: Offset.zero);
         addTearDown(mouse.removePointer);
         await mouse.moveTo(tester.getCenter(resizer));
         await tester.pump();
-        expect(resizerBar(), scheme.primary);
+        expect(resizerBar(), token('splitter.hover') ?? scheme.primary);
 
         // Status bar: the surface and the baseline text.
         final bar = tester.widget<DecoratedBox>(
@@ -278,15 +292,15 @@ void main() {
         );
         expect(
           (bar.decoration as BoxDecoration).color,
-          scheme.surfaceContainerHighest,
+          token('statusBar.background') ?? scheme.surfaceContainerHighest,
         );
-        // Solarized Dark's status bar text is opaque on purpose, for WCAG
-        // AA (see the header); every other preset keeps the 75 % blend.
+        // A declared status bar foreground is painted exactly as given;
+        // unset, the baseline text is onSurface at 75 %.
         expect(
           tester.widget<Text>(find.text('status')).style?.color?.toARGB32(),
-          preset.id == 'solarized-dark'
-              ? const Color(0xFF93A1A1).toARGB32()
-              : scheme.onSurface.withValues(alpha: 0.75).toARGB32(),
+          (token('statusBar.foreground') ??
+                  scheme.onSurface.withValues(alpha: 0.75))
+              .toARGB32(),
         );
       });
     }

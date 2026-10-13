@@ -12,6 +12,8 @@ import 'package:crux_license/crux_license.dart';
 import 'package:crux_linux_integration/crux_linux_integration.dart';
 import 'package:crux_policy/crux_policy.dart'
     show PolicyDocument, PolicyLoadResult;
+import 'package:crux_settings_ui/crux_settings_ui.dart'
+    show CruxPolicyLockScope;
 import 'package:crux_telemetry/crux_telemetry.dart';
 import 'package:crux_theme/crux_theme.dart';
 import 'package:crux_updates/crux_updates.dart';
@@ -1849,8 +1851,16 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
                                           bodyFontSize: bannerMetrics.bodyText,
                                         ),
                                         child: _EagerStartupGate(
-                                          child:
-                                              child ?? const SizedBox.shrink(),
+                                          // Above the root navigator, so a
+                                          // locked setting in a dialog reads
+                                          // the same sentence as one in
+                                          // Settings.
+                                          child: CruxPolicyLockScope(
+                                            message: l10n.policyLockedNote,
+                                            child:
+                                                child ??
+                                                const SizedBox.shrink(),
+                                          ),
                                         ),
                                       ),
                                     ),
