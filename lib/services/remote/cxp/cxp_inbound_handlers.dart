@@ -1158,7 +1158,7 @@ Future<CxpHandlerResult> dispatchCxpOpenArtifact(
       reason: 'wavecrux opens only waveform artifacts, not "$artifactKind"',
     );
   }
-  final path = resolveOpenArtifactWaveformPath(ref, designId) ?? hintPath;
+  final path = await resolveOpenArtifactWaveformPath(ref, designId) ?? hintPath;
   if (path == null) {
     return CxpHandlerResult(
       honored: false,

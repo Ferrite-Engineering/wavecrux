@@ -209,12 +209,19 @@ String? resolveWaveformArtifactPath(
 ///
 /// Returns the absolute path WaveCrux should open, or null when the design
 /// has no waveform artifact recorded.
-String? resolveOpenArtifactWaveformPath(Ref ref, String designId) {
+///
+/// Reads with crux_cxp's async resolver: a peer's request lands on the UI
+/// isolate, and the directory read must not block a frame (crux_cxp 0.10).
+Future<String?> resolveOpenArtifactWaveformPath(
+  Ref ref,
+  String designId,
+) async {
   if (designId.isEmpty) return null;
   final store = ref.read(cxpWorkspaceStoreProvider);
-  return CxpWorkspaceStore(
+  final artifact = await CxpWorkspaceStore(
     workspaceDirectory: store.workspaceDirectory,
     ttl: store.ttl,
     containment: kCxpOpenArtifactContainment,
-  ).resolveArtifact(designId, kCxpWaveformArtifactKind)?.path;
+  ).resolveArtifactAsync(designId, kCxpWaveformArtifactKind);
+  return artifact?.path;
 }
