@@ -36,7 +36,7 @@ In the browser, drop a file onto the empty canvas's drop zone instead; dropping 
 
 ### Auto-reload { #auto-reload }
 
-WaveCrux watches the loaded file and reacts when it changes on disk. **Settings → File Handling → Auto-Reload on File Change** picks what happens — **Prompt**, **Auto** or **Off**: ask before reloading (a snackbar with **Reload** and **Ignore**), reload automatically, or ignore the change. This is built for the iterative simulate-then-debug loop: re-run the simulation and the new trace replaces the old one in place.
+WaveCrux watches the loaded file and reacts when it changes on disk. **Settings → File Handling → Auto-Reload on File Change** picks what happens — **Prompt**, **Auto** or **Off**: ask before reloading (a banner across the top with **Ignore** and **Reload**, which stays until you choose), reload automatically, or ignore the change. This is built for the iterative simulate-then-debug loop: re-run the simulation and the new trace replaces the old one in place.
 
 ### Loading on mobile { #mobile }
 

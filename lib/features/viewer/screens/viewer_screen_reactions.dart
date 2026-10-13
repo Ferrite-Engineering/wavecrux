@@ -72,28 +72,17 @@ extension _ViewerScreenReactions on _ViewerScreenState {
       return;
     }
 
-    // prompt mode — show a persistent banner.
+    // Prompt mode: the suite's source-changed prompt, the same banner in
+    // every product.
     final l10n = L10N.of(context);
-    ScaffoldMessenger.of(context).showMaterialBanner(
-      MaterialBanner(
-        content: Text(l10n.fileWatcherFileChanged),
-        actions: [
-          TextButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-              _activeTabContainer.read(fileWatcherProvider.notifier).dismiss();
-            },
-            child: Text(l10n.fileWatcherIgnore),
-          ),
-          TextButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-              unawaited(_reloadWaveform());
-            },
-            child: Text(l10n.fileWatcherReload),
-          ),
-        ],
-      ),
+    showCruxReloadPrompt(
+      context,
+      message: l10n.fileWatcherFileChanged,
+      reloadLabel: l10n.fileWatcherReload,
+      ignoreLabel: l10n.fileWatcherIgnore,
+      onReload: () => unawaited(_reloadWaveform()),
+      onIgnore: () =>
+          _activeTabContainer.read(fileWatcherProvider.notifier).dismiss(),
     );
   }
 
