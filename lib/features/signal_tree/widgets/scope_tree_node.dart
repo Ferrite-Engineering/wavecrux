@@ -252,6 +252,7 @@ class ScopeTreeNode extends ConsumerWidget {
     if (result == null || !context.mounted) return;
     if (result == 'addAll') {
       await _addAllInScope(context, ref);
+      return;
     } else if (result == 'removeAll') {
       await _removeAllInScope(context, ref);
     }

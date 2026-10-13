@@ -528,12 +528,18 @@ class ValueColumnRow extends ConsumerWidget {
       ref.read(selectedVariablesProvider.notifier).toggle(entry.signalPath!);
     } else if (selected == _kOpenFormatMenu) {
       await _showFormatMenu(context, ref, l10n, rect);
+      // Each awaiting branch returns, so a later branch's `ref` never reads
+      // as used after an await (crux_guards' ref-after-await scan).
+      return;
     } else if (selected == _kConfigureFormat && signalRef != null) {
       await _openConfigureDialog(context, ref, l10n, signalRef);
+      return;
     } else if (selected == _kEditEnumLabels && signalRef != null) {
       await _openEnumLabelsDialog(context, ref, l10n, signalRef);
+      return;
     } else if (selected == _kAssignFilter && signalRef != null) {
       await _assignTranslateFilter(context, ref, l10n, signalRef);
+      return;
     } else if (selected == _kRemoveFilter && signalRef != null) {
       ref.read(translateFilterProvider.notifier).removeFilter(signalRef);
     } else if (selected == _kToggleRenderAsAnalog) {
@@ -545,6 +551,7 @@ class ValueColumnRow extends ConsumerWidget {
           );
     } else if (selected == _kBindCustomTranslator && signalRef != null) {
       await _bindCustomTranslator(context, ref, signalRef);
+      return;
     } else if (selected == _kClearCustomTranslator && signalRef != null) {
       // Clears the binding *and* resets the row's format to the default, so a
       // non-default format set before the translator was bound doesn't leave

@@ -213,7 +213,7 @@ class DraggableResizableInstance extends ConsumerWidget {
       currentSignalRef: instance.signalBindings[pin.name]?.signalRef,
       tabContainer: ProviderScope.containerOf(context, listen: false),
     );
-    if (result == null) return;
+    if (result == null || !context.mounted) return;
     ref
         .read(stageWorkspaceProvider.notifier)
         .setBinding(instance.id, pin.name, result.signalRef);
@@ -591,7 +591,7 @@ Future<void> applyDropBinding(
     signalRef: signalRef,
     bitWidth: signalWidth,
   );
-  if (result == null) return;
+  if (result == null || !context.mounted) return;
   ref
       .read(stageWorkspaceProvider.notifier)
       .setBinding(
@@ -674,15 +674,19 @@ Future<void> applyBoardSlotDrop(
     case FanOutPromptChoice.cancel:
       return;
     case FanOutPromptChoice.bindOne:
-      await applyDropBinding(
-        context,
-        ref,
-        instanceId: instanceId,
-        pinName: slotName,
-        pinBitWidth: pinBitWidth,
-        signalRef: signalRef,
-      );
-      return;
+      // A block that returns, so the bindAll branch's `ref` below does not
+      // read as used after this await (crux_guards' ref-after-await scan).
+      {
+        await applyDropBinding(
+          context,
+          ref,
+          instanceId: instanceId,
+          pinName: slotName,
+          pinBitWidth: pinBitWidth,
+          signalRef: signalRef,
+        );
+        return;
+      }
     case FanOutPromptChoice.bindAll:
       // Build a complete updated map atomically so widgets see the
       // fan-out as one state transition rather than N successive ones.

@@ -950,6 +950,14 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
     if (kIsWeb) return;
     final settings = ref.read(appSettingsProvider).value;
     if (settings == null || !settings.restoreTabsOnLaunch) return;
+    // Everything this flush needs from `ref` is read now, before the first
+    // await: it runs at quit, when the widget may be torn down mid-flush, and
+    // a `ref` read after that throws and skips the rest. A mounted check
+    // would be wrong here: it would skip the flush exactly when it matters.
+    // Neither await below changes the tab list.
+    final workspace = ref.wavecruxWorkspace;
+    final ws = ref.read(workspaceProvider).value;
+    final tcm = ref.read(tabContainerManagerProvider);
     try {
       // Capture the live window geometry into the workspace extras so the next
       // cold start reopens the window where the user left it. Desktop-only
@@ -960,7 +968,7 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
       if (useCustomWindowChrome) {
         final bounds = await readCurrentWindowBounds();
         if (bounds != null) {
-          await ref.wavecruxWorkspace.setWindowBounds(bounds);
+          await workspace.setWindowBounds(bounds);
         }
       }
 
@@ -969,7 +977,7 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
       // invariants are maintained on every mutation), so the quit-time flush
       // no longer reconstructs a snapshot from a separate live tab list — it
       // just forces the debounced auto-save to land synchronously.
-      await ref.read(workspaceProvider.notifier).flushPendingSave();
+      await workspace.flushPendingSave();
 
       // Issue #1: flush each tab's pending sidecar autosave so a restart
       // restores cursors, signal groups, zoom, markers, and Stage workspace
@@ -979,9 +987,7 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
       // `{appSupportDir}/sessions/{tabId}.wavecrux`. The autosave's per-tab
       // override resolves `tabIdProvider` correctly so each flush targets
       // the correct sidecar.
-      final ws = ref.read(workspaceProvider).value;
       if (ws == null) return;
-      final tcm = ref.read(tabContainerManagerProvider);
       for (final tab in ws.tabs) {
         try {
           await tcm
@@ -1098,6 +1104,7 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
         await wsNotifier.closeTab(t.id);
       }
     }
+    if (!mounted) return;
 
     if (plan.tabsToOpen.isNotEmpty) {
       // Restore focus EXPLICITLY (Issue #1: "nothing has focus" after
@@ -1114,6 +1121,7 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
       if (reconciled != null &&
           reconciled.panes.any((p) => p.id == persistedActivePaneId)) {
         await wsNotifier.setActivePane(persistedActivePaneId);
+        if (!mounted) return;
       }
       final persistedActiveTabId = workspace.activePane.activeTabId;
       final TabId? resolvedActive;

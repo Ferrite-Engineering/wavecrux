@@ -262,7 +262,12 @@ class DecoderListEntry extends ConsumerWidget {
     if (!context.mounted) return;
     switch (result) {
       case _DecoderRowMenuAction.configure:
-        await _configureDecoder(context, ref);
+        // A returning block, so `remove`'s `ref` below does not read as used
+        // after this await (crux_guards' ref-after-await scan).
+        {
+          await _configureDecoder(context, ref);
+          return;
+        }
       case _DecoderRowMenuAction.remove:
         _removeDecoder(ref);
       case null:
@@ -464,7 +469,7 @@ class HeldDecoderListEntry extends ConsumerWidget {
         ),
       ],
     );
-    if (remove ?? false) _remove(ref);
+    if ((remove ?? false) && context.mounted) _remove(ref);
   }
 
   void _remove(WidgetRef ref) =>

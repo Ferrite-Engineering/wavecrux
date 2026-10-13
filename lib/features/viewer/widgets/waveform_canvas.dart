@@ -641,7 +641,9 @@ class _WaveformCanvasState extends ConsumerState<WaveformCanvas> {
       _showSlowLoad = null;
       if (show == null || !show()) _slowLoadOverdue = true;
     }
-    if (!_isCurrent(gen)) return;
+    // `_isCurrent` checks `mounted` too; spelled out so the ref-after-await
+    // guard sees it.
+    if (!mounted || !_isCurrent(gen)) return;
 
     // Final paint with everything that loaded, then trim the loaded set back
     // toward budget by unloading the least-recently-visible off-screen signals.

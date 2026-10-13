@@ -377,9 +377,11 @@ class _PaneTrailingActions extends ConsumerWidget {
     final paneTabs = workspace.tabs.where((t) => t.paneId == paneId).toList();
     if (paneTabs.length < 2) return;
     final rightmost = paneTabs.last;
+    // Read before the awaits: the split rebuilds this pane's chrome.
+    final activeTab = ref.read(activeTabIdProvider.notifier);
     final newPaneId = await notifier.splitPane();
     await notifier.moveTabToPane(rightmost.id, newPaneId);
-    ref.read(activeTabIdProvider.notifier).activate(rightmost.id);
+    activeTab.activate(rightmost.id);
   }
 }
 

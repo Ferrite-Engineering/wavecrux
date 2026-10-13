@@ -73,7 +73,7 @@ class CocotbLogEntryRow extends ConsumerWidget {
           ),
       ],
     );
-    if (action == null) return;
+    if (action == null || !context.mounted) return;
     switch (action) {
       case 'jump':
         _onTap(ref);

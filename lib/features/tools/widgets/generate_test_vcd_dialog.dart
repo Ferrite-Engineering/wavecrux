@@ -157,8 +157,10 @@ class _GenerateTestVcdDialogState extends ConsumerState<GenerateTestVcdDialog> {
     try {
       final service = widget._generatorService ?? VcdGeneratorService();
       final content = service.generate(_currentConfig());
+      // Read before the write: the dialog can close while it is pending.
+      final devTools = ref.read(devToolsProvider.notifier);
       await File(dest).writeAsString(content);
-      ref.read(devToolsProvider.notifier).setLastGeneratedPath(dest);
+      devTools.setLastGeneratedPath(dest);
       return dest;
     } on Object catch (e) {
       if (mounted) {

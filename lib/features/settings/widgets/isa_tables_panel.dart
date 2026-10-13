@@ -128,16 +128,24 @@ class IsaTablesPanel extends ConsumerWidget {
     );
   }
 
+  // The settings panel can close while the picker or the write is pending;
+  // `ref` dies with it. Read what is needed first, and check the element is
+  // still mounted before touching `ref` again.
   Future<void> _addDirectory(WidgetRef ref) async {
     if (kIsWeb) return;
+    final context = ref.context;
+    final settings = ref.read(appSettingsProvider.notifier);
     final picked = await FilePicker.getDirectoryPath();
     if (picked == null || picked.isEmpty) return;
-    await ref.read(appSettingsProvider.notifier).addIsaTableDirectory(picked);
+    await settings.addIsaTableDirectory(picked);
+    if (!context.mounted) return;
     ref.invalidate(userIsaTablesProvider);
   }
 
   Future<void> _remove(WidgetRef ref, String path) async {
+    final context = ref.context;
     await ref.read(appSettingsProvider.notifier).removeIsaTableDirectory(path);
+    if (!context.mounted) return;
     ref.invalidate(userIsaTablesProvider);
   }
 }

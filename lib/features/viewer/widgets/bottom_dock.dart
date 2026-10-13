@@ -350,7 +350,7 @@ Future<void> _createPanel(BuildContext context, WidgetRef ref) async {
     initialName: l10n.stagePanelDefaultName,
     titleText: l10n.stageCreatePanelDialogTitle,
   );
-  if (name == null) return;
+  if (name == null || !context.mounted) return;
   ref.read(stageWorkspaceProvider.notifier).addPanel(name);
 }
 
@@ -366,7 +366,7 @@ Future<void> _renamePanel(
     initialName: currentName,
     titleText: l10n.stageRenamePanelDialogTitle,
   );
-  if (name == null) return;
+  if (name == null || !context.mounted) return;
   ref.read(stageWorkspaceProvider.notifier).renamePanel(panelId, name);
 }
 

@@ -304,6 +304,10 @@ dev_dependencies:
   # version, so this pin does not move the lockfile.
   analyzer: '>=12.1.0 <13.0.0'
   build_runner: ^2.4.12
+  # Shared static-guard scanners (outline text, unused l10n keys, ref after
+  # await) run by thin tests under test/static/.
+  crux_guards:
+    path: ./crux-shared/packages/crux_guards
   fake_async: ^1.3.1
   ffigen: ^20.1.1
   flutter_test:

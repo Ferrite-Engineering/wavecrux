@@ -278,10 +278,14 @@ class _ActionRow extends ConsumerWidget {
 
   Future<void> _addDirectory(BuildContext context, WidgetRef ref) async {
     if (kIsWeb) return;
+    // Read the notifiers before the picker: the panel can close while it is
+    // open, and `ref` dies with it.
+    final settings = ref.read(appSettingsProvider.notifier);
+    final plugins = ref.read(decoderPluginListProvider.notifier);
     final picked = await FilePicker.getDirectoryPath();
     if (picked == null || picked.isEmpty) return;
-    await ref.read(appSettingsProvider.notifier).addUserPluginDirectory(picked);
-    await ref.read(decoderPluginListProvider.notifier).refresh();
+    await settings.addUserPluginDirectory(picked);
+    await plugins.refresh();
   }
 
   Future<void> _openDefaultDirectory(
@@ -377,12 +381,13 @@ class _DirectoriesSection extends ConsumerWidget {
                   icon: const Icon(Icons.close, size: 18),
                   tooltip: l10n.decoderPluginsRemoveDirectory,
                   onPressed: () async {
+                    final plugins = ref.read(
+                      decoderPluginListProvider.notifier,
+                    );
                     await ref
                         .read(appSettingsProvider.notifier)
                         .removeUserPluginDirectory(dir);
-                    await ref
-                        .read(decoderPluginListProvider.notifier)
-                        .refresh();
+                    await plugins.refresh();
                   },
                 ),
               ],
@@ -508,15 +513,16 @@ class _PluginRow extends ConsumerWidget {
                             DecoderPluginLoadStatus.notAllowlisted
                         ? null
                         : (enabled) async {
+                            final plugins = ref.read(
+                              decoderPluginListProvider.notifier,
+                            );
                             await ref
                                 .read(appSettingsProvider.notifier)
                                 .setPluginDisabled(
                                   info.pluginId,
                                   disabled: !enabled,
                                 );
-                            await ref
-                                .read(decoderPluginListProvider.notifier)
-                                .refresh();
+                            await plugins.refresh();
                           },
                   ),
                 ],

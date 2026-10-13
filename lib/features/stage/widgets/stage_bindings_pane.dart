@@ -69,7 +69,7 @@ class StageBindingsPane extends ConsumerWidget {
       result: result,
       title: title,
     );
-    if (apply == null) return;
+    if (apply == null || !context.mounted) return;
     // Merge the auto-bind result with any existing bindings the user
     // had that the auto-bind did not touch (apply contains every slot
     // the dialog suggested binding; everything else is preserved).
@@ -373,7 +373,7 @@ class StageBindingRow extends ConsumerWidget {
                 currentSignalRef: currentBinding?.signalRef,
                 tabContainer: ProviderScope.containerOf(context, listen: false),
               );
-              if (result == null) return;
+              if (result == null || !context.mounted) return;
               ref
                   .read(stageWorkspaceProvider.notifier)
                   .setBinding(instanceId, pinName, result.signalRef);

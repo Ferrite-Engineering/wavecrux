@@ -514,6 +514,7 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
         final tabId = await ref.wavecruxWorkspace.newTab(
           displayName: placeholderName,
         );
+        if (!mounted) return;
         unawaited(
           _startStreaming(
             () => _tabContainer(
@@ -525,6 +526,7 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
         final tabId = await ref.wavecruxWorkspace.newTab(
           displayName: placeholderName,
         );
+        if (!mounted) return;
         unawaited(
           _startStreaming(
             () => _tabContainer(

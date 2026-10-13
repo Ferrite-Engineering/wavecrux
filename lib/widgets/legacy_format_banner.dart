@@ -88,10 +88,12 @@ class _LegacyFormatBannerContent extends ConsumerWidget {
           child: TextButton(
             key: const Key('legacyFormatBannerDontShowAgainButton'),
             onPressed: () async {
+              // Read before the await: suppressing hides this banner.
+              final events = ref.read(legacyConversionEventProvider.notifier);
               await ref
                   .read(appSettingsProvider.notifier)
                   .setSuppressLegacyFormatBanner(suppressed: true);
-              ref.read(legacyConversionEventProvider.notifier).clear();
+              events.clear();
             },
             child: Text(l10n.legacyFormatBannerDontShowAgain),
           ),
