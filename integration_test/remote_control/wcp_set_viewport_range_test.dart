@@ -27,8 +27,11 @@ import 'package:integration_test/integration_test.dart';
 import 'package:wavecrux/app.dart';
 import 'package:wavecrux/domain/models/workspace.dart';
 import 'package:wavecrux/features/tabs/providers/tab_providers.dart';
+import 'package:wavecrux/features/viewer/providers/time_providers.dart';
+import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
 import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
 import 'package:wavecrux/services/remote/remote_control_notifier.dart';
+import 'package:wavecrux/services/tabs/tab_container_manager.dart';
 import 'package:wavecrux/services/workspace/wavecrux_workspace_codec.dart';
 
 import '../helpers/app_driver.dart';
@@ -140,7 +143,18 @@ void main() {
         ),
       );
 
-      await root.wavecruxWorkspace.openFile(fileB);
+      // `wavecruxWorkspace.openFile` only creates and activates the tab; every
+      // app open path then loads the file into the tab's own container (only
+      // tabs restored from a saved workspace are loaded lazily on
+      // activation). Do the same here, or tab B stays empty and a viewport
+      // command on it is rightly refused with "No waveform file loaded"
+      // (wavecrux#28).
+      final tabBId = await root.wavecruxWorkspace.openFile(fileB);
+      await root
+          .read(tabContainerManagerProvider)
+          .containerFor(tabBId)
+          .read(waveformSourceProvider.notifier)
+          .openFile(fileB);
       await pumpUntil(tester, () => root.read(tabListProvider).length >= 2);
       await tester.pumpAndSettle();
       final tabB = root.read(tabListProvider)[1];
@@ -207,6 +221,20 @@ void main() {
         root.read(activeTabIdProvider.notifier).activate(tabB.id);
         await tester.pump();
         expect(wsNotifier.current.activePaneId, equals(paneRId));
+        // Under the integration binding's default frame policy a frame the
+        // app requests runs only when the test pumps, so let pane R's canvas
+        // lay tab B out before asking it to move.
+        final tabBContainer = root
+            .read(tabContainerManagerProvider)
+            .containerFor(tabB.id);
+        expect(
+          await pumpUntil(
+            tester,
+            () => tabBContainer.read(timeMapperProvider.notifier).isLaidOut,
+          ),
+          isTrue,
+          reason: 'pane R never laid out tab B',
+        );
 
         socket.add(
           utf8.encode(
