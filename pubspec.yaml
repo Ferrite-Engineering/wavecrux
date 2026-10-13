@@ -44,6 +44,9 @@ dependencies:
   # borrowed transitively through crux_license.
   crux_audit:
     path: ./crux-shared/packages/crux_audit
+  # Bounded least-recently-used cache (RTL source loader's file cache).
+  crux_collections:
+    path: ./crux-shared/packages/crux_collections
   # Cross-suite command palette widget (CommandPalette<T extends CruxAction>).
   # WaveCrux's CommandPaletteDialog is a thin Consumer wrapper that reads
   # wavecrux providers, applies wavecrux-specific filtering, and delegates

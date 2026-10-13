@@ -228,6 +228,13 @@ packages:
       relative: true
     source: path
     version: "0.1.0"
+  crux_collections:
+    dependency: "direct main"
+    description:
+      path: "crux-shared/packages/crux_collections"
+      relative: true
+    source: path
+    version: "0.1.0"
   crux_command_palette:
     dependency: "direct main"
     description:

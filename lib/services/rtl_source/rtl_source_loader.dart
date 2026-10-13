@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:crux_collections/crux_collections.dart';
 import 'package:meta/meta.dart';
 
 /// Thrown when an RTL source file referenced from a stems file cannot be read.
@@ -68,9 +69,9 @@ class RtlSourceFile {
 /// line netlist cannot sit in the cache behind a count that says 3 files.
 /// Eviction costs a re-read of a file the user has navigated away from.
 ///
-/// `Map` preserves insertion order; the LRU ordering is maintained by
-/// removing and re-inserting an entry on read — the same shape as the
-/// NetCrux schematic painter's label-layout cache.
+/// The cache is crux_collections' [LruCache], with the line count as each
+/// entry's weight; the just-loaded file is never the victim, so a single file
+/// larger than [maxCachedLines] is still kept.
 ///
 /// On Flutter Web the loader is a no-op — RTL source annotation is desktop
 /// only (gated upstream on `deviceClassProvider`), and the web build has no
@@ -90,8 +91,11 @@ class RtlSourceLoader {
   final int maxCachedLines;
 
   final FileReader _fileReader;
-  final Map<String, _CacheEntry> _cache = {};
-  int _cachedLines = 0;
+  late final LruCache<String, _CacheEntry> _cache = LruCache(
+    maxEntries: maxCachedFiles,
+    maxWeight: maxCachedLines,
+    weigh: (e) => e.file.lineCount,
+  );
 
   /// Files currently held. Exposed so the bound can be asserted.
   @visibleForTesting
@@ -99,7 +103,7 @@ class RtlSourceLoader {
 
   /// Lines currently held across every cached file.
   @visibleForTesting
-  int get cachedLineCount => _cachedLines;
+  int get cachedLineCount => _cache.totalWeight;
 
   /// Loads [path] and returns its parsed [RtlSourceFile].
   ///
@@ -110,17 +114,17 @@ class RtlSourceLoader {
     if (stat == null) {
       throw RtlSourceLoadException(path, 'file not found');
     }
-    final cached = _cache.remove(path);
+    // A read promotes the entry to most recently used.
+    final cached = _cache[path];
     if (cached != null && cached.modified == stat.modified) {
-      // Re-insert: most-recently-used goes to the tail.
-      _cache[path] = cached;
       return cached.file;
     }
-    if (cached != null) _cachedLines -= cached.file.lineCount;
     final String contents;
     try {
       contents = await _fileReader.readAsString(path);
     } on Exception catch (e) {
+      // A stale entry stays out: the file changed and can no longer be read.
+      _cache.remove(path);
       throw RtlSourceLoadException(path, e.toString());
     }
     final file = RtlSourceFile(
@@ -128,35 +132,14 @@ class RtlSourceLoader {
       lines: _splitLines(contents),
     );
     _cache[path] = _CacheEntry(file: file, modified: stat.modified);
-    _cachedLines += file.lineCount;
-    _evictToBounds();
     return file;
   }
 
   /// Drops a cached file (e.g. when a stems file is re-loaded).
-  void invalidate(String path) {
-    final removed = _cache.remove(path);
-    if (removed != null) _cachedLines -= removed.file.lineCount;
-  }
+  void invalidate(String path) => _cache.remove(path);
 
   /// Drops every cached file.
-  void clear() {
-    _cache.clear();
-    _cachedLines = 0;
-  }
-
-  /// Evicts least-recently-used entries until both bounds hold. The
-  /// just-loaded file is the newest, so it is never the victim (a single
-  /// file larger than [maxCachedLines] is kept — the alternative is a
-  /// cache that can never hold the file the user is reading).
-  void _evictToBounds() {
-    while (_cache.length > 1 &&
-        (_cache.length > maxCachedFiles || _cachedLines > maxCachedLines)) {
-      final oldest = _cache.keys.first;
-      final entry = _cache.remove(oldest)!;
-      _cachedLines -= entry.file.lineCount;
-    }
-  }
+  void clear() => _cache.clear();
 
   static List<String> _splitLines(String contents) {
     if (contents.isEmpty) return const [''];
