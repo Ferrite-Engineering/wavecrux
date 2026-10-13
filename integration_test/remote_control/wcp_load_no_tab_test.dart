@@ -37,72 +37,87 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   suppressPlatformSemanticsLeak();
 
-  testWidgets('WCP load with no tab open shows the file and the viewport '
-      'commands move it', (tester) async {
-    await clearPersistedWorkspace();
-    addTearDown(clearPersistedWorkspace);
-    final file = _fixturePath('vcd/scalar_basics.vcd');
-    expect(File(file).existsSync(), isTrue);
+  testWidgets(
+    'WCP load with no tab open shows the file and the viewport '
+    'commands move it',
+    (tester) => _scenario(tester, clientPace: false),
+  );
 
-    // No file on the command line: the start screen, no tab.
-    await seedFirstLaunchAnswers();
-    await bootstrap();
-    await tester.pump();
-    final root = rootContainer(tester);
-    for (var i = 0; i < 5; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    expect(root.read(tabListProvider), isEmpty, reason: 'precondition');
+  // A WCP client does not wait for the canvas: it sends the viewport command
+  // as soon as `load` answers. The handler's own bounded wait for the canvas
+  // has to cover that, which is the original #17 report's sequence.
+  testWidgets(
+    'WCP load with no tab open, then an immediate viewport command, '
+    'takes effect',
+    (tester) => _scenario(tester, clientPace: true),
+  );
+}
 
-    final startError = await root
-        .read(remoteControlProvider.notifier)
-        .startServer(0);
-    expect(startError, isNull);
-    final port = root.read(remoteControlProvider).port;
+Future<void> _scenario(WidgetTester tester, {required bool clientPace}) async {
+  await clearPersistedWorkspace();
+  addTearDown(clearPersistedWorkspace);
+  final file = _fixturePath('vcd/scalar_basics.vcd');
+  expect(File(file).existsSync(), isTrue);
 
-    Socket? socket;
-    try {
-      socket = await Socket.connect('127.0.0.1', port);
-      final received = <Map<String, dynamic>>[];
-      attachFrameReader(socket, received);
-      await waitForFrame(
-        received,
-        (m) => m['type'] == 'greeting',
-        tester: tester,
-        timeout: const Duration(seconds: 5),
+  // No file on the command line: the start screen, no tab.
+  await seedFirstLaunchAnswers();
+  await bootstrap();
+  await tester.pump();
+  final root = rootContainer(tester);
+  for (var i = 0; i < 5; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+  expect(root.read(tabListProvider), isEmpty, reason: 'precondition');
+
+  final startError = await root
+      .read(remoteControlProvider.notifier)
+      .startServer(0);
+  expect(startError, isNull);
+  final port = root.read(remoteControlProvider).port;
+
+  Socket? socket;
+  try {
+    socket = await Socket.connect('127.0.0.1', port);
+    final received = <Map<String, dynamic>>[];
+    attachFrameReader(socket, received);
+    await waitForFrame(
+      received,
+      (m) => m['type'] == 'greeting',
+      tester: tester,
+      timeout: const Duration(seconds: 5),
+    );
+
+    var nextId = 1;
+    Future<Map<String, dynamic>> send(
+      String command, [
+      Map<String, dynamic> data = const {},
+    ]) {
+      final id = nextId++;
+      socket!.add(
+        utf8.encode(
+              jsonEncode({
+                'type': 'command',
+                'id': id,
+                'command': command,
+                'data': data,
+              }),
+            ) +
+            [0],
       );
+      // A failed command answers with an `error` frame, not a `response`
+      // carrying an error, so wait for either and let the caller check.
+      return waitForFrame(
+        received,
+        (m) =>
+            (m['type'] == 'response' || m['type'] == 'error') && m['id'] == id,
+        tester: tester,
+      );
+    }
 
-      var nextId = 1;
-      Future<Map<String, dynamic>> send(
-        String command, [
-        Map<String, dynamic> data = const {},
-      ]) {
-        final id = nextId++;
-        socket!.add(
-          utf8.encode(
-                jsonEncode({
-                  'type': 'command',
-                  'id': id,
-                  'command': command,
-                  'data': data,
-                }),
-              ) +
-              [0],
-        );
-        // A failed command answers with an `error` frame, not a `response`
-        // carrying an error, so wait for either and let the caller check.
-        return waitForFrame(
-          received,
-          (m) =>
-              (m['type'] == 'response' || m['type'] == 'error') &&
-              m['id'] == id,
-          tester: tester,
-        );
-      }
+    final load = await send('load', {'source': file});
+    expect(load['type'], 'response', reason: 'load must succeed: $load');
 
-      final load = await send('load', {'source': file});
-      expect(load['type'], 'response', reason: 'load must succeed: $load');
-
+    if (!clientPace) {
       // The load opened a real tab, and it is the active one.
       await pumpUntil(tester, () => root.read(tabListProvider).isNotEmpty);
       final tabs = root.read(tabListProvider);
@@ -118,39 +133,39 @@ void main() {
         () => tab.read(timeMapperProvider.notifier).isLaidOut,
       );
       expect(laidOut, isTrue, reason: 'no canvas laid out the loaded trace');
-
-      // Narrow the view to [20, 40]: the canvas has laid the trace out, so
-      // the command takes effect instead of erroring (code 5) or acking a
-      // no-op.
-      final range = await send('set_viewport_range', {
-        'start': 20,
-        'end': 40,
-      });
-      expect(range['type'], 'response', reason: '$range');
-      await tester.pump();
-      final afterRange = (await send('wavecrux.getState'))['data'] as Map;
-      expect(afterRange['is_loaded'], isTrue);
-
-      final viewportTo = await send('set_viewport_to', {'timestamp': 80});
-      expect(viewportTo['type'], 'response', reason: '$viewportTo');
-      await tester.pump();
-      final afterTo = (await send('wavecrux.getState'))['data'] as Map;
-
-      expect(
-        afterTo['pan_offset_ticks'],
-        isNot(afterRange['pan_offset_ticks']),
-        reason: 'set_viewport_to must move the viewport, not just ack',
-      );
-      expect(
-        afterTo['ticks_per_pixel'],
-        afterRange['ticks_per_pixel'],
-        reason: 'set_viewport_to pans; the zoom from set_viewport_range holds',
-      );
-    } finally {
-      socket?.destroy();
-      await root.read(remoteControlProvider.notifier).stopServer();
     }
-    // Headless-bundle PNG codec errors are environmental; drain.
-    tester.takeException();
-  });
+
+    // Narrow the view to [20, 40]: the canvas has laid the trace out, so
+    // the command takes effect instead of erroring (code 5) or acking a
+    // no-op.
+    final range = await send('set_viewport_range', {
+      'start': 20,
+      'end': 40,
+    });
+    expect(range['type'], 'response', reason: '$range');
+    await tester.pump();
+    final afterRange = (await send('wavecrux.getState'))['data'] as Map;
+    expect(afterRange['is_loaded'], isTrue);
+
+    final viewportTo = await send('set_viewport_to', {'timestamp': 80});
+    expect(viewportTo['type'], 'response', reason: '$viewportTo');
+    await tester.pump();
+    final afterTo = (await send('wavecrux.getState'))['data'] as Map;
+
+    expect(
+      afterTo['pan_offset_ticks'],
+      isNot(afterRange['pan_offset_ticks']),
+      reason: 'set_viewport_to must move the viewport, not just ack',
+    );
+    expect(
+      afterTo['ticks_per_pixel'],
+      afterRange['ticks_per_pixel'],
+      reason: 'set_viewport_to pans; the zoom from set_viewport_range holds',
+    );
+  } finally {
+    socket?.destroy();
+    await root.read(remoteControlProvider.notifier).stopServer();
+  }
+  // Headless-bundle PNG codec errors are environmental; drain.
+  tester.takeException();
 }
