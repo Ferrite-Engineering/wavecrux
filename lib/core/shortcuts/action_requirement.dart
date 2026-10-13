@@ -89,6 +89,10 @@ enum ActionRequirement {
   /// Exactly one workspace pane is open (gates Split Pane Right).
   singlePane,
 
+  /// The active pane holds at least two tabs, so each side of a split gets
+  /// one (gates Split Pane Right; crux_workspace's `canSplitPaneRight`).
+  twoTabsInPane,
+
   /// Two or more workspace panes are open (gates Close Pane / Focus Other
   /// Pane / Move Tab to Other Pane).
   multiPane,
@@ -125,6 +129,7 @@ enum ActionRequirement {
     ActionRequirement.isParticipant => c.inSession && !c.isHost,
     ActionRequirement.recordingAvailable => c.inSession || c.isRecording,
     ActionRequirement.singlePane => c.paneCount == 1,
+    ActionRequirement.twoTabsInPane => c.activePaneTabCount >= 2,
     ActionRequirement.multiPane => c.paneCount >= 2,
     ActionRequirement.canZoomOut => c.canZoomOut,
     ActionRequirement.canZoomIn => c.canZoomIn,

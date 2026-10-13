@@ -41,6 +41,8 @@ ActionContext _ctx({
   bool isHost = false,
   bool isRecording = false,
   int paneCount = 1,
+  // A blank context has no second tab, like the zoom flags below.
+  int activePaneTabCount = 0,
   // Both default to FALSE here although `ActionContext` defaults them to true
   // (so production literals and the no-file case behave as they always did) —
   // a "blank" context in this file means *no state present*, and the
@@ -66,6 +68,7 @@ ActionContext _ctx({
   isHost: isHost,
   isRecording: isRecording,
   paneCount: paneCount,
+  activePaneTabCount: activePaneTabCount,
   canZoomOut: canZoomOut,
   canZoomIn: canZoomIn,
 );
@@ -96,6 +99,7 @@ void main() {
         ActionRequirement.recordingAvailable: _ctx(isRecording: true),
         ActionRequirement.singlePane: _ctx(),
         ActionRequirement.multiPane: _ctx(paneCount: 2),
+        ActionRequirement.twoTabsInPane: _ctx(activePaneTabCount: 2),
         ActionRequirement.canZoomOut: _ctx(canZoomOut: true),
         ActionRequirement.canZoomIn: _ctx(canZoomIn: true),
       };
@@ -123,6 +127,28 @@ void main() {
         ActionRequirement.notInSession,
         ActionRequirement.singlePane,
       });
+    });
+
+    test('twoTabsInPane needs two tabs in the active pane', () {
+      // crux_workspace's canSplitPaneRight: each side of a split gets a tab.
+      expect(
+        ActionRequirement.twoTabsInPane.isSatisfiedBy(
+          _ctx(activePaneTabCount: 1),
+        ),
+        isFalse,
+      );
+      expect(
+        descriptorFor(
+          ShortcutAction.splitPaneRight,
+        ).isEnabled(_ctx(activePaneTabCount: 1)),
+        isFalse,
+      );
+      expect(
+        descriptorFor(
+          ShortcutAction.splitPaneRight,
+        ).isEnabled(_ctx(activePaneTabCount: 2)),
+        isTrue,
+      );
     });
 
     test('participant is a non-host member of a live session', () {

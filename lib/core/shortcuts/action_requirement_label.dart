@@ -43,6 +43,7 @@ extension ActionRequirementHint on ActionRequirement {
     ActionRequirement.isParticipant => l10n.actionRequiresParticipant,
     ActionRequirement.recordingAvailable => l10n.actionRequiresRecording,
     ActionRequirement.singlePane => l10n.actionRequiresSinglePane,
+    ActionRequirement.twoTabsInPane => l10n.actionRequiresTwoTabsInPane,
     ActionRequirement.multiPane => l10n.actionRequiresMultiPane,
     ActionRequirement.canZoomOut => l10n.actionRequiresZoomOutRoom,
     ActionRequirement.canZoomIn => l10n.actionRequiresZoomInRoom,

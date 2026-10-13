@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:crux_theme/crux_theme.dart';
 import 'package:crux_window_chrome/crux_window_chrome.dart';
 import 'package:crux_workspace/crux_workspace.dart' as crux;
 import 'package:flutter/foundation.dart';
@@ -402,6 +403,10 @@ class _ResizablePaneRowState extends State<_ResizablePaneRow> {
 
   double _leftFraction = 0.5;
 
+  /// Pointer over the splitter, or a drag in progress: the bar lights up.
+  bool _hovered = false;
+  bool _dragging = false;
+
   @override
   Widget build(BuildContext context) {
     if (widget.children.length != 2) {
@@ -412,6 +417,13 @@ class _ResizablePaneRowState extends State<_ResizablePaneRow> {
       );
     }
     final colorScheme = Theme.of(context).colorScheme;
+    // The theme's `splitter` / `splitter.hover` chrome tokens when it sets
+    // them, as the dock splitters (crux_ide_layout) read them; otherwise the
+    // Material defaults the dock splitters fall back to.
+    final chrome = CruxChromeColors.of(context);
+    final splitterColor = (_hovered || _dragging)
+        ? chrome?.splitterHover ?? colorScheme.primary
+        : chrome?.splitter ?? colorScheme.outlineVariant;
     return LayoutBuilder(
       builder: (context, constraints) {
         final totalWidth = constraints.maxWidth;
@@ -429,8 +441,13 @@ class _ResizablePaneRowState extends State<_ResizablePaneRow> {
             SizedBox(width: leftWidth, child: widget.children[0]),
             MouseRegion(
               cursor: SystemMouseCursors.resizeColumn,
+              onEnter: (_) => setState(() => _hovered = true),
+              onExit: (_) => setState(() => _hovered = false),
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
+                onHorizontalDragStart: (_) => setState(() => _dragging = true),
+                onHorizontalDragEnd: (_) => setState(() => _dragging = false),
+                onHorizontalDragCancel: () => setState(() => _dragging = false),
                 onHorizontalDragUpdate: (details) {
                   if (usable <= 0) return;
                   setState(() {
@@ -442,8 +459,9 @@ class _ResizablePaneRowState extends State<_ResizablePaneRow> {
                   width: _kHitWidth,
                   child: Center(
                     child: Container(
+                      key: const ValueKey('paneSplitterBar'),
                       width: _kSplitterWidth,
-                      color: colorScheme.outlineVariant,
+                      color: splitterColor,
                     ),
                   ),
                 ),

@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_theme/crux_theme.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,6 +52,7 @@ Future<void> _pumpHost(
   WidgetTester tester, {
   required ProviderContainer container,
   Locale locale = const Locale('en'),
+  ThemeData? theme,
 }) async {
   await tester.binding.setSurfaceSize(const Size(1400, 900));
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -58,6 +60,7 @@ Future<void> _pumpHost(
     UncontrolledProviderScope(
       container: container,
       child: MaterialApp(
+        theme: theme,
         locale: locale,
         localizationsDelegates: L10N.localizationsDelegates,
         supportedLocales: L10N.supportedLocales,
@@ -136,7 +139,12 @@ void main() {
         '/tmp/cpu.vcd',
         displayName: 'cpu.vcd',
       );
-      // A second pane makes the active-pane indicator meaningful.
+      await container.wavecruxWorkspace.openFile(
+        '/tmp/alu.vcd',
+        displayName: 'alu.vcd',
+      );
+      // A second pane makes the active-pane indicator meaningful. It takes
+      // two tabs: each side of a split gets one (canSplitPaneRight).
       await container.wavecruxWorkspace.splitPaneRight();
 
       await _pumpHost(tester, container: container);
@@ -159,6 +167,67 @@ void main() {
       expect(colors.toSet(), hasLength(2));
     },
   );
+
+  group('split-pane splitter colours (crux-shared#21 item 2)', () {
+    Future<ProviderContainer> split() async {
+      final container = _makeContainer();
+      addTearDown(container.dispose);
+      await container.read(workspaceProvider.future);
+      await container.wavecruxWorkspace.openFile('/tmp/a.vcd');
+      await container.wavecruxWorkspace.openFile('/tmp/b.vcd');
+      await container.wavecruxWorkspace.splitPaneRight();
+      return container;
+    }
+
+    Color barColor(WidgetTester tester) => tester
+        .widget<Container>(find.byKey(const ValueKey('paneSplitterBar')))
+        .color!;
+
+    testWidgets('without chrome tokens: outlineVariant, primary on hover', (
+      tester,
+    ) async {
+      final container = await split();
+      await _pumpHost(tester, container: container);
+      final scheme = Theme.of(
+        tester.element(find.byType(WaveCruxPaneHost)),
+      ).colorScheme;
+      expect(barColor(tester), scheme.outlineVariant);
+
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(mouse.removePointer);
+      await mouse.addPointer(location: Offset.zero);
+      await mouse.moveTo(
+        tester.getCenter(find.byKey(const ValueKey('paneSplitterBar'))),
+      );
+      await tester.pump();
+      expect(barColor(tester), scheme.primary);
+    });
+
+    testWidgets('reads the splitter and splitter.hover tokens', (tester) async {
+      const idle = Color(0xFF123456);
+      const hover = Color(0xFFABCDEF);
+      final container = await split();
+      await _pumpHost(
+        tester,
+        container: container,
+        theme: ThemeData(
+          extensions: const [
+            CruxChromeColors(splitter: idle, splitterHover: hover),
+          ],
+        ),
+      );
+      expect(barColor(tester), idle);
+
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(mouse.removePointer);
+      await mouse.addPointer(location: Offset.zero);
+      await mouse.moveTo(
+        tester.getCenter(find.byKey(const ValueKey('paneSplitterBar'))),
+      );
+      await tester.pump();
+      expect(barColor(tester), hover);
+    });
+  });
 
   testWidgets('renders a name-bearing close tooltip and a leading drop slot', (
     tester,

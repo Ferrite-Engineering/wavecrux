@@ -115,8 +115,8 @@ A trace and a bus's value labels are drawn in the signal's own color, which you 
 | `panel.background`, `panel.header.background`, `panel.header.foreground` | Panels and their headers |
 | `toolbar.background`, `toolbar.icon`, `toolbar.iconActive` | The toolbar |
 | `statusBar.background`, `statusBar.foreground` | The status bar |
-| `splitter`, `splitter.hover` | Panel splitters |
-| `tabBar.background`, `tabBar.selected`, `tabBar.label` | Tab bars |
+| `splitter`, `splitter.hover` | Panel splitters and the bar between split panes (`splitter.hover` while the pointer is over it or dragging) |
+| `tabBar.background`, `tabBar.selected`, `tabBar.label` | The file tab bar |
 
 !!! note "Strict validation"
 

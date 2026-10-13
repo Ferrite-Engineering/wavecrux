@@ -277,6 +277,13 @@ class WaveCruxWorkspaceNotifier
   /// Returns the id of the newly-created pane (or the existing sibling
   /// pane when already split).
   ///
+  /// This is the low-level primitive: it creates the new pane empty and the
+  /// caller moves a tab into it. The user-facing paths (Split Pane Right and
+  /// the tab bar's split button) first check crux_workspace's
+  /// [Workspace.canSplitPaneRight] rule, two tabs in the active pane, so a
+  /// split that cannot give each side a tab never happens and never emits
+  /// `pane.split`.
+  ///
   /// Preserves the pre-migration "always empty new pane" semantic — the
   /// active tab does NOT move into the new pane. The package's
   /// [crux.WorkspaceNotifier.splitPaneRight] moves the active tab when the

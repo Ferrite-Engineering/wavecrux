@@ -4440,6 +4440,10 @@
   "@actionRequiresSinglePane": {
     "description": "Hint shown when a keyboard shortcut fires for an action that requires a single pane (e.g. Split Pane Right) while the view is already split."
   },
+  "actionRequiresTwoTabsInPane": "Open a second tab in this pane to split the view.",
+  "@actionRequiresTwoTabsInPane": {
+    "description": "Hint shown when a keyboard shortcut fires for Split Pane Right while the active pane holds only one tab: each side of a split needs a tab, so there is nothing to split."
+  },
   "actionRequiresMultiPane": "Split the view into two panes to use this command.",
   "@actionRequiresMultiPane": {
     "description": "Hint shown when a keyboard shortcut fires for an action that requires a split view (e.g. Close Pane, Focus Other Pane) while only one pane is open."

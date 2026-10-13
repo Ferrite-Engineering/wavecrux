@@ -4307,6 +4307,10 @@
   "@actionRequiresSinglePane": {
     "description": "Hint shown when a keyboard shortcut fires for an action that requires a single pane (e.g. Split Pane Right) while the view is already split."
   },
+  "actionRequiresTwoTabsInPane": "このコマンドを使用するには、このペインで2つ目のタブを開いてください。",
+  "@actionRequiresTwoTabsInPane": {
+    "description": "Hint shown when a keyboard shortcut fires for Split Pane Right while the active pane holds only one tab: each side of a split needs a tab, so there is nothing to split."
+  },
   "actionRequiresMultiPane": "このコマンドを使用するにはビューを2つのペインに分割してください。",
   "@actionRequiresMultiPane": {
     "description": "Hint shown when a keyboard shortcut fires for an action that requires a split view (e.g. Close Pane, Focus Other Pane) while only one pane is open."

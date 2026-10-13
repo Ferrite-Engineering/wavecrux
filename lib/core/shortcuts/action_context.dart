@@ -25,6 +25,7 @@ class ActionContext {
     required this.deviceClass,
     this.diagnosticsEnabled = false,
     this.paneCount = 1,
+    this.activePaneTabCount = 2,
     this.inSession = false,
     this.isHost = false,
     this.isRecording = false,
@@ -71,6 +72,11 @@ class ActionContext {
 
   /// Number of workspace panes (1 = single pane; ≥ 2 = split).
   final int paneCount;
+
+  /// Number of tabs in the active pane. Split Pane Right needs two, one for
+  /// each side (crux_workspace's `canSplitPaneRight`). Defaults to 2 so a
+  /// context built without a workspace does not read as unsplittable.
+  final int activePaneTabCount;
 
   /// Whether a collaborative session is currently active.
   final bool inSession;
@@ -206,6 +212,7 @@ class ActionContext {
       other.deviceClass == deviceClass &&
       other.diagnosticsEnabled == diagnosticsEnabled &&
       other.paneCount == paneCount &&
+      other.activePaneTabCount == activePaneTabCount &&
       other.inSession == inSession &&
       other.isHost == isHost &&
       other.isRecording == isRecording &&
@@ -235,6 +242,7 @@ class ActionContext {
     deviceClass,
     diagnosticsEnabled,
     paneCount,
+    activePaneTabCount,
     inSession,
     isHost,
     isRecording,

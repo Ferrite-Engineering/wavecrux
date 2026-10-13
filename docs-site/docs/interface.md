@@ -33,7 +33,7 @@ On desktop and tablet the regions sit in fixed positions around the waveform can
 
 ## Tabs and split panes { #tabs-and-panes }
 
-Tabs are available on tablet and desktop, and split panes on desktop and on tablets at least 1000 dp wide — on a narrower tablet **Split Pane Right** is not offered and its shortcut does nothing. Opening a file creates a new tab — or brings forward the tab already showing that file — and each tab is fully isolated: it carries its own file, cursor, zoom, signal arrangement, decoder bindings, and Stage configuration. Switching tabs updates every panel instantly — the signal tree, value column, bottom dock, and Stage all swap to match the tab you land on. On phone there are no tab bars: one waveform is open at a time, and the other tabs from your last session are listed on the empty canvas for one-tap opening.
+Tabs are available on tablet and desktop, and split panes on desktop and on tablets at least 1000 dp wide — on a narrower tablet **Split Pane Right** is not offered and its shortcut does nothing. Splitting moves the active tab into a new pane on the right, so it needs a second tab to leave behind: with a single tab open, **Split Pane Right** is disabled. Opening a file creates a new tab — or brings forward the tab already showing that file — and each tab is fully isolated: it carries its own file, cursor, zoom, signal arrangement, decoder bindings, and Stage configuration. Switching tabs updates every panel instantly — the signal tree, value column, bottom dock, and Stage all swap to match the tab you land on. On phone there are no tab bars: one waveform is open at a time, and the other tabs from your last session are listed on the empty canvas for one-tap opening.
 
 | Action | Shortcut |
 |---|---|

@@ -559,7 +559,7 @@ ActionDescriptor descriptorFor(ShortcutAction action) => switch (action) {
   ShortcutAction.splitPaneRight => const ActionDescriptor(
     surfaces: _menuOverflowPalette,
     isVisible: _splitPaneAllowed,
-    requires: [ActionRequirement.singlePane],
+    requires: [ActionRequirement.singlePane, ActionRequirement.twoTabsInPane],
   ),
   ShortcutAction.closePane ||
   ShortcutAction.focusOtherPane => const ActionDescriptor(

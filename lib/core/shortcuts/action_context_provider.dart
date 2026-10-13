@@ -9,6 +9,7 @@ import 'package:wavecrux/core/providers/collaboration_available_provider.dart';
 import 'package:wavecrux/core/providers/collaboration_service_provider.dart';
 import 'package:wavecrux/core/providers/tier_gated_actions_available_provider.dart';
 import 'package:wavecrux/core/shortcuts/action_context.dart';
+import 'package:wavecrux/domain/models/workspace.dart';
 import 'package:wavecrux/features/collaboration/providers/collaboration_session_state_provider.dart';
 import 'package:wavecrux/features/diagnostics/providers/diagnostics_providers.dart';
 import 'package:wavecrux/features/panes/providers/split_pane_allowed_provider.dart';
@@ -61,6 +62,7 @@ final actionContextProvider = Provider<ActionContext>((ref) {
     deviceClass: ref.watch(deviceClassProvider),
     diagnosticsEnabled: ref.watch(diagnosticsEnabledProvider),
     paneCount: ref.watch(workspaceProvider).value?.panes.length ?? 1,
+    activePaneTabCount: _activePaneTabCount(ref.watch(workspaceProvider).value),
     inSession: inSession,
     isHost: isHost,
     // Not "a recording is running" but "a recording exists to export". The
@@ -124,3 +126,9 @@ final actionContextProvider = Provider<ActionContext>((ref) {
     collaborationAvailable: ref.watch(collaborationAvailableProvider),
   );
 });
+
+/// Tabs in the workspace's active pane; 0 while the workspace is loading.
+int _activePaneTabCount(Workspace? ws) {
+  if (ws == null) return 0;
+  return ws.tabs.where((t) => t.paneId == ws.activePaneId).length;
+}

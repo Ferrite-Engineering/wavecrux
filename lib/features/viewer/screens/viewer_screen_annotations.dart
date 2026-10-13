@@ -67,13 +67,18 @@ extension _ViewerScreenAnnotations on _ViewerScreenState {
 
   /// Splits the active pane horizontally, creating a second pane to the right
   /// and moving the active tab into it. The newly-created pane becomes the
-  /// active pane. No-op when the workspace is already split.
+  /// active pane. No-op when the workspace is already split or the active
+  /// pane holds a single tab.
   Future<void> _splitPaneRight() async {
     // The chord obeys the same rule that hides the action: a split the pane
     // host cannot show would hide the tabs left in the original pane.
     if (!ref.read(splitPaneAllowedProvider)) return;
     final workspace = ref.read(workspaceProvider).value;
-    if (workspace == null || workspace.panes.length >= 2) return;
+    // crux_workspace's rule: single pane, and the active pane holds two tabs
+    // so each side of the split gets one. Anything else is a no-op, with no
+    // `pane.split` event (the descriptor disables the action on the same
+    // rule, so this only guards the chord).
+    if (workspace == null || !workspace.canSplitPaneRight) return;
     final activeTabId = ref.read(activeTabIdProvider);
     final notifier = ref.wavecruxWorkspace;
     final newPaneId = await notifier.splitPane();
