@@ -108,6 +108,60 @@ void main() {
     }
   });
 
+  group('WaveCruxPaneHost — same-name tab disambiguation (crux-shared#36)', () {
+    /// The visible chip label text, in tree order. The folder suffix is a
+    /// muted child span, so a chip's label is a rich-text Text.
+    List<String> chipLabels(WidgetTester tester) => [
+      for (final w in tester.widgetList<Text>(find.byType(Text)))
+        if (w.textSpan != null) w.textSpan!.toPlainText(),
+    ];
+
+    testWidgets('two same-name files in different folders each show their '
+        'folder', (tester) async {
+      final container = _makeContainer();
+      addTearDown(container.dispose);
+      await container.read(workspaceProvider.future);
+      await container.wavecruxWorkspace.openFile(
+        '/work/soc_sampler/wave.vcd',
+        displayName: 'wave.vcd',
+      );
+      await container.wavecruxWorkspace.openFile(
+        '/work/alu_core/wave.vcd',
+        displayName: 'wave.vcd',
+      );
+
+      await _pumpHost(tester, container: container);
+
+      expect(
+        chipLabels(tester),
+        containsAll(<String>[
+          'wave.vcd \u00B7 soc_sampler',
+          'wave.vcd \u00B7 alu_core',
+        ]),
+      );
+    });
+
+    testWidgets('uniquely named files get no folder suffix', (tester) async {
+      final container = _makeContainer();
+      addTearDown(container.dispose);
+      await container.read(workspaceProvider.future);
+      await container.wavecruxWorkspace.openFile(
+        '/work/soc_sampler/cpu.vcd',
+        displayName: 'cpu.vcd',
+      );
+      await container.wavecruxWorkspace.openFile(
+        '/work/alu_core/alu.vcd',
+        displayName: 'alu.vcd',
+      );
+
+      await _pumpHost(tester, container: container);
+
+      final labels = chipLabels(tester);
+      expect(labels, containsAll(<String>['cpu.vcd', 'alu.vcd']));
+      expect(labels.where((l) => l.contains('\u00B7')), isEmpty);
+    });
+  });
+
   testWidgets('un-split: the pane border is suppressed (transparent) — #46', (
     tester,
   ) async {

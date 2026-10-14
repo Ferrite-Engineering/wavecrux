@@ -96,6 +96,11 @@ class WaveCruxPaneHost extends ConsumerWidget {
       // Hover/long-press tooltip surfaces the full file path (the chip label
       // itself is the truncated display name).
       tabTooltipBuilder: (tab) => tab.payload.filePath ?? tab.displayName,
+      // Two waveform files with the same name in different folders get a
+      // muted folder suffix on their chips; the tab bar only calls this for
+      // tabs whose labels collide. Placeholder/streaming tabs have no path
+      // and simply get no suffix.
+      tabFilePath: (tab) => tab.payload.filePath,
       // The active pane uses a full-strength primary border so the focused
       // pane is unmistakable; the inactive pane keeps a faint at-rest divider
       // rather than vanishing entirely. Two refinements:
