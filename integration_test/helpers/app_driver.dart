@@ -41,6 +41,7 @@ import 'package:wavecrux/app.dart';
 import 'package:wavecrux/domain/models/decoder_config.dart';
 import 'package:wavecrux/domain/models/signal_filter.dart';
 import 'package:wavecrux/features/decoders/providers/active_decoders_provider.dart';
+import 'package:wavecrux/features/decoders/widgets/transaction_table_body.dart';
 import 'package:wavecrux/features/decoders/widgets/transaction_table_panel.dart';
 import 'package:wavecrux/features/tabs/providers/tab_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
@@ -148,16 +149,34 @@ bool get skipOnDesktopHost => !(Platform.isAndroid || Platform.isIOS);
 /// platform channels, real touch-target sizing, gestures).
 bool get skipOnMobileDevice => Platform.isAndroid || Platform.isIOS;
 
-/// Polls until the [TransactionTablePanel] renders at least [min] data row(s),
-/// failing after [timeout].
+/// The number of transactions the [TransactionTablePanel] is showing, after
+/// its filters, or 0 when the panel shows its empty state.
+///
+/// Read this, never `tester.widget<DataTable>(...).rows`: the table's
+/// `DataTable` holds only the header row, and the rows live in a lazy list
+/// that builds only the ones on screen. The count that matters is the whole
+/// filtered list the body was handed, which is [TransactionTableBody.rows].
+/// A static guard (`test/static/no_data_table_rows_in_integration_tests_test.dart`)
+/// fails if the old shape comes back.
+int transactionTableRowCount(WidgetTester tester) {
+  final body = find.descendant(
+    of: find.byType(TransactionTablePanel),
+    matching: find.byType(TransactionTableBody),
+  );
+  if (body.evaluate().isEmpty) return 0;
+  return tester.widget<TransactionTableBody>(body.first).rows.length;
+}
+
+/// Polls until the [TransactionTablePanel] shows at least [min] transaction
+/// row(s), failing after [timeout].
 ///
 /// Use after activating a decoder. `decodeAll` populates the provider first;
-/// the panel's `DataTable` (un-virtualized — it builds every `DataRow`
-/// eagerly) then renders over the following frames. A *synchronous* assertion
-/// races that build and intermittently finds zero `DataTable`s for large
-/// transaction sets (thousands of rows, e.g. the AXI4 captured fixtures),
-/// even though the decode succeeded. This bounded condition-poll returns the
-/// instant the rows are observable and never uses `pumpAndSettle(Duration)`.
+/// the panel then renders over the following frames. A *synchronous*
+/// assertion races that build and intermittently finds an empty table for
+/// large transaction sets (thousands of rows, e.g. the AXI4 captured
+/// fixtures), even though the decode succeeded. This bounded condition-poll
+/// returns the instant the rows are observable and never uses
+/// `pumpAndSettle(Duration)`.
 Future<void> expectTransactionTableRows(
   WidgetTester tester, {
   int min = 1,
@@ -166,14 +185,7 @@ Future<void> expectTransactionTableRows(
   expect(find.byType(TransactionTablePanel), findsOneWidget);
   final ok = await pumpUntil(
     tester,
-    () {
-      final table = find.descendant(
-        of: find.byType(TransactionTablePanel),
-        matching: find.byType(DataTable),
-      );
-      if (table.evaluate().isEmpty) return false;
-      return tester.widget<DataTable>(table.first).rows.length >= min;
-    },
+    () => transactionTableRowCount(tester) >= min,
     timeout: timeout,
   );
   expect(
@@ -615,8 +627,9 @@ Future<void> activateDecoderFromCapturedSpec(
 /// [expectedCount] decoded transaction rows.
 ///
 /// When [expectedCount] is 0, asserts the panel is showing its empty state
-/// (no [DataTable] rendered). Otherwise reads the [DataTable.rows] list
-/// length directly, which avoids coupling to internal widget-tree structures.
+/// (no [TransactionTableBody] rendered). Otherwise compares the count from
+/// [transactionTableRowCount], which covers every filtered row and not just
+/// the ones the lazy list has built.
 Future<void> assertTransactionTableRows(
   WidgetTester tester,
   int expectedCount,
@@ -626,19 +639,13 @@ Future<void> assertTransactionTableRows(
     expect(
       find.descendant(
         of: find.byType(TransactionTablePanel),
-        matching: find.byType(DataTable),
+        matching: find.byType(TransactionTableBody),
       ),
       findsNothing,
     );
     return;
   }
-  final dataTableFinder = find.descendant(
-    of: find.byType(TransactionTablePanel),
-    matching: find.byType(DataTable),
-  );
-  expect(dataTableFinder, findsOneWidget);
-  final dataTable = tester.widget<DataTable>(dataTableFinder);
-  expect(dataTable.rows.length, expectedCount);
+  expect(transactionTableRowCount(tester), expectedCount);
 }
 
 // ---------------------------------------------------------------------------

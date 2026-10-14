@@ -10,7 +10,6 @@
 // is the unit-sweep's job (see
 // test/services/decoders/ahb_lite_captured_fixtures_test.dart).
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:wavecrux/features/decoders/widgets/transaction_table_panel.dart';
@@ -35,11 +34,5 @@ void main() {
 
 void _assertAtLeastOneRow(WidgetTester tester) {
   expect(find.byType(TransactionTablePanel), findsOneWidget);
-  final dataTable = tester.widget<DataTable>(
-    find.descendant(
-      of: find.byType(TransactionTablePanel),
-      matching: find.byType(DataTable),
-    ),
-  );
-  expect(dataTable.rows.length, greaterThanOrEqualTo(1));
+  expect(transactionTableRowCount(tester), greaterThanOrEqualTo(1));
 }
