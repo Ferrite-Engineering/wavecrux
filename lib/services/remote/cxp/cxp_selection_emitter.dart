@@ -54,9 +54,9 @@ typedef CxpSelectionSink = void Function(CxpMessage message, {String? summary});
 /// see anything. Under a VSCode extension host it is the editor-host bridge,
 /// which posts the same message to the host for it to relay.
 ///
-/// The emitter is constructed by `cxpSelectionEmitterProvider` and bound
-/// to the running server's lifetime; `dispose` cancels all subscriptions
-/// and the debounce timer so a server restart starts from a clean slate.
+/// The emitter is constructed once by `cxpSelectionEmitterProvider` and lives
+/// as long as the app; its sink finds the running server at send time.
+/// `dispose` cancels all subscriptions and the debounce timer.
 class CxpSelectionEmitter {
   /// Creates an emitter that sends to [sink]. The resolver
   /// defaults to [WaveCruxNameResolver]; injection is provided for tests.

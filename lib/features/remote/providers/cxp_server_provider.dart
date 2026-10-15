@@ -319,21 +319,26 @@ class CxpEventLog extends _$CxpEventLog {
 // ── Selection emitter ─────────────────────────────────────────────────────────
 
 /// Bridges WaveCrux's per-tab selection providers (signal, cursor,
-/// markers) to outbound CXP `notify_selection` broadcasts. Rebuilds
-/// whenever the underlying server starts or stops so the emitter is
-/// always bound to the live server instance (and never broadcasts when
-/// the server is stopped).
+/// markers) to outbound CXP `notify_selection` broadcasts.
+///
+/// Built once and kept for the life of the app; it does not watch the server.
+/// The app reads this provider a single time at launch, while the lifecycle
+/// bridge is still starting the server, and nothing reads it again. A provider
+/// that watched `isRunning` would be marked dirty when the server came up and,
+/// with no listener to rebuild it, would stay disposed: no selection would
+/// ever be broadcast, while the per-peer send (which bypasses the emitter)
+/// kept working. Instead the sink looks up the running server at send time,
+/// so a selection reaches peers whenever a server is up, across restarts, and
+/// is dropped while it is stopped. Same shape as `collabViewerBridgeProvider`.
 @Riverpod(keepAlive: true)
-CxpSelectionEmitter? cxpSelectionEmitter(Ref ref) {
-  final running = ref.watch(
-    cxpServerProvider.select((s) => s.isRunning),
-  );
-  if (!running) return null;
-  final notifier = ref.read(cxpServerProvider.notifier);
-  final server = notifier.server;
-  if (server == null) return null;
-  final emitter = CxpSelectionEmitter(ref: ref, sink: server.broadcast)
-    ..start();
+CxpSelectionEmitter cxpSelectionEmitter(Ref ref) {
+  final emitter = CxpSelectionEmitter(
+    ref: ref,
+    sink: (message, {summary}) => ref
+        .read(cxpServerProvider.notifier)
+        .server
+        ?.broadcast(message, summary: summary),
+  )..start();
   ref.onDispose(emitter.dispose);
   return emitter;
 }

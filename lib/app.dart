@@ -803,9 +803,10 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
       ref
         ..read(cxpLifecycleBridgeProvider)
         // Instantiate the selection emitter so it begins watching the
-        // selection / cursor / marker providers as soon as the CXP server
-        // is up. The provider depends on cxpServerProvider; it returns
-        // null while the server is stopped (the listen is harmless).
+        // selection / cursor / marker providers now. It is kept alive and
+        // does not depend on the server, so this one read is enough: it
+        // sends through whichever server is running when a selection
+        // changes, and drops the message while none is.
         ..read(cxpSelectionEmitterProvider);
     }
 
