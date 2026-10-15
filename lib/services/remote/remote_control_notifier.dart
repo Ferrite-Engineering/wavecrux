@@ -42,10 +42,28 @@ class SelectedSignalNotifier extends _$SelectedSignalNotifier {
   @override
   String? build() => null;
 
-  // A setter cannot be named 'selection' because _$SelectedSignalNotifier
-  // already exposes 'state'; a named method is clearer at call sites.
-  // ignore: use_setters_to_change_properties
-  void select(String? signalRef) => state = signalRef;
+  bool _notifyIfUnchanged = false;
+
+  /// Sets the focus to [signalRef].
+  ///
+  /// Listeners are normally told only when the value differs, so re-selecting
+  /// the signal that is already focused is silent. Pass [notifyIfUnchanged]
+  /// for a deliberate user pick, where the selection must still reach the
+  /// listeners (the CXP selection emitter) even though the focus did not move:
+  /// the focus can already hold this ref because an inbound cross-probe, or a
+  /// selection in another tab of the same design, put it there.
+  void select(String? signalRef, {bool notifyIfUnchanged = false}) {
+    _notifyIfUnchanged = notifyIfUnchanged;
+    try {
+      state = signalRef;
+    } finally {
+      _notifyIfUnchanged = false;
+    }
+  }
+
+  @override
+  bool updateShouldNotify(String? previous, String? next) =>
+      _notifyIfUnchanged || previous != next;
 }
 
 // ── State ─────────────────────────────────────────────────────────────────────

@@ -342,9 +342,14 @@ class SignalListPanel extends ConsumerWidget {
     }
     // Mirror the root CXP focus to the clicked signal so the live emitter and
     // the panel's per-peer send resolve to it. `signalRef` is empty for a
-    // non-signal entry; guard so we never publish an empty focus.
+    // non-signal entry; guard so we never publish an empty focus. The focus may
+    // already hold this ref (left by an inbound cross-probe or by another tab
+    // of the same design), so ask for a notification anyway: a click is a
+    // deliberate pick and must reach the live emitter.
     if (signalRef.isNotEmpty) {
-      ref.read(selectedSignalProvider.notifier).select(signalRef);
+      ref
+          .read(selectedSignalProvider.notifier)
+          .select(signalRef, notifyIfUnchanged: true);
     }
   }
 
