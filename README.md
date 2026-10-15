@@ -13,7 +13,7 @@ multi-gigabyte scale. Open core, part of Ferrite Engineering's EDACrux suite.
 
 ## Status
 
-Public beta. Implemented in this repository today:
+Stable since 1.0. Implemented in this repository today:
 
 - **Waveform engine** — VCD, FST and GHW via the [wellen](https://github.com/ekiwi/wellen)
   Rust crate through `dart:ffi` on desktop and mobile, and the same crate compiled
