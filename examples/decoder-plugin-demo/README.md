@@ -108,23 +108,36 @@ The artifact is `build\libwavecrux_onewire.dll`.
 
 ### 2. Drop the plugin into WaveCrux's plugin directory
 
-The default per-user plugin directory is platform-specific:
+The default per-user plugin directory is `wavecrux/decoders`
+(`WaveCrux\decoders` on Windows) inside WaveCrux's application-support
+folder. That folder is named after the app's identifier, so it differs
+between the WaveCrux download (WaveCrux Pro) and a build of this
+open-core repository:
 
-| Platform | Default path |
-|---|---|
-| Linux | `~/.config/wavecrux/decoders/` |
-| macOS | `~/Library/Application Support/wavecrux/decoders/` |
-| Windows | `%APPDATA%\WaveCrux\decoders\` |
+| Platform | WaveCrux download | Open-core build |
+|---|---|---|
+| macOS | `~/Library/Application Support/com.ferriteengineering.wavecruxPro/wavecrux/decoders/` | `~/Library/Application Support/com.ferriteengineering.wavecrux/wavecrux/decoders/` |
+| Linux | `~/.local/share/com.ferriteengineering.wavecrux_pro/wavecrux/decoders/` | `~/.local/share/com.ferriteengineering.wavecrux/wavecrux/decoders/` |
+| Windows | `%APPDATA%\com.ferriteengineering\WaveCrux Pro\WaveCrux\decoders\` | `%APPDATA%\com.ferriteengineering\WaveCrux\WaveCrux\decoders\` |
+
+On Linux, `~/.local/share` is `$XDG_DATA_HOME` when that is set. The
+reliable way to find the folder on any machine is
+`Settings → Decoders → Plugins → Open plugin directory`, which creates it
+if needed and shows it in the file manager.
 
 Create the directory if it doesn't exist, then copy the artifact:
 
 ```bash
-# Linux / macOS — using the Makefile target:
+# Linux / macOS, using the Makefile target (installs for the WaveCrux
+# download):
 make install
 
-# …or by hand:
-mkdir -p ~/Library/Application\ Support/wavecrux/decoders
-cp libwavecrux_onewire.dylib ~/Library/Application\ Support/wavecrux/decoders/
+# …for a build of this open-core repository:
+make install EDITION=open
+
+# …or by hand, on macOS with the WaveCrux download:
+mkdir -p ~/Library/Application\ Support/com.ferriteengineering.wavecruxPro/wavecrux/decoders
+cp libwavecrux_onewire.dylib ~/Library/Application\ Support/com.ferriteengineering.wavecruxPro/wavecrux/decoders/
 ```
 
 Alternatively, point WaveCrux at any directory you like via

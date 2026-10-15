@@ -40,16 +40,25 @@ C-compatible shared library rather than a `.rlib`.
 
 ## Install and verify
 
-After building, copy the artifact into WaveCrux's plugin directory:
+After building, copy the artifact into WaveCrux's plugin directory. The
+paths below are for the WaveCrux download; a build of the open-core
+repository uses `com.ferriteengineering.wavecrux` in place of the
+identifier. The table in
+[`../decoder-plugin-demo/README.md`](../decoder-plugin-demo/README.md#2-drop-the-plugin-into-wavecruxs-plugin-directory)
+lists every platform and edition, and
+`Settings → Decoders → Plugins → Open plugin directory` shows the folder
+on any machine.
 
 ```bash
 # macOS
+mkdir -p ~/Library/Application\ Support/com.ferriteengineering.wavecruxPro/wavecrux/decoders
 cp target/release/libwavecrux_onewire.dylib \
-   ~/Library/Application\ Support/wavecrux/decoders/
+   ~/Library/Application\ Support/com.ferriteengineering.wavecruxPro/wavecrux/decoders/
 
 # Linux
+mkdir -p ~/.local/share/com.ferriteengineering.wavecrux_pro/wavecrux/decoders
 cp target/release/libwavecrux_onewire.so \
-   ~/.config/wavecrux/decoders/
+   ~/.local/share/com.ferriteengineering.wavecrux_pro/wavecrux/decoders/
 ```
 
 …and follow steps 3–6 of [`../decoder-plugin-demo/README.md`](../decoder-plugin-demo/README.md)
