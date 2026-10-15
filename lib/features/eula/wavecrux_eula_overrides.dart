@@ -1,9 +1,8 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
-import 'dart:io' show exit;
-
 import 'package:crux_eula/crux_eula.dart';
+import 'package:crux_telemetry/crux_telemetry.dart' show cruxExit;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:url_launcher/url_launcher.dart';
@@ -41,8 +40,8 @@ final List<Override> wavecruxEulaOverrides = <Override>[
   // when this is null, which is the honest surface there: a "quit" that
   // cannot quit would be worse than no button.
   //
-  // `exit(0)` rather than a graceful pop, matching what the File → Quit menu
+  // `cruxExit()` rather than a graceful pop, matching what the File → Quit menu
   // action does — there is no unsaved user work at this point in startup,
   // because nothing has been opened yet.
-  if (!kIsWeb) cruxEulaOnDeclineProvider.overrideWithValue(() => exit(0)),
+  if (!kIsWeb) cruxEulaOnDeclineProvider.overrideWithValue(cruxExit),
 ];

@@ -95,7 +95,7 @@ extension _ViewerScreenShortcuts on _ViewerScreenState {
       case ShortcutAction.closeFile:
         unawaited(_closeFile());
       case ShortcutAction.quit:
-        exit(0);
+        cruxExit();
       case ShortcutAction.openAbout:
         unawaited(
           ModalGuard.run(

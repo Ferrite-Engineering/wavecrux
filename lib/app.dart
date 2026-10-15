@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'dart:async' show StreamSubscription, unawaited;
-import 'dart:io' show File, Platform, exit, stderr, stdout;
+import 'dart:io' show File, Platform, stderr, stdout;
 
 import 'package:crux_eula/crux_eula.dart';
 import 'package:crux_ide_layout/crux_ide_layout.dart'
@@ -181,7 +181,7 @@ Future<void> runWaveCrux({
 Future<void> _flushAndExit(int code) async {
   await stdout.flush();
   await stderr.flush();
-  exit(code);
+  cruxExit(code);
 }
 
 /// Starts capturing diagnostics. Idempotent under hot restart.
@@ -1730,9 +1730,11 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
                               // mounts, so on the welcome route a menu Quit
                               // silently no-oped (the app could only be quit
                               // from the Dock). Handle it here, with the same
-                              // semantics as the viewer dispatcher's case.
+                              // semantics as the viewer dispatcher's case:
+                              // `cruxExit`, so the session is recorded as
+                              // ended cleanly before the process goes.
                               if (action == ShortcutAction.quit) {
-                                exit(0);
+                                cruxExit();
                               }
                               final ctx =
                                   WidgetsBinding
