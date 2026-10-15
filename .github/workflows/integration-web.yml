@@ -54,7 +54,7 @@ jobs:
     # Cost guardrail: no job may run unbounded (max observed suite-wide is 29 min).
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
           # Token for the crux-shared submodule checkout. A pull request from a
@@ -64,7 +64,7 @@ jobs:
 
       - name: Install Chrome
         id: chrome
-        uses: browser-actions/setup-chrome@c785b87e244131f27c9f19c1a33e2ead956ab7ce # v1.7.3
+        uses: browser-actions/setup-chrome@48ad923757ca74d66703209fe939badbdf80f2f4 # v2.2.0
         with:
           chrome-version: stable
 
@@ -102,7 +102,7 @@ jobs:
           cache: true
 
       - name: Cache pub dependencies
-        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ${{ steps.flutter.outputs.pub-cache-path }}
@@ -209,14 +209,14 @@ jobs:
     # Cost guardrail: no job may run unbounded (max observed suite-wide is 29 min).
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
           token: ${{ secrets.SUBMODULE_PAT || github.token }}
 
       - name: Install Chrome
         id: chrome
-        uses: browser-actions/setup-chrome@c785b87e244131f27c9f19c1a33e2ead956ab7ce # v1.7.3
+        uses: browser-actions/setup-chrome@48ad923757ca74d66703209fe939badbdf80f2f4 # v2.2.0
         with:
           chrome-version: stable
 
@@ -229,7 +229,7 @@ jobs:
           cache: true
 
       - name: Cache pub dependencies
-        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ${{ steps.flutter.outputs.pub-cache-path }}
