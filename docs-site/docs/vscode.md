@@ -28,4 +28,4 @@ Cross-probing works between apps on the same machine.
 
 ## Commands, settings and telemetry { #reference }
 
-The extension's listing on the [Marketplace](https://marketplace.visualstudio.com/items?itemName=ferrite-engineering.wavecrux) has the full list of commands and settings. The extension sends usage statistics only while VS Code's own telemetry setting is on, and it checks that setting each time rather than once at startup.
+The extension's listing on the [Marketplace](https://marketplace.visualstudio.com/items?itemName=ferrite-engineering.wavecrux) has the full list of commands and settings. The extension sends usage statistics only while VS Code's own telemetry setting is on, and it checks that setting each time rather than once at startup. From 1.1 it sends nothing in the EEA, the United Kingdom, Switzerland or South Korea, whatever that setting says, and it keeps no installation ID while it is not sending.
