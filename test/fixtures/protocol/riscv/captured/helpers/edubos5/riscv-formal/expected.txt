@@ -1,0 +1,20 @@
+eduBOS5: openPCIE a0d80cd3cb525f911cae61be4c83a44e137ed916
+riscv-formal: c992aa61fdfe0846c5ed90324c596202a1c69b76
+
+Why an all-zero word never retires (edubos5.sv at the pinned commit):
+120: default: instr_decode.SYSTEM = HI;
+450: if (!instr_decode.SYSTEM) begin
+
+The ill check's precondition (rvfi_ill_check.sv):
+46: cover(!reset && check && valid && insn == 0);
+49: assume(insn == 0);
+
+EN_WAIT4REGS=0
+  cover (control, checks.cfg [cover]: two instructions retire), mode cover: PASS
+  ill_ch0, mode bmc (as run-riscv-formal.sh runs it): PASS (depth 17, check cycle 16)
+  cover_ill_ch0, mode cover: searched steps 0..16, unreached: rvfi_ill_check.sv:46.4-46.48, DONE (FAIL, rc=2)
+
+EN_WAIT4REGS=1
+  cover (control, checks.cfg [cover]: two instructions retire), mode cover: PASS
+  ill_ch0, mode bmc (as run-riscv-formal.sh runs it): PASS (depth 17, check cycle 16)
+  cover_ill_ch0, mode cover: searched steps 0..16, unreached: rvfi_ill_check.sv:46.4-46.48, DONE (FAIL, rc=2)

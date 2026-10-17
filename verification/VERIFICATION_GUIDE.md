@@ -152,6 +152,7 @@ All fixtures live under `verification/fixtures/` and are committed to the repo. 
 | `protocol/riscv/generated/riscv_rvfi_retire.vcd` + `.expected_retire_stream.json` | RISC-V — full riscv-formal RVFI channel bundle for a single-issue in-order core; known-good retire stream for the `lib/services/riscv/` trace substrate (includes back-to-back retirements under one `rvfi_valid` pulse, a store, a load, an x0 write, a taken branch, and a trapping `ecall`) |
 | `protocol/riscv/captured/riscv_picorv32_wb_ez.fst` + `.fixture.json` + `.expected_transactions.json` | RISC-V — **captured** RV32I instruction-fetch trace off YosysHQ's `picorv32_wb` (ISC), built with iverilog from a vendored core; §5.9.9 |
 | `protocol/riscv/captured/riscv_ibex_rvfi_trap.fst` + `.fixture.json` + `.expected_transactions.json` | RISC-V — **captured** real-core RVFI retire stream off lowRISC's `ibex_top` (Apache-2.0, commit `3250d994`), built with Verilator 5.050 and `+define+RVFI`. 26 retirements over arithmetic, word/byte/halfword load-store pairs, a taken forward `beq`, a backward `bne` loop and a trapping `ecall`. The only fixture in the corpus whose signal names, hierarchy and retirement timing were not chosen by us; §10B.1.10 |
+| `protocol/riscv/captured/riscv_edubos5_rvfi_reset.fst` + `.fixture.json` + `.expected_transactions.json` | RISC-V: **captured** real-core RVFI retire stream off Chili.CHIPS' eduBOS5 (BSD-3-Clause, openPCIE commit `a0d80cd3`), built with Verilator 5.052 and `+define+RISCV_FORMAL`, observed through the core's own `soc_cpu_view`. An eight-instruction RV32I loop run three times (20 real retirements) plus one retirement at time zero, before the first clock edge, which the checker pins as two violations; §10B.1.11 |
 | `test/fixtures/gtkw/generated/*.gtkw`, `…/fixture.vcd`, `…/sample_filter.txt` | GTKWave session-import fixtures (synthetic) + golden snapshots |
 | `test/fixtures/gtkw/captured/*.gtkw` | Real GTKWave saves from public projects (Apache/MIT/BSD), with `PROVENANCE.md` |
 | `cocotb/basic_log.txt`, `cocotb/edge_cases_log.txt` | Cocotb log correlation fixtures |
@@ -1683,6 +1684,17 @@ Current captures:
   which is also where the two upstream Ibex RVFI deviations this capture
   found are written up. Helpers under
   [`.../captured/helpers/ibex/`](../test/fixtures/protocol/riscv/captured/helpers/ibex/).
+- `riscv_edubos5_rvfi_reset.fst`: 21 RVFI retirements off Chili.CHIPS'
+  eduBOS5 (BSD-3-Clause, openPCIE commit `a0d80cd3`), captured with
+  Verilator 5.052 and `+define+RISCV_FORMAL` through the core's own
+  `wavecrux/soc_cpu_view.sv`. An eight-instruction loop (`addi`, `sw`,
+  `lw`, `add`, `sb`, `jal`) run three times, plus one retirement at time
+  zero that never happened. eduBOS5 is fetched at a pinned commit with a
+  sparse checkout. 1524 bytes committed, trimmed from a 6522-byte dump. Its
+  instruction-trace snapshot has 20 transactions, written from the program
+  listing and the testbench log rather than from decoder output. Exercised
+  in depth by §10B.1.11. Helpers under
+  [`.../captured/helpers/edubos5/`](../test/fixtures/protocol/riscv/captured/helpers/edubos5/).
 - `riscv_picorv32_wb_ez.fst` — Seven RV32I ifetch completions covering
   one full pass through the upstream loop body plus the wrap-around
   fetch after the `jal`. Mnemonics include `addi` (the `li`
@@ -4016,7 +4028,72 @@ rather than asserting "more than zero".
 - **Scalar RVFI ports.** Ibex retires at most one instruction per cycle, so
   this says nothing about packed-NRET bundle detection.
 
-#### 10B.1.11 Automation Assessment
+#### 10B.1.11 The captured eduBOS5 trace: a retirement before the first clock edge
+
+`riscv_edubos5_rvfi_reset.fst` is the second real-core capture, from a
+different core and design team than Ibex: Chili.CHIPS' eduBOS5, the RV32I
+CPU of openPCIE (BSD-3-Clause, commit `a0d80cd3`), simulated with Verilator
+and `+define+RISCV_FORMAL` and observed through the core's own
+`wavecrux/soc_cpu_view.sv`. An eight-instruction loop runs three times.
+1524 bytes committed. Rebuild recipe, program listing and the mechanism in
+full: [`helpers/edubos5/README.md`](../test/fixtures/protocol/riscv/captured/helpers/edubos5/README.md).
+
+**Setup.** Open
+`verification/fixtures/protocol/riscv/captured/riscv_edubos5_rvfi_reset.fst`,
+add an **RVFI Commit Inspector**, press **Auto-bind**.
+
+**Step-by-step expected behavior**
+
+1. All **21 of 21** channels bind, at `tb_edubos5_rvfi.cpu_view`.
+   `rvfi_trap`, `rvfi_halt` and `rvfi_intr` are three names for one dumped
+   signal (Verilator merges the three constants); all three pins bind.
+2. **Commits** lists **21** retirements. The first is at **t = 0**, PC
+   `0x000`, `rvfi_order` 0, an all-zero instruction word that does not
+   disassemble. The second, at 25 ns, is `addi ra, zero, 0` at PC `0x000`,
+   also `rvfi_order` 0. The rest run `rvfi_order` 1 to 19 through
+   `0x008`-`0x01c` three times.
+3. **Memory** shows nine accesses: per pass, a word store and load at
+   `0x100` (mask `0xF`) and a byte store at `0x104` with mask `0x2`.
+
+**Checks**
+
+The Checks tab reports **2 violations**, both on the second row: **retirement
+order** (`rvfi_order` 0, then 0) and **control flow** (retirement #0 claims
+next PC `0x0000_0004`, retirement #1 fetched from `0x0000_0000`). That is the
+expected result and must not be suppressed. eduBOS5 executes the program
+correctly; its RVFI account of the start of reset reports a retirement that
+did not happen:
+
+- `rvfi_valid = (state == FETCH_INSTR)` (`edubos5.sv:647`) has no reset
+  term, and `FETCH_INSTR` is `3'd0` (`edubos5.sv:72`).
+- The asynchronous reset (`always_ff @(negedge arst_n or posedge clk)`,
+  `edubos5.sv:394`) puts the FSM in `EXECUTE` (`edubos5.sv:397`), but with
+  `arst_n` low from time zero there is no `arst_n` edge, so in simulation
+  the reset branch first runs at the first rising clock edge (5 ns).
+- Until then the FSM holds its power-up value, zero in Verilator, which is
+  `FETCH_INSTR`: `rvfi_valid` is high from 0 to 5 ns with `arst_n` low.
+
+The other four rules are clean, and the 20 real retirements alone are clean
+under all six. riscv-formal cannot observe the window: its checks ignore
+`rvfi_valid` while reset is asserted, and SymbiYosys models the asynchronous
+reset with `async2sync`. A re-capture against an upstream that keeps
+`rvfi_valid` low before the reset branch has run would show 20 retirements
+and no violations; `riscv_edubos5_captured_rvfi_test.dart` would then need
+new expectations, by design.
+
+**Limits of this capture**
+
+- **Two-state**, as with Ibex. A four-state simulator starts the FSM at `x`,
+  so it would not present the time-zero window the same way.
+- **2-stage pipeline only** (`EN_WAIT4REGS = 0`); scalar RVFI ports.
+
+The helper directory also carries `riscv-formal/`, a manual reproduction
+(not run by CI) showing that riscv-formal's `ill` check passes on this core
+at this commit without its precondition ever occurring: eduBOS5 decodes the
+all-zero word as `SYSTEM` and halts instead of retiring it, and the check's
+own cover statement is unreachable through step 16 on both pipelines.
+
+#### 10B.1.12 Automation Assessment
 
 | Test | Coverage |
 |---|---|
@@ -4047,6 +4124,9 @@ rather than asserting "more than zero".
 | **Behaviour against a real captured core trace (Ibex, Apache-2.0)** — auto-detection at a two-deep real scope, all 21 channels, `rvfi_ext_*` siblings not bound, 26-retirement reconstruction, real byte masks, the pinned 19-violation checker result with its one documented Ibex RVFI deviation, and the `rvfi_intr` handler-entry exemption | **UNIT** (`test/services/riscv/riscv_ibex_captured_rvfi_test.dart` — §10B.1.10) |
 | Ibex capture decodes to its committed transaction snapshot | **WIDGET** (`test/services/decoders/riscv_captured_fixtures_test.dart` — fixture auto-discovery sweep) |
 | Ibex capture reproducibility (pinned commit + Verilator + trim) | **MANUAL** — covered by `helpers/ibex/README.md` + `helpers/ibex/Makefile` |
+| **Behaviour against a second captured core (eduBOS5, BSD-3-Clause)**: detection at `tb_edubos5_rvfi.cpu_view` with full-path keying (and the channels a signal-ref-keyed map loses), reset held from time zero, the 21-retirement stream with its time-zero retirement, register and memory effects off the program listing, and the pinned two-violation checker result | **UNIT** (`test/services/riscv/riscv_edubos5_captured_rvfi_test.dart`, §10B.1.11) |
+| eduBOS5 capture decodes to its committed transaction snapshot (20 transactions, written from the listing) | **WIDGET** (`test/services/decoders/riscv_captured_fixtures_test.dart`, fixture auto-discovery sweep) |
+| eduBOS5 capture reproducibility (pinned commit + Verilator + trim); riscv-formal `ill` cover reproduction | **MANUAL**: `helpers/edubos5/Makefile`, `helpers/edubos5/riscv-formal/run-ill-cover.sh` against its `expected.txt` |
 | Add-Widget picker shows it with no tier badge; "does it *feel* like a complete free tool" | **MANUAL** |
 
 ### 10B.2 Pipeline Diagram (`pipeline`)
