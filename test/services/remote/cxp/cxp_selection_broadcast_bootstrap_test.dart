@@ -4,21 +4,19 @@
 import 'dart:io';
 
 import 'package:crux_cxp/crux_cxp.dart';
+import 'package:crux_cxp_ui/crux_cxp_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wavecrux/domain/enums/scope_type.dart';
 import 'package:wavecrux/domain/enums/var_direction.dart';
 import 'package:wavecrux/domain/enums/var_type.dart';
-import 'package:wavecrux/domain/models/app_settings.dart';
 import 'package:wavecrux/domain/models/scope.dart';
 import 'package:wavecrux/domain/models/variable.dart';
-import 'package:wavecrux/features/remote/providers/cxp_server_provider.dart';
-import 'package:wavecrux/features/settings/providers/settings_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
+import 'package:wavecrux/services/remote/cxp/cxp_selection_emitter_provider.dart';
+import 'package:wavecrux/services/remote/cxp/wavecrux_cxp_binding.dart';
 import 'package:wavecrux/services/remote/remote_control_notifier.dart';
-import 'package:wavecrux/services/settings/settings_service.dart';
 
 import '../../../helpers/fake_waveform_data_source.dart';
 import '../../../helpers/product_telemetry_config.dart';
@@ -26,8 +24,8 @@ import '../../../helpers/wait_for.dart';
 
 /// The live selection broadcast, started the way the app starts it.
 ///
-/// The app reads `cxpLifecycleBridgeProvider` and then
-/// `cxpSelectionEmitterProvider` once at launch. The bridge starts the server
+/// The app reads `cruxCxpRuntimeProvider` and then
+/// `cxpSelectionEmitterProvider` once at launch. The runtime starts the server
 /// asynchronously, so that read happens while the server is still stopped.
 /// Nothing reads the emitter provider again, so the emitter built by that one
 /// read has to broadcast through the server once it is up. An emitter that
@@ -43,16 +41,7 @@ void main() {
   late Directory peersDir;
   late ProviderContainer container;
 
-  setUpAll(() {
-    TestWidgetsFlutterBinding.ensureInitialized();
-    PackageInfo.setMockInitialValues(
-      appName: 'WaveCrux',
-      packageName: 'com.ferriteengineering.wavecrux',
-      version: '0.0.0-test',
-      buildNumber: '0',
-      buildSignature: '',
-    );
-  });
+  setUpAll(TestWidgetsFlutterBinding.ensureInitialized);
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
@@ -60,10 +49,15 @@ void main() {
     container = ProviderContainer(
       overrides: [
         productTelemetryConfig,
-        cxpManifestDirectoryProvider.overrideWith((_) async => peersDir.path),
+        cruxCxpProductBindingProvider.overrideWithValue(kWaveCruxCxpBinding),
+        cruxCxpManifestDirectoryProvider.overrideWith(
+          (_) async => peersDir.path,
+        ),
+        // The test platform is not a desktop, so name the transport.
+        cruxCxpTransportAvailableProvider.overrideWithValue(true),
         // Port 0: let the OS pick, so parallel test runs never collide.
-        settingsServiceProvider.overrideWithValue(
-          const _FakeSettingsService(AppSettings(cxpServerPort: 0)),
+        cruxCxpLaunchSettingsProvider.overrideWithValue(
+          const CruxCxpSettings(enabled: true, port: 0),
         ),
         waveformSourceProvider.overrideWith(
           () => _PreloadedSourceNotifier(
@@ -75,8 +69,9 @@ void main() {
   });
 
   tearDown(() async {
-    await container.read(cxpServerProvider.notifier).stopServer();
+    // Disposing the container stops the runtime and removes its manifest.
     container.dispose();
+    await Future<void>.delayed(const Duration(milliseconds: 200));
     if (peersDir.existsSync()) peersDir.deleteSync(recursive: true);
   });
 
@@ -86,14 +81,16 @@ void main() {
       // Launch order, as in the app: bridge first, then one read of the
       // emitter while the server is still starting.
       container
-        ..read(cxpLifecycleBridgeProvider)
+        ..read(cruxCxpRuntimeProvider)
         ..read(cxpSelectionEmitterProvider);
       await waitFor(
-        () => container.read(cxpServerProvider).isRunning,
+        () => container.read(cruxCxpServerStatusProvider).running,
         timeout: const Duration(seconds: 10),
-        reason: 'the lifecycle bridge should start the CXP server',
+        reason: 'the shared runtime should start the CXP server',
       );
 
+      // A provider nobody listens to is paused, so hold the peer list open.
+      container.listen(cruxCxpPeersProvider, (_, _) {});
       final peer = await _PeerNode.start(peersDir.path);
       addTearDown(peer.stop);
       final notifySelections = <NotifySelection>[];
@@ -107,11 +104,8 @@ void main() {
       // WaveCrux's server and WaveCrux is known to the peer's.
       await waitFor(
         () =>
-            (container
-                        .read(cxpServerProvider.notifier)
-                        .server
-                        ?.connectedPeers ??
-                    const <PeerIdentity>[])
+            container
+                .read(cruxCxpPeersProvider)
                 .any((p) => p.peerId == peer.identity.peerId) &&
             peer.server.connectedPeers.any(
               (p) => p.productName == 'wavecrux',
@@ -225,15 +219,6 @@ class _PeerNode {
     await _writer.remove();
     await server.stop();
   }
-}
-
-class _FakeSettingsService implements WaveCruxSettingsService {
-  const _FakeSettingsService(this._settings);
-  final AppSettings _settings;
-  @override
-  Future<AppSettings> load() async => _settings;
-  @override
-  Future<void> save(AppSettings settings) async {}
 }
 
 class _PreloadedSourceNotifier extends WaveformSourceNotifier {

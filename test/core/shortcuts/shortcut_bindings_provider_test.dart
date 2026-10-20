@@ -99,6 +99,7 @@ const Set<ShortcutAction> paletteOnlyActions = {
   ShortcutAction.newWorkspace,
   ShortcutAction.saveWorkspaceAs,
   ShortcutAction.openWorkspace,
+  ShortcutAction.clearRecentFiles,
   ShortcutAction.exportTabAsSession,
   // Pane management commands (split-pane). [splitPaneRight] is
   // bound to Cmd/Ctrl+\ and [closePane] to Cmd/Ctrl+Shift+W;

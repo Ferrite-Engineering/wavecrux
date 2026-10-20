@@ -24,7 +24,7 @@ HostBridgeTransport hostBridgeChannel(Ref ref) {
 
 /// The editor-host bridge, started.
 ///
-/// Read once during bootstrap, exactly like `cxpLifecycleBridgeProvider` and
+/// Read once during bootstrap, exactly like `cruxCxpRuntimeProvider` and
 /// `collabViewerBridgeProvider`: a `keepAlive` provider whose value is a
 /// long-lived listener set, kept alive by that single read for the app's
 /// lifetime.

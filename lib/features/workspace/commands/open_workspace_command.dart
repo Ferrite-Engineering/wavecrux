@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/domain/models/workspace.dart';
 import 'package:wavecrux/features/tabs/providers/tab_providers.dart';
-import 'package:wavecrux/features/workspace/providers/recent_workspaces_provider.dart';
+import 'package:wavecrux/features/workspace/providers/recent_lists.dart';
 import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/services/workspace/wavecrux_workspace_codec.dart';
@@ -101,7 +101,7 @@ Future<bool> runOpenWorkspaceCommand({
     return false;
   }
 
-  await container.read(recentWorkspacesProvider.notifier).addWorkspace(path);
+  container.read(recentWorkspaces.provider.notifier).markOpened(path);
   return true;
 }
 

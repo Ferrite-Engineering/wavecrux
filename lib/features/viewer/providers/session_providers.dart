@@ -29,7 +29,7 @@ import 'package:wavecrux/features/viewer/providers/time_providers.dart';
 import 'package:wavecrux/features/viewer/providers/translate_filter_provider.dart';
 import 'package:wavecrux/features/viewer/providers/value_column_provider.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
-import 'package:wavecrux/features/workspace/providers/recent_files_provider.dart';
+import 'package:wavecrux/features/workspace/providers/recent_lists.dart';
 import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
 import 'package:wavecrux/services/session/session_extension_codec.dart';
 import 'package:wavecrux/services/session/session_service.dart';
@@ -77,7 +77,7 @@ class SessionNotifier extends _$SessionNotifier {
     final audit = ref.read(cruxAuditRecorderProvider);
     await ref.read(sessionServiceProvider).saveSession(session, filePath);
     state = filePath;
-    await ref.read(recentFilesProvider.notifier).addFile(filePath);
+    ref.read(recentFiles.provider.notifier).markOpened(filePath);
     // Recorded AFTER the write succeeds. `saveSession` throws
     // `SessionSaveException` on failure, so an event here means the file is on
     // disk — an audit line for a save that did not happen is worse than no
@@ -115,7 +115,7 @@ class SessionNotifier extends _$SessionNotifier {
         .loadSession(filePath);
     await _restore(session);
     state = filePath;
-    await ref.read(recentFilesProvider.notifier).addFile(filePath);
+    ref.read(recentFiles.provider.notifier).markOpened(filePath);
   }
 
   /// Snapshots the current viewer state into a [SessionState] without

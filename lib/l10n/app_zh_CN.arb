@@ -33,22 +33,6 @@
   "@emptyCanvasSampleFailed": {
     "description": "Snackbar shown when the bundled sample waveform fails to load, e.g. the asset could not be copied out of the app bundle"
   },
-  "emptyCanvasRecentFiles": "最近文件",
-  "@emptyCanvasRecentFiles": {
-    "description": "Section heading above the recent-files list on the empty-canvas state"
-  },
-  "emptyCanvasNoRecentFiles": "暂无最近文件。",
-  "@emptyCanvasNoRecentFiles": {
-    "description": "Empty-state hint shown when the recent-files list is empty"
-  },
-  "emptyCanvasRecentWorkspaces": "最近工作区",
-  "@emptyCanvasRecentWorkspaces": {
-    "description": "Section heading above the recent-workspaces list on the empty-canvas state"
-  },
-  "emptyCanvasNoRecentWorkspaces": "暂无已保存的工作区。",
-  "@emptyCanvasNoRecentWorkspaces": {
-    "description": "Empty-state hint shown when the recent-workspaces list is empty"
-  },
   "emptyCanvasRemoveRecentFile": "移除",
   "@emptyCanvasRemoveRecentFile": {
     "description": "Tooltip for the icon button that removes a file from the recent-files list on the empty-canvas state"
@@ -3025,22 +3009,6 @@
   "@settingsCxpSectionTitle": {
     "description": "Sub-heading for the CXP (Cross-Tool eXchange Protocol) controls within the Remote Control settings section. Distinct from WCP."
   },
-  "settingsCxpEnabledLabel": "启用 CXP 服务器",
-  "@settingsCxpEnabledLabel": {
-    "description": "Toggle label that controls whether the CXP peer cross-probe server is running"
-  },
-  "settingsCxpEnabledDescription": "让 WaveCrux 与其他兼容 Crux 的工具共享选择事件",
-  "@settingsCxpEnabledDescription": {
-    "description": "Subtitle explaining what enabling the CXP server does"
-  },
-  "settingsCxpPortLabel": "CXP 端口",
-  "@settingsCxpPortLabel": {
-    "description": "Label for the CXP server TCP port input"
-  },
-  "settingsCxpPortDescription": "TCP 端口号 (1–65535)。与 WCP 端口不同。",
-  "@settingsCxpPortDescription": {
-    "description": "Subtitle for the CXP port input"
-  },
   "settingsEditorsSection": "编辑器",
   "@settingsEditorsSection": {
     "description": "Title of the dedicated Editors settings section (external editor integration). Suite-wide section shared by all four Crux apps."
@@ -3057,136 +3025,19 @@
   "@settingsEditorCommandHint": {
     "description": "Placeholder hint shown in the editor command text field"
   },
-  "settingsCxpStatus": "CXP 状态",
-  "@settingsCxpStatus": {
-    "description": "Label for the CXP server status display"
-  },
-  "settingsCxpStatusRunning": "正在端口 {port} 上运行",
-  "@settingsCxpStatusRunning": {
-    "description": "Indicates the CXP server is running on a specific port",
-    "placeholders": {
-      "port": {
-        "type": "int"
-      }
-    }
-  },
-  "settingsCxpStatusStopped": "已停止",
-  "@settingsCxpStatusStopped": {
-    "description": "Indicates the CXP server is not running"
-  },
-  "settingsCxpPeersConnected": "已连接 {count, plural, =1{1 个对等端} other{{count} 个对等端}}",
-  "@settingsCxpPeersConnected": {
-    "description": "Shows how many peers are currently connected to the CXP server",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "crossProbePanelTitle": "交叉探测面板",
-  "@crossProbePanelTitle": {
-    "description": "Title of the dockable CXP cross-probe panel"
-  },
-  "crossProbePeersListTitle": "已连接的对等端",
-  "@crossProbePeersListTitle": {
-    "description": "Section heading in the cross-probe panel listing currently connected CXP peers"
-  },
-  "crossProbeEventsListTitle": "最近事件",
-  "@crossProbeEventsListTitle": {
-    "description": "Section heading in the cross-probe panel listing the most recent CXP message events"
-  },
-  "crossProbeNoPeers": "未连接对等端",
-  "@crossProbeNoPeers": {
-    "description": "Empty state shown in the cross-probe panel when no CXP peers are connected"
-  },
-  "crossProbeUnreachableTitle": "无法连接的对等端",
-  "@crossProbeUnreachableTitle": {
-    "description": "Heading for the cross-probe panel section listing peers WaveCrux discovered but cannot open a CXP connection to (one-way connectivity)"
-  },
-  "crossProbeNoEvents": "暂无事件",
-  "@crossProbeNoEvents": {
-    "description": "Empty state shown in the cross-probe panel before any CXP messages have flowed"
-  },
-  "crossProbeSendNoSelection": "请选择要发送的信号",
-  "@crossProbeSendNoSelection": {
-    "description": "Snackbar shown when the user taps a peer's cross-probe send button but no signal is selected in WaveCrux"
-  },
-  "crossProbeSendUnreachable": "无法连接 {peer}（未连接）",
-  "@crossProbeSendUnreachable": {
-    "description": "Snackbar shown when the user tries to cross-probe a peer that was discovered but has no live CXP connection",
-    "placeholders": {
-      "peer": {
-        "type": "String"
-      }
-    }
-  },
-  "crossProbeSendFailed": "发送到 {peer} 的交叉探测未能完成",
-  "@crossProbeSendFailed": {
-    "description": "Toast in the docked cross-probe panel when a send failed and the peer gave no reason: the peer never answered, or declined without saying why. {peer} is the peer's product name.",
-    "placeholders": {
-      "peer": {
-        "type": "String",
-        "example": "NetCrux"
-      }
-    }
-  },
-  "crossProbeSendRefused": "发送到 {peer} 的交叉探测：{reason}",
-  "@crossProbeSendRefused": {
-    "description": "Toast in the docked cross-probe panel when a send came back with an explanation: a refusal, a partial result, or a delivery failure the carrier explained. {peer} is the peer's product name; {reason} is that explanation, as sent.",
-    "placeholders": {
-      "peer": {
-        "type": "String",
-        "example": "NetCrux"
-      },
-      "reason": {
-        "type": "String",
-        "example": "element not found: top.data"
-      }
-    }
-  },
-  "crossProbeServerOffline": "CXP 服务器已离线 — 在 设置 > CXP 交叉探测 中启用",
-  "@crossProbeServerOffline": {
-    "description": "Banner shown in the cross-probe panel when the CXP server is not running"
-  },
   "crossProbeMenuItem": "显示交叉探测面板",
   "@crossProbeMenuItem": {
     "description": "Command palette / menu entry that opens the cross-probe panel"
   },
+  "actionCrossProbeSelection": "交叉探测所选内容…",
+  "actionClearRecentFiles": "清除最近的文件",
   "cxpHighlightNoWaveform": "打开波形文件以交叉探测此信号",
   "@cxpHighlightNoWaveform": {
     "description": "Snackbar shown when a peer cross-probes a signal but no waveform file is open in WaveCrux"
   },
-  "crossProbeClearEventsLabel": "清除事件",
-  "@crossProbeClearEventsLabel": {
-    "description": "Button label that empties the cross-probe event log buffer"
-  },
-  "settingsRequestAttentionOnCrossProbeLabel": "交叉探测时请求注意",
-  "@settingsRequestAttentionOnCrossProbeLabel": {
-    "description": "Toggle label controlling whether an incoming cross-probe bounces the dock / flashes the taskbar"
-  },
-  "settingsRequestAttentionOnCrossProbeDescription": "当对等端发送交叉探测时，弹跳程序坞图标（或闪烁任务栏）。绝不抢占焦点。",
-  "@settingsRequestAttentionOnCrossProbeDescription": {
-    "description": "Subtitle explaining the request-attention-on-cross-probe toggle"
-  },
-  "settingsBroadcastSelectionOnCrossProbeLabel": "自动广播选择",
-  "@settingsBroadcastSelectionOnCrossProbeLabel": {
-    "description": "Toggle label controlling whether WaveCrux auto-broadcasts the local selection to connected CXP peers as it changes (live cross-probe)"
-  },
-  "settingsBroadcastSelectionOnCrossProbeDescription": "在您选择时，将选择内容通知已连接的对等端（实时交叉探测）。关闭时，仅共享显式发送的内容。",
-  "@settingsBroadcastSelectionOnCrossProbeDescription": {
-    "description": "Subtitle explaining the broadcast-selection-automatically toggle"
-  },
   "toolbarToggleCrossProbe": "交叉探测面板",
   "@toolbarToggleCrossProbe": {
     "description": "Tooltip for the toolbar button that shows or hides the docked cross-probe panel"
-  },
-  "crossProbeCloseTooltip": "关闭交叉探测面板",
-  "@crossProbeCloseTooltip": {
-    "description": "Tooltip on the docked cross-probe panel's header close chevron"
-  },
-  "crossProbeSendTooltip": "将选择发送到此对等端",
-  "@crossProbeSendTooltip": {
-    "description": "Tooltip on each connected-peer row's direct-send button in the cross-probe panel"
   },
   "webDropZoneLabel": "或将波形文件拖放到此处",
   "@webDropZoneLabel": {
@@ -7048,7 +6899,6 @@
   "settingsExtensionsSection": "扩展",
   "settingsRestoreTabsOnLaunchLabel": "启动时恢复标签页",
   "settingsRestoreTabsOnLaunchDescription": "WaveCrux 启动时重新打开上次会话的标签页。关闭后，已保存的会话仍保留在磁盘上，重新开启即可恢复。",
-  "settingsCxpPortError": "请输入 1 到 65535 之间的端口。",
   "editorDiscardConfirmTitle": "放弃更改？",
   "editorDiscardConfirmBody": "您有未保存的更改。是否放弃？",
   "editorDiscardConfirmDiscard": "放弃",

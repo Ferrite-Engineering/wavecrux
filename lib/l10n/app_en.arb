@@ -33,22 +33,6 @@
   "@emptyCanvasSampleFailed": {
     "description": "Snackbar shown when the bundled sample waveform fails to load, e.g. the asset could not be copied out of the app bundle"
   },
-  "emptyCanvasRecentFiles": "RECENT FILES",
-  "@emptyCanvasRecentFiles": {
-    "description": "Section heading above the recent-files list on the empty-canvas state"
-  },
-  "emptyCanvasNoRecentFiles": "No recent files yet.",
-  "@emptyCanvasNoRecentFiles": {
-    "description": "Empty-state hint shown when the recent-files list is empty"
-  },
-  "emptyCanvasRecentWorkspaces": "RECENT WORKSPACES",
-  "@emptyCanvasRecentWorkspaces": {
-    "description": "Section heading above the recent-workspaces list on the empty-canvas state"
-  },
-  "emptyCanvasNoRecentWorkspaces": "No saved workspaces yet.",
-  "@emptyCanvasNoRecentWorkspaces": {
-    "description": "Empty-state hint shown when the recent-workspaces list is empty"
-  },
   "emptyCanvasRemoveRecentFile": "Remove from recent files",
   "@emptyCanvasRemoveRecentFile": {
     "description": "Tooltip for the icon button that removes a file from the recent-files list on the empty-canvas state"
@@ -3161,38 +3145,6 @@
   "@settingsCxpSectionTitle": {
     "description": "Sub-heading for the CXP (Cross-Tool eXchange Protocol) controls within the Remote Control settings section. Distinct from WCP."
   },
-  "settingsCxpEnabledLabel": "Enable CXP server",
-  "@settingsCxpEnabledLabel": {
-    "description": "Toggle label that controls whether the CXP peer cross-probe server is running"
-  },
-  "settingsCxpEnabledDescription": "Let WaveCrux gossip selection events with other Crux-compatible tools",
-  "@settingsCxpEnabledDescription": {
-    "description": "Subtitle explaining what enabling the CXP server does"
-  },
-  "settingsRequestAttentionOnCrossProbeLabel": "Request attention on cross-probe",
-  "@settingsRequestAttentionOnCrossProbeLabel": {
-    "description": "Toggle label controlling whether an incoming cross-probe bounces the dock / flashes the taskbar"
-  },
-  "settingsRequestAttentionOnCrossProbeDescription": "Bounce the dock (or flash the taskbar) when a peer sends a cross-probe. Never steals focus.",
-  "@settingsRequestAttentionOnCrossProbeDescription": {
-    "description": "Subtitle explaining the request-attention-on-cross-probe toggle"
-  },
-  "settingsBroadcastSelectionOnCrossProbeLabel": "Broadcast selection automatically",
-  "@settingsBroadcastSelectionOnCrossProbeLabel": {
-    "description": "Toggle label controlling whether WaveCrux auto-broadcasts the local selection to connected CXP peers as it changes (live cross-probe)"
-  },
-  "settingsBroadcastSelectionOnCrossProbeDescription": "Announce your selection to connected peers as you select it (live cross-probe). When off, only explicit sends are shared.",
-  "@settingsBroadcastSelectionOnCrossProbeDescription": {
-    "description": "Subtitle explaining the broadcast-selection-automatically toggle"
-  },
-  "settingsCxpPortLabel": "CXP port",
-  "@settingsCxpPortLabel": {
-    "description": "Label for the CXP server TCP port input"
-  },
-  "settingsCxpPortDescription": "TCP port number (1–65535). Distinct from the WCP port.",
-  "@settingsCxpPortDescription": {
-    "description": "Subtitle for the CXP port input"
-  },
   "settingsEditorsSection": "Editors",
   "@settingsEditorsSection": {
     "description": "Title of the dedicated Editors settings section (external editor integration). Suite-wide section shared by all four Crux apps."
@@ -3209,116 +3161,21 @@
   "@settingsEditorCommandHint": {
     "description": "Placeholder hint shown in the editor command text field"
   },
-  "settingsCxpStatus": "CXP Status",
-  "@settingsCxpStatus": {
-    "description": "Label for the CXP server status display"
-  },
-  "settingsCxpStatusRunning": "Running on port {port}",
-  "@settingsCxpStatusRunning": {
-    "description": "Indicates the CXP server is running on a specific port",
-    "placeholders": {
-      "port": {
-        "type": "int"
-      }
-    }
-  },
-  "settingsCxpStatusStopped": "Stopped",
-  "@settingsCxpStatusStopped": {
-    "description": "Indicates the CXP server is not running"
-  },
-  "settingsCxpPeersConnected": "{count, plural, =1{1 peer} other{{count} peers}} connected",
-  "@settingsCxpPeersConnected": {
-    "description": "Shows how many peers are currently connected to the CXP server",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "crossProbePanelTitle": "Cross-Probe Panel",
-  "@crossProbePanelTitle": {
-    "description": "Title of the dockable CXP cross-probe panel"
-  },
-  "crossProbePeersListTitle": "Connected Peers",
-  "@crossProbePeersListTitle": {
-    "description": "Section heading in the cross-probe panel listing currently connected CXP peers"
-  },
-  "crossProbeEventsListTitle": "Recent Events",
-  "@crossProbeEventsListTitle": {
-    "description": "Section heading in the cross-probe panel listing the most recent CXP message events"
-  },
-  "crossProbeNoPeers": "No peers connected",
-  "@crossProbeNoPeers": {
-    "description": "Empty state shown in the cross-probe panel when no CXP peers are connected"
-  },
-  "crossProbeUnreachableTitle": "Unreachable peers",
-  "@crossProbeUnreachableTitle": {
-    "description": "Heading for the cross-probe panel section listing peers WaveCrux discovered but cannot open a CXP connection to (one-way connectivity)"
-  },
-  "crossProbeNoEvents": "No events yet",
-  "@crossProbeNoEvents": {
-    "description": "Empty state shown in the cross-probe panel before any CXP messages have flowed"
-  },
-  "crossProbeSendNoSelection": "Select a signal to send",
-  "@crossProbeSendNoSelection": {
-    "description": "Snackbar shown when the user taps a peer's cross-probe send button but no signal is selected in WaveCrux"
-  },
-  "crossProbeSendUnreachable": "Can't reach {peer} — it isn't connected",
-  "@crossProbeSendUnreachable": {
-    "description": "Snackbar shown when the user tries to cross-probe a peer that was discovered but has no live CXP connection",
-    "placeholders": {
-      "peer": {
-        "type": "String"
-      }
-    }
-  },
-  "crossProbeSendFailed": "The cross-probe to {peer} did not go through",
-  "@crossProbeSendFailed": {
-    "description": "Toast in the docked cross-probe panel when a send failed and the peer gave no reason: the peer never answered, or declined without saying why. {peer} is the peer's product name.",
-    "placeholders": {
-      "peer": {
-        "type": "String",
-        "example": "NetCrux"
-      }
-    }
-  },
-  "crossProbeSendRefused": "Cross-probe to {peer}: {reason}",
-  "@crossProbeSendRefused": {
-    "description": "Toast in the docked cross-probe panel when a send came back with an explanation: a refusal, a partial result, or a delivery failure the carrier explained. {peer} is the peer's product name; {reason} is that explanation, as sent.",
-    "placeholders": {
-      "peer": {
-        "type": "String",
-        "example": "NetCrux"
-      },
-      "reason": {
-        "type": "String",
-        "example": "element not found: top.data"
-      }
-    }
-  },
-  "crossProbeServerOffline": "CXP server is offline — enable it in Settings > CXP Cross-Probe",
-  "@crossProbeServerOffline": {
-    "description": "Banner shown in the cross-probe panel when the CXP server is not running"
-  },
   "crossProbeMenuItem": "Show Cross-Probe Panel",
   "@crossProbeMenuItem": {
     "description": "Command palette / menu entry that opens the cross-probe panel"
   },
+  "actionCrossProbeSelection": "Cross-probe Selection…",
+  "@actionCrossProbeSelection": {
+    "description": "Menu / command palette label for sending the selected signal to a peer product"
+  },
+  "actionClearRecentFiles": "Clear Recent Files",
+  "@actionClearRecentFiles": {
+    "description": "Menu / command palette label that empties the Recent Files list"
+  },
   "cxpHighlightNoWaveform": "Open a waveform file to cross-probe this signal",
   "@cxpHighlightNoWaveform": {
     "description": "Snackbar shown when a peer cross-probes a signal but no waveform file is open in WaveCrux"
-  },
-  "crossProbeClearEventsLabel": "Clear events",
-  "@crossProbeClearEventsLabel": {
-    "description": "Button label that empties the cross-probe event log buffer"
-  },
-  "crossProbeCloseTooltip": "Close cross-probe panel",
-  "@crossProbeCloseTooltip": {
-    "description": "Tooltip on the docked cross-probe panel's header close chevron"
-  },
-  "crossProbeSendTooltip": "Send selection to this peer",
-  "@crossProbeSendTooltip": {
-    "description": "Tooltip on each connected-peer row's direct-send button in the cross-probe panel"
   },
   "webDropZoneLabel": "or drop a waveform file here",
   "@webDropZoneLabel": {
@@ -7307,10 +7164,6 @@
   "settingsRestoreTabsOnLaunchDescription": "Reopen the tabs from your last session when WaveCrux starts. Turning this off keeps the saved session on disk, so turning it back on brings your tabs back.",
   "@settingsRestoreTabsOnLaunchDescription": {
     "description": "Description for the restore-tabs-on-launch switch."
-  },
-  "settingsCxpPortError": "Enter a port between 1 and 65535.",
-  "@settingsCxpPortError": {
-    "description": "Error under the CXP port field for an invalid value."
   },
   "editorDiscardConfirmTitle": "Discard changes?",
   "@editorDiscardConfirmTitle": {

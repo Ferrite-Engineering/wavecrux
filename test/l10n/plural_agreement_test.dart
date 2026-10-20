@@ -80,8 +80,6 @@ void main() {
         l10n.settingsRemoteControlClientsConnected(2),
         '2 clients connected',
       );
-      expect(l10n.settingsCxpPeersConnected(1), '1 peer connected');
-      expect(l10n.settingsCxpPeersConnected(4), '4 peers connected');
     });
 
     test('the memory-pressure snackbar', () {
@@ -153,7 +151,6 @@ void main() {
           l10n.rtlGenerateSuccess(1, 'top'),
           l10n.rtlImportAstSuccess(1, 'top'),
           l10n.settingsRemoteControlClientsConnected(1),
-          l10n.settingsCxpPeersConnected(1),
           l10n.memoryPressureWarningSnackbar(1),
           l10n.accessibilityWaveformActive(1, '10 ns'),
           l10n.stageSignalGraphSemanticLabel(1),

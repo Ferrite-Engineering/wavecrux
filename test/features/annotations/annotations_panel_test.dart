@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'package:crux_ide_layout/crux_ide_layout.dart'
-    show kCruxInfoSnackDuration;
+    show kCruxActionSnackDuration;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -389,7 +389,7 @@ void main() {
       expect(container.read(annotationLayersProvider), isEmpty);
 
       // Past the undo offer, so its timer is not left pending at teardown.
-      await tester.pump(kCruxInfoSnackDuration);
+      await tester.pump(kCruxActionSnackDuration);
       await tester.pumpAndSettle();
     });
 
@@ -503,14 +503,14 @@ void main() {
       expect(container.read(annotationsProvider).map((a) => a.id), ['a2']);
       expect(find.text('Undo'), findsOneWidget);
 
-      // And it goes away on its own. Reported from a live session as a snack
-      // that never left — it sat over the status bar and hid a join request
-      // until that request timed out. `showUndoSnack` owns the dismissal
-      // rather than trusting the messenger to arm a timer it only arms while
-      // its own route is current.
-      await tester.pump(kCruxInfoSnackDuration);
+      // Dismissal belongs to the shared toast: its own timer on desktop, and
+      // the shared helper's tests cover it. This panel only raises the offer.
+      await tester.tap(find.text('Undo'));
       await tester.pumpAndSettle();
-      expect(find.text('Undo'), findsNothing);
+      expect(container.read(annotationsProvider).map((a) => a.id), [
+        'a1',
+        'a2',
+      ]);
     });
 
     testWidgets('an orphaned note can be deleted too', (tester) async {
@@ -531,7 +531,7 @@ void main() {
       expect(container.read(annotationsProvider), isEmpty);
 
       // Past the undo offer, so its timer is not left pending at teardown.
-      await tester.pump(kCruxInfoSnackDuration);
+      await tester.pump(kCruxActionSnackDuration);
       await tester.pumpAndSettle();
     });
 

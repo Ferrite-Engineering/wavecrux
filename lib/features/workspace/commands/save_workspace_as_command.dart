@@ -8,7 +8,7 @@ import 'package:crux_telemetry/crux_telemetry.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:wavecrux/features/workspace/providers/recent_workspaces_provider.dart';
+import 'package:wavecrux/features/workspace/providers/recent_lists.dart';
 import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 
@@ -68,7 +68,7 @@ Future<bool> runSaveWorkspaceAsCommand({
     }
     return false;
   }
-  await container.read(recentWorkspacesProvider.notifier).addWorkspace(path);
+  container.read(recentWorkspaces.provider.notifier).markOpened(path);
   container
       .read(telemetryServiceProvider)
       .record(TelemetryEvent('workspace.named.saved'));

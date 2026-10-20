@@ -330,6 +330,14 @@ Map<ShortcutAction, ShortcutActivator> defaultBindings() {
       control: !isMac,
       shift: true,
     ),
+    // Cross-probe Selection — Cmd/Ctrl+Shift+Enter, the suite-wide chord. A
+    // text field keeps it (Shift+Enter is a newline in the annotation editor).
+    ShortcutAction.crossProbeSelection: SingleActivator(
+      LogicalKeyboardKey.enter,
+      meta: isMac,
+      control: !isMac,
+      shift: true,
+    ),
     // ── stage workspace undo/redo ────────────────────────────────────────
     // Wired globally so Cmd/Ctrl+Z works regardless of which panel has
     // focus. The notifier's `undo` / `redo` are no-ops when the stack

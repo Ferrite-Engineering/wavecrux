@@ -110,47 +110,44 @@ void main() {
       ).called(1);
     });
 
-    test(
-      'setBroadcastSelectionOnCrossProbe updates state and persists',
-      () async {
-        final mock = _MockSettingsService();
-        when(mock.load).thenAnswer((_) async => const AppSettings());
-        when(() => mock.save(any())).thenAnswer((_) async {});
+    // The shared CXP lifecycle saves its own four settings under these keys. A
+    // product codec that also wrote them would overwrite what the shared
+    // provider saved on every unrelated settings change.
+    test('an AppSettings save leaves the shared CXP keys alone', () async {
+      SharedPreferences.setMockInitialValues({
+        'settings.cxpServerEnabled': false,
+        'settings.cxpServerPort': 60001,
+        'settings.requestAttentionOnCrossProbe': false,
+        'settings.broadcastSelectionOnCrossProbe': false,
+      });
+      final prefs = await SharedPreferences.getInstance();
 
-        final container = _makeContainer(service: mock);
-        await container.read(appSettingsProvider.future);
+      await const WaveCruxSettingsCodec().save(prefs, const AppSettings());
 
-        // Defaults on (live cross-probe from launch).
-        expect(
-          container
-              .read(appSettingsProvider)
-              .value!
-              .broadcastSelectionOnCrossProbe,
-          isTrue,
-        );
+      expect(prefs.getBool('settings.cxpServerEnabled'), isFalse);
+      expect(prefs.getInt('settings.cxpServerPort'), 60001);
+      expect(prefs.getBool('settings.requestAttentionOnCrossProbe'), isFalse);
+      expect(
+        prefs.getBool('settings.broadcastSelectionOnCrossProbe'),
+        isFalse,
+      );
+    });
 
-        await container
-            .read(appSettingsProvider.notifier)
-            .setBroadcastSelectionOnCrossProbe(enabled: false);
+    test('an AppSettings save never creates the shared CXP keys', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
 
-        expect(
-          container
-              .read(appSettingsProvider)
-              .value!
-              .broadcastSelectionOnCrossProbe,
-          isFalse,
-        );
-        verify(
-          () => mock.save(
-            any(
-              that: predicate<AppSettings>(
-                (s) => !s.broadcastSelectionOnCrossProbe,
-              ),
-            ),
-          ),
-        ).called(1);
-      },
-    );
+      await const WaveCruxSettingsCodec().save(prefs, const AppSettings());
+
+      for (final key in const [
+        'settings.cxpServerEnabled',
+        'settings.cxpServerPort',
+        'settings.requestAttentionOnCrossProbe',
+        'settings.broadcastSelectionOnCrossProbe',
+      ]) {
+        expect(prefs.containsKey(key), isFalse, reason: key);
+      }
+    });
 
     test('setLogVerbosity updates state and persists', () async {
       final mock = _MockSettingsService();

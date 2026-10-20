@@ -78,7 +78,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Removed 2 signals'), findsOneWidget);
-    expect(recorder.messages, ['Removed 2 signals']);
+    // The toast announces itself once, naming its Undo action.
+    expect(recorder.messages, ['Removed 2 signals Undo']);
     expect(container.read(signalGroupsProvider).signalCount, 1);
 
     await tester.tap(find.text(l10n.signalRemovalUndo));
@@ -99,10 +100,9 @@ void main() {
     await tester.tap(find.text('go'));
     await tester.pumpAndSettle();
     expect(find.text('Removed 1 signal'), findsOneWidget);
-    await tester.pumpAndSettle(const Duration(seconds: 5));
   });
 
-  testWidgets('Clear Canvas says so, and the snackbar expires on its own', (
+  testWidgets('Clear Canvas says so, with an Undo that restores the canvas', (
     tester,
   ) async {
     final container = ProviderContainer();
@@ -119,9 +119,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(l10n.canvasClearedToast), findsOneWidget);
 
-    await tester.pumpAndSettle(const Duration(seconds: 5));
-    expect(find.text(l10n.canvasClearedToast), findsNothing);
     expect(container.read(signalGroupsProvider).entries, isEmpty);
+
+    // Dismissal belongs to the shared toast, whose own tests cover it.
+    await tester.tap(find.text(l10n.signalRemovalUndo));
+    await tester.pumpAndSettle();
+    expect(container.read(signalGroupsProvider), _three());
   });
 
   for (final locale in const [

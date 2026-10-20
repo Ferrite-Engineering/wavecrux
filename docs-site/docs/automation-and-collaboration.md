@@ -110,7 +110,14 @@ CXP is the cross-tool peer protocol of the EDACrux suite: it lets WaveCrux excha
 
 CXP surfaces in the app as a dockable **Cross-Probe Panel** — open it with **View → Show Cross-Probe Panel**, the toolbar's Cross-Probe button, or ++cmd+shift+x++ / ++ctrl+shift+x++ (tablet and desktop). The panel lists **Connected Peers**, shows **Recent Events** in and out, and flags **Unreachable peers** it found but couldn't reach. With a signal selected, **Send selection to this peer** pushes it across so that tool jumps to the matching net. Sending a cross-probe is free in every edition, just as receiving one is (from WaveCrux 1.1; 1.0.x builds admit every edition for the length of the public beta).
 
-The server and its behavior live under **Settings → CXP Cross-Probe** — **Enable CXP server**, **CXP port** (default `54322`, distinct from the WCP port), and **CXP Status** — along with two options that are on by default:
+From WaveCrux 1.2 there are two quicker ways in, both free:
+
+- **Right-click a signal, then Cross-probe to.** The item lists the suite products that are running, one entry each (several windows of one product are numbered, WaveCrux 1, WaveCrux 2); choose one and the signal goes to it. With nothing running the item is greyed and says what to start.
+- **View, then Cross-probe Selection**, or ++cmd+shift+enter++ / ++ctrl+shift+enter++. With one peer running the selection is sent at once; with several, a menu of targets opens under the selection. In a text field, such as the annotation editor, the key stays the field's (Shift+Enter is a newline there) and nothing is sent.
+
+The toolbar badge counts the peers you are connected to, and a new port in Settings applies at once, without a restart.
+
+The server and its behavior live under **Settings → CXP Cross-Probe** — **Enable CXP server**, **CXP port** (default `54322`, distinct from the WCP port), and **CXP status** — along with two options that are on by default:
 
 - **Broadcast selection automatically.** As you select signals, WaveCrux announces the selection to connected peers so they follow along live. Turn it off to share only explicit sends.
 - **Request attention on cross-probe.** When a peer cross-probes you, WaveCrux bounces the dock (or flashes the taskbar) so you notice — it never steals focus.

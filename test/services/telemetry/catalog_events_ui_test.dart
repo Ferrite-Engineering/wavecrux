@@ -15,7 +15,11 @@ library;
 import 'dart:async';
 
 import 'package:crux_cxp/crux_cxp.dart';
-import 'package:crux_license/crux_license.dart';
+import 'package:crux_cxp_ui/crux_cxp_ui.dart'
+    show
+        CrossProbeOutcome,
+        CrossProbeOutcomeKind,
+        crossProbeSendObserverProvider;
 import 'package:crux_telemetry/crux_telemetry.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/gestures.dart';
@@ -24,7 +28,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wavecrux/core/providers/ai_model_client_provider.dart';
-import 'package:wavecrux/core/router.dart' show rootScaffoldMessengerKey;
 import 'package:wavecrux/core/shortcuts/shortcut_action.dart';
 import 'package:wavecrux/domain/enums/display_format.dart';
 import 'package:wavecrux/domain/enums/scope_type.dart';
@@ -40,8 +43,6 @@ import 'package:wavecrux/domain/models/signal_change.dart';
 import 'package:wavecrux/domain/models/variable.dart';
 import 'package:wavecrux/features/ai/providers/explain_selection_provider.dart';
 import 'package:wavecrux/features/comparison/providers/diff_provider.dart';
-import 'package:wavecrux/features/remote/providers/cxp_server_provider.dart';
-import 'package:wavecrux/features/remote/widgets/cross_probe_panel.dart';
 import 'package:wavecrux/features/search/providers/search_providers.dart';
 import 'package:wavecrux/features/search/widgets/signal_search_dialog.dart';
 import 'package:wavecrux/features/settings/providers/settings_providers.dart';
@@ -59,8 +60,7 @@ import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/services/panes/pane_container_manager.dart';
 import 'package:wavecrux/services/remote/cxp/cxp_inbound_handlers.dart';
-import 'package:wavecrux/services/remote/cxp/wavecrux_cxp_server.dart';
-import 'package:wavecrux/services/remote/remote_control_notifier.dart';
+import 'package:wavecrux/services/remote/cxp/wavecrux_cxp_overrides.dart';
 import 'package:wavecrux/services/settings/settings_service.dart';
 import 'package:wavecrux/services/tabs/tab_container_manager.dart';
 
@@ -635,6 +635,10 @@ void main() {
 
   // ── cxp.crossprobe — outbound ───────────────────────────────────────────────
 
+  // Outbound sends are recorded in one place, the shared send observer that
+  // WaveCrux binds in `wavecruxCxpOverrides`. Every surface that sends (the
+  // panel, the signal menu, the command) goes through the shared dispatcher,
+  // which tells the observer once per send that reached a peer.
   group('cxp.crossprobe (outbound)', () {
     const peer = PeerIdentity(
       peerId: 'netcrux-1-2',
@@ -642,92 +646,76 @@ void main() {
       productVersion: '0.1.0',
     );
 
-    Widget panelApp({required List<Override> overrides}) => ProviderScope(
-      overrides: [productTelemetryConfig, ...overrides],
-      child: MaterialApp(
-        scaffoldMessengerKey: rootScaffoldMessengerKey,
-        localizationsDelegates: L10N.localizationsDelegates,
-        supportedLocales: L10N.supportedLocales,
-        home: const Scaffold(
-          body: SizedBox(
-            width: 800,
-            height: 800,
-            child: WaveCruxCrossProbePanel(),
-          ),
-        ),
-      ),
-    );
-
-    List<Override> sendOverrides(
-      _RecordingTelemetryService telemetry,
-      _FakeCxpServer server,
-    ) => [
-      waveformSourceProvider.overrideWith(
-        () => _StubSourceNotifier(FakeWaveformSource.reference()),
-      ),
-      cxpServerProvider.overrideWith(() => _FakeServerNotifier(server)),
-      cxpPeersProvider.overrideWith(() => _StaticPeers(const [peer])),
-      // The focus stores the backend-local ref, which the panel translates to
-      // the canonical path before sending.
-      selectedSignalProvider.overrideWith(() => _StaticSelection('s_data')),
-      telemetryServiceProvider.overrideWithValue(telemetry),
-      // Sending a cross-probe is Pro; what is recorded here is the send.
-      licenseTierProvider.overrideWithValue(LicenseTier.pro),
-    ];
-
-    testWidgets('a delivered send records direction outbound', (tester) async {
+    Future<
+      ({
+        _RecordingTelemetryService telemetry,
+        void Function(CrossProbeOutcomeKind kind) send,
+      })
+    >
+    observer() async {
       final telemetry = _RecordingTelemetryService();
-      final server = _FakeCxpServer(reachable: const [peer]);
-      await tester.pumpWidget(
-        panelApp(overrides: sendOverrides(telemetry, server)),
+      final container = ProviderContainer(
+        overrides: [
+          productTelemetryConfig,
+          ...await wavecruxCxpOverrides(),
+          telemetryServiceProvider.overrideWithValue(telemetry),
+        ],
       );
-      await tester.pumpAndSettle();
+      addTearDown(container.dispose);
+      final notify = container.read(crossProbeSendObserverProvider)!;
+      return (
+        telemetry: telemetry,
+        send: (CrossProbeOutcomeKind kind) => notify((
+          peer: peer,
+          element: null,
+          outcome: CrossProbeOutcome(kind),
+        )),
+      );
+    }
 
-      await tester.tap(find.byKey(const Key('cross_probe_send_netcrux-1-2')));
-      await tester.pumpAndSettle();
+    test('a delivered send records direction outbound', () async {
+      final o = await observer();
+      o.send(CrossProbeOutcomeKind.sent);
 
-      final probes = telemetry.named('cxp.crossprobe');
+      final probes = o.telemetry.named('cxp.crossprobe');
       expect(probes, hasLength(1));
       _expectVocabularyValue(probes.single.properties['direction'], 'outbound');
       expect(probes.single.properties['honored'], isTrue);
       expect(probes.single.properties['honored'], isA<bool>());
     });
 
-    testWidgets('a refused ack records the send with honored false', (
-      tester,
-    ) async {
-      final telemetry = _RecordingTelemetryService();
-      final server = _FakeCxpServer(
-        reachable: const [peer],
-        ackHonored: false,
-        ackReason: 'element not found: top.data',
-      );
-      await tester.pumpWidget(
-        panelApp(overrides: sendOverrides(telemetry, server)),
-      );
-      await tester.pumpAndSettle();
+    test('a refused send records the send with honored false', () async {
+      final o = await observer();
+      o.send(CrossProbeOutcomeKind.refused);
 
-      await tester.tap(find.byKey(const Key('cross_probe_send_netcrux-1-2')));
-      await tester.pumpAndSettle();
-
-      final probes = telemetry.named('cxp.crossprobe');
+      final probes = o.telemetry.named('cxp.crossprobe');
       expect(probes, hasLength(1));
       _expectVocabularyValue(probes.single.properties['direction'], 'outbound');
       expect(probes.single.properties['honored'], isFalse);
     });
 
-    testWidgets('an undelivered send records nothing', (tester) async {
-      final telemetry = _RecordingTelemetryService();
-      final server = _FakeCxpServer(reachable: const [peer], delivered: false);
-      await tester.pumpWidget(
-        panelApp(overrides: sendOverrides(telemetry, server)),
-      );
-      await tester.pumpAndSettle();
+    test(
+      'a peer that never answered records the send as not honored',
+      () async {
+        final o = await observer();
+        o.send(CrossProbeOutcomeKind.noResponse);
 
-      await tester.tap(find.byKey(const Key('cross_probe_send_netcrux-1-2')));
-      await tester.pumpAndSettle();
+        final probes = o.telemetry.named('cxp.crossprobe');
+        expect(probes, hasLength(1));
+        expect(probes.single.properties['honored'], isFalse);
+      },
+    );
 
-      expect(telemetry.named('cxp.crossprobe'), isEmpty);
+    test('a send that never left records nothing', () async {
+      final o = await observer();
+      const [
+        CrossProbeOutcomeKind.denied,
+        CrossProbeOutcomeKind.nothingSelected,
+        CrossProbeOutcomeKind.serverOff,
+        CrossProbeOutcomeKind.noPeers,
+      ].forEach(o.send);
+
+      expect(o.telemetry.named('cxp.crossprobe'), isEmpty);
     });
   });
 
@@ -1074,78 +1062,6 @@ class _FakeAppSettingsNotifier extends AppSettingsNotifier {
   Future<AppSettings> build() async => const AppSettings();
 }
 
-class _StaticPeers extends CxpPeers {
-  _StaticPeers(this._peers);
-  final List<PeerIdentity> _peers;
-  @override
-  List<PeerIdentity> build() => _peers;
-}
-
-class _StaticSelection extends SelectedSignalNotifier {
-  _StaticSelection(this._selection);
-  final String? _selection;
-  @override
-  String? build() => _selection;
-}
-
-/// A [WaveCruxCxpServer] test double: never opens a socket, reports a fixed
-/// reachable-peer set, and answers [requestHighlight] from its constructor
-/// arguments.
-class _FakeCxpServer extends WaveCruxCxpServer {
-  _FakeCxpServer({
-    required List<PeerIdentity> reachable,
-    this.delivered = true,
-    this.ackHonored = true,
-    this.ackReason,
-  }) : _reachable = reachable,
-       super(
-         productVersion: '0.0.0-test',
-         manifestDirectory: '/tmp/does-not-matter',
-         onHighlight: _noHighlight,
-         onOpenSource: _noOpenSource,
-       );
-
-  final List<PeerIdentity> _reachable;
-  final bool delivered;
-  final bool ackHonored;
-  final String? ackReason;
-
-  static Future<CxpHandlerResult> _noHighlight(
-    ElementId element,
-    Map<String, Object?> metadata,
-    CxpStreamCoordinate? coordinate,
-  ) async => CxpHandlerResult.honoredOk;
-
-  static Future<CxpHandlerResult> _noOpenSource(
-    String filePath,
-    int line,
-    int? column,
-  ) async => CxpHandlerResult.honoredOk;
-
-  @override
-  List<PeerIdentity> get connectedPeers => _reachable;
-
-  @override
-  bool sendTo(String peerId, CxpMessage message, {String? summary}) => true;
-
-  @override
-  Future<({bool delivered, RequestHighlightAck? ack})> requestHighlight(
-    String peerId,
-    RequestHighlight request, {
-    Duration timeout = const Duration(seconds: 5),
-    String? summary,
-  }) async => (
-    delivered: delivered,
-    ack: delivered
-        ? RequestHighlightAck(
-            inReplyTo: 'req',
-            honored: ackHonored,
-            reason: ackReason,
-          )
-        : null,
-  );
-}
-
 /// Hosts [ViewerScreen] in a container with the tab/pane managers initialised,
 /// which the screen reads at build time.
 class _ViewerHost extends StatefulWidget {
@@ -1235,16 +1151,4 @@ class _FailedDiffNotifier extends DiffNotifier {
   Future<void> loadSecondFile(String path) async {
     state = const DiffState(error: 'simulated diff error');
   }
-}
-
-/// Reports the server as running so the panel enables its send controls.
-class _FakeServerNotifier extends CxpServerNotifier {
-  _FakeServerNotifier(this._server);
-  final WaveCruxCxpServer _server;
-
-  @override
-  CxpServerState build() => const CxpServerState(isRunning: true);
-
-  @override
-  WaveCruxCxpServer? get server => _server;
 }

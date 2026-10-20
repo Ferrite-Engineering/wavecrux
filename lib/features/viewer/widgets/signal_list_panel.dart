@@ -1,11 +1,16 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'dart:async' show unawaited;
+
+import 'package:crux_cxp_ui/crux_cxp_ui.dart' show crossProbeMenuEntry;
 import 'package:crux_ide_layout/crux_ide_layout.dart'
     show
         CruxDialog,
         CruxDialogAction,
         CruxDialogActionRole,
+        CruxSubmenu,
+        showCruxContextMenu,
         showCruxDialog,
         showCruxErrorSnack;
 import 'package:file_picker/file_picker.dart';
@@ -27,6 +32,8 @@ import 'package:wavecrux/features/comparison/providers/diff_provider.dart';
 import 'package:wavecrux/features/cursors/providers/cursor_providers.dart';
 import 'package:wavecrux/features/decoders/providers/active_decoders_provider.dart';
 import 'package:wavecrux/features/decoders/widgets/decoder_list_entry.dart';
+import 'package:wavecrux/features/remote/widgets/cross_probe_panel.dart'
+    show waveCruxSignalSelection;
 import 'package:wavecrux/features/settings/providers/settings_providers.dart';
 import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.dart';
 import 'package:wavecrux/features/viewer/providers/export_providers.dart';
@@ -751,6 +758,7 @@ enum _RegularAction {
   visualizeFsm,
   annotateFsm,
   removeSelected,
+  crossProbe,
 }
 
 class _SignalMenuAction extends _SignalMenuResult {
@@ -772,7 +780,7 @@ class _SignalMenuMoveToGroup extends _SignalMenuResult {
 ///
 /// **Group drag**: long-press anywhere on the signal name/color area, then
 /// drag onto a group header to move the signal into that group.
-class _SignalRow extends StatefulWidget {
+class _SignalRow extends ConsumerStatefulWidget {
   const _SignalRow({
     required this.entry,
     required this.index,
@@ -884,10 +892,10 @@ class _SignalRow extends StatefulWidget {
   final VoidCallback? onAnnotateFsm;
 
   @override
-  State<_SignalRow> createState() => _SignalRowState();
+  ConsumerState<_SignalRow> createState() => _SignalRowState();
 }
 
-class _SignalRowState extends State<_SignalRow> {
+class _SignalRowState extends ConsumerState<_SignalRow> {
   double _dragStartY = 0;
   double _dragStartHeight = 0;
 
@@ -903,6 +911,14 @@ class _SignalRowState extends State<_SignalRow> {
         : WavecruxColors.signalGreen;
     final overlay =
         Overlay.of(context).context.findRenderObject()! as RenderBox;
+    final crossProbe =
+        crossProbeMenuEntry(
+              context,
+              ref,
+              selection: () =>
+                  waveCruxSignalSelection(ref.read, widget.fullPath),
+            )
+            as CruxSubmenu;
 
     final items = <PopupMenuEntry<_SignalMenuResult>>[
       // ── Path header — always visible reveal of the truncated row name ────
@@ -1032,6 +1048,35 @@ class _SignalRowState extends State<_SignalRow> {
         child: Text(
           l10n.signalListCopyPath,
           style: const TextStyle(fontSize: 13),
+        ),
+      ),
+      // ── Cross-probe to ──
+      // One item that opens the shared target menu where this one opened, so
+      // the signal can be sent to a peer product without opening the panel.
+      PopupMenuItem<_SignalMenuResult>(
+        value: const _SignalMenuAction(_RegularAction.crossProbe),
+        enabled: crossProbe.enabled,
+        child: Tooltip(
+          message: crossProbe.tooltip ?? '',
+          child: Row(
+            children: [
+              Icon(
+                Icons.sensors,
+                size: 13,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              // The disabled label ("Cross-probe to (no peers running)") is
+              // longer than the menu is wide; the tooltip carries the rest.
+              Flexible(
+                child: Text(
+                  crossProbe.label,
+                  style: const TextStyle(fontSize: 13),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       const PopupMenuDivider(),
@@ -1164,6 +1209,15 @@ class _SignalRowState extends State<_SignalRow> {
             widget.onAnnotateFsm?.call();
           case _RegularAction.removeSelected:
             widget.onRemoveSelected();
+          case _RegularAction.crossProbe:
+            // The product menu has closed; the target menu opens where it did.
+            unawaited(
+              showCruxContextMenu(
+                context,
+                globalPosition: position,
+                entries: crossProbe.entries,
+              ),
+            );
         }
       case _SignalMenuMoveToGroup(:final groupIndex):
         widget.onMoveToGroup(groupIndex);

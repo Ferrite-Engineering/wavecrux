@@ -6,9 +6,13 @@
 // to false, restart every seat, and the server came up anyway. These assert the
 // precedence that makes the keys mean something.
 
+import 'package:crux_cxp_ui/crux_cxp_ui.dart';
+import 'package:crux_license/crux_license.dart' show cruxPolicyProvider;
 import 'package:crux_policy/crux_policy.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wavecrux/core/policy/org_server_policy.dart';
+import 'package:wavecrux/services/remote/cxp/wavecrux_cxp_overrides.dart';
 
 PolicyDocument _doc(String json) => PolicyDocument.parse(json);
 
@@ -98,6 +102,53 @@ void main() {
         resolveCxpServerPolicy(_doc(json), userSetting: null).value,
         isTrue,
       );
+    });
+  });
+
+  // The shared CXP runtime decides whether to start from one provider; WaveCrux
+  // answers it with the organization's rule, so a locked org value beats the
+  // engineer's own setting exactly as it did when WaveCrux owned the lifecycle.
+  group('the shared runtime asks the organization', () {
+    Future<bool> decide(String json, {required bool userEnabled}) async {
+      final cxp = await wavecruxCxpOverrides();
+      final container = ProviderContainer(
+        overrides: [
+          cruxPolicyProvider.overrideWithValue(
+            PolicyLoadResult(document: _doc(json)),
+          ),
+          ...cxp,
+        ],
+      );
+      addTearDown(container.dispose);
+      return container.read(cruxCxpServerPolicyProvider)(
+        userEnabled: userEnabled,
+      );
+    }
+
+    const none = '{"schema":1}';
+    const lockedOff =
+        '{"schema":1,"products":{"wavecrux":'
+        '{"cxpServer":{"value":false,"locked":true}}}}';
+    const lockedOn =
+        '{"schema":1,"products":{"wavecrux":'
+        '{"cxpServer":{"value":true,"locked":true}}}}';
+    const unlocked = '{"schema":1,"products":{"wavecrux":{"cxpServer":true}}}';
+
+    test('no policy file: the engineers setting stands', () async {
+      expect(await decide(none, userEnabled: true), isTrue);
+      expect(await decide(none, userEnabled: false), isFalse);
+    });
+
+    test('a LOCKED false keeps the server off, whatever was chosen', () async {
+      expect(await decide(lockedOff, userEnabled: true), isFalse);
+    });
+
+    test('a LOCKED true turns it on for the fleet', () async {
+      expect(await decide(lockedOn, userEnabled: false), isTrue);
+    });
+
+    test('an UNLOCKED value is a suggestion the engineer outranks', () async {
+      expect(await decide(unlocked, userEnabled: false), isFalse);
     });
   });
 }

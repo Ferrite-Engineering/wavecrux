@@ -81,15 +81,6 @@ class AppSettingsNotifier extends _$AppSettingsNotifier {
   Future<void> setRemoteControlPort(int port) =>
       _update((s) => s.copyWith(remoteControlPort: port.clamp(1, 65535)));
 
-  /// Enables or disables the CXP peer cross-probe server. See [AppSettings]
-  /// for the WCP/CXP delineation.
-  Future<void> setCxpServerEnabled({required bool enabled}) =>
-      _update((s) => s.copyWith(cxpServerEnabled: enabled));
-
-  /// Sets the CXP server TCP port. Clamped to the valid 1–65535 range.
-  Future<void> setCxpServerPort(int port) =>
-      _update((s) => s.copyWith(cxpServerPort: port.clamp(1, 65535)));
-
   /// Sets the editor command used by inbound `request_open_source` CXP
   /// handlers (e.g. `code -g`, `subl`, `nvr`, `emacsclient`). The empty
   /// string disables the open-source path.
@@ -239,17 +230,6 @@ class AppSettingsNotifier extends _$AppSettingsNotifier {
   /// See [AppSettings.signalTreeNaturalSort].
   Future<void> setSignalTreeNaturalSort({required bool enabled}) =>
       _update((s) => s.copyWith(signalTreeNaturalSort: enabled));
-
-  /// Persists whether an actionable inbound cross-probe requests the user's
-  /// attention. See [AppSettings.requestAttentionOnCrossProbe].
-  Future<void> setRequestAttentionOnCrossProbe({required bool enabled}) =>
-      _update((s) => s.copyWith(requestAttentionOnCrossProbe: enabled));
-
-  /// Persists whether WaveCrux auto-broadcasts the local selection to
-  /// connected CXP peers as it changes.
-  /// See [AppSettings.broadcastSelectionOnCrossProbe].
-  Future<void> setBroadcastSelectionOnCrossProbe({required bool enabled}) =>
-      _update((s) => s.copyWith(broadcastSelectionOnCrossProbe: enabled));
 
   /// How much detail the console sink prints and the Diagnostics → Logs panel
   /// shows by default. See [AppSettings.logVerbosity].

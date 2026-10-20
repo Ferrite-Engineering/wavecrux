@@ -37,11 +37,7 @@ class AppSettings {
     this.autoConvertLargeVcd = true,
     this.remoteControlEnabled = false,
     this.remoteControlPort = 54321,
-    this.cxpServerEnabled = true,
-    this.cxpServerPort = 54322,
     this.cxpEditorCommand = '',
-    this.requestAttentionOnCrossProbe = true,
-    this.broadcastSelectionOnCrossProbe = true,
     this.suppressLegacyFormatBanner = false,
     this.alwaysKeepSessionAnnotations = false,
     this.wheelNavigatesTime = false,
@@ -87,36 +83,12 @@ class AppSettings {
   /// spec default.
   final int remoteControlPort;
 
-  /// Whether the Cross-Tool eXchange Protocol (CXP) peer cross-probe server is
-  /// enabled. CXP is distinct from WCP: WCP is the external driver protocol
-  /// (imperative, viewer-bound); CXP is the peer cross-probe protocol that
-  /// gossips selection events between Crux apps. The two coexist on
-  /// distinct ports.
-  final bool cxpServerEnabled;
-
-  /// TCP port for the CXP peer cross-probe server. Defaults to 54322 to
-  /// stay clear of WCP's default port (54321).
-  final int cxpServerPort;
-
   /// External editor command used to fulfil inbound CXP `request_open_source`
   /// requests (e.g. `code -g`, `subl`, `nvr`, `emacsclient`). The recipient
   /// shells out to this command with `{path}:{line}[:{column}]` appended.
   /// Empty disables the open-source path; the handler replies with
   /// `honored: false`.
   final String cxpEditorCommand;
-
-  /// Whether an actionable inbound cross-probe (a highlight applied, or a
-  /// waveform opened via the shared workspace) requests the user's attention —
-  /// a dock bounce on macOS, taskbar flash on Windows, urgency hint on Linux
-  /// — never stealing focus. Default on; when off the app installs the
-  /// no-op attention backend so nothing is nudged.
-  final bool requestAttentionOnCrossProbe;
-
-  /// Whether WaveCrux auto-broadcasts the local selection (signal, cursor,
-  /// marker) to connected CXP peers as it changes — the live cross-probe.
-  /// Default on. When off, the [CxpSelectionEmitter] is silenced and only
-  /// explicit per-peer sends from the cross-probe panel share a selection.
-  final bool broadcastSelectionOnCrossProbe;
 
   /// When `true`, the "Opened from legacy LXT/LXT2 format" banner that
   /// appears above the waveform area on the first open of a converted file
@@ -270,11 +242,7 @@ class AppSettings {
     bool? autoConvertLargeVcd,
     bool? remoteControlEnabled,
     int? remoteControlPort,
-    bool? cxpServerEnabled,
-    int? cxpServerPort,
     String? cxpEditorCommand,
-    bool? requestAttentionOnCrossProbe,
-    bool? broadcastSelectionOnCrossProbe,
     bool? suppressLegacyFormatBanner,
     bool? alwaysKeepSessionAnnotations,
     bool? wheelNavigatesTime,
@@ -313,13 +281,7 @@ class AppSettings {
       autoConvertLargeVcd: autoConvertLargeVcd ?? this.autoConvertLargeVcd,
       remoteControlEnabled: remoteControlEnabled ?? this.remoteControlEnabled,
       remoteControlPort: remoteControlPort ?? this.remoteControlPort,
-      cxpServerEnabled: cxpServerEnabled ?? this.cxpServerEnabled,
-      cxpServerPort: cxpServerPort ?? this.cxpServerPort,
       cxpEditorCommand: cxpEditorCommand ?? this.cxpEditorCommand,
-      requestAttentionOnCrossProbe:
-          requestAttentionOnCrossProbe ?? this.requestAttentionOnCrossProbe,
-      broadcastSelectionOnCrossProbe:
-          broadcastSelectionOnCrossProbe ?? this.broadcastSelectionOnCrossProbe,
       suppressLegacyFormatBanner:
           suppressLegacyFormatBanner ?? this.suppressLegacyFormatBanner,
       alwaysKeepSessionAnnotations:
@@ -350,16 +312,7 @@ class AppSettings {
     if (other.autoConvertLargeVcd != autoConvertLargeVcd) return false;
     if (other.remoteControlEnabled != remoteControlEnabled) return false;
     if (other.remoteControlPort != remoteControlPort) return false;
-    if (other.cxpServerEnabled != cxpServerEnabled) return false;
-    if (other.cxpServerPort != cxpServerPort) return false;
     if (other.cxpEditorCommand != cxpEditorCommand) return false;
-    if (other.requestAttentionOnCrossProbe != requestAttentionOnCrossProbe) {
-      return false;
-    }
-    if (other.broadcastSelectionOnCrossProbe !=
-        broadcastSelectionOnCrossProbe) {
-      return false;
-    }
     if (other.alwaysKeepSessionAnnotations != alwaysKeepSessionAnnotations) {
       return false;
     }
@@ -398,11 +351,7 @@ class AppSettings {
     autoConvertLargeVcd,
     remoteControlEnabled,
     remoteControlPort,
-    cxpServerEnabled,
-    cxpServerPort,
     cxpEditorCommand,
-    requestAttentionOnCrossProbe,
-    broadcastSelectionOnCrossProbe,
     suppressLegacyFormatBanner,
     alwaysKeepSessionAnnotations,
     wheelNavigatesTime,
@@ -441,11 +390,7 @@ class AppSettings {
       'autoConvertLargeVcd: $autoConvertLargeVcd, '
       'remoteControlEnabled: $remoteControlEnabled, '
       'remoteControlPort: $remoteControlPort, '
-      'cxpServerEnabled: $cxpServerEnabled, '
-      'cxpServerPort: $cxpServerPort, '
       'cxpEditorCommand: $cxpEditorCommand, '
-      'requestAttentionOnCrossProbe: $requestAttentionOnCrossProbe, '
-      'broadcastSelectionOnCrossProbe: $broadcastSelectionOnCrossProbe, '
       'suppressLegacyFormatBanner: $suppressLegacyFormatBanner, '
       'alwaysKeepSessionAnnotations: $alwaysKeepSessionAnnotations, '
       'wheelNavigatesTime: $wheelNavigatesTime, '

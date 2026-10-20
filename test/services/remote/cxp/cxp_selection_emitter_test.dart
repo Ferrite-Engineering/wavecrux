@@ -4,16 +4,15 @@
 import 'dart:io';
 
 import 'package:crux_cxp/crux_cxp.dart';
+import 'package:crux_cxp_ui/crux_cxp_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wavecrux/domain/interfaces/waveform_data_source.dart';
-import 'package:wavecrux/domain/models/app_settings.dart';
 import 'package:wavecrux/features/cursors/providers/cursor_providers.dart';
-import 'package:wavecrux/features/settings/providers/settings_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
 import 'package:wavecrux/services/remote/cxp/cxp_selection_emitter.dart';
-import 'package:wavecrux/services/remote/cxp/wavecrux_cxp_server.dart';
+import 'package:wavecrux/services/remote/cxp/wavecrux_cxp_binding.dart';
 import 'package:wavecrux/services/remote/remote_control_notifier.dart';
 
 import '../../../support/fake_waveform_source.dart';
@@ -30,22 +29,20 @@ Override _sourceOverride() => waveformSourceProvider.overrideWith(
 
 void main() {
   late Directory tempDir;
-  late WaveCruxCxpServer server;
+  late LocalCxpServer server;
   late LocalCxpClient subscriber;
   late Stream<CxpClientInbound> inboundStream;
 
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('wavecrux_cxp_emit_');
-    server = WaveCruxCxpServer(
-      productVersion: '0.1.0',
-      manifestDirectory: tempDir.path,
-      onHighlight: (_, _, _) async => CxpHandlerResult.honoredOk,
-      onOpenSource: (_, _, _) async => CxpHandlerResult.honoredOk,
-      port: 0,
-      processId: 88888,
-      startedAtMillis: 100,
+    server = LocalCxpServer(
+      selfIdentity: const PeerIdentity(
+        peerId: 'wavecrux-88888-100',
+        productName: 'wavecrux',
+        productVersion: '0.1.0',
+      ),
     );
-    expect(await server.start(), isNull);
+    await server.start();
     subscriber = LocalCxpClient(
       selfIdentity: const PeerIdentity(
         peerId: 'subscriber',
@@ -71,7 +68,7 @@ void main() {
 
   tearDown(() async {
     await subscriber.dispose();
-    await server.dispose();
+    await server.stop();
     if (tempDir.existsSync()) {
       tempDir.deleteSync(recursive: true);
     }
@@ -80,11 +77,11 @@ void main() {
   group('CxpSelectionEmitter', () {
     test('emits NotifySelection carrying the fullPath, not the signalRef, '
         'when the selection changes', () async {
-      final container = ProviderContainer(overrides: [_sourceOverride()]);
+      final container = _container(overrides: [_sourceOverride()]);
       addTearDown(container.dispose);
       final emitter = CxpSelectionEmitter(
         ref: _refFor(container),
-        sink: server.broadcast,
+        sink: _sinkOf(server),
       )..start();
       addTearDown(emitter.dispose);
 
@@ -103,11 +100,11 @@ void main() {
 
     test('does NOT broadcast when the selected ref has no matching variable '
         '(would be an unresolvable ref on the wire)', () async {
-      final container = ProviderContainer(overrides: [_sourceOverride()]);
+      final container = _container(overrides: [_sourceOverride()]);
       addTearDown(container.dispose);
       final emitter = CxpSelectionEmitter(
         ref: _refFor(container),
-        sink: server.broadcast,
+        sink: _sinkOf(server),
       )..start();
       addTearDown(emitter.dispose);
 
@@ -125,12 +122,12 @@ void main() {
     });
 
     test('does not emit when the selection clears to null', () async {
-      final container = ProviderContainer();
+      final container = _container();
       addTearDown(container.dispose);
       container.read(selectedSignalProvider.notifier).select('top.clk');
       final emitter = CxpSelectionEmitter(
         ref: _refFor(container),
-        sink: server.broadcast,
+        sink: _sinkOf(server),
       )..start();
       addTearDown(emitter.dispose);
 
@@ -152,7 +149,7 @@ void main() {
     test(
       'cursor moves emit a debounced NotifySelection with cursor_time_fs',
       () async {
-        final container = ProviderContainer(overrides: [_sourceOverride()]);
+        final container = _container(overrides: [_sourceOverride()]);
         addTearDown(container.dispose);
         // Pre-set the selection BEFORE constructing the emitter so its
         // initial-snapshot read captures the selection; start() does not
@@ -160,7 +157,7 @@ void main() {
         container.read(selectedSignalProvider.notifier).select('s_clk');
         final emitter = CxpSelectionEmitter(
           ref: _refFor(container),
-          sink: server.broadcast,
+          sink: _sinkOf(server),
           cursorDebounce: const Duration(milliseconds: 50),
         )..start();
         addTearDown(emitter.dispose);
@@ -182,11 +179,11 @@ void main() {
     );
 
     test('marker create emits NotifySelection of kind marker', () async {
-      final container = ProviderContainer();
+      final container = _container();
       addTearDown(container.dispose);
       final emitter = CxpSelectionEmitter(
         ref: _refFor(container),
-        sink: server.broadcast,
+        sink: _sinkOf(server),
       )..start();
       addTearDown(emitter.dispose);
 
@@ -201,12 +198,12 @@ void main() {
     });
 
     test('marker removal does not broadcast', () async {
-      final container = ProviderContainer();
+      final container = _container();
       addTearDown(container.dispose);
       container.read(markerStateProvider.notifier).setMarker('b', 100);
       final emitter = CxpSelectionEmitter(
         ref: _refFor(container),
-        sink: server.broadcast,
+        sink: _sinkOf(server),
       )..start();
       addTearDown(emitter.dispose);
 
@@ -225,24 +222,19 @@ void main() {
     });
 
     test(
-      'does not auto-broadcast when broadcastSelectionOnCrossProbe is false',
+      'does not auto-broadcast when the shared broadcast setting is off',
       () async {
-        final container = ProviderContainer(
-          overrides: [
-            appSettingsProvider.overrideWith(
-              () => _FakeAppSettings(
-                const AppSettings(broadcastSelectionOnCrossProbe: false),
-              ),
-            ),
-          ],
+        final container = _container(
+          settings: const CruxCxpSettings(
+            enabled: true,
+            port: 54322,
+            broadcastSelection: false,
+          ),
         );
         addTearDown(container.dispose);
-        // Resolve the async settings build so `.value` is populated before the
-        // emitter reads the gate.
-        await container.read(appSettingsProvider.future);
         final emitter = CxpSelectionEmitter(
           ref: _refFor(container),
-          sink: server.broadcast,
+          sink: _sinkOf(server),
         )..start();
         addTearDown(emitter.dispose);
 
@@ -262,38 +254,59 @@ void main() {
     );
 
     test(
-      'auto-broadcasts when broadcastSelectionOnCrossProbe is true',
+      'a toggle in Settings takes effect on the next selection, no restart',
       () async {
-        final container = ProviderContainer(
-          overrides: [
-            _sourceOverride(),
-            appSettingsProvider.overrideWith(
-              () => _FakeAppSettings(
-                const AppSettings(),
-              ),
-            ),
-          ],
-        );
+        final container = _container(overrides: [_sourceOverride()]);
         addTearDown(container.dispose);
-        await container.read(appSettingsProvider.future);
         final emitter = CxpSelectionEmitter(
           ref: _refFor(container),
-          sink: server.broadcast,
+          sink: _sinkOf(server),
         )..start();
         addTearDown(emitter.dispose);
+        await container
+            .read(cruxCxpSettingsProvider.notifier)
+            .setBroadcastSelection(broadcastSelection: false);
 
+        var received = false;
+        final sub = inboundStream
+            .where((e) => e.message is NotifySelection)
+            .listen((_) => received = true);
+        addTearDown(sub.cancel);
         container.read(selectedSignalProvider.notifier).select('s_clk');
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        expect(received, isFalse);
+
+        await container
+            .read(cruxCxpSettingsProvider.notifier)
+            .setBroadcastSelection(broadcastSelection: true);
+        container.read(selectedSignalProvider.notifier).select('s_data');
         final event = await inboundStream
             .firstWhere((e) => e.message is NotifySelection)
             .timeout(const Duration(seconds: 2));
-        expect((event.message as NotifySelection).displayName, 'top.clk');
+        expect((event.message as NotifySelection).displayName, 'top.data');
       },
     );
 
-    test('dispose stops broadcasting on subsequent changes', () async {
-      final container = ProviderContainer();
+    test('auto-broadcasts when the shared broadcast setting is on', () async {
+      final container = _container(overrides: [_sourceOverride()]);
       addTearDown(container.dispose);
-      CxpSelectionEmitter(ref: _refFor(container), sink: server.broadcast)
+      final emitter = CxpSelectionEmitter(
+        ref: _refFor(container),
+        sink: _sinkOf(server),
+      )..start();
+      addTearDown(emitter.dispose);
+
+      container.read(selectedSignalProvider.notifier).select('s_clk');
+      final event = await inboundStream
+          .firstWhere((e) => e.message is NotifySelection)
+          .timeout(const Duration(seconds: 2));
+      expect((event.message as NotifySelection).displayName, 'top.clk');
+    });
+
+    test('dispose stops broadcasting on subsequent changes', () async {
+      final container = _container();
+      addTearDown(container.dispose);
+      CxpSelectionEmitter(ref: _refFor(container), sink: _sinkOf(server))
         ..start()
         ..dispose();
       container.read(selectedSignalProvider.notifier).select('top.x');
@@ -319,14 +332,30 @@ Ref _refFor(ProviderContainer container) {
 
 final _refProvider = Provider<Ref>((ref) => ref);
 
-/// Overrides [appSettingsProvider] with a fixed [AppSettings] so the emitter's
-/// auto-broadcast gate can be exercised without a SharedPreferences backend.
-class _FakeAppSettings extends AppSettingsNotifier {
-  _FakeAppSettings(this._settings);
-  final AppSettings _settings;
-  @override
-  Future<AppSettings> build() async => _settings;
+/// A container with the shared CXP settings bound the way the app binds them:
+/// the emitter reads its broadcast gate from them.
+ProviderContainer _container({
+  List<Override> overrides = const [],
+  CruxCxpSettings settings = const CruxCxpSettings(
+    enabled: true,
+    port: 54322,
+  ),
+}) {
+  final container = ProviderContainer(
+    overrides: [
+      cruxCxpProductBindingProvider.overrideWithValue(kWaveCruxCxpBinding),
+      cruxCxpLaunchSettingsProvider.overrideWithValue(settings),
+      // No preferences backend: the toggle holds for the test's session.
+      ...overrides,
+    ],
+  );
+  return container;
 }
+
+/// The emitter's sink over a plain transport server, as the runtime's
+/// `broadcast` is.
+CxpSelectionSink _sinkOf(LocalCxpServer server) =>
+    (message, {summary}) => server.broadcast(message);
 
 /// Preloads [waveformSourceProvider] with an in-memory source so the emitter
 /// can translate a selected `signalRef` to its `fullPath`.

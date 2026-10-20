@@ -17,6 +17,7 @@ import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.da
 import 'package:wavecrux/features/signal_tree/widgets/scope_tree_node.dart';
 import 'package:wavecrux/features/viewer/providers/signal_load_progress_provider.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
+import '../../../helpers/cxp_test_overrides.dart';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -49,6 +50,7 @@ Scope _makeScope({
 );
 
 Widget _buildApp(Widget child) => ProviderScope(
+  overrides: cxpTestOverrides,
   child: MaterialApp(
     localizationsDelegates: L10N.localizationsDelegates,
     supportedLocales: L10N.supportedLocales,
@@ -57,6 +59,7 @@ Widget _buildApp(Widget child) => ProviderScope(
 );
 
 Widget _buildAppLocale(Widget child, Locale locale) => ProviderScope(
+  overrides: cxpTestOverrides,
   child: MaterialApp(
     locale: locale,
     localizationsDelegates: L10N.localizationsDelegates,
@@ -369,6 +372,7 @@ void main() {
       late ProviderContainer container;
       await tester.pumpWidget(
         ProviderScope(
+          overrides: cxpTestOverrides,
           child: Builder(
             builder: (context) {
               container = ProviderScope.containerOf(context);
@@ -419,6 +423,7 @@ void main() {
         late ProviderContainer container;
         await tester.pumpWidget(
           ProviderScope(
+            overrides: cxpTestOverrides,
             child: Builder(
               builder: (context) {
                 container = ProviderScope.containerOf(context);
@@ -487,6 +492,7 @@ void main() {
       late ProviderContainer container;
       await tester.pumpWidget(
         ProviderScope(
+          overrides: cxpTestOverrides,
           child: Builder(
             builder: (context) {
               container = ProviderScope.containerOf(context);
@@ -537,6 +543,7 @@ void main() {
       late ProviderContainer container;
       await tester.pumpWidget(
         ProviderScope(
+          overrides: cxpTestOverrides,
           child: Builder(
             builder: (context) {
               container = ProviderScope.containerOf(context);
@@ -581,6 +588,7 @@ void main() {
       late ProviderContainer container;
       await tester.pumpWidget(
         ProviderScope(
+          overrides: cxpTestOverrides,
           child: Builder(
             builder: (context) {
               container = ProviderScope.containerOf(context);
@@ -766,6 +774,7 @@ void main() {
       late ProviderContainer container;
       await tester.pumpWidget(
         ProviderScope(
+          overrides: cxpTestOverrides,
           child: Builder(
             builder: (context) {
               container = ProviderScope.containerOf(context);
@@ -827,7 +836,8 @@ void main() {
       expect(entries[1].children, isEmpty, reason: 'the group is kept');
       expect(updates, 1);
       expect(find.text('Removed 3 signals'), findsOneWidget);
-      expect(recorder.messages, ['Removed 3 signals']);
+      // The toast announces itself once, naming its Undo action.
+      expect(recorder.messages, ['Removed 3 signals Undo']);
       await tester.pump(const Duration(seconds: 5));
     });
 

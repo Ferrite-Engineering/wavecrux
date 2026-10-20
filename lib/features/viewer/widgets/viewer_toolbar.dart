@@ -1,6 +1,8 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_cxp_ui/crux_cxp_ui.dart'
+    show cruxCxpConnectedPeerCountProvider;
 import 'package:crux_toolbar/crux_toolbar.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +15,6 @@ import 'package:wavecrux/core/shortcuts/action_tier_label.dart';
 import 'package:wavecrux/core/shortcuts/shortcut_action.dart';
 import 'package:wavecrux/core/shortcuts/shortcut_bindings_provider.dart';
 import 'package:wavecrux/domain/enums/device_class.dart';
-import 'package:wavecrux/features/remote/providers/cxp_server_provider.dart';
 import 'package:wavecrux/features/viewer/providers/active_tab_streaming_provider.dart';
 import 'package:wavecrux/features/viewer/providers/streaming_source_provider.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
@@ -132,7 +133,7 @@ class ViewerToolbar extends ConsumerWidget {
           Icons.sensors_outlined,
           selectedIcon: Icons.sensors,
           isSelected: ctx.crossProbeVisible,
-          badgeCount: ref.watch(cxpPeersProvider).length,
+          badgeCount: ref.watch(cruxCxpConnectedPeerCountProvider),
           tooltip: l10n.toolbarToggleCrossProbe,
         ),
         button(ShortcutAction.openSettings, Icons.settings_outlined),

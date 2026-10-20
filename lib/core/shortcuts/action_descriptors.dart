@@ -189,6 +189,7 @@ ActionDescriptor descriptorFor(ShortcutAction action) => switch (action) {
   ShortcutAction.toggleCocotbLogPanel ||
   ShortcutAction.resetWorkspace ||
   ShortcutAction.openWorkspace ||
+  ShortcutAction.clearRecentFiles ||
   ShortcutAction.closeTab => const ActionDescriptor(
     surfaces: _menuOverflowPalette,
   ),
@@ -397,6 +398,14 @@ ActionDescriptor descriptorFor(ShortcutAction action) => switch (action) {
   // the reverse, so the mismatch passed silently.
   ShortcutAction.openCrossProbePanel => const ActionDescriptor(
     surfaces: _everywhere,
+    isVisible: _tabletOrDesktop,
+  ),
+
+  // ── Cross-probe Selection — browsable, hidden on phone ──────────────
+  // Always enabled: with nothing selected the command says so, so the entry
+  // never needs a greyed state to explain.
+  ShortcutAction.crossProbeSelection => const ActionDescriptor(
+    surfaces: _menuOverflowPalette,
     isVisible: _tabletOrDesktop,
   ),
 

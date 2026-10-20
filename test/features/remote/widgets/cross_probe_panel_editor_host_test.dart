@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'package:crux_cxp/crux_cxp.dart';
-import 'package:crux_license/crux_license.dart';
+import 'package:crux_cxp_ui/crux_cxp_ui.dart';
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -18,6 +19,7 @@ import 'package:wavecrux/services/host_bridge/editor_host_provider.dart';
 import 'package:wavecrux/services/host_bridge/host_bridge_messages.dart';
 import 'package:wavecrux/services/host_bridge/host_bridge_provider.dart';
 import 'package:wavecrux/services/remote/cxp/cxp_event_log_entry.dart';
+import 'package:wavecrux/services/remote/cxp/wavecrux_cxp_binding.dart';
 import 'package:wavecrux/services/remote/remote_control_notifier.dart';
 
 import '../../../helpers/product_telemetry_config.dart';
@@ -32,8 +34,8 @@ import '../../../support/fake_waveform_source.dart';
 /// button that returned without a sound — while the extension host it was
 /// running inside was a healthy CXP peer the whole time.
 ///
-/// Every assertion below therefore reads what the *host* said, never
-/// `cxpServerProvider`. The desktop path is asserted in
+/// Every assertion below therefore reads what the *host* said, never the
+/// shared runtime's server status. The desktop path is asserted in
 /// `cross_probe_panel_test.dart` and must be untouched by all of this: the
 /// editor-host source is an alternative, not a replacement.
 void main() {
@@ -46,9 +48,13 @@ void main() {
   Widget wrap({
     List<Override> overrides = const [],
     Locale locale = const Locale('en'),
+    // A Crux Desktop theme, under which toasts are raised without a context.
+    bool desktop = false,
   }) => ProviderScope(
     overrides: [
       productTelemetryConfig,
+      cruxCxpProductBindingProvider.overrideWithValue(kWaveCruxCxpBinding),
+      cruxCxpRuntimeProvider.overrideWith((_) async => null),
       // What makes this an editor host at all. Set by the host bridge during
       // bootstrap in production, from a marker the extension's shim freezes
       // into `window` before `main.dart.js` runs.
@@ -58,6 +64,11 @@ void main() {
       ...overrides,
     ],
     child: MaterialApp(
+      theme: desktop
+          ? ThemeData(
+              extensions: const <ThemeExtension<dynamic>>[CruxDesktopTokens()],
+            )
+          : null,
       scaffoldMessengerKey: rootScaffoldMessengerKey,
       locale: locale,
       localizationsDelegates: L10N.localizationsDelegates,
@@ -84,10 +95,9 @@ void main() {
     testWidgets('never shows under an editor host, even with nothing live', (
       tester,
     ) async {
-      // `cxpServerProvider.isRunning` is false here and always will be — the
-      // lifecycle bridge is desktop-only by construction. Reading it as "the
-      // server is offline, enable it in Settings" was advice about a setting
-      // that could not have helped.
+      // The shared runtime never starts in a webview, by construction. Reading
+      // that as "the server is offline, enable it in Settings" was advice
+      // about a setting that could not have helped.
       await tester.pumpWidget(wrap());
       await tester.pumpAndSettle();
       expect(
@@ -103,7 +113,13 @@ void main() {
       // server, and `EditorHostKind.none`.
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [productTelemetryConfig],
+          overrides: [
+            productTelemetryConfig,
+            cruxCxpProductBindingProvider.overrideWithValue(
+              kWaveCruxCxpBinding,
+            ),
+            cruxCxpRuntimeProvider.overrideWith((_) async => null),
+          ],
           child: const MaterialApp(
             localizationsDelegates: L10N.localizationsDelegates,
             supportedLocales: [Locale('en')],
@@ -342,12 +358,6 @@ void main() {
   });
 
   group('the panel sends through the host', () {
-    // Originating a cross-probe is Pro, through the host as on the desktop,
-    // so these run at a Pro seat.
-    final proSeat = licenseTierProvider.overrideWithValue(
-      LicenseTier.pro,
-    );
-
     testWidgets('posts a crux.cross_probe_send naming the peer and the path', (
       tester,
     ) async {
@@ -355,7 +365,6 @@ void main() {
       await tester.pumpWidget(
         wrap(
           overrides: [
-            proSeat,
             hostBridgeChannelProvider.overrideWithValue(transport),
             waveformSourceProvider.overrideWith(
               () => _PreloadedSourceNotifier(FakeWaveformSource.reference()),
@@ -409,8 +418,8 @@ void main() {
       final transport = FakeHostBridgeTransport();
       await tester.pumpWidget(
         wrap(
+          desktop: true,
           overrides: [
-            proSeat,
             hostBridgeChannelProvider.overrideWithValue(transport),
             hostState(
               const EditorHostCrossProbeState(
@@ -420,6 +429,13 @@ void main() {
             ),
           ],
         ),
+      );
+      await tester.pumpAndSettle();
+      // The context-free toast needs a registered host; any toast from this
+      // window registers it.
+      showCruxInfoSnack(
+        tester.element(find.byType(WaveCruxCrossProbePanel)),
+        'primer',
       );
       await tester.pumpAndSettle();
 
@@ -436,7 +452,13 @@ void main() {
         ),
         isEmpty,
       );
-      expect(find.byType(SnackBar), findsOneWidget);
+      expect(
+        find.text('Select something to cross-probe first.'),
+        findsOneWidget,
+      );
+      // Past the toast's own timer, so it is not left pending at teardown.
+      await tester.pump(kCruxInfoSnackDuration);
+      await tester.pumpAndSettle();
     });
   });
 

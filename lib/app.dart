@@ -4,9 +4,9 @@
 import 'dart:async' show StreamSubscription, unawaited;
 import 'dart:io' show File, Platform, stderr, stdout;
 
+import 'package:crux_cxp_ui/crux_cxp_ui.dart' show cruxCxpRuntimeProvider;
 import 'package:crux_eula/crux_eula.dart';
-import 'package:crux_ide_layout/crux_ide_layout.dart'
-    show kCruxErrorSnackDuration;
+import 'package:crux_ide_layout/crux_ide_layout.dart' show CruxToasts;
 import 'package:crux_issue_reporter/crux_issue_reporter.dart';
 import 'package:crux_license/crux_license.dart';
 import 'package:crux_linux_integration/crux_linux_integration.dart';
@@ -59,7 +59,6 @@ import 'package:wavecrux/features/diagnostics/providers/log_console_sink_provide
 import 'package:wavecrux/features/eula/wavecrux_eula_overrides.dart';
 import 'package:wavecrux/features/issue_reporter/wavecrux_issue_reporter_overrides.dart';
 import 'package:wavecrux/features/menu_bar/widgets/desktop_menu_bar.dart';
-import 'package:wavecrux/features/remote/providers/cxp_server_provider.dart';
 import 'package:wavecrux/features/settings/providers/orientation_lock_provider.dart';
 import 'package:wavecrux/features/settings/providers/settings_providers.dart';
 import 'package:wavecrux/features/stage/bundle/custom_widget_bundle_provider.dart';
@@ -75,7 +74,7 @@ import 'package:wavecrux/features/viewer/providers/session_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
 import 'package:wavecrux/features/workspace/commands/open_workspace_command.dart';
 import 'package:wavecrux/features/workspace/providers/other_tabs_from_last_session_provider.dart';
-import 'package:wavecrux/features/workspace/providers/recent_workspaces_provider.dart';
+import 'package:wavecrux/features/workspace/providers/recent_lists.dart';
 import 'package:wavecrux/features/workspace/providers/startup_recovery_providers.dart';
 import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
 import 'package:wavecrux/features/workspace/widgets/desktop_file_drop_target.dart';
@@ -109,6 +108,8 @@ import 'package:wavecrux/services/logging/severe_log_stderr_sink.dart';
 import 'package:wavecrux/services/panes/pane_container_manager.dart';
 import 'package:wavecrux/services/platform/incoming_file_service.dart';
 import 'package:wavecrux/services/policy/org_theme_application.dart';
+import 'package:wavecrux/services/remote/cxp/cxp_selection_emitter_provider.dart';
+import 'package:wavecrux/services/remote/cxp/wavecrux_cxp_overrides.dart';
 import 'package:wavecrux/services/remote/remote_control_notifier.dart';
 import 'package:wavecrux/services/session/last_session_service.dart';
 import 'package:wavecrux/services/session/restore_guard_service.dart';
@@ -580,6 +581,11 @@ Future<bool> bootstrap({
       // its own. Empty on every other host. Spread BEFORE extraOverrides so the
       // Pro overlay can still layer on top.
       ...wavecruxHostRelayTelemetryOverrides(editorHostKind),
+      // WaveCrux's side of the shared CXP lifecycle: who it is, what it does
+      // when a peer asks, the organization's server policy and the outbound
+      // telemetry. Spread BEFORE extraOverrides so the Pro overlay can still
+      // layer on top.
+      ...await wavecruxCxpOverrides(),
       ...extraOverrides,
     ],
   );
@@ -787,21 +793,18 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
       DecoderRegistry.instance.register(extra.definition, extra.factory);
     }
 
-    // Instantiate the CXP lifecycle bridge so it starts mirroring
-    // AppSettings.cxpServerEnabled into the CXP server lifecycle. The
-    // bridge provider is keepAlive: true, so this single read is enough
-    // to keep the listener installed for the lifetime of the app — the
-    // CXP server then auto-starts on launch when the setting is true
-    // (default) and reacts to subsequent toggle/port changes.
-    // See lib/features/remote/providers/cxp_server_provider.dart.
-    // Skip on the test platform (only desktop hosts the CXP server) —
-    // path_provider needs the platform channel in widget tests.
+    // Start the shared CXP runtime. The first reader starts it, and it then
+    // follows the saved settings and the organization's policy: the server
+    // auto-starts on launch when CXP is on (the default) and reacts to every
+    // toggle and port change. Skip on the test platform (only desktop hosts
+    // the CXP server) — path_provider needs the platform channel in widget
+    // tests.
     if (!kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.linux ||
             defaultTargetPlatform == TargetPlatform.macOS ||
             defaultTargetPlatform == TargetPlatform.windows)) {
       ref
-        ..read(cxpLifecycleBridgeProvider)
+        ..read(cruxCxpRuntimeProvider)
         // Instantiate the selection emitter so it begins watching the
         // selection / cursor / marker providers now. It is kept alive and
         // does not depend on the server, so this one read is enough: it
@@ -920,23 +923,12 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
       if (messengerState != null && messengerState.mounted) {
         final l10n = Localizations.of<L10N>(messengerState.context, L10N);
         if (l10n != null) {
-          final colorScheme = Theme.of(messengerState.context).colorScheme;
-          messengerState.showSnackBar(
-            SnackBar(
-              content: Text(
-                l10n.openWorkspaceError(error),
-                style: TextStyle(color: colorScheme.onErrorContainer),
-              ),
-              backgroundColor: colorScheme.errorContainer,
-              behavior: SnackBarBehavior.floating,
-              duration: kCruxErrorSnackDuration,
-            ),
-          );
+          CruxToasts.showError(l10n.openWorkspaceError(error));
         }
       }
       return;
     }
-    await container.read(recentWorkspacesProvider.notifier).addWorkspace(path);
+    container.read(recentWorkspaces.provider.notifier).markOpened(path);
   }
 
   /// Snapshots the live tab list into a fresh [Workspace] and writes it
@@ -1257,19 +1249,7 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
       final summary = dropped.length == 1
           ? l10n.workspaceRestoreDroppedSingle(dropped.first)
           : l10n.workspaceRestoreDroppedMany(dropped.length);
-      // `l10n != null` above implies the messenger context resolved.
-      final colorScheme = Theme.of(messengerContext!).colorScheme;
-      messengerState?.showSnackBar(
-        SnackBar(
-          content: Text(
-            summary,
-            style: TextStyle(color: colorScheme.onErrorContainer),
-          ),
-          backgroundColor: colorScheme.errorContainer,
-          behavior: SnackBarBehavior.floating,
-          duration: kCruxErrorSnackDuration,
-        ),
-      );
+      CruxToasts.showError(summary);
     });
   }
 
@@ -1653,12 +1633,8 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
                                         L10N,
                                       );
                                 if (l10n != null) {
-                                  messenger!.showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        l10n.appearanceThemeLockedByPolicy,
-                                      ),
-                                    ),
+                                  CruxToasts.showInfo(
+                                    l10n.appearanceThemeLockedByPolicy,
                                   );
                                 }
                                 return;

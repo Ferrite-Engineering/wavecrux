@@ -43,7 +43,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    // Stub SharedPreferences so the recentFilesProvider (touched by
+    // Stub SharedPreferences so the recent-files list (touched by
     // SessionNotifier.saveToPath) doesn't hit the missing platform channel.
     SharedPreferences.setMockInitialValues({});
   });

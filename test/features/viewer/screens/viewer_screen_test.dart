@@ -3,6 +3,8 @@
 
 import 'dart:async';
 
+import 'package:crux_cxp/crux_cxp.dart' show ElementKind, PeerIdentity;
+import 'package:crux_cxp_ui/crux_cxp_ui.dart';
 import 'package:crux_stats_strip/crux_stats_strip.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -48,10 +50,14 @@ import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/plugins/bottom_dock_tab.dart';
 import 'package:wavecrux/plugins/extra_bottom_dock_tabs_provider.dart';
 import 'package:wavecrux/services/panes/pane_container_manager.dart';
+import 'package:wavecrux/services/remote/remote_control_notifier.dart'
+    show selectedSignalProvider;
 import 'package:wavecrux/services/tabs/tab_container_manager.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
 
+import '../../../helpers/cxp_test_overrides.dart';
 import '../../../helpers/product_telemetry_config.dart';
+import '../../../support/fake_waveform_source.dart';
 
 /// Builds an [OpenFilePicker] stub. `file_picker` 12's `pickFiles` is a static
 /// method and can't be replaced via `FilePicker.platform = mock`, so the open /
@@ -306,6 +312,34 @@ Widget _buildApp({
 Future<void> _pumpEmptyCanvas(WidgetTester tester) async {
   await tester.pump(); // build the tree
   await tester.pump(const Duration(milliseconds: 300)); // flush async providers
+}
+
+/// Records every cross-probe send instead of reaching a peer.
+class _RecordingDispatcher extends CrossProbeDispatcher {
+  _RecordingDispatcher(this._sent) : super(_unread);
+
+  static T _unread<T>(ProviderListenable<T> provider) =>
+      throw UnimplementedError('the recorder reads nothing');
+
+  final List<(PeerIdentity, CrossProbeSelection?)> _sent;
+
+  @override
+  Future<CrossProbeOutcome> send(
+    PeerIdentity peer,
+    CrossProbeSelection? selection, {
+    String? label,
+  }) async {
+    _sent.add((peer, selection));
+    return const CrossProbeOutcome(CrossProbeOutcomeKind.sent);
+  }
+}
+
+/// The reference in-memory trace, loaded into the active tab, so a selected
+/// backend-local ref (s_data) resolves to the canonical path (top.data).
+class _ReferenceSourceNotifier extends WaveformSourceNotifier {
+  @override
+  AsyncValue<WaveformDataSource?> build() =>
+      AsyncData<WaveformDataSource?>(FakeWaveformSource.reference());
 }
 
 void main() {
@@ -1972,5 +2006,134 @@ void main() {
         semantics.dispose();
       },
     );
+  });
+
+  group('the Cross-probe Selection command', () {
+    const netcrux = PeerIdentity(
+      peerId: 'netcrux-9-1',
+      productName: 'netcrux',
+      productVersion: '1.2.0',
+    );
+    const lintcrux = PeerIdentity(
+      peerId: 'lintcrux-9-2',
+      productName: 'lintcrux',
+      productVersion: '1.2.0',
+    );
+
+    Future<ProviderContainer> pumpWithPeers(
+      WidgetTester tester,
+      List<PeerIdentity> peers,
+      List<(PeerIdentity, CrossProbeSelection?)> sent, {
+      bool selected = true,
+    }) async {
+      await tester.pumpWidget(
+        _buildApp(
+          overrides: [
+            ...cxpTestOverrides,
+            cruxCxpPeersProvider.overrideWithValue(peers),
+            cruxCxpServerStatusProvider.overrideWithValue((
+              running: true,
+              port: 54322,
+              problem: null,
+            )),
+            crossProbeDispatcherProvider.overrideWith(
+              (_) => _RecordingDispatcher(sent),
+            ),
+            workspaceServiceProvider.overrideWithValue(
+              _InMemoryWorkspaceService(),
+            ),
+          ],
+          tabOverrides: [
+            waveformSourceProvider.overrideWith(_ReferenceSourceNotifier.new),
+            memoryStatsProvider.overrideWith(_InertMemoryStatsNotifier.new),
+            sessionAutoSaveProvider.overrideWith(
+              _InertSessionAutoSaveNotifier.new,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      final root = ProviderScope.containerOf(
+        tester.element(find.byType(ViewerScreen)),
+      );
+      if (selected) {
+        root.read(selectedSignalProvider.notifier).select('s_data');
+      }
+      await tester.pumpAndSettle();
+      return root;
+    }
+
+    void invoke(WidgetTester tester) => Actions.invoke(
+      tester.element(find.byType(ViewerToolbar)),
+      const ShortcutActionIntent(ShortcutAction.crossProbeSelection),
+    );
+
+    testWidgets('with one peer running it sends the selected signal at once', (
+      tester,
+    ) async {
+      final sent = <(PeerIdentity, CrossProbeSelection?)>[];
+      await pumpWithPeers(tester, const [netcrux], sent);
+
+      invoke(tester);
+      await tester.pumpAndSettle();
+
+      expect(sent, hasLength(1));
+      final (peer, selection) = sent.single;
+      expect(peer.productName, 'netcrux');
+      expect(selection!.candidates.single.kind, ElementKind.signal);
+      expect(selection.candidates.single.path, 'top.data');
+    });
+
+    testWidgets('with several peers it opens the target menu, never a dialog', (
+      tester,
+    ) async {
+      final sent = <(PeerIdentity, CrossProbeSelection?)>[];
+      await pumpWithPeers(tester, const [netcrux, lintcrux], sent);
+
+      invoke(tester);
+      await tester.pumpAndSettle();
+
+      expect(sent, isEmpty);
+      expect(find.byType(Dialog), findsNothing);
+      expect(find.text('NetCrux'), findsOneWidget);
+      expect(find.text('LintCrux'), findsOneWidget);
+      await tester.tap(find.text('LintCrux'));
+      await tester.pumpAndSettle();
+      expect(sent.single.$1.productName, 'lintcrux');
+    });
+
+    testWidgets('with nothing selected it says so and sends nothing', (
+      tester,
+    ) async {
+      final sent = <(PeerIdentity, CrossProbeSelection?)>[];
+      await pumpWithPeers(tester, const [netcrux], sent, selected: false);
+
+      invoke(tester);
+      await tester.pumpAndSettle();
+
+      expect(sent, isEmpty);
+      expect(
+        find.text('Select something to cross-probe first.'),
+        findsOneWidget,
+      );
+      await tester.pump(const Duration(seconds: 10));
+    });
+
+    testWidgets('does nothing while a text field has focus', (tester) async {
+      final sent = <(PeerIdentity, CrossProbeSelection?)>[];
+      await pumpWithPeers(tester, const [netcrux], sent);
+      // The signal search dialog's field takes focus when it opens.
+      Actions.invoke(
+        tester.element(find.byType(ViewerToolbar)),
+        const ShortcutActionIntent(ShortcutAction.openSearch),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(TextField), findsWidgets);
+
+      invoke(tester);
+      await tester.pumpAndSettle();
+
+      expect(sent, isEmpty);
+    });
   });
 }

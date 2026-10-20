@@ -55,8 +55,8 @@
 // extension host is the peer; it pushes its peer list, its dial failures and
 // its event log down here, and [postCrossProbeSend] is how the panel's per-peer
 // Send reaches a socket it does not have. Nothing on this path exists on
-// desktop, where `cross_probe_panel.dart` keeps sourcing from
-// `cxpServerProvider` et al.
+// desktop, where `cross_probe_panel.dart` renders the shared panel over the
+// shared CXP runtime.
 //
 // ### Two ways a waveform arrives
 //
@@ -69,6 +69,7 @@
 import 'dart:async';
 
 import 'package:crux_cxp/crux_cxp.dart';
+import 'package:crux_cxp_ui/crux_cxp_ui.dart' show CruxCxpHandlerResult;
 import 'package:crux_telemetry/crux_telemetry.dart' show TelemetryEvent;
 import 'package:crux_theme/crux_theme.dart' show cruxColorThemeProvider;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -84,8 +85,6 @@ import 'package:wavecrux/services/host_bridge/host_bridge_messages.dart';
 import 'package:wavecrux/services/host_bridge/host_bridge_transport.dart';
 import 'package:wavecrux/services/remote/cxp/cxp_inbound_handlers.dart';
 import 'package:wavecrux/services/remote/cxp/cxp_selection_emitter.dart';
-import 'package:wavecrux/services/remote/cxp/wavecrux_cxp_server.dart'
-    show CxpHandlerResult;
 import 'package:wavecrux/services/tabs/active_tab_container.dart';
 import 'package:wavecrux/services/tabs/tab_container_manager.dart';
 
@@ -452,19 +451,21 @@ class EditorHostBridge {
   /// construction; adding a second refusal for an unreachable case would mean
   /// two failure paths where the `catch` below already produces the right
   /// answer — an unhonoured ack carrying the reason, never a throw.
-  Future<CxpHandlerResult> _openWaveform(HostBridgeOpenWaveform message) async {
+  Future<CruxCxpHandlerResult> _openWaveform(
+    HostBridgeOpenWaveform message,
+  ) async {
     try {
       final tabId = await _ref.wavecruxWorkspace.openFile(
         message.displayName,
         displayName: message.displayName,
       );
-      if (_disposed) return CxpHandlerResult.honoredOk;
+      if (_disposed) return CruxCxpHandlerResult.ok;
       await _ref
           .read(tabContainerManagerProvider)
           .containerFor(tabId)
           .read(waveformSourceProvider.notifier)
           .openFromBytes(message.bytes, message.displayName);
-      return CxpHandlerResult.honoredOk;
+      return CruxCxpHandlerResult.ok;
     } on Object catch (error) {
       // A host that never stood the workspace up (a flat-container test, a
       // build with no tab machinery) still gets the waveform: falling back to
@@ -475,9 +476,9 @@ class EditorHostBridge {
           _ref,
           waveformSourceProvider.notifier,
         ).openFromBytes(message.bytes, message.displayName);
-        return CxpHandlerResult.honoredOk;
+        return CruxCxpHandlerResult.ok;
       } on Object {
-        return CxpHandlerResult(
+        return CruxCxpHandlerResult(
           honored: false,
           reason: 'could not open ${message.displayName}: $error',
         );

@@ -320,6 +320,35 @@ extension _ViewerScreenShortcuts on _ViewerScreenState {
               ..revealDockTabPlaced(kRightDockTabCrossProbe, kDockRegionRight);
           }
         }
+      case ShortcutAction.crossProbeSelection:
+        // The chord belongs to a focused text field (Shift+Enter is a newline
+        // in the annotation editor); the shortcut manager already lets the
+        // key through, and this guards the menu and palette routes too.
+        if (cruxTextInputFocused()) return;
+        final crossProbeClass = ref.read(deviceClassProvider);
+        if (crossProbeClass == DeviceClass.phone ||
+            crossProbeClass == DeviceClass.phoneLandscape) {
+          return;
+        }
+        // The selection is the active tab's, so it is resolved through that
+        // tab's container (the scope-leak class), while the send itself reads
+        // only app-global providers.
+        unawaited(
+          runCrossProbeSelection(
+            context,
+            ref,
+            selection: resolveWaveCruxCrossProbeSelection(
+              _activeTabContainer.read,
+            ),
+          ),
+        );
+      case ShortcutAction.clearRecentFiles:
+        clearCruxRecentList(
+          context,
+          ref,
+          list: recentFiles,
+          strings: CruxRecentListStrings.of(context, CruxRecentKind.files),
+        );
       case ShortcutAction.compareWaveforms:
         unawaited(_compareWaveforms());
       case ShortcutAction.nextDivergence:

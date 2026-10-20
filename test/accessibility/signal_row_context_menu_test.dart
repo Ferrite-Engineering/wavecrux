@@ -43,6 +43,7 @@ import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/services/panes/pane_container_manager.dart';
 import 'package:wavecrux/services/tabs/tab_container_manager.dart';
 
+import '../helpers/cxp_test_overrides.dart';
 import '../helpers/fake_waveform_data_source.dart';
 import '../helpers/product_telemetry_config.dart';
 
@@ -133,6 +134,7 @@ class _ScopeState extends State<_Scope> {
     _pcm = PaneContainerManager();
     _container = ProviderContainer(
       overrides: [
+        ...cxpTestOverrides,
         productTelemetryConfig,
         tabContainerManagerProvider.overrideWithValue(_tcm),
         paneContainerManagerProvider.overrideWithValue(_pcm),

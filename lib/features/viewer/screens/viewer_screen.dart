@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crux_cxp_ui/crux_cxp_ui.dart' show runCrossProbeSelection;
 import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:crux_issue_reporter/crux_issue_reporter.dart';
 import 'package:crux_license/crux_license.dart';
@@ -13,6 +14,8 @@ import 'package:crux_settings/crux_settings.dart';
 import 'package:crux_telemetry/crux_telemetry.dart';
 import 'package:crux_theme/crux_theme.dart';
 import 'package:crux_updates/crux_updates.dart';
+import 'package:crux_workspace/crux_workspace.dart'
+    show CruxRecentKind, CruxRecentListStrings, clearCruxRecentList;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -77,6 +80,8 @@ import 'package:wavecrux/features/pack/providers/pack_providers.dart';
 import 'package:wavecrux/features/panes/providers/active_pane_id_provider.dart';
 import 'package:wavecrux/features/panes/providers/split_pane_allowed_provider.dart';
 import 'package:wavecrux/features/panes/widgets/wavecrux_pane_host.dart';
+import 'package:wavecrux/features/remote/widgets/cross_probe_panel.dart'
+    show resolveWaveCruxCrossProbeSelection;
 import 'package:wavecrux/features/rtl_source/providers/rtl_source_provider.dart';
 import 'package:wavecrux/features/rtl_source/widgets/generate_stems_dialog.dart';
 import 'package:wavecrux/features/rtl_source/widgets/import_verilator_ast_dialog.dart';
@@ -125,8 +130,7 @@ import 'package:wavecrux/features/workspace/commands/reset_workspace_command.dar
 import 'package:wavecrux/features/workspace/commands/save_workspace_as_command.dart';
 import 'package:wavecrux/features/workspace/providers/desktop_file_drop_provider.dart';
 import 'package:wavecrux/features/workspace/providers/other_tabs_from_last_session_provider.dart';
-import 'package:wavecrux/features/workspace/providers/recent_files_provider.dart';
-import 'package:wavecrux/features/workspace/providers/recent_workspaces_provider.dart';
+import 'package:wavecrux/features/workspace/providers/recent_lists.dart';
 import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
 import 'package:wavecrux/features/workspace/widgets/wavecrux_empty_canvas.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';

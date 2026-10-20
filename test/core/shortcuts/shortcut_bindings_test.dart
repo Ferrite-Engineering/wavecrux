@@ -102,6 +102,9 @@ void main() {
     ShortcutAction.newWorkspace,
     ShortcutAction.saveWorkspaceAs,
     ShortcutAction.openWorkspace,
+    // Clear Recent Files empties a list: a menu or palette decision, never a
+    // keystroke.
+    ShortcutAction.clearRecentFiles,
     ShortcutAction.exportTabAsSession,
     // Pane management actions (split-pane). splitPaneRight is
     // bound to Cmd/Ctrl+\ and closePane to Cmd/Ctrl+Shift+W in

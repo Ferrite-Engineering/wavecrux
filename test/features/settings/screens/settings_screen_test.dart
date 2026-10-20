@@ -19,6 +19,7 @@ import 'package:wavecrux/features/settings/screens/settings_screen.dart';
 import 'package:wavecrux/features/settings/widgets/color_theme_section.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/services/settings/settings_service.dart';
+import '../../../helpers/cxp_test_overrides.dart';
 
 // ── Mock ─────────────────────────────────────────────────────────────────────
 
@@ -37,6 +38,7 @@ Widget _wrap({WaveCruxSettingsService? service, Locale? locale}) {
   final mock = service ?? _defaultMock();
   return ProviderScope(
     overrides: [
+      ...cxpTestOverrides,
       settingsServiceProvider.overrideWithValue(mock),
     ],
     child: MaterialApp(
@@ -53,6 +55,7 @@ Widget _wrapWithTrigger({WaveCruxSettingsService? service}) {
   final mock = service ?? _defaultMock();
   return ProviderScope(
     overrides: [
+      ...cxpTestOverrides,
       settingsServiceProvider.overrideWithValue(mock),
     ],
     child: MaterialApp(
@@ -306,7 +309,7 @@ void main() {
       await tester.pumpAndSettle();
       await _selectCategory(tester, 'CXP Cross-Probe');
       expect(find.text('CXP port'), findsOneWidget);
-      expect(find.text('CXP Status'), findsOneWidget);
+      expect(find.text('CXP status'), findsOneWidget);
       // The editor-command field lives in the dedicated Editors section.
       expect(find.text('Editor Command'), findsNothing);
     });
@@ -600,6 +603,7 @@ void main() {
   group('Privacy category', () {
     Widget wrapGated({required bool beta, required bool dev}) => ProviderScope(
       overrides: [
+        ...cxpTestOverrides,
         settingsServiceProvider.overrideWithValue(_defaultMock()),
         // The Privacy section is `crux_telemetry`'s, so the package's config
         // and storage seams have to be bound the way `bootstrap` binds them.
@@ -618,6 +622,7 @@ void main() {
         home: Builder(
           builder: (context) => ProviderScope(
             overrides: [
+              ...cxpTestOverrides,
               cruxTelemetryStringsProvider.overrideWithValue(
                 WavecruxTelemetryStrings(L10N.of(context)),
               ),

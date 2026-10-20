@@ -1073,66 +1073,39 @@ class _AnchorTimeDialogState extends State<_AnchorTimeDialog> {
   );
 }
 
-/// Shows an undo snackbar **after the route that triggered it has closed**.
+/// Shows an undo toast **after the route that triggered it has closed**.
 ///
-/// **Why the deferral.** `ScaffoldMessengerState.build` arms the auto-dismiss
-/// timer only when its own route is current:
+/// The message is the suite's action toast (`showCruxInfoSnack` with a
+/// `CruxToastAction`): bottom-right on desktop, a Material snack bar with a
+/// `SnackBarAction` on phone and tablet. It stays for the action duration, and
+/// on desktop never leaves while the pointer is over it or focus is in it.
 ///
-/// ```dart
-/// final ModalRoute<dynamic>? route = ModalRoute.of(context);
-/// if (route == null || route.isCurrent) {
-///   if (_snackBarController!.isCompleted && _snackBarTimer == null) {
-///     _snackBarTimer = Timer(snackBar.duration, ...);
-/// ```
+/// **Why the deferral.** Every caller raises this from inside the panel's menu,
+/// which is a route sitting on top. A Material snack bar shown while another
+/// route is current never arms its auto-dismiss timer, so on phone and tablet
+/// it would sit over the status bar indefinitely. One frame is enough: the menu
+/// pops before the callback runs, so the messenger builds with its own route
+/// current and arms the timer normally. Deliberately not a longer delay: a
+/// message that lags a visible beat behind the action it reports reads as lag.
 ///
-/// Every one of these is raised from inside the panel's ⋮ menu, which is a
-/// route sitting on top. Show the snackbar there and `isCurrent` is false, so
-/// **no timer is ever created** — the snackbar has nothing that will ever
-/// expire it. It then sits over the status bar indefinitely, which is how a
-/// host came to miss a join request that timed out underneath it.
-///
-/// Pressing Escape appeared to "fix" it only by closing the stale route and
-/// forcing the rebuild that finally armed the timer.
-///
-/// One frame is enough: the menu pops before the callback runs, so the
-/// messenger builds with its own route current and arms the timer normally.
-/// Deliberately not a longer delay — a snackbar that lags a visible beat behind
-/// the action it reports reads as lag.
+/// **Which context shows it.** The action that raises the offer often removes
+/// the very widget whose `context` it was handed (a signal row, an annotation
+/// row), so that context is gone by the next frame. The offer is shown from the
+/// enclosing `Scaffold`, which outlives the rows; only a caller with no
+/// `Scaffold` above it falls back to its own context.
 void showUndoSnack(
   BuildContext context, {
   required String message,
   required String undoLabel,
   required VoidCallback onUndo,
 }) {
-  final messenger = ScaffoldMessenger.maybeOf(context);
-  if (messenger == null) return;
+  final anchor = Scaffold.maybeOf(context)?.context ?? context;
   WidgetsBinding.instance.addPostFrameCallback((_) {
-    messenger.hideCurrentSnackBar();
-    final controller = messenger.showSnackBar(
-      SnackBar(
-        content: Text(message),
-        action: SnackBarAction(label: undoLabel, onPressed: onUndo),
-        // Explicit, and pinned to the suite constant rather than left to the
-        // framework default they currently coincide on: the timer below is
-        // armed from the same value, and the two must not be able to drift.
-        // ignore: avoid_redundant_argument_values
-        duration: kCruxInfoSnackDuration,
-      ),
+    if (!anchor.mounted) return;
+    showCruxInfoSnack(
+      anchor,
+      message,
+      action: CruxToastAction(label: undoLabel, onPressed: onUndo),
     );
-    // **We close it ourselves.** Deferring the show past the menu's route was
-    // not enough — the messenger arms its timer from `build`, and only while
-    // its own route is current, so whether one is ever created depends on what
-    // else happens to be on the navigator at that instant. A snack that may or
-    // may not expire depending on route timing is not a snack with a duration.
-    //
-    // Owning the timer makes the dismissal unconditional. `close` is a no-op if
-    // the user already dismissed it or tapped Undo.
-    final timer = Timer(kCruxInfoSnackDuration, controller.close);
-    // Cancelled the moment the snack goes, however it goes — Undo tapped, a
-    // later snack replacing it, the messenger torn down. A timer that outlives
-    // its snack would fire into nothing in production and trip
-    // flutter_test's "a Timer is still pending" invariant in every test that
-    // deletes something.
-    unawaited(controller.closed.then((_) => timer.cancel()));
   });
 }

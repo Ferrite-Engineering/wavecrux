@@ -11,8 +11,9 @@ part 'editor_host_cross_probe_provider.g.dart';
 
 /// The cross-probe state an editor host has pushed down the bridge.
 ///
-/// The editor-host counterpart of `cxpPeersProvider` + `cxpDialFailuresProvider`
-/// + `cxpEventLogProvider` + `cxpServerProvider.isRunning` — the four sources
+/// The editor-host counterpart of `cruxCxpPeersProvider` +
+/// `cruxCxpUnreachablePeersProvider` + `cruxCxpEventLogProvider` +
+/// `cruxCxpServerStatusProvider` — the four sources
 /// the cross-probe panel renders from on desktop, which inside a VSCode webview
 /// are all structurally empty because this build has no CXP server there and
 /// cannot have one (no `dart:io`, no listening socket).

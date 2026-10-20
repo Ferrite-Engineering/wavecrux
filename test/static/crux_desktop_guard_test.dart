@@ -37,6 +37,14 @@ void main() {
       File('test/static/crux_desktop_allow_list.txt').readAsStringSync(),
     );
 
+    // The allow-list is empty and stays empty: every site is on the Crux
+    // Desktop layer or marked phone-only.
+    expect(
+      allowances,
+      isEmpty,
+      reason: 'crux_desktop_allow_list.txt must stay empty',
+    );
+
     final result = cruxAuditCruxDesktop(
       sources: sources,
       allowances: allowances,

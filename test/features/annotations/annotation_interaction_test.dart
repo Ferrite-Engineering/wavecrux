@@ -2,11 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'package:crux_ide_layout/crux_ide_layout.dart'
-    show kCruxInfoSnackDuration;
+    show kCruxActionSnackDuration;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wavecrux/core/shortcuts/shortcut_action.dart';
+import 'package:wavecrux/core/shortcuts/shortcut_manager_widget.dart';
 import 'package:wavecrux/domain/enums/var_direction.dart';
 import 'package:wavecrux/domain/enums/var_type.dart';
 import 'package:wavecrux/domain/models/annotation.dart';
@@ -58,6 +62,7 @@ Future<ProviderContainer> _pump(
   required List<Annotation> annotations,
   String? editingId,
   Map<String, AnnotationStatus>? statusOverride,
+  Map<ShortcutAction, VoidCallback>? shortcutHandlers,
 }) async {
   final container = ProviderContainer(
     overrides: [
@@ -89,10 +94,17 @@ Future<ProviderContainer> _pump(
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: const MaterialApp(
+      child: MaterialApp(
         localizationsDelegates: L10N.localizationsDelegates,
         supportedLocales: L10N.supportedLocales,
-        home: _Surface(),
+        // The app's own shortcut layer, for a test about a chord the editor
+        // must keep.
+        home: shortcutHandlers == null
+            ? const _Surface()
+            : ShortcutManagerWidget(
+                handlers: shortcutHandlers,
+                child: const _Surface(),
+              ),
       ),
     ),
   );
@@ -311,12 +323,40 @@ void main() {
       expect(container.read(annotationsProvider), hasLength(1));
 
       // Past the undo offer, so its timer is not left pending at teardown.
-      await tester.pump(kCruxInfoSnackDuration);
+      await tester.pump(kCruxActionSnackDuration);
       await tester.pumpAndSettle();
     });
   });
 
   group('the inline editor', () {
+    testWidgets('keeps Cross-probe Selection for itself: Shift+Enter is its '
+        'newline, so the command sends nothing', (tester) async {
+      var fired = 0;
+      await _pump(
+        tester,
+        annotations: [_callout(text: '')],
+        editingId: 'a1',
+        shortcutHandlers: {ShortcutAction.crossProbeSelection: () => fired++},
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(TextField), findsOneWidget);
+
+      final isMac =
+          defaultTargetPlatform == TargetPlatform.macOS ||
+          defaultTargetPlatform == TargetPlatform.iOS;
+      final modifier = isMac
+          ? LogicalKeyboardKey.meta
+          : LogicalKeyboardKey.control;
+      await tester.sendKeyDownEvent(modifier);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shift);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shift);
+      await tester.sendKeyUpEvent(modifier);
+      await tester.pump();
+
+      expect(fired, 0);
+    });
+
     testWidgets('opens focused on the annotation being edited', (tester) async {
       await _pump(
         tester,

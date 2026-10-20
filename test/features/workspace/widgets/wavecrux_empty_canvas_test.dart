@@ -1,6 +1,8 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wavecrux/core/app_info/application_build_info.dart';
 import 'package:wavecrux/core/app_info/application_build_info_provider.dart';
 import 'package:wavecrux/domain/enums/device_class.dart';
+import 'package:wavecrux/features/workspace/providers/recent_lists.dart';
 import 'package:wavecrux/features/workspace/widgets/wavecrux_empty_canvas.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
@@ -242,5 +245,118 @@ void main() {
         reason: 'locale $locale',
       );
     }
+  });
+
+  group('the Recent lists', () {
+    late Directory dir;
+    late String present;
+    const missing = '/definitely/not/a/real/dir/gone.vcd';
+
+    setUp(() {
+      dir = Directory.systemTemp.createTempSync('wavecrux_recent_');
+      present = (File('${dir.path}/here.vcd')..writeAsStringSync('x')).path;
+      addTearDown(() => dir.deleteSync(recursive: true));
+    });
+
+    Future<({ProviderContainer container, List<String> opened})> pumpRecents(
+      WidgetTester tester, {
+      List<String> files = const <String>[],
+      List<String> workspaces = const <String>[],
+      bool withWorkspaces = true,
+    }) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        'recent_files': files,
+        'recent_workspaces': workspaces,
+      });
+      final opened = <String>[];
+      final container = ProviderContainer(
+        overrides: [deviceClassProvider.overrideWithValue(DeviceClass.desktop)],
+      );
+      addTearDown(container.dispose);
+      await container.read(recentFiles.provider.notifier).restored;
+      await container.read(recentWorkspaces.provider.notifier).restored;
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            localizationsDelegates: L10N.localizationsDelegates,
+            supportedLocales: L10N.supportedLocales,
+            home: Scaffold(
+              body: WaveCruxEmptyCanvas(
+                onOpenFile: () {},
+                onOpenRecentFile: (path) async => opened.add(path),
+                onOpenWorkspace: withWorkspaces ? () {} : null,
+                onOpenRecentWorkspace: withWorkspaces
+                    ? (path) async => opened.add(path)
+                    : null,
+              ),
+            ),
+          ),
+        ),
+      );
+      await settle(tester);
+      return (container: container, opened: opened);
+    }
+
+    testWidgets('a recent file opens through the product loader', (
+      tester,
+    ) async {
+      final env = await pumpRecents(tester, files: [present]);
+      await tester.tap(find.text('here.vcd'));
+      await settle(tester);
+      expect(env.opened, [present]);
+      expect(env.container.read(recentFiles.provider).first, present);
+    });
+
+    testWidgets('a file that is gone is greyed and says so', (tester) async {
+      await pumpRecents(tester, files: [present, missing]);
+      expect(find.text('File not found'), findsOneWidget);
+    });
+
+    testWidgets('opening a file that is gone drops it and opens nothing', (
+      tester,
+    ) async {
+      final env = await pumpRecents(tester, files: [present, missing]);
+      await tester.tap(find.text('gone.vcd'));
+      await settle(tester);
+      expect(env.opened, isEmpty);
+      expect(env.container.read(recentFiles.provider), [present]);
+      await tester.pump(const Duration(seconds: 10));
+    });
+
+    testWidgets('a row has its own remove button', (tester) async {
+      final env = await pumpRecents(tester, files: [present]);
+      await tester.tap(find.byKey(const ValueKey('cruxRecentRemove')));
+      await settle(tester);
+      expect(env.container.read(recentFiles.provider), isEmpty);
+    });
+
+    testWidgets('Clear Recent empties the list and says so', (tester) async {
+      final env = await pumpRecents(tester, files: [present]);
+      await tester.tap(
+        find.byKey(const ValueKey('cruxRecentClear:recentFiles')),
+      );
+      await settle(tester);
+      expect(env.container.read(recentFiles.provider), isEmpty);
+      expect(find.text('here.vcd'), findsNothing);
+      await tester.pump(const Duration(seconds: 10));
+    });
+
+    testWidgets('the workspaces list is shown only where workspaces open', (
+      tester,
+    ) async {
+      await pumpRecents(
+        tester,
+        workspaces: ['/tmp/a.wavecrux-workspace'],
+        withWorkspaces: false,
+      );
+      expect(find.text('a.wavecrux-workspace'), findsNothing);
+
+      await pumpRecents(
+        tester,
+        workspaces: ['/tmp/a.wavecrux-workspace'],
+      );
+      expect(find.text('a.wavecrux-workspace'), findsOneWidget);
+    });
   });
 }

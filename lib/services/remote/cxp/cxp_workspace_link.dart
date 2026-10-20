@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'package:crux_cxp/crux_cxp.dart';
+import 'package:crux_cxp_ui/crux_cxp_ui.dart' show cruxCxpServerStatusProvider;
 import 'package:path/path.dart' as p;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:wavecrux/domain/interfaces/waveform_data_source.dart';
-import 'package:wavecrux/features/remote/providers/cxp_server_provider.dart';
 import 'package:wavecrux/features/tabs/providers/tab_providers.dart';
-import 'package:wavecrux/features/workspace/providers/recent_files_provider.dart';
+import 'package:wavecrux/features/workspace/providers/recent_lists.dart';
 
 part 'cxp_workspace_link.g.dart';
 
@@ -40,15 +40,15 @@ const String kWavecruxProducer = 'wavecrux';
 /// Read on every containment check rather than snapshotted when the server
 /// starts: a design opened after CXP came up is one the user opened, and a
 /// snapshot would report otherwise for the rest of the process's life.
-/// Recent files is an [AsyncValue]; before it resolves this yields the open
-/// tabs alone rather than blocking the check.
+/// The recent-files list loads in the background; before it arrives this
+/// yields the open tabs alone rather than blocking the check.
 Iterable<String> cxpOpenDirectories(Ref ref) {
   final roots = <String>{};
   for (final tab in ref.read(tabListProvider)) {
     final path = tab.filePath;
     if (path != null && path.isNotEmpty) roots.add(p.dirname(path));
   }
-  for (final path in ref.read(recentFilesProvider).value ?? const <String>[]) {
+  for (final path in ref.read(recentFiles.provider)) {
     if (path.isNotEmpty) roots.add(p.dirname(path));
   }
   return roots;
@@ -144,7 +144,7 @@ Future<void> publishWaveformWorkspaceArtifact(
   String path,
   WaveformDataSource source,
 ) async {
-  if (!ref.read(cxpServerProvider).isRunning) return;
+  if (!ref.read(cruxCxpServerStatusProvider).running) return;
   final topModule = source.rootScopes.isEmpty
       ? null
       : source.rootScopes.first.name;

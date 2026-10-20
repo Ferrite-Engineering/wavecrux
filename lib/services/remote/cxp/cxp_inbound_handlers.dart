@@ -5,8 +5,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:crux_cxp/crux_cxp.dart';
-import 'package:crux_ide_layout/crux_ide_layout.dart'
-    show kCruxInfoSnackDuration;
+import 'package:crux_cxp_ui/crux_cxp_ui.dart';
+import 'package:crux_ide_layout/crux_ide_layout.dart' show CruxToasts;
 import 'package:crux_io/crux_io.dart' show SpawnHost;
 import 'package:crux_telemetry/crux_telemetry.dart';
 import 'package:crux_window_chrome/crux_window_chrome.dart';
@@ -29,7 +29,6 @@ import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/services/remote/cxp/cxp_workspace_link.dart';
 import 'package:wavecrux/services/remote/cxp/riscv_stream_coordinate_resolver.dart';
-import 'package:wavecrux/services/remote/cxp/wavecrux_cxp_server.dart';
 import 'package:wavecrux/services/remote/remote_control_notifier.dart';
 import 'package:wavecrux/services/riscv/riscv_retire_stream_service.dart';
 import 'package:wavecrux/services/riscv/rvfi_detection_service.dart';
@@ -73,7 +72,7 @@ part 'cxp_inbound_handlers.g.dart';
 ///   `reason: "element not found"`.
 /// * Marker letter not currently set → `honored: false`,
 ///   `reason: "marker not set"`.
-Future<CxpHandlerResult> dispatchCxpHighlight(
+Future<CruxCxpHandlerResult> dispatchCxpHighlight(
   Ref ref,
   ElementId element, [
   Map<String, Object?> metadata = const <String, Object?>{},
@@ -89,11 +88,6 @@ Future<CxpHandlerResult> dispatchCxpHighlight(
     coordinate,
     openedTab: outcome.openedTab,
   );
-  // An actionable inbound message was applied (a highlight landed or a
-  // waveform was opened) — nudge the OS's attention affordance without stealing
-  // focus. Gated by the user setting via the swappable `windowAttentionRequester`
-  // seam, so this call is a no-op when the preference is off.
-  if (placed.honored) unawaited(requestUserAttention());
   // Both outcomes are recorded, and that is the point of the `honored`
   // property: a cross-probe a peer sent and this app could not act on is the
   // failure mode the suite network-effect funnel exists to surface, so
@@ -133,9 +127,9 @@ Future<CxpHandlerResult> dispatchCxpHighlight(
 /// [openedTab] says whether the element hand-off **opened the trace's tab
 /// itself**, and it is the whole basis of the auto-mount decision below. See
 /// [_mountCommitInspector].
-Future<CxpHandlerResult> _applyStreamCoordinate(
+Future<CruxCxpHandlerResult> _applyStreamCoordinate(
   Ref ref,
-  CxpHandlerResult elementResult,
+  CruxCxpHandlerResult elementResult,
   CxpStreamCoordinate? coordinate, {
   required bool openedTab,
 }) async {
@@ -144,7 +138,7 @@ Future<CxpHandlerResult> _applyStreamCoordinate(
   // own reason is the more useful one, so it stands unmodified.
   if (!elementResult.honored) return elementResult;
   if (!RiscvStreamCoordinateResolver.implementsStream(coordinate.streamId)) {
-    return CxpHandlerResult(
+    return CruxCxpHandlerResult(
       honored: true,
       reason: RiscvStreamCoordinateResolver.declineUnknownStream(
         coordinate.streamId,
@@ -159,7 +153,7 @@ Future<CxpHandlerResult> _applyStreamCoordinate(
     // "Never throw" is the standing constraint on this whole path. A trace
     // that surprises the substrate degrades to an honoured element with an
     // explanation, exactly like every other unresolvable coordinate.
-    return CxpHandlerResult(
+    return CruxCxpHandlerResult(
       honored: true,
       reason: 'could not resolve the stream coordinate: $e',
     );
@@ -168,7 +162,7 @@ Future<CxpHandlerResult> _applyStreamCoordinate(
   final resolution = outcome.resolution;
   final time = resolution.time;
   if (time == null) {
-    return CxpHandlerResult(honored: true, reason: resolution.reason);
+    return CruxCxpHandlerResult(honored: true, reason: resolution.reason);
   }
 
   // The cursor IS the Commit Inspector's selection. Its history views show
@@ -194,11 +188,11 @@ Future<CxpHandlerResult> _applyStreamCoordinate(
     attributes: coordinate.attributes,
     autoMounted: autoMounted,
   );
-  if (resolution.retired != null) return CxpHandlerResult.honoredOk;
+  if (resolution.retired != null) return CruxCxpHandlerResult.ok;
   // CXP §9.9.2's prescribed fallback: the step exists, nothing retired there.
   // Reported rather than dressed up as a hit — the sender asked for an
   // instruction and did not get one.
-  return const CxpHandlerResult(
+  return const CruxCxpHandlerResult(
     honored: true,
     reason:
         'no instruction retired at that step; the cursor was placed there '
@@ -353,7 +347,7 @@ class _ElementOutcome {
   const _ElementOutcome(this.result, {this.openedTab = false});
 
   /// The reply that rides back to the sender, unchanged by this wrapper.
-  final CxpHandlerResult result;
+  final CruxCxpHandlerResult result;
 
   /// True only when a **new** tab was created for this hand-off. Activating a
   /// tab that already held the file (the P21 dedupe) is false: nothing was
@@ -390,7 +384,7 @@ Future<_ElementOutcome> _dispatchCxpHighlight(
       // with the same honored=false reply the known-but-unhandled kinds
       // get: the requester learns WaveCrux did nothing, and nothing throws.
       return _ElementOutcome(
-        CxpHandlerResult(
+        CruxCxpHandlerResult(
           honored: false,
           reason: 'wavecrux does not handle ${element.kind.name} elements',
         ),
@@ -501,7 +495,7 @@ Future<({bool loaded, bool openedTab})> _openWaveformInNewTab(
   );
 }
 
-Future<CxpHandlerResult> _highlightSignalLike(
+Future<CruxCxpHandlerResult> _highlightSignalLike(
   Ref ref,
   String path,
 ) async {
@@ -512,7 +506,7 @@ Future<CxpHandlerResult> _highlightSignalLike(
     // user to open a waveform first. On an inbound `notify_selection` this
     // reason is surfaced as a local snackbar (see [handleInboundSelection]);
     // on a `request_highlight` it rides back to the sender as the ack reason.
-    return const CxpHandlerResult(
+    return const CruxCxpHandlerResult(
       honored: false,
       reason: _noWaveformReason,
     );
@@ -520,7 +514,7 @@ Future<CxpHandlerResult> _highlightSignalLike(
   final allVars = source.findVariables(const SignalFilter());
   final match = _resolveSignalLike(path, allVars);
   if (match == null) {
-    return CxpHandlerResult(
+    return CruxCxpHandlerResult(
       honored: false,
       reason: 'element not found: $path',
     );
@@ -556,7 +550,7 @@ Future<CxpHandlerResult> _highlightSignalLike(
     ref,
     revealSignalRequestProvider.notifier,
   ).request(match.fullPath);
-  return CxpHandlerResult.honoredOk;
+  return CruxCxpHandlerResult.ok;
 }
 
 /// The `reason` a signal-like highlight returns when no waveform is loaded.
@@ -706,13 +700,13 @@ String _signalLikeLeaf(String path) {
   return tail.split('.').last;
 }
 
-Future<CxpHandlerResult> _highlightScope(
+Future<CruxCxpHandlerResult> _highlightScope(
   Ref ref,
   String path,
 ) async {
   final source = readActive(ref, waveformSourceProvider).value;
   if (source == null) {
-    return const CxpHandlerResult(
+    return const CruxCxpHandlerResult(
       honored: false,
       reason: 'no waveform file loaded',
     );
@@ -722,7 +716,7 @@ Future<CxpHandlerResult> _highlightScope(
       .where((v) => v.fullPath.startsWith('$path.'))
       .toList(growable: false);
   if (scopeVars.isEmpty) {
-    return CxpHandlerResult(
+    return CruxCxpHandlerResult(
       honored: false,
       reason: 'scope not found: $path',
     );
@@ -737,10 +731,10 @@ Future<CxpHandlerResult> _highlightScope(
   if (toAdd.isNotEmpty) {
     readActive(ref, signalGroupsProvider.notifier).addSignals(toAdd);
   }
-  return CxpHandlerResult.honoredOk;
+  return CruxCxpHandlerResult.ok;
 }
 
-Future<CxpHandlerResult> _highlightMarker(
+Future<CruxCxpHandlerResult> _highlightMarker(
   Ref ref,
   String path,
 ) async {
@@ -750,20 +744,20 @@ Future<CxpHandlerResult> _highlightMarker(
   if (path.length != 1 ||
       path.codeUnitAt(0) < 0x61 ||
       path.codeUnitAt(0) > 0x7A) {
-    return CxpHandlerResult(
+    return CruxCxpHandlerResult(
       honored: false,
       reason: 'invalid marker name: $path',
     );
   }
   final markerTime = readActive(ref, markerStateProvider).getMarker(path);
   if (markerTime == null) {
-    return CxpHandlerResult(
+    return CruxCxpHandlerResult(
       honored: false,
       reason: 'marker not set: $path',
     );
   }
   readActive(ref, cursorStateProvider.notifier).placePrimary(markerTime);
-  return CxpHandlerResult.honoredOk;
+  return CruxCxpHandlerResult.ok;
 }
 
 /// Waveform-file extensions a CXP source highlight is allowed to open.
@@ -832,7 +826,7 @@ Future<_ElementOutcome> _highlightSource(
   final isWaveform = _waveformExtensions.any(lower.endsWith);
   if (!isWaveform) {
     return const _ElementOutcome(
-      CxpHandlerResult(
+      CruxCxpHandlerResult(
         honored: false,
         reason:
             'no signal mapping for a source-line citation yet — '
@@ -846,7 +840,9 @@ Future<_ElementOutcome> _highlightSource(
   // repeats the path.
   final refusal = _kSourceHandoffFloor.refuse(path);
   if (refusal != null) {
-    return _ElementOutcome(CxpHandlerResult(honored: false, reason: refusal));
+    return _ElementOutcome(
+      CruxCxpHandlerResult(honored: false, reason: refusal),
+    );
   }
   final tabId = await ref.wavecruxWorkspace.openFile(path);
   final container = ref.read(tabContainerManagerProvider).containerFor(tabId);
@@ -854,7 +850,7 @@ Future<_ElementOutcome> _highlightSource(
   final loaded = container.read(waveformSourceProvider);
   if (loaded is AsyncError) {
     return _ElementOutcome(
-      CxpHandlerResult(
+      CruxCxpHandlerResult(
         honored: false,
         reason: 'failed to open waveform: ${loaded.error}',
       ),
@@ -867,7 +863,7 @@ Future<_ElementOutcome> _highlightSource(
   // This is the SimCrux counterexample hand-off's own path, and it always
   // creates a tab: a `source` element names a file to OPEN, never a place in
   // something already open.
-  return const _ElementOutcome(CxpHandlerResult.honoredOk, openedTab: true);
+  return const _ElementOutcome(CruxCxpHandlerResult.ok, openedTab: true);
 }
 
 /// Drains the stashed `notify_selection` signal paths, resolves each against
@@ -983,8 +979,8 @@ const String _kSimcruxSuggestedSignalsKey = 'simcrux.suggested_signals';
 /// Records the suggested-signal globs carried by an inbound CXP
 /// `notify_selection` so the next source-open handoff ([_highlightSource])
 /// can place the matching signals on the freshly-opened tab's canvas. Called
-/// by [handleInboundSelection] (which the provider layer wires into
-/// [WaveCruxCxpServer.onSelection]).
+/// by [handleInboundSelection] (which `WaveCruxCxpRequestHandler.selection`
+/// calls).
 ///
 /// The handoff's globs live in [metadata] under [_kSimcruxSuggestedSignalsKey]
 /// (e.g. `['<topModule>.*']`), NOT in [elements] — for this handoff `elements`
@@ -1007,7 +1003,7 @@ const String _kSimcruxSuggestedSignalsKey = 'simcrux.suggested_signals';
 ///    loaded, a snackbar tells the user to open one first (a net reference
 ///    carries no file WaveCrux could open on its behalf).
 ///
-/// Wired into [WaveCruxCxpServer.onSelection] by the provider layer.
+/// Wired into `WaveCruxCxpRequestHandler.selection`.
 void handleInboundSelection(
   Ref ref,
   List<ElementId> elements,
@@ -1042,8 +1038,12 @@ Future<void> _liveHighlightInboundSelection(
       metadata,
     );
     if (result.result.honored) {
-      // A highlight was applied (possibly after opening the waveform).
-      unawaited(requestUserAttention());
+      // A highlight was applied (possibly after opening the waveform). This
+      // is a live selection, not a request, so the runtime does not bounce
+      // the dock for it: the same setting gates it here.
+      if (ref.read(cruxCxpSettingsProvider).requestAttention) {
+        unawaited(requestUserAttention());
+      }
       return;
     }
   }
@@ -1052,27 +1052,16 @@ Future<void> _liveHighlightInboundSelection(
   }
 }
 
-/// Shows a transient snackbar asking the user to open a waveform, via the
-/// root messenger — mirrors the idiom in `MarkerChordCoordinator`. A no-op
-/// when no messenger is mounted (server-only startup). Only ever called on
-/// the UI isolate where the widget binding is live.
+/// Shows a transient toast asking the user to open a waveform. The text is
+/// localized through the root messenger's context; a no-op when no messenger is
+/// mounted (server-only startup). Only ever called on the UI isolate where the
+/// widget binding is live.
 void _showOpenWaveformSnackBar() {
   final messenger = rootScaffoldMessengerKey.currentState;
   if (messenger == null || !messenger.mounted) return;
   final l10n = Localizations.of<L10N>(messenger.context, L10N);
   if (l10n == null) return;
-  messenger
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        content: Text(l10n.cxpHighlightNoWaveform),
-        behavior: SnackBarBehavior.floating,
-        // Canon info duration is pinned by convention, not the framework
-        // default — it must not drift if the default ever changes.
-        // ignore: avoid_redundant_argument_values
-        duration: kCruxInfoSnackDuration,
-      ),
-    );
+  CruxToasts.showInfo(l10n.cxpHighlightNoWaveform);
 }
 
 void stashCxpSelectionSignals(
@@ -1146,21 +1135,21 @@ class CxpSuggestedSignals extends _$CxpSuggestedSignals {
 /// A waveform WaveCrux has never opened is honoured: this route is not
 /// rooted in the directories the user has opened, and
 /// [kCxpOpenArtifactContainment] says why.
-Future<CxpHandlerResult> dispatchCxpOpenArtifact(
+Future<CruxCxpHandlerResult> dispatchCxpOpenArtifact(
   Ref ref,
   String designId,
   String artifactKind,
   String? hintPath,
 ) async {
   if (artifactKind != kCxpWaveformArtifactKind) {
-    return CxpHandlerResult(
+    return CruxCxpHandlerResult(
       honored: false,
       reason: 'wavecrux opens only waveform artifacts, not "$artifactKind"',
     );
   }
   final path = await resolveOpenArtifactWaveformPath(ref, designId) ?? hintPath;
   if (path == null) {
-    return CxpHandlerResult(
+    return CruxCxpHandlerResult(
       honored: false,
       reason: 'no waveform artifact recorded for design "$designId"',
     );
@@ -1176,7 +1165,7 @@ Future<CxpHandlerResult> dispatchCxpOpenArtifact(
   // never repeats the path (CXP §9.11).
   final refusal = kCxpOpenArtifactContainment.refuse(path);
   if (refusal != null) {
-    return CxpHandlerResult(honored: false, reason: refusal);
+    return CruxCxpHandlerResult(honored: false, reason: refusal);
   }
   // The hint can name a file that is not there — the sender's path on its
   // own machine layout, or a dump since deleted — or something that is not
@@ -1186,7 +1175,7 @@ Future<CxpHandlerResult> dispatchCxpOpenArtifact(
   // record never gets here missing: the store drops records whose file is
   // gone.)
   if (FileSystemEntity.typeSync(path) != FileSystemEntityType.file) {
-    return const CxpHandlerResult(
+    return const CruxCxpHandlerResult(
       honored: false,
       reason: 'the artifact is not a file here',
     );
@@ -1194,14 +1183,12 @@ Future<CxpHandlerResult> dispatchCxpOpenArtifact(
   final opened = await _openWaveformInNewTab(ref, path);
   if (!opened.loaded) {
     // No path in the reason: it travels back to the sender (CXP §9.11).
-    return const CxpHandlerResult(
+    return const CruxCxpHandlerResult(
       honored: false,
       reason: 'failed to open the waveform',
     );
   }
-  // An artifact was opened.
-  unawaited(requestUserAttention());
-  return CxpHandlerResult.honoredOk;
+  return CruxCxpHandlerResult.ok;
 }
 
 /// Adapts inbound CXP `request_open_source` payloads onto a shell-out to
@@ -1227,7 +1214,7 @@ Future<CxpHandlerResult> dispatchCxpOpenArtifact(
 /// rooted rule is applied here, on the value that becomes an editor argv,
 /// whatever route reached this handler — it is also reachable from the WCP
 /// front door.
-Future<CxpHandlerResult> dispatchCxpOpenSource(
+Future<CruxCxpHandlerResult> dispatchCxpOpenSource(
   Ref ref,
   String filePath,
   int line,
@@ -1236,14 +1223,14 @@ Future<CxpHandlerResult> dispatchCxpOpenSource(
   final settings = ref.read(appSettingsProvider).value;
   final command = settings?.cxpEditorCommand ?? '';
   if (command.trim().isEmpty) {
-    return const CxpHandlerResult(
+    return const CruxCxpHandlerResult(
       honored: false,
       reason: 'no editor command configured',
     );
   }
   final refusal = ref.read(cxpPathContainmentProvider).refuse(filePath);
   if (refusal != null) {
-    return CxpHandlerResult(honored: false, reason: refusal);
+    return CruxCxpHandlerResult(honored: false, reason: refusal);
   }
   final target = column == null ? '$filePath:$line' : '$filePath:$line:$column';
   final runner = ref.read(cxpEditorCommandRunnerProvider);
@@ -1254,13 +1241,13 @@ Future<CxpHandlerResult> dispatchCxpOpenSource(
 /// [cxpEditorCommandRunnerProvider]. The default implementation shells
 /// to `Process.run`. Override in tests to capture invocations.
 typedef CxpEditorCommandRunner =
-    Future<CxpHandlerResult> Function(
+    Future<CruxCxpHandlerResult> Function(
       String command,
       String target,
     );
 
 /// Default editor-command runner: [runEditorCommand] against the live host.
-Future<CxpHandlerResult> _defaultEditorCommandRunner(
+Future<CruxCxpHandlerResult> _defaultEditorCommandRunner(
   String command,
   String target,
 ) => runEditorCommand(command, target);
@@ -1284,7 +1271,7 @@ typedef CxpEditorProcessRunner =
 ///
 /// [host] defaults to the live process and [run] to `Process.run`.
 @visibleForTesting
-Future<CxpHandlerResult> runEditorCommand(
+Future<CruxCxpHandlerResult> runEditorCommand(
   String command,
   String target, {
   SpawnHost? host,
@@ -1292,7 +1279,7 @@ Future<CxpHandlerResult> runEditorCommand(
 }) async {
   final tokens = _splitArgs(command);
   if (tokens.isEmpty) {
-    return const CxpHandlerResult(
+    return const CruxCxpHandlerResult(
       honored: false,
       reason: 'editor command is empty',
     );
@@ -1303,18 +1290,18 @@ Future<CxpHandlerResult> runEditorCommand(
       tokens.first,
     );
     final result = await (run ?? Process.run)(executable, args);
-    if (result.exitCode == 0) return CxpHandlerResult.honoredOk;
-    return CxpHandlerResult(
+    if (result.exitCode == 0) return CruxCxpHandlerResult.ok;
+    return CruxCxpHandlerResult(
       honored: false,
       reason: 'editor exited with ${result.exitCode}',
     );
   } on ProcessException catch (e) {
-    return CxpHandlerResult(
+    return CruxCxpHandlerResult(
       honored: false,
       reason: 'editor not found: ${e.message}',
     );
   } on Object catch (e) {
-    return CxpHandlerResult(honored: false, reason: e.toString());
+    return CruxCxpHandlerResult(honored: false, reason: e.toString());
   }
 }
 

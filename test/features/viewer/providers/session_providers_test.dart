@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'dart:io';
 
+import 'package:crux_workspace/crux_workspace.dart' show CruxRecentStore;
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -28,7 +29,7 @@ import 'package:wavecrux/features/viewer/providers/panel_layout_provider.dart';
 import 'package:wavecrux/features/viewer/providers/session_providers.dart';
 import 'package:wavecrux/features/viewer/providers/time_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
-import 'package:wavecrux/features/workspace/providers/recent_files_provider.dart';
+import 'package:wavecrux/features/workspace/providers/recent_lists.dart';
 import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
 import 'package:wavecrux/services/session/session_extension_codec.dart';
 import 'package:wavecrux/services/session/session_service.dart';
@@ -56,14 +57,15 @@ class _FakeSessionService extends Fake implements SessionService {
   }
 }
 
-class _FakeRecentFilesNotifier extends RecentFilesNotifier {
-  final List<String> added = [];
+/// A Recent store that keeps nothing, so no test touches preferences.
+class _NoRecentStore implements CruxRecentStore {
+  const _NoRecentStore();
 
   @override
-  Future<List<String>> build() async => [];
+  Future<List<String>> load() async => const <String>[];
 
   @override
-  Future<void> addFile(String path) async => added.add(path);
+  Future<void> save(List<String> entries) async {}
 }
 
 class _FakeWorkspaceService extends Fake implements WorkspaceService {
@@ -126,7 +128,7 @@ ProviderContainer _container({
       ProviderContainer(
           overrides: [
             sessionServiceProvider.overrideWithValue(fakeService),
-            recentFilesProvider.overrideWith(_FakeRecentFilesNotifier.new),
+            recentFiles.storeProvider.overrideWithValue(const _NoRecentStore()),
             // Per-tab autosave reads `tabIdProvider` and `workspaceServiceProvider`.
             // Provide both so reads from outside a TabContainerManager-scoped
             // container don't trip the sentinel UnimplementedError.
@@ -248,18 +250,17 @@ void main() {
 
     test('adds path to recent files', () async {
       final fake = _FakeSessionService();
-      final fakeRecent = _FakeRecentFilesNotifier();
       final c = ProviderContainer(
         overrides: [
           sessionServiceProvider.overrideWithValue(fake),
-          recentFilesProvider.overrideWith(() => fakeRecent),
+          recentFiles.storeProvider.overrideWithValue(const _NoRecentStore()),
         ],
       );
       addTearDown(c.dispose);
 
       await _withTempFile((path) async {
         await c.read(sessionProvider.notifier).saveToPath(path);
-        expect(fakeRecent.added, contains(path));
+        expect(c.read(recentFiles.provider), contains(path));
       });
     });
 

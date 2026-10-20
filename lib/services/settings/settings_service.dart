@@ -35,8 +35,9 @@ Future<List<String>> peekIsaTableDirectories() async {
 /// Delegates the cross-suite portion to [crux.CoreSettingsCodec] and adds
 /// load/save for the wavecrux-specific fields (`waveformFontSize`,
 /// `defaultDisplayFormat`, `defaultLaneHeight`, `autoConvertLargeVcd`,
-/// `remoteControlEnabled`, `remoteControlPort`, `cxpServerEnabled`,
-/// `cxpServerPort`, `cxpEditorCommand`). Uses the same `settings.*`
+/// `remoteControlEnabled`, `remoteControlPort`, `cxpEditorCommand`). The CXP
+/// server's own four settings are saved by `cruxCxpSettingsProvider`, never
+/// here, so an unrelated settings save cannot overwrite them. Uses the same `settings.*`
 /// SharedPreferences key namespace WaveCrux has shipped with since v0, so
 /// existing user preferences survive the migration to the cross-suite
 /// settings shape.
@@ -50,13 +51,7 @@ class WaveCruxSettingsCodec implements crux.SettingsCodec<AppSettings> {
   static const _kAutoConvertVcd = 'settings.autoConvertLargeVcd';
   static const _kRemoteControlEnabled = 'settings.remoteControlEnabled';
   static const _kRemoteControlPort = 'settings.remoteControlPort';
-  static const _kCxpServerEnabled = 'settings.cxpServerEnabled';
-  static const _kCxpServerPort = 'settings.cxpServerPort';
   static const _kCxpEditorCommand = 'settings.cxpEditorCommand';
-  static const _kRequestAttentionOnCrossProbe =
-      'settings.requestAttentionOnCrossProbe';
-  static const _kBroadcastSelectionOnCrossProbe =
-      'settings.broadcastSelectionOnCrossProbe';
   static const _kSuppressLegacyFormatBanner =
       'settings.suppressLegacyFormatBanner';
   static const _kAlwaysKeepSessionAnnotations =
@@ -98,13 +93,7 @@ class WaveCruxSettingsCodec implements crux.SettingsCodec<AppSettings> {
         1,
         65535,
       ),
-      cxpServerEnabled: prefs.getBool(_kCxpServerEnabled) ?? true,
-      cxpServerPort: (prefs.getInt(_kCxpServerPort) ?? 54322).clamp(1, 65535),
       cxpEditorCommand: prefs.getString(_kCxpEditorCommand) ?? '',
-      requestAttentionOnCrossProbe:
-          prefs.getBool(_kRequestAttentionOnCrossProbe) ?? true,
-      broadcastSelectionOnCrossProbe:
-          prefs.getBool(_kBroadcastSelectionOnCrossProbe) ?? true,
       suppressLegacyFormatBanner:
           prefs.getBool(_kSuppressLegacyFormatBanner) ?? false,
       alwaysKeepSessionAnnotations:
@@ -140,17 +129,7 @@ class WaveCruxSettingsCodec implements crux.SettingsCodec<AppSettings> {
       prefs.setBool(_kAutoConvertVcd, settings.autoConvertLargeVcd),
       prefs.setBool(_kRemoteControlEnabled, settings.remoteControlEnabled),
       prefs.setInt(_kRemoteControlPort, settings.remoteControlPort),
-      prefs.setBool(_kCxpServerEnabled, settings.cxpServerEnabled),
-      prefs.setInt(_kCxpServerPort, settings.cxpServerPort),
       prefs.setString(_kCxpEditorCommand, settings.cxpEditorCommand),
-      prefs.setBool(
-        _kRequestAttentionOnCrossProbe,
-        settings.requestAttentionOnCrossProbe,
-      ),
-      prefs.setBool(
-        _kBroadcastSelectionOnCrossProbe,
-        settings.broadcastSelectionOnCrossProbe,
-      ),
       prefs.setBool(
         _kSuppressLegacyFormatBanner,
         settings.suppressLegacyFormatBanner,

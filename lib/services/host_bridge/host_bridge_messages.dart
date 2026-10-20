@@ -455,7 +455,7 @@ class HostBridgeValueResponse extends CxpMessage {
 /// `app.dart` instantiates the CXP lifecycle bridge only on a desktop
 /// platform, because a webview has no `dart:io` and cannot bind a TCP socket.
 /// That gate is correct and stays. What was wrong was the conclusion the
-/// panel drew from it: `cxpServerProvider.isRunning` is false inside VSCode,
+/// panel drew from it: `cruxCxpServerStatusProvider` reports not running inside VSCode,
 /// so the panel showed "the CXP server is offline — enable it in Settings",
 /// blaming a setting that was already on and could never have helped, while
 /// the *extension host* was a healthy CXP peer the whole time, with its own
@@ -567,7 +567,7 @@ class HostBridgeCrossProbeState extends CxpMessage {
   final List<CxpDialFailure> unreachable;
 
   /// The host's cross-probe event log, oldest-first — the same ordering
-  /// `cxpEventLogProvider` uses, so the panel's controller maps both through
+  /// `cruxCxpEventLogProvider` uses, so the panel's controller maps both through
   /// one function.
   final List<CxpEventLogEntry> events;
 

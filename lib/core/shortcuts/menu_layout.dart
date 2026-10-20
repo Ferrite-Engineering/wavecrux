@@ -78,6 +78,7 @@ const CruxMenuLayout<ShortcutAction> kMenuLayout = {
       ShortcutAction.openFile,
       ShortcutAction.openWorkspace,
       ShortcutAction.importGtkwSession,
+      ShortcutAction.clearRecentFiles,
     ],
     [
       ShortcutAction.saveSession,
@@ -149,6 +150,7 @@ const CruxMenuLayout<ShortcutAction> kMenuLayout = {
       ShortcutAction.toggleRtlSourcePanel,
       ShortcutAction.toggleSvaPanel,
       ShortcutAction.openCrossProbePanel,
+      ShortcutAction.crossProbeSelection,
       ShortcutAction.toggleStatisticsStrip,
     ],
     // Annotations: the notes themselves, then the list of them. Two toggles

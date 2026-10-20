@@ -12,6 +12,7 @@ import 'package:wavecrux/features/viewer/providers/process_filter_provider.dart'
 import 'package:wavecrux/features/viewer/providers/signal_group_providers.dart';
 import 'package:wavecrux/features/viewer/widgets/signal_list_panel.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
+import '../../../helpers/cxp_test_overrides.dart';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -41,7 +42,7 @@ Widget _wrap(
 
 /// Returns a container with one signal pre-added and no process filter active.
 ProviderContainer _plainContainer(String signalName) {
-  final c = ProviderContainer();
+  final c = ProviderContainer(overrides: cxpTestOverrides);
   addTearDown(c.dispose);
   c.read(signalGroupsProvider.notifier).addSignal(_variable(signalName));
   return c;
@@ -52,6 +53,7 @@ ProviderContainer _filteredContainer(String signalName) {
   final signalRef = 'top.$signalName';
   final c = ProviderContainer(
     overrides: [
+      ...cxpTestOverrides,
       processFilterProvider.overrideWith(
         () => _FakeProcessFilterNotifier(signalRef),
       ),

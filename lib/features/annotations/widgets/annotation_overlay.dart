@@ -5,7 +5,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:crux_ide_layout/crux_ide_layout.dart'
-    show kCruxInfoSnackDuration, showCruxInfoSnack;
+    show CruxToastAction, showCruxInfoSnack;
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/gestures.dart' show kDoubleTapSlop, kDoubleTapTimeout;
 import 'package:flutter/material.dart';
@@ -477,23 +477,15 @@ class AnnotationOverlay extends ConsumerWidget {
   /// refusal puts it where the user actually is.
   void _explainReadOnly(BuildContext context, WidgetRef ref, String id) {
     final l10n = L10N.of(context);
-    ScaffoldMessenger.maybeOf(context)
-      ?..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(l10n.annotationReadOnlyAttribution),
-          // Pinned to the suite constant rather than left to a framework
-          // default they happen to share.
-          // ignore: avoid_redundant_argument_values
-          duration: kCruxInfoSnackDuration,
-          action: SnackBarAction(
-            label: l10n.annotationDuplicateAsMine,
-            onPressed: () => ref
-                .read(annotationAuthoringProvider.notifier)
-                .duplicateAsMine(id),
-          ),
-        ),
-      );
+    showCruxInfoSnack(
+      context,
+      l10n.annotationReadOnlyAttribution,
+      action: CruxToastAction(
+        label: l10n.annotationDuplicateAsMine,
+        onPressed: () =>
+            ref.read(annotationAuthoringProvider.notifier).duplicateAsMine(id),
+      ),
+    );
   }
 
   /// Deletes an annotation and offers an undo.

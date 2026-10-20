@@ -33,22 +33,6 @@
   "@emptyCanvasSampleFailed": {
     "description": "Snackbar shown when the bundled sample waveform fails to load, e.g. the asset could not be copied out of the app bundle"
   },
-  "emptyCanvasRecentFiles": "최근 파일",
-  "@emptyCanvasRecentFiles": {
-    "description": "Section heading above the recent-files list on the empty-canvas state"
-  },
-  "emptyCanvasNoRecentFiles": "최근 파일이 없습니다.",
-  "@emptyCanvasNoRecentFiles": {
-    "description": "Empty-state hint shown when the recent-files list is empty"
-  },
-  "emptyCanvasRecentWorkspaces": "최근 워크스페이스",
-  "@emptyCanvasRecentWorkspaces": {
-    "description": "Section heading above the recent-workspaces list on the empty-canvas state"
-  },
-  "emptyCanvasNoRecentWorkspaces": "저장된 워크스페이스가 없습니다.",
-  "@emptyCanvasNoRecentWorkspaces": {
-    "description": "Empty-state hint shown when the recent-workspaces list is empty"
-  },
   "emptyCanvasRemoveRecentFile": "제거",
   "@emptyCanvasRemoveRecentFile": {
     "description": "Tooltip for the icon button that removes a file from the recent-files list on the empty-canvas state"
@@ -3025,22 +3009,6 @@
   "@settingsCxpSectionTitle": {
     "description": "Sub-heading for the CXP (Cross-Tool eXchange Protocol) controls within the Remote Control settings section. Distinct from WCP."
   },
-  "settingsCxpEnabledLabel": "CXP 서버 활성화",
-  "@settingsCxpEnabledLabel": {
-    "description": "Toggle label that controls whether the CXP peer cross-probe server is running"
-  },
-  "settingsCxpEnabledDescription": "WaveCrux가 다른 Crux 호환 도구와 선택 이벤트를 공유할 수 있게 합니다",
-  "@settingsCxpEnabledDescription": {
-    "description": "Subtitle explaining what enabling the CXP server does"
-  },
-  "settingsCxpPortLabel": "CXP 포트",
-  "@settingsCxpPortLabel": {
-    "description": "Label for the CXP server TCP port input"
-  },
-  "settingsCxpPortDescription": "TCP 포트 번호 (1–65535). WCP 포트와 다릅니다.",
-  "@settingsCxpPortDescription": {
-    "description": "Subtitle for the CXP port input"
-  },
   "settingsEditorsSection": "에디터",
   "@settingsEditorsSection": {
     "description": "Title of the dedicated Editors settings section (external editor integration). Suite-wide section shared by all four Crux apps."
@@ -3057,136 +3025,19 @@
   "@settingsEditorCommandHint": {
     "description": "Placeholder hint shown in the editor command text field"
   },
-  "settingsCxpStatus": "CXP 상태",
-  "@settingsCxpStatus": {
-    "description": "Label for the CXP server status display"
-  },
-  "settingsCxpStatusRunning": "포트 {port}에서 실행 중",
-  "@settingsCxpStatusRunning": {
-    "description": "Indicates the CXP server is running on a specific port",
-    "placeholders": {
-      "port": {
-        "type": "int"
-      }
-    }
-  },
-  "settingsCxpStatusStopped": "중지됨",
-  "@settingsCxpStatusStopped": {
-    "description": "Indicates the CXP server is not running"
-  },
-  "settingsCxpPeersConnected": "피어 {count, plural, =1{1개} other{{count}개}} 연결됨",
-  "@settingsCxpPeersConnected": {
-    "description": "Shows how many peers are currently connected to the CXP server",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "crossProbePanelTitle": "교차 프로브 패널",
-  "@crossProbePanelTitle": {
-    "description": "Title of the dockable CXP cross-probe panel"
-  },
-  "crossProbePeersListTitle": "연결된 피어",
-  "@crossProbePeersListTitle": {
-    "description": "Section heading in the cross-probe panel listing currently connected CXP peers"
-  },
-  "crossProbeEventsListTitle": "최근 이벤트",
-  "@crossProbeEventsListTitle": {
-    "description": "Section heading in the cross-probe panel listing the most recent CXP message events"
-  },
-  "crossProbeNoPeers": "연결된 피어 없음",
-  "@crossProbeNoPeers": {
-    "description": "Empty state shown in the cross-probe panel when no CXP peers are connected"
-  },
-  "crossProbeUnreachableTitle": "연결할 수 없는 피어",
-  "@crossProbeUnreachableTitle": {
-    "description": "Heading for the cross-probe panel section listing peers WaveCrux discovered but cannot open a CXP connection to (one-way connectivity)"
-  },
-  "crossProbeNoEvents": "아직 이벤트 없음",
-  "@crossProbeNoEvents": {
-    "description": "Empty state shown in the cross-probe panel before any CXP messages have flowed"
-  },
-  "crossProbeSendNoSelection": "전송할 신호를 선택하세요",
-  "@crossProbeSendNoSelection": {
-    "description": "Snackbar shown when the user taps a peer's cross-probe send button but no signal is selected in WaveCrux"
-  },
-  "crossProbeSendUnreachable": "{peer}에 연결할 수 없음 — 연결되지 않음",
-  "@crossProbeSendUnreachable": {
-    "description": "Snackbar shown when the user tries to cross-probe a peer that was discovered but has no live CXP connection",
-    "placeholders": {
-      "peer": {
-        "type": "String"
-      }
-    }
-  },
-  "crossProbeSendFailed": "{peer}에 보낸 교차 프로브가 완료되지 않았습니다",
-  "@crossProbeSendFailed": {
-    "description": "Toast in the docked cross-probe panel when a send failed and the peer gave no reason: the peer never answered, or declined without saying why. {peer} is the peer's product name.",
-    "placeholders": {
-      "peer": {
-        "type": "String",
-        "example": "NetCrux"
-      }
-    }
-  },
-  "crossProbeSendRefused": "{peer}에 보낸 교차 프로브: {reason}",
-  "@crossProbeSendRefused": {
-    "description": "Toast in the docked cross-probe panel when a send came back with an explanation: a refusal, a partial result, or a delivery failure the carrier explained. {peer} is the peer's product name; {reason} is that explanation, as sent.",
-    "placeholders": {
-      "peer": {
-        "type": "String",
-        "example": "NetCrux"
-      },
-      "reason": {
-        "type": "String",
-        "example": "element not found: top.data"
-      }
-    }
-  },
-  "crossProbeServerOffline": "CXP 서버가 오프라인 상태입니다 — 설정 > CXP 교차 프로브에서 활성화하세요",
-  "@crossProbeServerOffline": {
-    "description": "Banner shown in the cross-probe panel when the CXP server is not running"
-  },
   "crossProbeMenuItem": "교차 프로브 패널 표시",
   "@crossProbeMenuItem": {
     "description": "Command palette / menu entry that opens the cross-probe panel"
   },
+  "actionCrossProbeSelection": "선택 항목 교차 프로브…",
+  "actionClearRecentFiles": "최근 파일 지우기",
   "cxpHighlightNoWaveform": "이 신호를 교차 프로브하려면 파형 파일을 여세요",
   "@cxpHighlightNoWaveform": {
     "description": "Snackbar shown when a peer cross-probes a signal but no waveform file is open in WaveCrux"
   },
-  "crossProbeClearEventsLabel": "이벤트 지우기",
-  "@crossProbeClearEventsLabel": {
-    "description": "Button label that empties the cross-probe event log buffer"
-  },
-  "settingsRequestAttentionOnCrossProbeLabel": "크로스 프로브 시 주의 요청",
-  "@settingsRequestAttentionOnCrossProbeLabel": {
-    "description": "Toggle label controlling whether an incoming cross-probe bounces the dock / flashes the taskbar"
-  },
-  "settingsRequestAttentionOnCrossProbeDescription": "피어가 크로스 프로브를 보낼 때 Dock을 튕기거나 작업 표시줄을 깜박입니다. 포커스를 빼앗지 않습니다.",
-  "@settingsRequestAttentionOnCrossProbeDescription": {
-    "description": "Subtitle explaining the request-attention-on-cross-probe toggle"
-  },
-  "settingsBroadcastSelectionOnCrossProbeLabel": "선택 항목 자동 브로드캐스트",
-  "@settingsBroadcastSelectionOnCrossProbeLabel": {
-    "description": "Toggle label controlling whether WaveCrux auto-broadcasts the local selection to connected CXP peers as it changes (live cross-probe)"
-  },
-  "settingsBroadcastSelectionOnCrossProbeDescription": "선택할 때마다 연결된 피어에 선택 항목을 알립니다(라이브 크로스 프로브). 꺼져 있으면 명시적으로 보낸 항목만 공유됩니다.",
-  "@settingsBroadcastSelectionOnCrossProbeDescription": {
-    "description": "Subtitle explaining the broadcast-selection-automatically toggle"
-  },
   "toolbarToggleCrossProbe": "크로스프로브 패널",
   "@toolbarToggleCrossProbe": {
     "description": "Tooltip for the toolbar button that shows or hides the docked cross-probe panel"
-  },
-  "crossProbeCloseTooltip": "크로스 프로브 패널 닫기",
-  "@crossProbeCloseTooltip": {
-    "description": "Tooltip on the docked cross-probe panel's header close chevron"
-  },
-  "crossProbeSendTooltip": "이 피어로 선택 항목 보내기",
-  "@crossProbeSendTooltip": {
-    "description": "Tooltip on each connected-peer row's direct-send button in the cross-probe panel"
   },
   "webDropZoneLabel": "또는 파형 파일을 여기에 놓으세요",
   "@webDropZoneLabel": {
@@ -7048,7 +6899,6 @@
   "settingsExtensionsSection": "확장 기능",
   "settingsRestoreTabsOnLaunchLabel": "시작 시 탭 복원",
   "settingsRestoreTabsOnLaunchDescription": "WaveCrux를 시작할 때 이전 세션의 탭을 다시 엽니다. 끄더라도 저장된 세션은 디스크에 남아 있으므로 다시 켜면 복원됩니다.",
-  "settingsCxpPortError": "1부터 65535 사이의 포트를 입력하세요.",
   "editorDiscardConfirmTitle": "변경 사항을 버리시겠습니까?",
   "editorDiscardConfirmBody": "저장되지 않은 변경 사항이 있습니다. 버리시겠습니까?",
   "editorDiscardConfirmDiscard": "버리기",

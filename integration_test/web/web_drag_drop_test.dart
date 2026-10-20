@@ -34,11 +34,12 @@
 
 import 'dart:convert';
 
+import 'package:crux_cxp_ui/crux_cxp_ui.dart'
+    show cruxCxpManifestDirectoryProvider;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:wavecrux/app.dart';
-import 'package:wavecrux/features/remote/providers/cxp_server_provider.dart';
 import 'package:wavecrux/features/tabs/providers/tab_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
 import 'package:wavecrux/features/workspace/widgets/web_drop_zone.dart';
@@ -112,7 +113,7 @@ void main() {
       // use: the CXP manifest directory (CXP has no transport on the web, and
       // the shared resolver reports the directory as unavailable there).
       expect(
-        rootContainer(tester).exists(cxpManifestDirectoryProvider),
+        rootContainer(tester).exists(cruxCxpManifestDirectoryProvider),
         isFalse,
         reason: 'the web build resolved the CXP manifest directory',
       );

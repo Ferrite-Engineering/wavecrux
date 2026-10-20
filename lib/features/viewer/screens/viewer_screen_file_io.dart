@@ -312,7 +312,7 @@ extension _ViewerScreenFileIo on _ViewerScreenState {
     if (WaveCruxPackSpec.isPackFilePath(path)) {
       await _openPack(path);
     } else if (SessionService.isSessionFilePath(path)) {
-      await ref.read(recentFilesProvider.notifier).addFile(path);
+      ref.read(recentFiles.provider.notifier).markOpened(path);
       if (!mounted) return;
       await _loadSession(path);
     } else if (CruxProjectParser.isManifestPath(path)) {
@@ -450,7 +450,7 @@ extension _ViewerScreenFileIo on _ViewerScreenState {
       showCruxErrorSnack(context, L10N.of(context).openWorkspaceError(error));
       return;
     }
-    await container.read(recentWorkspacesProvider.notifier).addWorkspace(path);
+    container.read(recentWorkspaces.provider.notifier).markOpened(path);
   }
 
   /// Bridges the EmptyCanvasState "Other tabs from your last session" list
@@ -551,10 +551,10 @@ extension _ViewerScreenFileIo on _ViewerScreenState {
     // not the converted `.fst`) in Recent Files, but only once a load was
     // actually initiated — a declined size warning or cancelled FSDB
     // conversion must not pollute the list. The sidecar guard inside
-    // [RecentFilesNotifier.addFile] is irrelevant here (these are real
+    // [recentFiles]'s sidecar screen is irrelevant here (these are real
     // user files), but harmless.
     if (opened) {
-      await ref.read(recentFilesProvider.notifier).addFile(path);
+      ref.read(recentFiles.provider.notifier).markOpened(path);
     }
   }
 
@@ -875,7 +875,7 @@ extension _ViewerScreenFileIo on _ViewerScreenState {
         .read(sharePackProvider.notifier)
         .openPack(path, context: context);
     if (extracted == null || !mounted) return;
-    await ref.read(recentFilesProvider.notifier).addFile(path);
+    ref.read(recentFiles.provider.notifier).markOpened(path);
     if (!mounted) return;
     await _loadSession(extracted.sessionPath);
   }
@@ -1045,7 +1045,7 @@ extension _ViewerScreenFileIo on _ViewerScreenState {
 
     // Record the imported .gtkw session in Recent Files (parse + apply
     // succeeded by this point — the only earlier exit is a file-read error).
-    await ref.read(recentFilesProvider.notifier).addFile(gtkwPath);
+    ref.read(recentFiles.provider.notifier).markOpened(gtkwPath);
 
     // The same "success is certain here" point serves the catalog counter that
     // sizes the GTKWave-migration funnel. No properties: `GtkwImportResult`

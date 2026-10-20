@@ -1,21 +1,5 @@
 # Crux Desktop guard allow-list: `file | pattern | exact count | reason`.
-# Shrinks to empty. A site moves onto the Crux Desktop layer, or is marked
-# `// crux-desktop: phone-only, <why>` where it renders only in the phone
-# layout. Nothing is added here; the counts are exact, so a new site fails.
-#
-# The sites below wait on the toast helpers: they cannot yet carry an action
-# button (Undo, Duplicate as mine) or be raised from code that has no
-# BuildContext under the root overlay.
-lib/app.dart | showSnackBar | 3 | toast from code above the Navigator, no overlay context
-lib/app.dart | SnackBar | 3 | toast from code above the Navigator, no overlay context
-lib/features/cursors/providers/marker_chord_providers.dart | showSnackBar | 1 | toast from a provider, no BuildContext
-lib/features/cursors/providers/marker_chord_providers.dart | SnackBar | 1 | toast from a provider, no BuildContext
-lib/services/remote/cxp/cxp_inbound_handlers.dart | showSnackBar | 1 | toast from a service, no BuildContext
-lib/services/remote/cxp/cxp_inbound_handlers.dart | SnackBar | 1 | toast from a service, no BuildContext
-lib/features/remote/widgets/cross_probe_panel.dart | showSnackBar | 1 | toast from a controller, no BuildContext
-lib/features/remote/widgets/cross_probe_panel.dart | SnackBar | 1 | toast from a controller, no BuildContext
-lib/features/annotations/widgets/annotations_panel.dart | showSnackBar | 1 | Undo toast needs an action button
-lib/features/annotations/widgets/annotations_panel.dart | SnackBar | 1 | Undo toast needs an action button
-lib/features/annotations/widgets/annotation_overlay.dart | showSnackBar | 1 | read-only toast needs an action button
-lib/features/annotations/widgets/annotation_overlay.dart | SnackBar | 1 | read-only toast needs an action button
-lib/features/decoders/widgets/transaction_table_panel.dart | Icons.more_vert | 1 | overflow rows carry a tier badge a menu item cannot hold
+# Empty, and it stays empty. A site moves onto the Crux Desktop layer, or is
+# marked `// crux-desktop: phone-only, <why>` where it renders only in the
+# phone layout. Nothing is added here; `crux_desktop_guard_test.dart` fails
+# if an entry appears.

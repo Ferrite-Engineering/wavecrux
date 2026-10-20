@@ -258,9 +258,18 @@ enum ShortcutAction implements CruxAction {
   /// The panel shows currently-connected CXP peers, a rolling buffer of
   /// recent cross-probe events, and a button to send the local selection
   /// to a specific peer. Available on tablet and desktop; hidden on
-  /// phone. Default binding: no keystroke; reachable via command palette
-  /// and (post-launch) the View menu.
+  /// phone. Default binding: Cmd/Ctrl+Shift+X; also reachable from the View
+  /// menu, the toolbar and the command palette.
   openCrossProbePanel,
+
+  /// Send the selected signal to a peer product (Cross-probe Selection).
+  ///
+  /// With one peer running the send happens at once; with several, a menu of
+  /// targets opens under the selection. Available on tablet and desktop;
+  /// a no-op on phone. Default binding: Cmd/Ctrl+Shift+Enter, which a text
+  /// field keeps for itself (Shift+Enter is a newline in the annotation
+  /// editor); also reachable from the View menu and the command palette.
+  crossProbeSelection,
 
   /// Open the settings screen (Ctrl/Cmd+,).
   openSettings,
@@ -491,6 +500,10 @@ enum ShortcutAction implements CruxAction {
   /// active workspace after a single confirmation when there are open tabs.
   openWorkspace,
 
+  /// Empty the Recent Files list shown on the welcome screen and in the
+  /// File menu. No default binding.
+  clearRecentFiles,
+
   /// Export the active tab's state to a `.wavecrux` session file.
   /// Distinct from "Save Workspace As…" — the export captures one tab, not
   /// the multi-tab arrangement.
@@ -653,6 +666,7 @@ enum ShortcutAction implements CruxAction {
     ShortcutAction.openTabDiagnostics => ActionCategory.tools,
     ShortcutAction.openPaneRenderStats => ActionCategory.tools,
     ShortcutAction.openCrossProbePanel => ActionCategory.view,
+    ShortcutAction.crossProbeSelection => ActionCategory.view,
     ShortcutAction.copyDiagnosticsReport => ActionCategory.tools,
     ShortcutAction.generateTestVcd => ActionCategory.tools,
     ShortcutAction.convertPcapToVcd => ActionCategory.tools,
@@ -701,6 +715,7 @@ enum ShortcutAction implements CruxAction {
     ShortcutAction.newWorkspace => ActionCategory.file,
     ShortcutAction.saveWorkspaceAs => ActionCategory.file,
     ShortcutAction.openWorkspace => ActionCategory.file,
+    ShortcutAction.clearRecentFiles => ActionCategory.file,
     ShortcutAction.exportTabAsSession => ActionCategory.file,
     // ── Pane management (split-pane) ────────────────────────
     ShortcutAction.splitPaneRight => ActionCategory.view,
@@ -780,6 +795,7 @@ extension ShortcutActionLabel on ShortcutAction {
     ShortcutAction.openPaneRenderStats =>
       l10n.shortcutActionOpenPaneRenderStats,
     ShortcutAction.openCrossProbePanel => l10n.crossProbeMenuItem,
+    ShortcutAction.crossProbeSelection => l10n.actionCrossProbeSelection,
     ShortcutAction.setMarker => l10n.shortcutActionSetMarker,
     ShortcutAction.jumpToMarker => l10n.shortcutActionJumpToMarker,
     ShortcutAction.removeMarker => l10n.shortcutActionRemoveMarker,
@@ -891,6 +907,7 @@ extension ShortcutActionLabel on ShortcutAction {
     ShortcutAction.newWorkspace => l10n.shortcutActionNewWorkspace,
     ShortcutAction.saveWorkspaceAs => l10n.shortcutActionSaveWorkspaceAs,
     ShortcutAction.openWorkspace => l10n.shortcutActionOpenWorkspace,
+    ShortcutAction.clearRecentFiles => l10n.actionClearRecentFiles,
     ShortcutAction.exportTabAsSession => l10n.shortcutActionExportTabAsSession,
     ShortcutAction.closeTab => l10n.shortcutActionCloseTab,
     ShortcutAction.nextTab => l10n.shortcutActionNextTab,

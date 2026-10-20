@@ -4,6 +4,9 @@
 import 'dart:io';
 
 import 'package:crux_cxp/crux_cxp.dart';
+import 'package:crux_cxp_ui/crux_cxp_ui.dart' show CruxCxpHandlerResult;
+import 'package:crux_ide_layout/crux_ide_layout.dart'
+    show CruxDesktopTokens, kCruxInfoSnackDuration, showCruxInfoSnack;
 import 'package:crux_io/crux_io.dart' show SpawnHost;
 import 'package:crux_window_chrome/crux_window_chrome.dart';
 import 'package:flutter/material.dart';
@@ -28,16 +31,17 @@ import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.da
 import 'package:wavecrux/features/stage/providers/riscv_commit_landing_provider.dart';
 import 'package:wavecrux/features/tabs/providers/tab_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
-import 'package:wavecrux/features/workspace/providers/recent_files_provider.dart';
+import 'package:wavecrux/features/workspace/providers/recent_lists.dart'
+    as recent;
 import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/services/remote/cxp/cxp_inbound_handlers.dart';
 import 'package:wavecrux/services/remote/cxp/cxp_workspace_link.dart';
-import 'package:wavecrux/services/remote/cxp/wavecrux_cxp_server.dart';
 import 'package:wavecrux/services/remote/remote_control_notifier.dart';
 import 'package:wavecrux/services/settings/settings_service.dart';
 import 'package:wavecrux/services/tabs/tab_container_manager.dart';
 
+import '../../../helpers/cxp_test_overrides.dart';
 import '../../../helpers/fake_waveform_data_source.dart';
 import '../../../helpers/in_memory_workspace_service.dart';
 import '../../../helpers/platform_absolute_path.dart';
@@ -119,7 +123,9 @@ void main() {
       if (editorRunner != null)
         cxpEditorCommandRunnerProvider.overrideWithValue(editorRunner),
     ];
-    return ProviderContainer(overrides: [productTelemetryConfig, ...overrides]);
+    return ProviderContainer(
+      overrides: [...cxpTestOverrides, productTelemetryConfig, ...overrides],
+    );
   }
 
   // ── dispatchCxpHighlight ────────────────────────────────────────────────────
@@ -532,9 +538,13 @@ void main() {
         final container = makeContainer();
         addTearDown(container.dispose);
         // Mount a MaterialApp wired to the same global messenger key the
-        // handler posts to, so the snackbar has a live binding + Localizations.
+        // handler localizes through, under a Crux Desktop theme: the handler
+        // raises a toast with no BuildContext, which needs a registered host.
         await tester.pumpWidget(
           MaterialApp(
+            theme: ThemeData(
+              extensions: const <ThemeExtension<dynamic>>[CruxDesktopTokens()],
+            ),
             scaffoldMessengerKey: rootScaffoldMessengerKey,
             localizationsDelegates: const <LocalizationsDelegate<Object>>[
               L10N.delegate,
@@ -546,6 +556,9 @@ void main() {
             home: const Scaffold(body: SizedBox.shrink()),
           ),
         );
+        // Any toast from this window registers it as a toast host.
+        showCruxInfoSnack(tester.element(find.byType(Scaffold)), 'primer');
+        await tester.pumpAndSettle();
 
         handleInboundSelection(
           container.read(_refProvider),
@@ -556,11 +569,13 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.byType(SnackBar), findsOneWidget);
         expect(
           find.text('Open a waveform file to cross-probe this signal'),
           findsOneWidget,
         );
+        // Past the toast's own timer, so it is not left pending at teardown.
+        await tester.pump(kCruxInfoSnackDuration);
+        await tester.pumpAndSettle();
       },
     );
   });
@@ -973,7 +988,7 @@ void main() {
         settings: const AppSettings(cxpEditorCommand: 'code -g'),
         editorRunner: (command, target) async {
           calls.add((command, target));
-          return CxpHandlerResult.honoredOk;
+          return CruxCxpHandlerResult.ok;
         },
       );
       addTearDown(container.dispose);
@@ -995,7 +1010,7 @@ void main() {
         settings: const AppSettings(cxpEditorCommand: 'subl'),
         editorRunner: (command, target) async {
           calls.add((command, target));
-          return CxpHandlerResult.honoredOk;
+          return CruxCxpHandlerResult.ok;
         },
       );
       addTearDown(container.dispose);
@@ -1012,7 +1027,7 @@ void main() {
     test('passes through honored=false from the runner', () async {
       final container = makeContainer(
         settings: const AppSettings(cxpEditorCommand: 'nope'),
-        editorRunner: (_, _) async => const CxpHandlerResult(
+        editorRunner: (_, _) async => const CruxCxpHandlerResult(
           honored: false,
           reason: 'editor not found: nope',
         ),
@@ -1041,7 +1056,7 @@ void main() {
     //
     // MUTATION: deleting the containment check in `dispatchCxpOpenSource`
     // makes every test in the two groups below red.
-    Future<CxpHandlerResult> dispatch(
+    Future<CruxCxpHandlerResult> dispatch(
       String filePath, {
       required List<(String, String)> calls,
       List<String>? openDirectories,
@@ -1050,7 +1065,7 @@ void main() {
         settings: const AppSettings(cxpEditorCommand: 'vim +'),
         editorRunner: (command, target) async {
           calls.add((command, target));
-          return CxpHandlerResult.honoredOk;
+          return CruxCxpHandlerResult.ok;
         },
         openDirectories: openDirectories,
       );
@@ -1277,6 +1292,7 @@ Future<({ProviderContainer root, TabContainerManager tcm})> _productionRoots({
   );
   final root = ProviderContainer(
     overrides: [
+      ...cxpTestOverrides,
       productTelemetryConfig,
       ...testWorkspaceOverrides(),
       tabContainerManagerProvider.overrideWithValue(tcm),
@@ -1298,7 +1314,7 @@ Future<({ProviderContainer root, TabContainerManager tcm})> _productionRoots({
   );
   tcm.init(root);
   await root.read(appSettingsProvider.future);
-  await root.read(recentFilesProvider.future);
+  await root.read(recent.recentFiles.provider.notifier).restored;
   return (root: root, tcm: tcm);
 }
 
@@ -1337,7 +1353,7 @@ void _productionRootsTests() {
         workspaceDirectory: p.join(elsewhere.path, 'workspace'),
         editorRunner: (command, target) async {
           calls.add((command, target));
-          return CxpHandlerResult.honoredOk;
+          return CruxCxpHandlerResult.ok;
         },
       );
       addTearDown(() {
@@ -1439,11 +1455,13 @@ void _productionRootsTests() {
     // refusal tests red; switching it to `cxpPathContainmentProvider` (the
     // roots) turns the run-folder test red.
     group('a source hand-off is held to the floor, not the roots', () {
-      Future<CxpHandlerResult> handOff(ProviderContainer root, String path) =>
-          dispatchCxpHighlight(
-            root.read(_refProvider),
-            ElementId(kind: ElementKind.source, path: path),
-          );
+      Future<CruxCxpHandlerResult> handOff(
+        ProviderContainer root,
+        String path,
+      ) => dispatchCxpHighlight(
+        root.read(_refProvider),
+        ElementId(kind: ElementKind.source, path: path),
+      );
 
       test('a relative waveform path opens nothing', () async {
         final session = await openSession();
@@ -1530,6 +1548,7 @@ void _sourceHandoffSelectionTests() {
         );
         final root = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             productTelemetryConfig,
             ...testWorkspaceOverrides(),
             tabContainerManagerProvider.overrideWithValue(tcm),
@@ -1634,6 +1653,7 @@ void _workspaceLinkR8Tests(Scope Function() buildScope) {
         );
         final root = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             productTelemetryConfig,
             ...testWorkspaceOverrides(),
             tabContainerManagerProvider.overrideWithValue(tcm),
@@ -1719,6 +1739,7 @@ void _workspaceLinkR8Tests(Scope Function() buildScope) {
         );
         final root = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             productTelemetryConfig,
             ...testWorkspaceOverrides(),
             tabContainerManagerProvider.overrideWithValue(tcm),
@@ -1798,6 +1819,7 @@ void _workspaceLinkR8Tests(Scope Function() buildScope) {
         );
         final root = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             productTelemetryConfig,
             ...testWorkspaceOverrides(),
             tabContainerManagerProvider.overrideWithValue(tcm),
@@ -1882,6 +1904,7 @@ void _workspaceLinkR8Tests(Scope Function() buildScope) {
         );
         final root = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             productTelemetryConfig,
             ...testWorkspaceOverrides(),
             tabContainerManagerProvider.overrideWithValue(tcm),
@@ -1974,6 +1997,7 @@ void _workspaceLinkR8Tests(Scope Function() buildScope) {
         );
         final root = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             productTelemetryConfig,
             ...testWorkspaceOverrides(),
             tabContainerManagerProvider.overrideWithValue(tcm),
@@ -2035,6 +2059,7 @@ void _workspaceLinkR8Tests(Scope Function() buildScope) {
         );
         final root = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             productTelemetryConfig,
             ...testWorkspaceOverrides(),
             tabContainerManagerProvider.overrideWithValue(tcm),
@@ -2155,6 +2180,7 @@ void _perTabRoutingTests(Scope Function() buildScope) {
         );
         final root = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             productTelemetryConfig,
             ...testWorkspaceOverrides(),
             tabContainerManagerProvider.overrideWithValue(tcm),
@@ -2210,6 +2236,7 @@ void _streamCoordinateTests() {
   ProviderContainer makeContainer(FakeWaveformDataSource source) =>
       ProviderContainer(
         overrides: [
+          ...cxpTestOverrides,
           productTelemetryConfig,
           waveformSourceProvider.overrideWith(
             () => _PreloadedSourceNotifier(source),

@@ -7,6 +7,7 @@ library;
 import 'dart:io';
 
 import 'package:crux_cxp/crux_cxp.dart';
+import 'package:crux_cxp_ui/crux_cxp_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
@@ -18,14 +19,14 @@ import 'package:wavecrux/domain/enums/var_direction.dart';
 import 'package:wavecrux/domain/enums/var_type.dart';
 import 'package:wavecrux/domain/models/scope.dart';
 import 'package:wavecrux/domain/models/variable.dart';
-import 'package:wavecrux/features/remote/providers/cxp_server_provider.dart';
 import 'package:wavecrux/features/tabs/providers/tab_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
-import 'package:wavecrux/features/workspace/providers/recent_files_provider.dart';
+import 'package:wavecrux/features/workspace/providers/recent_lists.dart';
 import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
 import 'package:wavecrux/services/remote/cxp/cxp_inbound_handlers.dart';
 import 'package:wavecrux/services/remote/cxp/cxp_workspace_link.dart';
-import 'package:wavecrux/services/remote/cxp/wavecrux_cxp_server.dart';
+import 'package:wavecrux/services/remote/cxp/wavecrux_cxp_binding.dart';
+import 'package:wavecrux/services/remote/cxp/wavecrux_cxp_request_handler.dart';
 import 'package:wavecrux/services/tabs/tab_container_manager.dart';
 
 import '../../../helpers/fake_waveform_data_source.dart';
@@ -123,7 +124,7 @@ void main() {
     return (root: root, tcm: tcm);
   }
 
-  Future<CxpHandlerResult> ask(
+  Future<CruxCxpHandlerResult> ask(
     ProviderContainer root, {
     String designId = 'unrecorded',
     String kind = 'waveform',
@@ -384,8 +385,8 @@ void main() {
     });
 
     group('over a socket, through the server the app builds', () {
-      /// The server [CxpServerNotifier.startServer] builds, bound to an
-      /// ephemeral port, and a client connected to it.
+      /// The runtime the app builds (the shared one, with WaveCrux's handler),
+      /// bound to an ephemeral port, and a client connected to it.
       Future<
         ({
           ProviderContainer root,
@@ -400,14 +401,28 @@ void main() {
         addTearDown(() => _deleteQuietly(peers));
         final env = boot(
           extra: <Override>[
-            cxpManifestDirectoryProvider.overrideWith(
+            cruxCxpProductBindingProvider.overrideWithValue(
+              kWaveCruxCxpBinding,
+            ),
+            cruxCxpManifestDirectoryProvider.overrideWith(
               (ref) async => peers.path,
+            ),
+            // The test platform is not a desktop, so name the transport.
+            cruxCxpTransportAvailableProvider.overrideWithValue(true),
+            cruxCxpLaunchSettingsProvider.overrideWithValue(
+              const CruxCxpSettings(enabled: true, port: 0),
+            ),
+            cruxCxpRequestHandlerProvider.overrideWith(
+              WaveCruxCxpRequestHandler.new,
             ),
           ],
         );
-        final notifier = env.root.read(cxpServerProvider.notifier);
-        expect(await notifier.startServer(0), isNull);
-        addTearDown(notifier.stopServer);
+        final runtime = await env.root.read(cruxCxpRuntimeProvider.future);
+        expect(
+          runtime?.isAvailable,
+          isTrue,
+          reason: runtime?.unavailableReason,
+        );
         final client = LocalCxpClient(
           selfIdentity: const PeerIdentity(
             peerId: 'open-artifact-test',
@@ -417,7 +432,7 @@ void main() {
         );
         await client.connect(
           host: '127.0.0.1',
-          port: env.root.read(cxpServerProvider).port,
+          port: runtime!.boundPort!,
           token: cxpProcessAuthToken,
         );
         addTearDown(client.dispose);
@@ -439,9 +454,8 @@ void main() {
       // `LocalCxpServer` screens the hint on the wire before the handler sees
       // it, and a rooted screen there strips the hint for a waveform never
       // opened. No record is written, so the hint is all the handler has.
-      // MUTATION: handing `WaveCruxCxpServer` the rooted
-      // `cxpPathContainmentProvider` in `CxpServerNotifier.startServer` makes
-      // this red.
+      // MUTATION: handing the binding the rooted `cxpPathContainmentProvider`
+      // instead of `kCxpOpenArtifactContainment` makes this red.
       test('the hint for a waveform never opened crosses the wire, and it is '
           'opened', () async {
         final file = waveform(outside, 'never_opened.vcd');
@@ -536,7 +550,7 @@ void main() {
         tcm.dispose();
         root.dispose();
       });
-      await root.read(recentFilesProvider.future);
+      await root.read(recentFiles.provider.notifier).restored;
       // The user has a waveform open in a tab; it has not been loaded, so a
       // cross-probe's signal cannot resolve in it.
       await root.wavecruxWorkspace.openFile(p.join(tabDir.path, 'open.vcd'));
@@ -593,7 +607,7 @@ void main() {
     // `cxpPathContainment` turns 'never opened' red; dropping the recent-files
     // loop from `cxpOpenDirectories` turns 'closed tab' red.
     group('the crux.design_id fallback', () {
-      Future<CxpHandlerResult> probe(ProviderContainer root, String id) =>
+      Future<CruxCxpHandlerResult> probe(ProviderContainer root, String id) =>
           dispatchCxpHighlight(
             root.read(_refProvider),
             const ElementId(kind: ElementKind.signal, path: 'top.clk'),

@@ -21,6 +21,7 @@ import 'package:wavecrux/services/remote/cxp/cxp_selection_emitter.dart';
 import 'package:wavecrux/services/remote/remote_control_notifier.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
 
+import '../../../helpers/cxp_test_overrides.dart';
 import '../../../support/fake_waveform_source.dart';
 
 // The reference fake source keys `top.clk` by the opaque ref `s_clk`.
@@ -84,6 +85,7 @@ Future<void> _clickClkRow(WidgetTester tester) async {
 ProviderContainer _container() {
   final container = ProviderContainer(
     overrides: [
+      ...cxpTestOverrides,
       deviceClassProvider.overrideWithValue(DeviceClass.desktop),
       waveformSourceProvider.overrideWith(
         () => _PreloadedSourceNotifier(FakeWaveformSource.reference()),

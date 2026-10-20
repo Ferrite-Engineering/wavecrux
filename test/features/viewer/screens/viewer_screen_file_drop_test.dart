@@ -29,7 +29,7 @@ import 'package:wavecrux/features/viewer/providers/session_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
 import 'package:wavecrux/features/viewer/screens/viewer_screen.dart';
 import 'package:wavecrux/features/viewer/widgets/gtkw_import_result_dialog.dart';
-import 'package:wavecrux/features/workspace/providers/recent_files_provider.dart';
+import 'package:wavecrux/features/workspace/providers/recent_lists.dart';
 import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
 import 'package:wavecrux/features/workspace/widgets/desktop_file_drop_target.dart';
 import 'package:wavecrux/features/workspace/widgets/file_drop_overlay.dart';
@@ -38,6 +38,7 @@ import 'package:wavecrux/services/panes/pane_container_manager.dart';
 import 'package:wavecrux/services/tabs/tab_container_manager.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
 
+import '../../../helpers/cxp_test_overrides.dart';
 import '../../../helpers/product_telemetry_config.dart';
 import '../../../helpers/wellen_ffi_library_gate.dart';
 
@@ -102,7 +103,7 @@ void main() {
         );
         expect(h.tabs.single.filePath, vcdA);
         expect(
-          await h.container.read(recentFilesProvider.future),
+          h.container.read(recentFiles.provider),
           contains(vcdA),
           reason: 'a drop is recorded in Recent Files like File > Open',
         );
@@ -172,7 +173,7 @@ void main() {
         expect(h.tabs, hasLength(1), reason: 'an import opens no tab');
         expect(find.text('3 signals imported'), findsOneWidget);
         expect(
-          await h.container.read(recentFilesProvider.future),
+          h.container.read(recentFiles.provider),
           contains(gtkw),
         );
       });
@@ -405,6 +406,7 @@ class _Harness {
     pcm = PaneContainerManager();
     container = ProviderContainer(
       overrides: [
+        ...cxpTestOverrides,
         productTelemetryConfig,
         tabContainerManagerProvider.overrideWithValue(tcm),
         paneContainerManagerProvider.overrideWithValue(pcm),

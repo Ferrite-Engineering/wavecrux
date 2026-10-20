@@ -31,6 +31,7 @@ import 'package:wavecrux/services/host_bridge/editor_host_session_provider.dart'
 import 'package:wavecrux/services/host_bridge/host_bridge_messages.dart';
 import 'package:wavecrux/services/remote/remote_control_notifier.dart';
 
+import '../../helpers/cxp_test_overrides.dart';
 import '../../helpers/fake_waveform_data_source.dart';
 import '../../helpers/product_telemetry_config.dart';
 import '../../support/fake_host_bridge_transport.dart';
@@ -85,6 +86,7 @@ void main() {
   }) {
     final container = ProviderContainer(
       overrides: <Override>[
+        ...cxpTestOverrides,
         productTelemetryConfig,
         appSettingsProvider.overrideWith(_FakeAppSettings.new),
         if (sourceNotifier != null)
@@ -239,6 +241,7 @@ void main() {
     Future<ProviderContainer> makeThemeContainer() async {
       final container = ProviderContainer(
         overrides: <Override>[
+          ...cxpTestOverrides,
           productTelemetryConfig,
           appSettingsProvider.overrideWith(_FakeAppSettings.new),
           cruxColorThemeProvider.overrideWith(

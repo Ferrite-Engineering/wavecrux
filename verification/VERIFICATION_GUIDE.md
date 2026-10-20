@@ -4854,7 +4854,7 @@ Save a session with Stage active, FSM panel open, statistics strip expanded, mul
 
 #### 16.1.1 What it does
 
-The empty-canvas state is what the user sees at app launch when the workspace contains zero tabs. It surfaces an "Open File…" button, an "Open Workspace…" button (tablet + desktop only), a "Recent files" list (consuming `recentFilesNotifierProvider`), a "Recent workspaces" placeholder section, and a web drag-and-drop zone (Flutter Web only). On the desktop apps the whole window accepts dropped files instead (§8.8). On mobile, the "Open File…" button still routes through the system document picker.
+The empty-canvas state is what the user sees at app launch when the workspace contains zero tabs. It surfaces an "Open File…" button, an "Open Workspace…" button (tablet + desktop only), a "Recent files" list (the `recentFiles` list in `recent_lists.dart`), a "Recent workspaces" placeholder section, and a web drag-and-drop zone (Flutter Web only). On the desktop apps the whole window accepts dropped files instead (§8.8). On mobile, the "Open File…" button still routes through the system document picker.
 
 #### 16.1.2 Steps
 
@@ -4873,7 +4873,7 @@ The empty-canvas state is what the user sees at app launch when the workspace co
 - Recent file list with paths containing spaces, Unicode, very long names — render correctly.
 - Open the same file twice in a row — entry doesn't duplicate.
 - Drag a non-waveform file onto the empty-canvas state — it opens into the tab's "Failed to load waveform" error, never a silent no-op (desktop, §8.8).
-- **Issue 29 (per-tab sidecar leakage):** open the app with restored tabs from a prior session so the workspace-restore path runs `SessionNotifier.loadFromPath` against each tab's per-tab session sidecar at `{appSupportDir}/sessions/{tab-uuid}.json` (the sidecar is written through the base `crux_workspace` `WorkspaceService`, whose default extension is `.json` — **not** `.wavecrux`). Verify the Recent Files list **does not** gain a UUID-named entry per restored tab — sidecar paths are rejected by `RecentFilesNotifier.addFile` (and any previously-persisted sidecar entries are stripped on next launch by the cleanup branch in `build()`). The `RecentFilesNotifier` guard matches `…/sessions/{uuid}.<ext>` generically, so it catches the real `.json` files; a regression where the guard was pinned to `.wavecrux` silently let the `.json` sidecars leak back in. The Recent Files list must continue to show only user-opened waveform / `.wavecrux` / `.gtkw` files (see §22.9.1.1).
+- **Issue 29 (per-tab sidecar leakage):** open the app with restored tabs from a prior session so the workspace-restore path runs `SessionNotifier.loadFromPath` against each tab's per-tab session sidecar at `{appSupportDir}/sessions/{tab-uuid}.json` (the sidecar is written through the base `crux_workspace` `WorkspaceService`, whose default extension is `.json` — **not** `.wavecrux`). Verify the Recent Files list **does not** gain a UUID-named entry per restored tab — sidecar paths are rejected by `markOpened` on the `recentFiles` list (and any previously-persisted sidecar entries are stripped when the stored list is read). The guard (`isInternalSessionSidecarPath`) matches `…/sessions/{uuid}.<ext>` generically, so it catches the real `.json` files; a regression where the guard was pinned to `.wavecrux` silently let the `.json` sidecars leak back in. The Recent Files list must continue to show only user-opened waveform / `.wavecrux` / `.gtkw` files (see §22.9.1.1).
 
 #### 16.1.4 Automation Assessment
 
@@ -4890,7 +4890,7 @@ The empty-canvas state is what the user sees at app launch when the workspace co
 | Locale sweep (en / zh_CN / ja / ko) renders without exceptions | **WIDGET** (same file) |
 | Drag-and-drop on empty-canvas state (desktop) | **WIDGET** + **INTEGRATION_TEST** (`test/features/viewer/screens/viewer_screen_file_drop_test.dart`; `integration_test/workspace/empty_canvas_drag_drop_test.dart` via the plugin channel). The OS drag itself is **MANUAL** — §8.8 |
 | Drag-and-drop on empty-canvas state (web) | **INTEGRATION_TEST** (`integration_test/web/web_drag_drop_test.dart` — exercises the `WebDropZone.onFilesDropped` integration boundary; the underlying DOM `dragover`/`drop` listener is covered by unit tests on `web_drop_target_impl.dart`). |
-| Stale recent-file entry handling | **WIDGET** (`test/features/workspace/providers/recent_files_provider_test.dart` — covers the data-layer remove path; user-facing snackbar remains **MANUAL** until the empty-canvas error-surface lands as a follow-up) |
+| Stale recent-file entry handling | **UNIT** (`test/features/workspace/providers/recent_lists_test.dart` — remove, and an entry that does not open is dropped); the greyed "File not found" row and the error toast are the shared `CruxRecentListSection`'s, covered in `crux_workspace` |
 
 ---
 

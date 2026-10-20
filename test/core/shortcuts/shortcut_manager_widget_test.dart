@@ -285,6 +285,131 @@ void main() {
     });
   });
 
+  group('ShortcutManagerWidget — Cross-probe Selection in a text field', () {
+    // Cmd/Ctrl+Shift+Enter is the suite chord, and modifier chords pass through
+    // text fields on purpose. This one is the exception: Shift+Enter is a
+    // newline in a multi-line field, so the field keeps the key and the
+    // command stays quiet.
+    Future<void> sendChord(WidgetTester tester) async {
+      final isMac =
+          defaultTargetPlatform == TargetPlatform.macOS ||
+          defaultTargetPlatform == TargetPlatform.iOS;
+      final modifier = isMac
+          ? LogicalKeyboardKey.meta
+          : LogicalKeyboardKey.control;
+      await tester.sendKeyDownEvent(modifier);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shift);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shift);
+      await tester.sendKeyUpEvent(modifier);
+      await tester.pump();
+    }
+
+    Widget host({required Widget child, required void Function() onFire}) =>
+        ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: L10N.localizationsDelegates,
+            supportedLocales: L10N.supportedLocales,
+            home: ShortcutManagerWidget(
+              handlers: {ShortcutAction.crossProbeSelection: onFire},
+              child: child,
+            ),
+          ),
+        );
+
+    testWidgets('fires from a focused non-text widget', (tester) async {
+      var fired = 0;
+      await tester.pumpWidget(
+        host(
+          onFire: () => fired++,
+          child: const Focus(autofocus: true, child: SizedBox.expand()),
+        ),
+      );
+      await tester.pump();
+
+      await sendChord(tester);
+
+      expect(fired, 1);
+    });
+
+    testWidgets('does not fire while a multi-line text field has focus, and '
+        'the key reaches the field', (tester) async {
+      var fired = 0;
+      var fieldSawEnter = false;
+      final node = FocusNode(
+        onKeyEvent: (_, event) {
+          if (event is KeyDownEvent &&
+              event.logicalKey == LogicalKeyboardKey.enter) {
+            fieldSawEnter = true;
+          }
+          return KeyEventResult.ignored;
+        },
+      );
+      addTearDown(node.dispose);
+      var ancestorSawEnter = false;
+      await tester.pumpWidget(
+        host(
+          onFire: () => fired++,
+          child: Focus(
+            onKeyEvent: (_, event) {
+              if (event is KeyDownEvent &&
+                  event.logicalKey == LogicalKeyboardKey.enter) {
+                ancestorSawEnter = true;
+              }
+              return KeyEventResult.ignored;
+            },
+            child: Scaffold(
+              body: TextField(
+                focusNode: node,
+                autofocus: true,
+                maxLines: null,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await sendChord(tester);
+
+      expect(fired, 0, reason: 'the key belongs to the field');
+      expect(fieldSawEnter, isTrue);
+      expect(
+        ancestorSawEnter,
+        isTrue,
+        reason:
+            'the shortcut manager must leave the event unhandled, or the '
+            'platform never inserts the newline',
+      );
+    });
+
+    testWidgets('a remapped chord is held back in a text field too', (
+      tester,
+    ) async {
+      var fired = 0;
+      await tester.pumpWidget(
+        host(
+          onFire: () => fired++,
+          child: const Scaffold(body: TextField(autofocus: true)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      _setBinding(
+        tester,
+        ShortcutAction.crossProbeSelection,
+        const SingleActivator(LogicalKeyboardKey.keyK, control: true),
+      );
+      await tester.pump();
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
+      await tester.pump();
+
+      expect(fired, 0);
+    });
+  });
+
   group('ShortcutManagerWidget — provider integration', () {
     testWidgets('uses updated binding after setBinding()', (tester) async {
       var fired = false;

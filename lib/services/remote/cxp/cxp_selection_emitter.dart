@@ -3,16 +3,15 @@
 
 import 'package:crux_async/crux_async.dart';
 import 'package:crux_cxp/crux_cxp.dart';
+import 'package:crux_cxp_ui/crux_cxp_ui.dart' show cruxCxpSettingsProvider;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/domain/models/cursor_state.dart';
 import 'package:wavecrux/domain/models/marker_state.dart';
 import 'package:wavecrux/domain/models/tab_id.dart';
 import 'package:wavecrux/features/cursors/providers/cursor_providers.dart';
-import 'package:wavecrux/features/settings/providers/settings_providers.dart';
 import 'package:wavecrux/features/tabs/providers/tab_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
 import 'package:wavecrux/services/collaboration/signal_identity_resolver.dart';
-import 'package:wavecrux/services/remote/cxp/wavecrux_cxp_server.dart';
 import 'package:wavecrux/services/remote/cxp/wavecrux_name_resolver.dart';
 import 'package:wavecrux/services/remote/remote_control_notifier.dart';
 import 'package:wavecrux/services/tabs/active_tab_container.dart';
@@ -26,8 +25,8 @@ const Duration kCxpCursorDebounce = Duration(milliseconds: 100);
 
 /// Where a [CxpSelectionEmitter] sends what it produces.
 ///
-/// Matches [WaveCruxCxpServer.broadcast]'s signature, which is the production
-/// sink on desktop; the editor-host bridge is the second, posting the same
+/// Matches `CruxCxpRuntime.broadcast`'s signature, which is the production
+/// sink on desktop (through `broadcastCruxCxpSelection`); the editor-host bridge is the second, posting the same
 /// messages to a VSCode extension host over `window.postMessage` instead of a
 /// socket. A sink rather than a server because there is exactly one selection
 /// story in this app and both front doors have to tell it identically — a
@@ -49,7 +48,7 @@ typedef CxpSelectionSink = void Function(CxpMessage message, {String? summary});
 ///   `ElementKind.marker`.
 ///
 /// All emissions go through the [CxpSelectionSink]. On desktop that is
-/// [WaveCruxCxpServer.broadcast], which routes the message only to peers whose
+/// `CruxCxpRuntime.broadcast`, which routes the message only to peers whose
 /// `Subscribe` filters match the `notify_selection` kind — silent peers never
 /// see anything. Under a VSCode extension host it is the editor-host bridge,
 /// which posts the same message to the host for it to relay.
@@ -159,15 +158,13 @@ class CxpSelectionEmitter {
       _activeContainer?.read(markerStateProvider) ??
       _ref.read(markerStateProvider);
 
-  /// Whether live auto-broadcast of the local selection is enabled
-  /// ([AppSettings.broadcastSelectionOnCrossProbe]). Read fresh on each
-  /// emission so a Settings toggle takes effect immediately, without a server
-  /// restart. Defaults to `true` while settings are still loading so the live
-  /// cross-probe works from launch. Explicit per-peer sends from the panel do
-  /// not go through the emitter, so they are unaffected by this gate.
+  /// Whether live auto-broadcast of the local selection is enabled (the shared
+  /// CXP settings' `broadcastSelection`). Read fresh on each emission so a
+  /// Settings toggle takes effect immediately, without a server restart.
+  /// Explicit sends from the panel and the "Cross-probe to" menu do not go
+  /// through the emitter, so they are unaffected by this gate.
   bool get _autoBroadcastEnabled =>
-      _ref.read(appSettingsProvider).value?.broadcastSelectionOnCrossProbe ??
-      true;
+      _ref.read(cruxCxpSettingsProvider).broadcastSelection;
 
   /// Release subscriptions + cancel the debounce timer. Safe to call
   /// repeatedly.

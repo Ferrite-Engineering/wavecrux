@@ -3,8 +3,7 @@
 
 import 'dart:async';
 
-import 'package:crux_ide_layout/crux_ide_layout.dart'
-    show kCruxInfoSnackDuration;
+import 'package:crux_ide_layout/crux_ide_layout.dart' show CruxToasts;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -48,9 +47,9 @@ final markerChordControllerProvider = Provider<MarkerChordController>((ref) {
 /// — exactly one path fires per keystroke because the global `Actions` consumes
 /// an intent only for actions it actually handles.
 ///
-/// Snackbars are shown through [rootScaffoldMessengerKey] and localization is
-/// resolved from the messenger's (in-`MaterialApp`) context, mirroring the
-/// idiom in `WaveCruxApp`.
+/// Hints are shown as toasts through the context-free [CruxToasts.showInfo],
+/// and localization is resolved from the root messenger's (in-`MaterialApp`)
+/// context, mirroring the idiom in `WaveCruxApp`.
 class MarkerChordCoordinator {
   MarkerChordCoordinator(this._ref);
 
@@ -70,22 +69,21 @@ class MarkerChordCoordinator {
 
     if (mode == MarkerChordMode.set &&
         container.read(cursorStateProvider).primaryCursorTime == null) {
-      _showSnackBar((l10n) => l10n.markerSetNoCursor);
+      _showToast((l10n) => l10n.markerSetNoCursor);
       return;
     }
 
     final controller = _ref.read(markerChordControllerProvider)..arm(mode);
-    _showSnackBar(
+    _showToast(
       (l10n) => mode == MarkerChordMode.set
           ? l10n.markerChordSetHint
           : l10n.markerChordJumpHint,
-      duration: window,
     );
 
     _timeout?.cancel();
     _timeout = Timer(window, () {
       controller.cancel();
-      rootScaffoldMessengerKey.currentState?.hideCurrentSnackBar();
+      _hideToast();
     });
   }
 
@@ -99,7 +97,7 @@ class MarkerChordCoordinator {
     final controller = _ref.read(markerChordControllerProvider);
     if (!controller.isArmed) return false;
     _timeout?.cancel();
-    rootScaffoldMessengerKey.currentState?.hideCurrentSnackBar();
+    _hideToast();
     final completion = controller.handleKey(key);
     if (completion != null) _apply(completion);
     return true;
@@ -119,7 +117,7 @@ class MarkerChordCoordinator {
             .read(markerStateProvider.notifier)
             .jumpToMarker(letter);
         if (time == null) {
-          _showSnackBar((l10n) => l10n.markerNotSet(letter));
+          _showToast((l10n) => l10n.markerNotSet(letter));
           return;
         }
         container.read(cursorStateProvider.notifier).placePrimary(time);
@@ -136,20 +134,21 @@ class MarkerChordCoordinator {
     }
   }
 
-  void _showSnackBar(String Function(L10N) message, {Duration? duration}) {
+  void _showToast(String Function(L10N) message) {
     final messenger = rootScaffoldMessengerKey.currentState;
     if (messenger == null || !messenger.mounted) return;
     final l10n = Localizations.of<L10N>(messenger.context, L10N);
     if (l10n == null) return;
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message(l10n)),
-          behavior: SnackBarBehavior.floating,
-          duration: duration ?? kCruxInfoSnackDuration,
-        ),
-      );
+    CruxToasts.showInfo(message(l10n));
+  }
+
+  /// Removes the hint toast. The toast stack lives in the root overlay, which
+  /// the root messenger's own context sits above, so the context that finds it
+  /// is the one that holds focus (every focused widget is under that overlay).
+  /// With no focus the hint simply leaves on its own.
+  void _hideToast() {
+    final context = FocusManager.instance.primaryFocus?.context;
+    if (context != null && context.mounted) CruxToasts.hide(context);
   }
 
   void dispose() => _timeout?.cancel();

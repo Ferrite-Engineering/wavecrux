@@ -1,0 +1,7 @@
+# Tab walk: 6 stops, cycles
+1. CXP Cross-Probe button selected
+2. Enable CXP server switch on
+3. CXP port edit 54322
+4. Request attention on cross-probe switch on
+5. Broadcast selection automatically switch on
+6. Back button

@@ -1,7 +1,6 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
-import 'package:crux_ide_layout/crux_ide_layout.dart' show announceCrux;
 import 'package:flutter/widgets.dart';
 import 'package:wavecrux/features/annotations/widgets/annotations_panel.dart'
     show showUndoSnack;
@@ -17,8 +16,8 @@ import 'package:wavecrux/l10n/generated/l10n.dart';
 /// confirm dialog on every clear would be the other answer, and it becomes
 /// noise the second time.
 ///
-/// The snackbar is silent to a desktop screen reader, so the same message is
-/// also announced.
+/// The toast announces itself to a screen reader, with its Undo action named
+/// after the message, so nothing is announced here.
 ///
 /// [notifier] is the active tab's list, captured by the caller before any
 /// await: the Undo reaches that tab even if the user has switched tabs since.
@@ -32,7 +31,6 @@ void showSignalRemovalUndo(
   final message = clearedCanvas
       ? l10n.canvasClearedToast
       : l10n.signalsRemovedToast(removal.signalCount);
-  announceCrux(context, message);
   showUndoSnack(
     context,
     message: message,

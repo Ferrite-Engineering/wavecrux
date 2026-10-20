@@ -8,7 +8,7 @@ import 'package:wavecrux/l10n/generated/l10n.dart';
 
 void main() {
   group('ShortcutAction', () {
-    test('enum contains all 125 expected actions', () {
+    test('enum contains all 127 expected actions', () {
       const expected = {
         ShortcutAction.openFile,
         ShortcutAction.closeFile,
@@ -135,6 +135,7 @@ void main() {
         ShortcutAction.newWorkspace,
         ShortcutAction.saveWorkspaceAs,
         ShortcutAction.openWorkspace,
+        ShortcutAction.clearRecentFiles,
         ShortcutAction.exportTabAsSession,
         // Pane management commands.
         ShortcutAction.splitPaneRight,
@@ -143,6 +144,7 @@ void main() {
         ShortcutAction.moveTabToOtherPane,
         // Cross-probe panel (CXP).
         ShortcutAction.openCrossProbePanel,
+        ShortcutAction.crossProbeSelection,
         // Manual update check.
         ShortcutAction.checkForUpdates,
         ShortcutAction.openDocumentation,

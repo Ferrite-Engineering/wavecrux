@@ -14,8 +14,7 @@ import 'package:wavecrux/core/theme/wavecrux_colors.dart';
 import 'package:wavecrux/domain/enums/editor_host_capability.dart';
 import 'package:wavecrux/domain/models/wavecrux_tab_payload.dart';
 import 'package:wavecrux/features/workspace/providers/other_tabs_from_last_session_provider.dart';
-import 'package:wavecrux/features/workspace/providers/recent_files_provider.dart';
-import 'package:wavecrux/features/workspace/providers/recent_workspaces_provider.dart';
+import 'package:wavecrux/features/workspace/providers/recent_lists.dart';
 import 'package:wavecrux/features/workspace/widgets/empty_canvas_docs_hint.dart';
 import 'package:wavecrux/features/workspace/widgets/recent_file_tile.dart';
 import 'package:wavecrux/features/workspace/widgets/web_drop_zone.dart';
@@ -120,13 +119,39 @@ class WaveCruxEmptyCanvas extends ConsumerWidget {
             ),
           ],
           const SizedBox(height: 24),
-          _RecentFilesSection(onOpenFile: onOpenRecentFile),
+          crux.CruxRecentListSection(
+            list: recentFiles,
+            strings: crux.CruxRecentListStrings.of(
+              context,
+              crux.CruxRecentKind.files,
+            ),
+            // A file that is gone is greyed and dropped by the list; an open
+            // that fails reports itself.
+            onOpen: (path) async {
+              if (!crux.cruxRecentEntryExists(path)) return false;
+              await onOpenRecentFile(path);
+              return true;
+            },
+          ),
           const SizedBox(height: 24),
           if (isPhone) ...[
             _OtherTabsFromLastSessionSection(onOpenOtherTab: onOpenOtherTab),
             const SizedBox(height: 24),
           ],
-          _RecentWorkspacesSection(onOpenWorkspace: onOpenRecentWorkspace),
+          if (onOpenRecentWorkspace case final openWorkspace?)
+            crux.CruxRecentListSection(
+              list: recentWorkspaces,
+              strings: crux.CruxRecentListStrings.of(
+                context,
+                crux.CruxRecentKind.workspaces,
+              ),
+              icon: Icons.workspaces_outlined,
+              onOpen: (path) async {
+                if (!crux.cruxRecentEntryExists(path)) return false;
+                await openWorkspace(path);
+                return true;
+              },
+            ),
           const SizedBox(height: 16),
           const EmptyCanvasDocsHint(),
           // What the other three products do for someone who is here, looking
@@ -306,73 +331,6 @@ class _Actions extends StatelessWidget {
   }
 }
 
-class _RecentFilesSection extends ConsumerWidget {
-  const _RecentFilesSection({required this.onOpenFile});
-
-  final Future<void> Function(String filePath) onOpenFile;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = L10N.of(context);
-    final colorScheme = Theme.of(context).colorScheme;
-    final asyncFiles = ref.watch(recentFilesProvider);
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 6),
-          child: Text(
-            l10n.emptyCanvasRecentFiles,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.8,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-        asyncFiles.when(
-          loading: () => const SizedBox.shrink(),
-          error: (_, _) => const SizedBox.shrink(),
-          data: (files) {
-            if (files.isEmpty) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                child: Text(
-                  l10n.emptyCanvasNoRecentFiles,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                  ),
-                ),
-              );
-            }
-            return ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 280),
-              child: ListView.builder(
-                key: const Key('emptyCanvasRecentFilesList'),
-                shrinkWrap: true,
-                itemCount: files.length,
-                itemBuilder: (context, index) {
-                  final path = files[index];
-                  return RecentFileTile(
-                    filePath: path,
-                    onTap: () => onOpenFile(path),
-                    onRemove: () =>
-                        ref.read(recentFilesProvider.notifier).removeFile(path),
-                  );
-                },
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
-
 /// "Other tabs from your last session" section — phone single-tab fallback
 /// surface (ARCHITECTURE.md §3.1.4).
 class _OtherTabsFromLastSessionSection extends ConsumerWidget {
@@ -427,75 +385,6 @@ class _OtherTabsFromLastSessionSection extends ConsumerWidget {
               );
             },
           ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Recent named-workspaces (`.wavecrux-workspace`) list.
-class _RecentWorkspacesSection extends ConsumerWidget {
-  const _RecentWorkspacesSection({required this.onOpenWorkspace});
-
-  final Future<void> Function(String workspacePath)? onOpenWorkspace;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = L10N.of(context);
-    final colorScheme = Theme.of(context).colorScheme;
-    final asyncWorkspaces = ref.watch(recentWorkspacesProvider);
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 6),
-          child: Text(
-            l10n.emptyCanvasRecentWorkspaces,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.8,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-        asyncWorkspaces.when(
-          loading: () => const SizedBox.shrink(),
-          error: (_, _) => const SizedBox.shrink(),
-          data: (paths) {
-            if (paths.isEmpty || onOpenWorkspace == null) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                child: Text(
-                  l10n.emptyCanvasNoRecentWorkspaces,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                  ),
-                ),
-              );
-            }
-            return ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 200),
-              child: ListView.builder(
-                key: const Key('emptyCanvasRecentWorkspacesList'),
-                shrinkWrap: true,
-                itemCount: paths.length,
-                itemBuilder: (context, index) {
-                  final path = paths[index];
-                  return RecentFileTile(
-                    filePath: path,
-                    onTap: () => onOpenWorkspace!(path),
-                    onRemove: () => ref
-                        .read(recentWorkspacesProvider.notifier)
-                        .removeWorkspace(path),
-                  );
-                },
-              ),
-            );
-          },
         ),
       ],
     );

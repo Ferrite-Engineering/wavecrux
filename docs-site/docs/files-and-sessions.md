@@ -22,7 +22,7 @@ Format is detected automatically when you open a file. Native formats are parsed
 
 ## Opening and reloading files { #opening }
 
-Open a waveform with **File → Open File** or ++cmd+o++ / ++ctrl+o++. The format is detected from the file itself, so the same command handles every input type above, as well as `.wavecrux` sessions and `.wavecruxpack` share bundles. On desktop you can also pass files on the command line, one tab per file. Recent files and recent workspaces appear on the empty canvas, so returning to a recent debug session is one click.
+Open a waveform with **File → Open File** or ++cmd+o++ / ++ctrl+o++. The format is detected from the file itself, so the same command handles every input type above, as well as `.wavecrux` sessions and `.wavecruxpack` share bundles. On desktop you can also pass files on the command line, one tab per file. Recent files and recent workspaces appear on the empty canvas, so returning to a recent debug session is one click. From WaveCrux 1.2 a recent file that has been moved or deleted is greyed and marked "File not found"; opening it removes it from the list and tells you which file it was. Each row has its own remove button, and **File, then Clear Recent Files** (also in the command palette, and as a button under the list) empties the list.
 
 ### Dropping files onto the window { #drop }
 

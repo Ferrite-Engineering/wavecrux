@@ -612,9 +612,9 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      // No PopupMenuButton<TransactionTableExporter-entry> is built when the
+      // No overflow menu is built when the
       // open-core default (empty list) is in effect.
-      expect(find.byIcon(Icons.more_vert), findsNothing);
+      expect(find.byIcon(Icons.more_horiz), findsNothing);
     });
 
     testWidgets('overflow icon hidden when exporter is registered but no '
@@ -632,7 +632,7 @@ void main() {
       await tester.pumpAndSettle();
       // applicability ran but returned false → no menu icon.
       expect(fake.applicabilityChecks, ['d0']);
-      expect(find.byIcon(Icons.more_vert), findsNothing);
+      expect(find.byIcon(Icons.more_horiz), findsNothing);
     });
 
     testWidgets('overflow menu shows one entry per applicable decoder with '
@@ -655,8 +655,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.more_vert), findsOneWidget);
-      await tester.tap(find.byIcon(Icons.more_vert));
+      expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+      // The badge records a tier-badge impression when it is built, so it must
+      // not exist while the menu is closed.
+      expect(find.byType(WaveCruxFeatureTierBadge), findsNothing);
+      await tester.tap(find.byIcon(Icons.more_horiz));
       await tester.pumpAndSettle();
 
       // One menu item per applicable (decoder, exporter) pair.
@@ -681,7 +684,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.tap(find.byIcon(Icons.more_horiz));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Export d0 as Fake'));
       await tester.pumpAndSettle();
@@ -719,7 +722,7 @@ void main() {
           .setDecoderFilter('d0');
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.tap(find.byIcon(Icons.more_horiz));
       await tester.pumpAndSettle();
 
       expect(find.text('Export d0 as Fake'), findsOneWidget);

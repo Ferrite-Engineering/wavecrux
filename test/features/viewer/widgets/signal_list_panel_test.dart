@@ -1,11 +1,14 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_cxp/crux_cxp.dart' show ElementKind, PeerIdentity;
+import 'package:crux_cxp_ui/crux_cxp_ui.dart';
 import 'package:flutter/gestures.dart' show kSecondaryButton;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart' show StateProvider;
+import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wavecrux/domain/enums/device_class.dart';
 import 'package:wavecrux/domain/enums/scope_type.dart';
@@ -29,6 +32,7 @@ import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/plugins/decoder_registry.dart';
 import 'package:wavecrux/services/remote/remote_control_notifier.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
+import '../../../helpers/cxp_test_overrides.dart';
 
 // ── Diff status color constants (mirror of the private consts in signal_list_panel.dart) ──
 const _kDiffIdenticalColor = Color(0xFF43A047);
@@ -41,6 +45,26 @@ const _kDiffUnmatchedColor = Color(0xFF9E9E9E);
 final _mutableDiffStatus = StateProvider<Map<String, DiffSignalStatus>>(
   (_) => const {},
 );
+
+/// Records every cross-probe send instead of reaching a peer.
+class _RecordingDispatcher extends CrossProbeDispatcher {
+  _RecordingDispatcher(this._sent) : super(_unread);
+
+  static T _unread<T>(ProviderListenable<T> provider) =>
+      throw UnimplementedError('the recorder reads nothing');
+
+  final List<(PeerIdentity, CrossProbeSelection?)> _sent;
+
+  @override
+  Future<CrossProbeOutcome> send(
+    PeerIdentity peer,
+    CrossProbeSelection? selection, {
+    String? label,
+  }) async {
+    _sent.add((peer, selection));
+    return const CrossProbeOutcome(CrossProbeOutcomeKind.sent);
+  }
+}
 
 class _FakeDiffNotifier extends DiffNotifier {
   _FakeDiffNotifier(this._state);
@@ -81,6 +105,7 @@ Widget _wrapWithScroll({ProviderContainer? container, Locale? locale}) {
     );
   }
   return ProviderScope(
+    overrides: cxpTestOverrides,
     child: MaterialApp(
       locale: locale,
       localizationsDelegates: L10N.localizationsDelegates,
@@ -128,6 +153,7 @@ void main() {
       addTearDown(scroll.dispose);
       await tester.pumpWidget(
         ProviderScope(
+          overrides: cxpTestOverrides,
           child: MaterialApp(
             theme: ThemeData.light(),
             localizationsDelegates: L10N.localizationsDelegates,
@@ -154,7 +180,7 @@ void main() {
 
     // ── Signal rows ──────────────────────────────────────────────────────────
     testWidgets('renders signal display names', (tester) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: cxpTestOverrides);
       addTearDown(container.dispose);
       container.read(signalGroupsProvider.notifier)
         ..addSignal(_v('clk'))
@@ -168,7 +194,7 @@ void main() {
     });
 
     testWidgets('remove button fires removeSignal', (tester) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: cxpTestOverrides);
       addTearDown(container.dispose);
       container.read(signalGroupsProvider.notifier).addSignal(_v('clk'));
 
@@ -189,7 +215,7 @@ void main() {
     testWidgets('remove button removes correct signal when multiple present', (
       tester,
     ) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: cxpTestOverrides);
       addTearDown(container.dispose);
       container.read(signalGroupsProvider.notifier)
         ..addSignal(_v('clk'))
@@ -208,7 +234,7 @@ void main() {
     });
 
     testWidgets('color swatch tap cycles palette color', (tester) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: cxpTestOverrides);
       addTearDown(container.dispose);
       container.read(signalGroupsProvider.notifier).addSignal(_v('clk'));
 
@@ -258,7 +284,7 @@ void main() {
       // the swatch never hit-tests the name's detector, so its `onTap` is
       // swept the instant the pointer lifts. That is why this site keeps
       // plain `onTap`, and this test pins the reasoning.
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: cxpTestOverrides);
       addTearDown(container.dispose);
       container.read(signalGroupsProvider.notifier).addSignal(_v('clk'));
 
@@ -301,6 +327,7 @@ void main() {
         addTearDown(() => tester.binding.setSurfaceSize(null));
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             deviceClassProvider.overrideWithValue(DeviceClass.tablet),
           ],
         );
@@ -371,6 +398,7 @@ void main() {
         addTearDown(() => tester.binding.setSurfaceSize(null));
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             deviceClassProvider.overrideWithValue(DeviceClass.tablet),
           ],
         );
@@ -459,6 +487,7 @@ void main() {
       // below (`lane height renders at touch minimum`).
       final container = ProviderContainer(
         overrides: [
+          ...cxpTestOverrides,
           deviceClassProvider.overrideWithValue(DeviceClass.desktop),
         ],
       );
@@ -513,6 +542,7 @@ void main() {
         // passes either way, because it leaves the setting at its default.
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             deviceClassProvider.overrideWithValue(DeviceClass.desktop),
             appSettingsProvider.overrideWith(
               () => _FakeAppSettingsNotifier(
@@ -567,6 +597,7 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             deviceClassProvider.overrideWithValue(DeviceClass.tablet),
           ],
         );
@@ -616,6 +647,7 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             deviceClassProvider.overrideWithValue(DeviceClass.desktop),
           ],
         );
@@ -671,6 +703,7 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             deviceClassProvider.overrideWithValue(DeviceClass.desktop),
           ],
         );
@@ -719,6 +752,7 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             deviceClassProvider.overrideWithValue(DeviceClass.desktop),
           ],
         );
@@ -775,6 +809,7 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             deviceClassProvider.overrideWithValue(DeviceClass.desktop),
           ],
         );
@@ -852,6 +887,7 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             deviceClassProvider.overrideWithValue(DeviceClass.desktop),
           ],
         );
@@ -920,6 +956,7 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             deviceClassProvider.overrideWithValue(DeviceClass.desktop),
           ],
         );
@@ -959,6 +996,7 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             deviceClassProvider.overrideWithValue(DeviceClass.tablet),
           ],
         );
@@ -996,7 +1034,7 @@ void main() {
     );
 
     testWidgets('reorderSignal moves entry to new position', (tester) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: cxpTestOverrides);
       addTearDown(container.dispose);
       container.read(signalGroupsProvider.notifier)
         ..addSignal(_v('clk'))
@@ -1017,7 +1055,7 @@ void main() {
     testWidgets('group header renders group name and signal count', (
       tester,
     ) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: cxpTestOverrides);
       addTearDown(container.dispose);
       container.read(signalGroupsProvider.notifier)
         ..addGroup('Control')
@@ -1030,7 +1068,7 @@ void main() {
     });
 
     testWidgets('separator row renders without error', (tester) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: cxpTestOverrides);
       addTearDown(container.dispose);
       container.read(signalGroupsProvider.notifier).addSeparator();
 
@@ -1040,7 +1078,7 @@ void main() {
     });
 
     testWidgets('comment row renders comment text', (tester) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: cxpTestOverrides);
       addTearDown(container.dispose);
       container
           .read(signalGroupsProvider.notifier)
@@ -1056,7 +1094,7 @@ void main() {
     testWidgets('group tile renders without exception when collapsed', (
       tester,
     ) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: cxpTestOverrides);
       addTearDown(container.dispose);
       container.read(signalGroupsProvider.notifier).addGroup('Busses');
 
@@ -1070,7 +1108,7 @@ void main() {
     testWidgets('group with signals inside shows child count badge', (
       tester,
     ) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: cxpTestOverrides);
       addTearDown(container.dispose);
       // Build a group with children via the notifier's internal state.
       container.read(signalGroupsProvider.notifier)
@@ -1090,7 +1128,7 @@ void main() {
     testWidgets('toggleGroupCollapsed collapses and expands group', (
       tester,
     ) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: cxpTestOverrides);
       addTearDown(container.dispose);
       final notifier = container.read(signalGroupsProvider.notifier)
         ..addGroup('Ctrl')
@@ -1120,7 +1158,7 @@ void main() {
     testWidgets('group child signal row appears when group is expanded', (
       tester,
     ) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: cxpTestOverrides);
       addTearDown(container.dispose);
       container.read(signalGroupsProvider.notifier)
         ..addGroup('AXI')
@@ -1138,7 +1176,7 @@ void main() {
     testWidgets('group child signal row not visible when group is collapsed', (
       tester,
     ) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: cxpTestOverrides);
       addTearDown(container.dispose);
       container.read(signalGroupsProvider.notifier)
         ..addGroup('AXI')
@@ -1154,7 +1192,7 @@ void main() {
     });
 
     testWidgets('dissolveGroup moves children to top level', (tester) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: cxpTestOverrides);
       addTearDown(container.dispose);
       final notifier = container.read(signalGroupsProvider.notifier)
         ..addGroup('Ctrl')
@@ -1179,7 +1217,7 @@ void main() {
     testWidgets('removeChildFromGroup removes child and keeps group', (
       tester,
     ) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: cxpTestOverrides);
       addTearDown(container.dispose);
       final notifier = container.read(signalGroupsProvider.notifier)
         ..addGroup('Bus')
@@ -1203,7 +1241,7 @@ void main() {
     });
 
     testWidgets('renameGroup changes group name', (tester) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: cxpTestOverrides);
       addTearDown(container.dispose);
       container.read(signalGroupsProvider.notifier)
         ..addGroup('Old')
@@ -1216,7 +1254,7 @@ void main() {
     });
 
     testWidgets('moveSignalIntoGroup updates state correctly', (tester) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: cxpTestOverrides);
       addTearDown(container.dispose);
       final notifier = container.read(signalGroupsProvider.notifier)
         ..addGroup('G')
@@ -1238,7 +1276,7 @@ void main() {
     });
 
     testWidgets('mixed entry types render without exception', (tester) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: cxpTestOverrides);
       addTearDown(container.dispose);
       container.read(signalGroupsProvider.notifier)
         ..addSignal(_v('clk'))
@@ -1266,6 +1304,7 @@ void main() {
       ) async {
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             diffProvider.overrideWith(
               () => _FakeDiffNotifier(
                 const DiffState(
@@ -1288,7 +1327,7 @@ void main() {
 
       testWidgets('no spacer when diff is inactive', (tester) async {
         // diffProvider defaults to DiffState() with isActive==false.
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: cxpTestOverrides);
         addTearDown(container.dispose);
         container.read(signalGroupsProvider.notifier).addSignal(_v('clk'));
 
@@ -1302,6 +1341,7 @@ void main() {
       testWidgets('no spacer when signal ref not in xorTraces', (tester) async {
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             diffProvider.overrideWith(
               () => _FakeDiffNotifier(
                 const DiffState(
@@ -1325,6 +1365,7 @@ void main() {
       testWidgets('spacer disappears when diff is cleared', (tester) async {
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             diffProvider.overrideWith(_MutableDiffNotifier.new),
           ],
         );
@@ -1359,6 +1400,7 @@ void main() {
         (tester) async {
           final container = ProviderContainer(
             overrides: [
+              ...cxpTestOverrides,
               diffProvider.overrideWith(
                 () => _FakeDiffNotifier(
                   const DiffState(
@@ -1398,6 +1440,7 @@ void main() {
         (tester) async {
           final container = ProviderContainer(
             overrides: [
+              ...cxpTestOverrides,
               diffSignalStatusProvider.overrideWith(
                 (ref) => const {'ref_clk': DiffSignalStatus.different},
               ),
@@ -1427,6 +1470,7 @@ void main() {
         (tester) async {
           final container = ProviderContainer(
             overrides: [
+              ...cxpTestOverrides,
               diffSignalStatusProvider.overrideWith(
                 (ref) => const {'ref_clk': DiffSignalStatus.identical},
               ),
@@ -1456,6 +1500,7 @@ void main() {
         (tester) async {
           final container = ProviderContainer(
             overrides: [
+              ...cxpTestOverrides,
               diffSignalStatusProvider.overrideWith(
                 (ref) => const {'ref_clk': DiffSignalStatus.unmatchedA},
               ),
@@ -1487,6 +1532,7 @@ void main() {
         // so we can flip the diff on and off without rebuilding the widget.
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             diffSignalStatusProvider.overrideWith(
               (ref) => ref.watch(_mutableDiffStatus),
             ),
@@ -1541,7 +1587,7 @@ void main() {
     testWidgets(
       'color swatch GestureDetector is translucent (gesture bubbling)',
       (tester) async {
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: cxpTestOverrides);
         addTearDown(container.dispose);
         container.read(signalGroupsProvider.notifier).addSignal(_v('clk'));
 
@@ -1567,6 +1613,7 @@ void main() {
         (tester) async {
           final container = ProviderContainer(
             overrides: [
+              ...cxpTestOverrides,
               deviceClassProvider.overrideWithValue(DeviceClass.tablet),
             ],
           );
@@ -1624,7 +1671,7 @@ void main() {
     group('drag-to-Stage source', () {
       testWidgets('each signal row exposes a Draggable<String> carrying the '
           'signal ref', (tester) async {
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: cxpTestOverrides);
         addTearDown(container.dispose);
         container.read(signalGroupsProvider.notifier)
           ..addSignal(_v('clk'))
@@ -1655,7 +1702,7 @@ void main() {
 
       testWidgets('reorder drag handle is OUTSIDE the Draggable so the two '
           'gestures do not compete', (tester) async {
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: cxpTestOverrides);
         addTearDown(container.dispose);
         container.read(signalGroupsProvider.notifier).addSignal(_v('clk'));
 
@@ -1698,6 +1745,7 @@ void main() {
         );
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             activeDecodersProvider.overrideWith(
               () => _FixedDecodersNotifier(const [
                 ActiveDecoder(
@@ -1730,7 +1778,7 @@ void main() {
       testWidgets('renders no DecoderListEntry rows when none are active', (
         tester,
       ) async {
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: cxpTestOverrides);
         addTearDown(container.dispose);
         container.read(signalGroupsProvider.notifier).addSignal(_v('clk'));
         await tester.pumpWidget(_wrapWithScroll(container: container));
@@ -1746,6 +1794,7 @@ void main() {
         (tester) async {
           final container = ProviderContainer(
             overrides: [
+              ...cxpTestOverrides,
               deviceClassProvider.overrideWithValue(DeviceClass.desktop),
             ],
           );
@@ -1785,6 +1834,7 @@ void main() {
       ) async {
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             deviceClassProvider.overrideWithValue(DeviceClass.desktop),
             // Resolve the signal ref to a full path so the header + copy
             // string are the hierarchical path, not the bare ref.
@@ -1827,11 +1877,100 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
+      group('Cross-probe to', () {
+        const netcrux = PeerIdentity(
+          peerId: 'netcrux-9-1',
+          productName: 'netcrux',
+          productVersion: '1.2.0',
+        );
+
+        Future<void> openMenu(
+          WidgetTester tester, {
+          required List<PeerIdentity> peers,
+          required List<(PeerIdentity, CrossProbeSelection?)> sent,
+        }) async {
+          final container = ProviderContainer(
+            overrides: [
+              ...cxpTestOverrides,
+              deviceClassProvider.overrideWithValue(DeviceClass.desktop),
+              signalVariablesMapProvider.overrideWith(
+                (ref) => {'ref_clk': _v('clk', scopePath: 'top.cpu')},
+              ),
+              cruxCxpPeersProvider.overrideWithValue(peers),
+              cruxCxpServerStatusProvider.overrideWithValue((
+                running: true,
+                port: 54322,
+                problem: null,
+              )),
+              crossProbeDispatcherProvider.overrideWith(
+                (_) => _RecordingDispatcher(sent),
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
+          container
+              .read(signalGroupsProvider.notifier)
+              .addSignal(_v('clk', scopePath: 'top.cpu'));
+          await tester.pumpWidget(
+            UncontrolledProviderScope(
+              container: container,
+              child: MaterialApp(
+                theme: ThemeData(platform: TargetPlatform.macOS),
+                localizationsDelegates: L10N.localizationsDelegates,
+                supportedLocales: L10N.supportedLocales,
+                home: Scaffold(
+                  body: SignalListPanel(scrollController: ScrollController()),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('clk'), buttons: kSecondaryButton);
+          await tester.pumpAndSettle();
+        }
+
+        testWidgets('lists the running peer products and sends the signal as '
+            'its canonical path', (tester) async {
+          final sent = <(PeerIdentity, CrossProbeSelection?)>[];
+          await openMenu(tester, peers: const [netcrux], sent: sent);
+
+          expect(find.text('Cross-probe to'), findsOneWidget);
+          await tester.tap(find.text('Cross-probe to'));
+          await tester.pumpAndSettle();
+          // The second menu opens where the first did, listing the targets.
+          expect(find.text('NetCrux'), findsOneWidget);
+          await tester.tap(find.text('NetCrux'));
+          await tester.pumpAndSettle();
+
+          expect(sent, hasLength(1));
+          final (peer, selection) = sent.single;
+          expect(peer.productName, 'netcrux');
+          expect(selection!.candidates.single.kind, ElementKind.signal);
+          expect(selection.candidates.single.path, 'top.cpu.clk');
+        });
+
+        testWidgets('with no peer running the item is disabled and says what '
+            'to start', (tester) async {
+          final sent = <(PeerIdentity, CrossProbeSelection?)>[];
+          await openMenu(tester, peers: const [], sent: sent);
+
+          expect(
+            find.text('Cross-probe to (no peers running)'),
+            findsOneWidget,
+          );
+          await tester.tap(find.text('Cross-probe to (no peers running)'));
+          await tester.pumpAndSettle();
+          expect(sent, isEmpty);
+          expect(find.text('NetCrux'), findsNothing);
+        });
+      });
+
       testWidgets('menu lists available groups under "Move to group"', (
         tester,
       ) async {
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             deviceClassProvider.overrideWithValue(DeviceClass.desktop),
           ],
         );
@@ -1880,6 +2019,7 @@ void main() {
       ) async {
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             deviceClassProvider.overrideWithValue(DeviceClass.desktop),
           ],
         );
@@ -1940,6 +2080,7 @@ void main() {
       ) async {
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             deviceClassProvider.overrideWithValue(DeviceClass.desktop),
           ],
         );
@@ -1959,6 +2100,7 @@ void main() {
       testWidgets('Dissolve action removes the group', (tester) async {
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             deviceClassProvider.overrideWithValue(DeviceClass.desktop),
           ],
         );
@@ -1987,6 +2129,7 @@ void main() {
       ) async {
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             deviceClassProvider.overrideWithValue(DeviceClass.desktop),
           ],
         );
@@ -2024,6 +2167,7 @@ void main() {
         (tester) async {
           final container = ProviderContainer(
             overrides: [
+              ...cxpTestOverrides,
               deviceClassProvider.overrideWithValue(DeviceClass.desktop),
             ],
           );
@@ -2082,6 +2226,7 @@ void main() {
       ) async {
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             deviceClassProvider.overrideWithValue(DeviceClass.desktop),
           ],
         );
@@ -2157,6 +2302,7 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
+            ...cxpTestOverrides,
             deviceClassProvider.overrideWithValue(DeviceClass.desktop),
           ],
         );
@@ -2216,7 +2362,10 @@ void main() {
 
     ProviderContainer desktopContainer() {
       final c = ProviderContainer(
-        overrides: [deviceClassProvider.overrideWithValue(DeviceClass.desktop)],
+        overrides: [
+          ...cxpTestOverrides,
+          deviceClassProvider.overrideWithValue(DeviceClass.desktop),
+        ],
       );
       addTearDown(c.dispose);
       return c;

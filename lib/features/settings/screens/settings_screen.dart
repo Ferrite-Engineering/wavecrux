@@ -16,7 +16,6 @@ import 'package:wavecrux/core/policy/org_server_policy.dart';
 import 'package:wavecrux/domain/enums/display_format.dart';
 import 'package:wavecrux/domain/enums/log_verbosity.dart';
 import 'package:wavecrux/domain/models/app_settings.dart';
-import 'package:wavecrux/features/remote/providers/cxp_server_provider.dart';
 import 'package:wavecrux/features/settings/providers/extra_settings_categories_provider.dart';
 import 'package:wavecrux/features/settings/providers/settings_providers.dart';
 import 'package:wavecrux/features/settings/widgets/ai_settings_section.dart';
@@ -187,7 +186,7 @@ class _SettingsContent extends ConsumerWidget {
         id: CruxSettingsCategoryId.cxp,
         icon: Icons.hub_outlined,
         title: l10n.settingsCxpSectionTitle,
-        content: _CxpControlsBlock(settings: settings),
+        content: const _CxpControlsBlock(),
       ),
       // Extensions — decoder plugins (desktop only: runtime native code
       // loading is a no-op on iOS/Android/Web), custom value translators
@@ -776,104 +775,24 @@ class _RemoteControlSectionState extends ConsumerState<_RemoteControlSection> {
 // (third-party tools driving WaveCrux); CXP is the peer cross-probe protocol
 // (Crux apps gossiping selection events).
 
-/// WaveCrux's wiring around the suite-shared [CruxCxpSettingsControls]:
-/// values from [AppSettings], callbacks into [appSettingsProvider], plus the
-/// running-state / peers / last-error status column. The CxpLifecycleBridge
-/// listens for the settings changes and starts / stops the server
-/// automatically; no direct calls needed here.
+/// The suite-shared [CruxCxpSettingsSection] inside WaveCrux's section card,
+/// with the organization's policy lock around the controls: shown either way,
+/// dimmed and inert when the organization decided, because the port and
+/// cross-probe preferences are still worth reading.
 class _CxpControlsBlock extends ConsumerWidget {
-  const _CxpControlsBlock({required this.settings});
-
-  final AppSettings settings;
+  const _CxpControlsBlock();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = L10N.of(context);
-    final theme = Theme.of(context);
-    final settingsNotifier = ref.read(appSettingsProvider.notifier);
-    final cxpState = ref.watch(cxpServerProvider);
-    // As with the WCP server: a locked org value decides whether this runs.
     final cxpAllowed = resolveCxpServerPolicy(
       ref.watch(cruxPolicyProvider).document,
-      userSetting: settings.cxpServerEnabled,
+      userSetting: ref.watch(cruxCxpSettingsProvider.select((s) => s.enabled)),
     );
-
     return CruxSettingsSectionCard(
       children: [
-        // Shown either way, dimmed and inert when the organization decided:
-        // the port and cross-probe preferences are still worth reading.
-        CruxPolicyLock(
-          source: cxpAllowed.source,
-          child: CruxCxpSettingsControls(
-            strings: CruxCxpSettingsStrings(
-              enableLabel: l10n.settingsCxpEnabledLabel,
-              enableHelp: l10n.settingsCxpEnabledDescription,
-              portLabel: l10n.settingsCxpPortLabel,
-              portHelp: l10n.settingsCxpPortDescription,
-              portError: l10n.settingsCxpPortError,
-              attentionLabel: l10n.settingsRequestAttentionOnCrossProbeLabel,
-              attentionHelp:
-                  l10n.settingsRequestAttentionOnCrossProbeDescription,
-              broadcastLabel: l10n.settingsBroadcastSelectionOnCrossProbeLabel,
-              broadcastHelp:
-                  l10n.settingsBroadcastSelectionOnCrossProbeDescription,
-            ),
-            enabled: cxpAllowed.value,
-            port: settings.cxpServerPort,
-            requestAttention: settings.requestAttentionOnCrossProbe,
-            broadcastSelection: settings.broadcastSelectionOnCrossProbe,
-            onEnabledChanged: (enabled) => unawaited(
-              settingsNotifier.setCxpServerEnabled(enabled: enabled),
-            ),
-            onPortSubmitted: (port) =>
-                unawaited(settingsNotifier.setCxpServerPort(port)),
-            onRequestAttentionChanged: (enabled) => unawaited(
-              settingsNotifier.setRequestAttentionOnCrossProbe(
-                enabled: enabled,
-              ),
-            ),
-            onBroadcastSelectionChanged: (enabled) => unawaited(
-              settingsNotifier.setBroadcastSelectionOnCrossProbe(
-                enabled: enabled,
-              ),
-            ),
-            statusTile: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l10n.settingsCxpStatus),
-                  trailing: Text(
-                    cxpState.isRunning
-                        ? l10n.settingsCxpStatusRunning(cxpState.port)
-                        : l10n.settingsCxpStatusStopped,
-                    style: TextStyle(
-                      color: cxpState.isRunning
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-                if (cxpState.isRunning)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    trailing: Text(
-                      l10n.settingsCxpPeersConnected(
-                        cxpState.connectedPeerCount,
-                      ),
-                    ),
-                  ),
-                if (cxpState.lastError != null)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      cxpState.lastError!,
-                      style: TextStyle(color: theme.colorScheme.error),
-                    ),
-                  ),
-              ],
-            ),
-          ),
+        CruxCxpSettingsSection(
+          wrapControls: (context, controls) =>
+              CruxPolicyLock(source: cxpAllowed.source, child: controls),
         ),
       ],
     );

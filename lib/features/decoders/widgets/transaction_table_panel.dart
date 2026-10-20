@@ -562,32 +562,22 @@ class _FilterBarState extends State<_FilterBar> {
           // currently visible decoder.
           if (widget.extraExporters.isNotEmpty) ...[
             const SizedBox(width: 4),
-            PopupMenuButton<_ExporterMenuEntry>(
+            CruxOverflowMenu(
               tooltip: l10n.transactionTableExportMoreTooltip,
-              icon: const Icon(Icons.more_vert, size: 18),
-              padding: EdgeInsets.zero,
-              onSelected: widget.onExtraExport,
-              itemBuilder: (context) => [
+              iconSize: 18,
+              entries: [
                 for (final entry in widget.extraExporters)
-                  PopupMenuItem<_ExporterMenuEntry>(
-                    value: entry,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            entry.exporter.labelFor(context, entry.decoder),
-                          ),
-                        ),
-                        if (entry.exporter.requiredTier !=
-                            LicenseTier.openCore) ...[
-                          const SizedBox(width: 8),
-                          WaveCruxFeatureTierBadge(
+                  CruxMenuItem(
+                    label: entry.exporter.labelFor(context, entry.decoder),
+                    onSelected: () => widget.onExtraExport(entry),
+                    // The badge records a tier-badge impression when it is
+                    // built, so it is built only when the menu opens.
+                    trailingBuilder:
+                        entry.exporter.requiredTier == LicenseTier.openCore
+                        ? null
+                        : (_) => WaveCruxFeatureTierBadge(
                             requiredTier: entry.exporter.requiredTier,
                           ),
-                        ],
-                      ],
-                    ),
                   ),
               ],
             ),
