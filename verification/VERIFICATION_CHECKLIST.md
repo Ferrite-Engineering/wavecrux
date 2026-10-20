@@ -1631,6 +1631,15 @@ Two things the re-run found that the original pass could not:
 - [ ] Annotations panel lists every note, including "Not displayed" and
       "Not in this file"; Show signal restores the lane
 - [ ] Filter text and Drifted-only narrow the list; an empty result says so
+- [ ] From 1.2, a row renders the note's text as Markdown (paragraphs, bold,
+      code, code block, list, link) and the canvas balloon still shows the raw
+      text; a one-line plain note keeps the 40 px desktop row — `[Coverage: WIDGET]`
+      (`annotation_markdown_test.dart`) + `[Coverage: MANUAL]` (VERIFICATION_GUIDE §22.28 steps 31 to 32)
+- [ ] The rendered note is selectable and copies without the Markdown marks —
+      `[Coverage: WIDGET]` (same file) + `[Coverage: MANUAL]` (step 33)
+- [ ] A link opens only on click, Enter or Space and only for `http` and
+      `https`; `file:`, `javascript:` and other schemes show as plain text; an
+      image loads nothing — `[Coverage: WIDGET]` (same file) + `[Coverage: MANUAL]` (steps 34 to 36)
 - [ ] Session save/reopen restores notes, positions and witness state
 - [ ] PNG export includes annotations; unticking excludes them and the canvas
       is left showing them afterwards

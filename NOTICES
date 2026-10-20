@@ -266,6 +266,7 @@ Components and versions:
   - leak_tracker_flutter_testing 3.0.10
   - leak_tracker_testing 3.0.2     - web_socket_channel    3.0.3
   - logging              1.3.0
+  - markdown             7.3.1
   - matcher              0.12.20
 
 License: BSD-3-Clause
@@ -312,8 +313,9 @@ distributed under a common BSD-3-Clause license.
 
 Components and versions:
   - cross_file             0.3.5+4  https://pub.dev/packages/cross_file
+  - flutter_markdown_plus  1.0.12   https://pub.dev/packages/flutter_markdown_plus
   - flutter_plugin_android_lifecycle 2.0.35
-  - go_router              17.3.0   https://pub.dev/packages/go_router
+  - go_router             17.3.0   https://pub.dev/packages/go_router
   - path_provider          2.1.6    https://pub.dev/packages/path_provider
   - path_provider_android  2.3.1
   - path_provider_foundation 2.6.0
@@ -870,7 +872,7 @@ only direct dev dependencies as such, so the shipped subset
 cannot be computed exactly, and over-listing is the safe side
 of an attribution question.
 
-  Apache-2.0 7,  BSD-3-Clause 120,  MIT 28,  MPL-2.0 1,  SDK 43
+  Apache-2.0 7,  BSD-3-Clause 122,  MIT 28,  MPL-2.0 1,  SDK 43
 
   _fe_analyzer_shared                          99.0.0           BSD-3-Clause
   analyzer                                     12.1.0           BSD-3-Clause
@@ -946,6 +948,7 @@ of an attribution question.
   flutter                                      0.0.0            SDK
   flutter_driver                               0.0.0            SDK
   flutter_localizations                        0.0.0            SDK
+  flutter_markdown_plus                        1.0.12           BSD-3-Clause
   flutter_plugin_android_lifecycle             2.0.35           BSD-3-Clause
   flutter_riverpod                             3.3.2            MIT
   flutter_secure_storage                       10.3.4           BSD-3-Clause
@@ -977,6 +980,7 @@ of an attribution question.
   leak_tracker_flutter_testing                 3.0.10           BSD-3-Clause
   leak_tracker_testing                         3.0.2            BSD-3-Clause
   logging                                      1.3.0            BSD-3-Clause
+  markdown                                     7.3.1            BSD-3-Clause
   matcher                                      0.12.20          BSD-3-Clause
   material_color_utilities                     0.13.0           Apache-2.0
   material_ui                                  1.5.0            BSD-3-Clause

@@ -9503,6 +9503,40 @@ unreachable.
     disagreeing about which notes still hold would be worse than none of them
     saying so.
 
+### Markdown in the panel (from 1.2)
+
+31. Write a note with Markdown in it, in place on the canvas: a first line, a
+    blank line, a two-item `-` list, a fenced code block, a line with
+    `**bold**` and `` `code` ``, and `[the docs](https://example.com)`. The
+    field is still one plain-text field and **no title field** appears.
+    The **balloon on the waveform shows the raw text**, marks and all; the
+    arrow and band labels likewise. Markdown is never drawn on the canvas.
+32. Open **View ▸ Annotations Panel**. The same note's row shows paragraphs,
+    bold, monospace code, a bulleted list and a shaded code block, and the
+    row grows to fit. A one-line note without Markdown looks exactly as it did
+    before 1.2 and keeps the desktop two-line row height (40 px). Check it on
+    phone and tablet width too.
+33. **Select and copy.** Drag across the rendered note and press Cmd/Ctrl+C
+    (long-press on phone); paste elsewhere: the text arrives without the
+    `**` and backtick marks. Tab does **not** stop on the text itself.
+34. **Links.** Hover the link: a tooltip shows the full URL. Nothing opens on
+    hover. Click it: the system browser opens that URL. Tab to the link (it
+    is a stop), press **Enter**, then again with **Space**: both open it.
+    Tapping the note's other text selects the row as before and opens
+    nothing. Double-tapping the text still edits the note.
+35. **Refused schemes.** Edit a note to contain `[a](file:///etc/hosts)`,
+    `[b](javascript:alert(1))`, `[c](mailto:x@example.com)` and `[d](/rel)`.
+    Each shows its label as plain text, is not a Tab stop and opens nothing.
+    A `![shot](https://example.com/x.png)` shows `shot` and makes no network
+    request.
+36. **Screen reader.** With VoiceOver or NVDA, move onto the row: it reads the
+    note's words (no asterisks or backticks) and announces the link as a
+    link. If the browser cannot be launched, a toast says so.
+37. **Nothing stored changed.** Save the session, open the `.wavecrux` JSON:
+    the note's `text` is the exact string typed, with its Markdown marks.
+    A note written before 1.2 that contains no Markdown syntax reads the same
+    in the panel.
+
 ### 22.28.1 Automation Assessment
 
 | Test | Coverage | Notes |
@@ -9533,6 +9567,13 @@ unreachable.
 | The ⋮ opens on `pumpAndSettle` alone | `[Coverage: UNIT]` | same file — the absence of a 300 ms pump *is* the assertion that the button is no longer inside the row's double-tap target |
 | `setAnchorTime` moves to an exact tick, clamps out-of-range, translates a band, and **re-captures the witness** | `[Coverage: UNIT]` | `test/features/annotations/annotation_shapes_test.dart` — the same trap the nudge documents |
 | Canvas, panel and SVG share one drift colour | `[Coverage: UNIT]` | `core/theme/annotation_colors.dart` is the single definition; `test/services/export/` pins the emitted value |
+| Panel row renders paragraphs, emphasis, inline code, code block, list and link; marks are consumed | `[Coverage: UNIT]` | `test/features/annotations/annotation_markdown_test.dart` |
+| Link filter: `http`/`https` with a host only; `file:`, `javascript:`, `data:`, `mailto:`, custom schemes, relative and host-less refused | `[Coverage: UNIT]` | same file, scheme table, plus per-scheme "renders as text and never opens" |
+| A link opens only on click, Enter or Space, never on render, hover or focus; refused and thrown launches are reported | `[Coverage: UNIT]` | same file, through the `annotationLaunchUrl` seam |
+| Rendered note is selectable and copies its text; images draw alt text and load nothing; raw HTML is inert | `[Coverage: UNIT]` | same file |
+| Spoken text is the note text without marks; a link announces as a link and carries its URL as tooltip | `[Coverage: UNIT]` | same file |
+| One-line Markdown does not grow the row; a tap on the text still selects the note | `[Coverage: UNIT]` | same file; the 40 px desktop minimum is the existing `twoLineRowHeight` |
+| Steps 31 to 37: real clipboard, real browser launch, VoiceOver and NVDA, phone width | `[Coverage: MANUAL]` | The harness has no browser, system clipboard or screen reader |
 | Whether the amber legend is noticed where it sits | `[Coverage: MANUAL]` | Step 29 — a tooltip on a filter chip is a judgement about where a reader looks |
 | The shipped example opens **not** drifted, re-derived against its committed trace | `[Coverage: UNIT]` | `test/examples/annotations_demo_session_test.dart` — reading the witness back out of its own JSON cannot catch a wrong value |
 | Every balloon grabbable on a real canvas regardless of count and position | `[Coverage: MANUAL]` | The widget harness has no `Listener` ancestor, no `Scrollable` and therefore no gesture arena; it did not reproduce this class of bug and should not be trusted to |

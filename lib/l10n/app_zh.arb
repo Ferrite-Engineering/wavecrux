@@ -7091,6 +7091,10 @@
   "@annotationsPanelSortTooltip": {
     "description": "Tooltip for the sort menu button in the annotations panel toolbar"
   },
+  "annotationsPanelLinkOpenFailed": "无法在浏览器中打开该链接。",
+  "@annotationsPanelLinkOpenFailed": {
+    "description": "Toast shown when the system declines to open a link written in an annotation's text."
+  },
   "annotationsPanelRowMenuTooltip": "批注操作",
   "@annotationsPanelRowMenuTooltip": {
     "description": "Tooltip for the overflow menu button on an annotation row"

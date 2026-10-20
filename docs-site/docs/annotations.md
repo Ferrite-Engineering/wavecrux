@@ -64,10 +64,20 @@ The last two are grouped at the bottom of the panel rather than piled onto the t
 
 The panel is the list view of everything on the trace, in time order. Open it with **View ▸ Annotations Panel** (also in the command palette) — even on a trace with no notes yet, where its empty state names the Option-click gesture. It gives you:
 
-- Every note with its time, signal path and author, sortable by **Time**, **Author** or **Created**.
+- Every note with its time, signal path and author, sortable by **Time**, **Author** or **Created**. From WaveCrux 1.2 the note's text is shown as [Markdown](#markdown).
 - A **Filter annotations…** box, and a **Drifted only** toggle for the "what did my change break" pass.
 - Per-row actions: *Edit text*, *Collapse* / *Expand on canvas*, *Set anchor time…*, *Show signal*, *Delete*.
 - The walkthrough transport — see below.
+
+### Reading a note as Markdown { #markdown }
+
+From WaveCrux 1.2, the panel draws each note's text as Markdown. A longer note can carry paragraphs, **bold** and *italic*, `inline code`, fenced code blocks, bulleted and numbered lists, and links, and it reads as formatted text in the list. The text is selectable, so you can copy a code block or a sentence out of a note.
+
+- **Writing a note is unchanged.** You still type plain text in place on the canvas, and no title is added. Markdown is something you write into that text, not a different editor.
+- **The canvas keeps drawing the raw text.** The balloon, the arrow and the band never render Markdown, so a note that carries formatting marks shows those marks on the waveform.
+- **Nothing is stored differently.** The note is the same `text` field in the `.wavecrux` session and in a `.wavecruxpack`. A note written before 1.2 reads the same in the panel unless it happens to contain Markdown syntax, such as `*stars*` or a line that starts with `-`.
+- **Links open only when you ask.** Click a link, or Tab to it and press ++enter++ or ++space++, and it opens in your system browser. Hovering a link shows where it goes. Only `http` and `https` links open; any other kind, such as `file:` or `javascript:`, is shown as plain text.
+- **Images do not load.** An image in a note shows its description text and fetches nothing from the network.
 
 !!! tip "Hiding the notes and closing the list are different things"
 

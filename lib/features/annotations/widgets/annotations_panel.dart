@@ -16,6 +16,7 @@ import 'package:wavecrux/features/annotations/providers/annotation_layers_provid
 import 'package:wavecrux/features/annotations/providers/annotation_providers.dart';
 import 'package:wavecrux/features/annotations/providers/annotation_walkthrough_provider.dart';
 import 'package:wavecrux/features/annotations/providers/session_annotations_provider.dart';
+import 'package:wavecrux/features/annotations/widgets/annotation_markdown.dart';
 import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.dart';
 import 'package:wavecrux/features/viewer/providers/time_providers.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
@@ -807,7 +808,6 @@ class _Row extends StatelessWidget {
     final color = drifted
         ? kAnnotationDriftedColor
         : (rgb != null ? Color(rgb) : scheme.primary);
-    final firstLine = annotation.text.split('\n').first;
 
     // The InkWell wraps the row's **body only**, with the trailing controls as
     // siblings rather than descendants.
@@ -883,11 +883,17 @@ class _Row extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          firstLine,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12),
+                        // The note's text as Markdown. Here only: the canvas
+                        // balloon keeps drawing the raw text.
+                        AnnotationMarkdown(
+                          key: ValueKey('annotation-row-text-${annotation.id}'),
+                          text: annotation.text,
+                          onTap: onTap,
+                          onDoubleTap: onEdit,
+                          onLinkFailed: () => showCruxInfoSnack(
+                            context,
+                            l10n.annotationsPanelLinkOpenFailed,
+                          ),
                         ),
                         const SizedBox(height: 2),
                         Row(

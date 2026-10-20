@@ -267,10 +267,15 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  # Markdown renderer for note text in the Annotations panel (BSD-3), the same
+  # package NetCrux uses. Only the panel renders; the annotation model and the
+  # canvas stay plain text.
+  flutter_markdown_plus: ^1.0.12
   flutter_riverpod: ^3.3.2
   go_router: ^18.0.2
   http: ^1.2.0
   logging: ^1.3.0  # ring-buffer log capture for the Beta Issue Reporter
+  markdown: ^7.3.1  # element types for the Annotations panel's link builder
   meta: ^1.18.0  # pinned to 1.18.0 by flutter_test (1.18.2 latest blocked by SDK)
   package_info_plus: ^10.1.0
   panes: ^1.3.0
