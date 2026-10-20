@@ -211,7 +211,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.tap(find.byIcon(Icons.more_horiz));
       await tester.pumpAndSettle();
       return {
         for (final tile in tester.widgetList<ListTile>(find.byType(ListTile)))

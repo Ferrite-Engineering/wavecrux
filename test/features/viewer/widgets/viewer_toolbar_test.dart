@@ -180,7 +180,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          find.byIcon(Icons.more_vert),
+          find.byIcon(Icons.more_horiz),
           findsNothing,
           reason: 'precondition: the strip does not overflow at this width',
         );
@@ -425,11 +425,11 @@ void main() {
     ) async {
       await tester.pumpWidget(_wrap());
       await tester.pumpAndSettle();
-      expect(find.byIcon(Icons.more_vert), findsNothing);
+      expect(find.byIcon(Icons.more_horiz), findsNothing);
 
       await tester.pumpWidget(_wrap(width: 300));
       await tester.pumpAndSettle();
-      expect(find.byIcon(Icons.more_vert), findsOneWidget);
+      expect(find.byIcon(Icons.more_horiz), findsOneWidget);
     });
 
     testWidgets('uses touch metrics on a touch device class', (tester) async {
@@ -515,7 +515,7 @@ void main() {
         );
         await tester.pumpWidget(_wrap(ctx: ctx, width: 360));
         await tester.pumpAndSettle();
-        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.tap(find.byIcon(Icons.more_horiz));
         await tester.pumpAndSettle();
         expect(find.byType(BottomSheet), findsOneWidget);
 
@@ -550,7 +550,7 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.tap(find.byIcon(Icons.more_horiz));
         await tester.pumpAndSettle();
         await tester.tap(
           find.descendant(
@@ -576,7 +576,7 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.tap(find.byIcon(Icons.more_horiz));
         await tester.pumpAndSettle();
         expect(find.byType(BottomSheet), findsNothing);
         final l10n = L10N.of(tester.element(find.byType(ViewerToolbar)));
