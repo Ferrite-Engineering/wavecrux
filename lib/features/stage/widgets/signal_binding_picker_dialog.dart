@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -49,7 +50,7 @@ class SignalBindingPickerDialog extends ConsumerStatefulWidget {
     String? currentSignalRef,
     ProviderContainer? tabContainer,
   }) {
-    return showDialog<SignalBindingPickerResult>(
+    return showCruxDialog<SignalBindingPickerResult>(
       context: context,
       builder: (_) {
         final dialog = SignalBindingPickerDialog(
@@ -92,11 +93,11 @@ class _SignalBindingPickerDialogState
               .where((e) => e.value.fullPath.toLowerCase().contains(query))
               .toList();
 
-    return AlertDialog(
-      title: Text(l10n.signalBindingPickerTitle(widget.pinName)),
-      contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+    return CruxDialog(
+      title: l10n.signalBindingPickerTitle(widget.pinName),
+      width: 480,
+      scrollable: false,
       content: SizedBox(
-        width: 480,
         height: 400,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -158,15 +159,16 @@ class _SignalBindingPickerDialogState
       ),
       actions: [
         if (widget.currentSignalRef != null)
-          TextButton(
+          CruxDialogAction(
+            label: l10n.signalBindingPickerClear,
+            role: CruxDialogActionRole.tertiary,
             onPressed: () => Navigator.of(context).pop(
               const SignalBindingPickerResult(),
             ),
-            child: Text(l10n.signalBindingPickerClear),
           ),
-        TextButton(
+        CruxDialogAction(
+          label: MaterialLocalizations.of(context).cancelButtonLabel,
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
         ),
       ],
     );

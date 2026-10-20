@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -54,7 +55,7 @@ class PluginSafetyDialog extends ConsumerWidget {
   /// `false` — user clicked "Disable plugin loading" or dismissed the
   /// dialog.
   static Future<bool> show(BuildContext context) async {
-    final result = await showDialog<bool>(
+    final result = await showCruxDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => const PluginSafetyDialog(),
@@ -78,72 +79,72 @@ class PluginSafetyDialog extends ConsumerWidget {
     final l10n = L10N.of(context);
     final theme = Theme.of(context);
 
-    return AlertDialog(
-      icon: Icon(
+    return CruxDialog(
+      title: l10n.pluginSafetyDialogTitle,
+      titleTrailing: Icon(
         Icons.warning_amber_rounded,
         color: theme.colorScheme.error,
-        size: 32,
+        size: 24,
       ),
-      title: Text(l10n.pluginSafetyDialogTitle),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(l10n.pluginSafetyDialogBody),
-            const SizedBox(height: 12),
-            Text(
-              l10n.pluginSafetyDialogBullets,
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 16),
-            InkWell(
-              onTap: () =>
-                  launchUrl(Uri.parse(HelpUrls.decoderPluginsSecurity)),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.open_in_new,
-                      size: 16,
-                      color: theme.colorScheme.primary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
+      width: 480,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.pluginSafetyDialogBody),
+          const SizedBox(height: 12),
+          Text(
+            l10n.pluginSafetyDialogBullets,
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          InkWell(
+            onTap: () => launchUrl(Uri.parse(HelpUrls.decoderPluginsSecurity)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.open_in_new,
+                    size: 16,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
                       l10n.pluginSafetyDialogLearnMore,
                       style: TextStyle(
                         color: theme.colorScheme.primary,
                         decoration: TextDecoration.underline,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
       actions: [
-        TextButton(
+        CruxDialogAction(
+          label: l10n.pluginSafetyDialogDisable,
           onPressed: () async {
             await ref
                 .read(appSettingsProvider.notifier)
                 .setPluginLoadingDisabled(disabled: true);
             if (context.mounted) Navigator.of(context).pop(false);
           },
-          child: Text(l10n.pluginSafetyDialogDisable),
         ),
-        FilledButton(
+        CruxDialogAction(
+          label: l10n.pluginSafetyDialogContinue,
+          role: CruxDialogActionRole.primary,
           onPressed: () async {
             await ref
                 .read(appSettingsProvider.notifier)
                 .setPluginSafetyAcknowledged(acknowledged: true);
             if (context.mounted) Navigator.of(context).pop(true);
           },
-          child: Text(l10n.pluginSafetyDialogContinue),
         ),
       ],
     );

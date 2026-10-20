@@ -355,46 +355,43 @@ class _RemoveMarkerDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = L10N.of(context);
     final colorScheme = Theme.of(context).colorScheme;
-    return AlertDialog(
-      title: Text(l10n.markerRemoveTitle),
-      contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      content: SizedBox(
-        width: 320,
-        child: Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: [
-            for (final letter in letters)
-              InkWell(
-                borderRadius: BorderRadius.circular(4),
-                onTap: () => Navigator.of(context).pop(letter),
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: colorScheme.outline.withValues(alpha: 0.4),
-                    ),
-                    borderRadius: BorderRadius.circular(4),
+    return CruxDialog(
+      title: l10n.markerRemoveTitle,
+      width: 320,
+      content: Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: [
+          for (final letter in letters)
+            InkWell(
+              borderRadius: BorderRadius.circular(4),
+              onTap: () => Navigator.of(context).pop(letter),
+              child: Container(
+                width: 36,
+                height: 36,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: colorScheme.outline.withValues(alpha: 0.4),
                   ),
-                  child: Text(
-                    letter,
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
-                    ),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  letter,
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
                   ),
                 ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
       actions: [
-        TextButton(
+        CruxDialogAction(
+          label: l10n.markerDialogCancel,
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.markerDialogCancel),
         ),
       ],
     );

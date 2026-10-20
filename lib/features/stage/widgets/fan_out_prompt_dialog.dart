@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 
@@ -65,7 +66,7 @@ class FanOutPromptDialog extends StatelessWidget {
     required int familyMinIndex,
     int? sliceWidth,
   }) async {
-    final result = await showDialog<FanOutPromptChoice>(
+    final result = await showCruxDialog<FanOutPromptChoice>(
       context: context,
       builder: (_) => FanOutPromptDialog(
         signalRef: signalRef,
@@ -98,23 +99,24 @@ class FanOutPromptDialog extends StatelessWidget {
             familySize,
             familyMinIndex,
           );
-    return AlertDialog(
-      title: Text(l10n.stageFanOutPromptTitle(familySize)),
+    return CruxDialog(
+      title: l10n.stageFanOutPromptTitle(familySize),
       content: Text(body),
       actions: [
-        TextButton(
+        CruxDialogAction(
+          label: l10n.stageBitPickerCancel,
           onPressed: () => Navigator.of(context).pop(FanOutPromptChoice.cancel),
-          child: Text(l10n.stageBitPickerCancel),
         ),
-        TextButton(
+        CruxDialogAction(
+          label: l10n.stageFanOutPromptBindOne,
           onPressed: () =>
               Navigator.of(context).pop(FanOutPromptChoice.bindOne),
-          child: Text(l10n.stageFanOutPromptBindOne),
         ),
-        FilledButton(
+        CruxDialogAction(
+          label: l10n.stageFanOutPromptBindAll,
+          role: CruxDialogActionRole.primary,
           onPressed: () =>
               Navigator.of(context).pop(FanOutPromptChoice.bindAll),
-          child: Text(l10n.stageFanOutPromptBindAll),
         ),
       ],
     );

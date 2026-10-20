@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart' show showCruxDialog;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/core/help_urls.dart';
@@ -54,7 +55,7 @@ class PatternSearchDialog extends ConsumerStatefulWidget {
     BuildContext context, {
     ProviderContainer? tabContainer,
   }) {
-    return showDialog<void>(
+    return showCruxDialog<void>(
       context: context,
       builder: (_) {
         const dialog = PatternSearchDialog();

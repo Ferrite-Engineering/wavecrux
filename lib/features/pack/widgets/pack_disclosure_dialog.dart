@@ -1,6 +1,8 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
+import 'package:crux_settings_ui/crux_settings_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:wavecrux/domain/models/timescale.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
@@ -39,7 +41,7 @@ class PackDisclosureDialog extends StatefulWidget {
     BuildContext context, {
     required PackDisclosure disclosure,
     Timescale? timescale,
-  }) => showDialog<PackDisclosureResult>(
+  }) => showCruxDialog<PackDisclosureResult>(
     context: context,
     builder: (_) =>
         PackDisclosureDialog(disclosure: disclosure, timescale: timescale),
@@ -63,112 +65,104 @@ class _PackDisclosureDialogState extends State<PackDisclosureDialog> {
     final formatter = TimeFormatService(timescale: widget.timescale);
     final authors = disclosure.authorNames;
 
-    return AlertDialog(
-      title: Text(l10n.packDisclosureTitle),
-      contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-      content: SizedBox(
-        width: 460,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.packDisclosureIntro,
-                style: theme.textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 16),
-              _Section(
-                label: l10n.packDisclosureTimeRangeLabel,
-                child: Text(
-                  disclosure.span.derivedFromAnnotations
-                      ? l10n.packDisclosureTimeRangeAnnotated(
-                          formatter.format(disclosure.span.startTime),
-                          formatter.format(disclosure.span.endTime),
-                        )
-                      : l10n.packDisclosureTimeRangeViewport(
-                          formatter.format(disclosure.span.startTime),
-                          formatter.format(disclosure.span.endTime),
-                        ),
-                  style: theme.textTheme.bodyMedium,
-                ),
-              ),
-              _Section(
-                label: l10n.packDisclosureSignalsLabel(
-                  disclosure.signalPaths.length,
-                ),
-                child: _SignalPathList(paths: disclosure.signalPaths),
-              ),
-              _Section(
-                label: l10n.packDisclosureAuthorsLabel,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      authors.isEmpty
-                          ? l10n.packDisclosureAuthorsNone
-                          : authors.join(', '),
-                      style: theme.textTheme.bodyMedium,
+    return CruxDialog(
+      title: l10n.packDisclosureTitle,
+      width: 460,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.packDisclosureIntro,
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          _Section(
+            label: l10n.packDisclosureTimeRangeLabel,
+            child: Text(
+              disclosure.span.derivedFromAnnotations
+                  ? l10n.packDisclosureTimeRangeAnnotated(
+                      formatter.format(disclosure.span.startTime),
+                      formatter.format(disclosure.span.endTime),
+                    )
+                  : l10n.packDisclosureTimeRangeViewport(
+                      formatter.format(disclosure.span.startTime),
+                      formatter.format(disclosure.span.endTime),
                     ),
-                    if (authors.isNotEmpty)
-                      CheckboxListTile(
-                        value: _stripAuthors,
-                        onChanged: (v) =>
-                            setState(() => _stripAuthors = v ?? false),
-                        title: Text(l10n.packDisclosureStripAuthors),
-                        controlAffinity: ListTileControlAffinity.leading,
-                        contentPadding: EdgeInsets.zero,
-                        dense: true,
-                      ),
-                  ],
-                ),
-              ),
-              _Section(
-                label: l10n.packDisclosureSizeLabel,
-                child: Text(
-                  l10n.packDisclosureSizeApprox(
-                    _formatBytes(disclosure.estimatedBytes),
-                  ),
+              style: theme.textTheme.bodyMedium,
+            ),
+          ),
+          _Section(
+            label: l10n.packDisclosureSignalsLabel(
+              disclosure.signalPaths.length,
+            ),
+            child: _SignalPathList(paths: disclosure.signalPaths),
+          ),
+          _Section(
+            label: l10n.packDisclosureAuthorsLabel,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  authors.isEmpty
+                      ? l10n.packDisclosureAuthorsNone
+                      : authors.join(', '),
                   style: theme.textTheme.bodyMedium,
                 ),
+                if (authors.isNotEmpty)
+                  CruxFormRow.checkbox(
+                    label: l10n.packDisclosureStripAuthors,
+                    value: _stripAuthors,
+                    onChanged: (v) => setState(() => _stripAuthors = v),
+                  ),
+              ],
+            ),
+          ),
+          _Section(
+            label: l10n.packDisclosureSizeLabel,
+            child: Text(
+              l10n.packDisclosureSizeApprox(
+                _formatBytes(disclosure.estimatedBytes),
               ),
-              if (disclosure.exceedsWarnThreshold)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4, bottom: 8),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.warning_amber_outlined,
-                        size: 18,
+              style: theme.textTheme.bodyMedium,
+            ),
+          ),
+          if (disclosure.exceedsWarnThreshold)
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.warning_amber_outlined,
+                    size: 18,
+                    color: theme.colorScheme.tertiary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      l10n.packDisclosureSizeWarning,
+                      style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.tertiary,
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          l10n.packDisclosureSizeWarning,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.tertiary,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-            ],
-          ),
-        ),
+                ],
+              ),
+            ),
+        ],
       ),
       actions: [
-        TextButton(
+        CruxDialogAction(
+          label: MaterialLocalizations.of(context).cancelButtonLabel,
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
         ),
-        FilledButton(
+        CruxDialogAction(
+          label: l10n.packDisclosureConfirm,
+          role: CruxDialogActionRole.primary,
           onPressed: () => Navigator.of(context).pop(
             PackDisclosureResult(stripAuthorNames: _stripAuthors),
           ),
-          child: Text(l10n.packDisclosureConfirm),
         ),
       ],
     );

@@ -142,16 +142,7 @@ extension _ViewerScreenFileIo on _ViewerScreenState {
         }
         return null;
       case ManifestUnusable(:final message):
-        if (mounted) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              SnackBar(
-                content: Text(message),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-        }
+        if (mounted) showCruxInfoSnack(context, message);
         return null;
     }
 
@@ -497,19 +488,20 @@ extension _ViewerScreenFileIo on _ViewerScreenState {
   Future<bool> _showWebFileSizeWarning(int sizeBytes) async {
     final l10n = L10N.of(context);
     final sizeMb = (sizeBytes / (1024 * 1024)).toStringAsFixed(1);
-    final result = await showDialog<bool>(
+    final result = await showCruxDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.webFileSizeWarningTitle),
+      builder: (ctx) => CruxDialog(
+        title: l10n.webFileSizeWarningTitle,
         content: Text(l10n.webFileSizeWarningBody(sizeMb)),
         actions: [
-          TextButton(
+          CruxDialogAction(
+            label: MaterialLocalizations.of(ctx).cancelButtonLabel,
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
           ),
-          FilledButton(
+          CruxDialogAction(
+            label: l10n.webFileSizeWarningContinue,
+            role: CruxDialogActionRole.primary,
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(l10n.webFileSizeWarningContinue),
           ),
         ],
       ),

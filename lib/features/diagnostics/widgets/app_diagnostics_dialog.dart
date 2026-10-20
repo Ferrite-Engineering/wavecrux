@@ -49,7 +49,7 @@ class AppDiagnosticsDialog extends ConsumerStatefulWidget {
     // or menu while the dialog is already up) must not stack a second dialog.
     return ModalGuard.run(
       'appDiagnostics',
-      () => showDialog<void>(
+      () => showCruxDialog<void>(
         context: context,
         builder: (_) => const AppDiagnosticsDialog(),
       ),

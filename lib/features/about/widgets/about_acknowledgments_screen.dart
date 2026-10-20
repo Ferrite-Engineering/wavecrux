@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wavecrux/core/platform_utils.dart';
@@ -16,7 +17,7 @@ class AboutAcknowledgmentsScreen extends StatelessWidget {
   /// Opens the acknowledgments in a dialog on desktop, or as a route on mobile.
   static Future<void> openAdaptive(BuildContext context) async {
     if (isDesktopPlatform) {
-      await showDialog<void>(
+      await showCruxDialog<void>(
         context: context,
         builder: (_) => const _AcknowledgmentsDialog(),
       );
@@ -52,36 +53,19 @@ class _AcknowledgmentsDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = L10N.of(context);
-    final theme = Theme.of(context);
 
-    return Dialog(
-      child: SizedBox(
-        width: 560,
-        height: 600,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-              child: Row(
-                children: [
-                  Text(
-                    l10n.aboutAcknowledgmentsTitle,
-                    style: theme.textTheme.titleLarge,
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    tooltip: MaterialLocalizations.of(context).closeButtonLabel,
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            const Expanded(child: _AcknowledgmentsBody()),
-          ],
+    return CruxDialog(
+      title: l10n.aboutAcknowledgmentsTitle,
+      width: 560,
+      scrollable: false,
+      contentPadding: EdgeInsets.zero,
+      content: const SizedBox(height: 520, child: _AcknowledgmentsBody()),
+      actions: [
+        CruxDialogAction(
+          label: MaterialLocalizations.of(context).closeButtonLabel,
+          onPressed: () => Navigator.of(context).pop(),
         ),
-      ),
+      ],
     );
   }
 }

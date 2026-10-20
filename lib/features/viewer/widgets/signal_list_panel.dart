@@ -1,7 +1,13 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
-import 'package:crux_ide_layout/crux_ide_layout.dart' show showCruxErrorSnack;
+import 'package:crux_ide_layout/crux_ide_layout.dart'
+    show
+        CruxDialog,
+        CruxDialogAction,
+        CruxDialogActionRole,
+        showCruxDialog,
+        showCruxErrorSnack;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -1702,10 +1708,10 @@ class _GroupTileState extends State<_GroupTile> {
     final controller = TextEditingController(
       text: widget.entry.groupName ?? '',
     );
-    final newName = await showDialog<String>(
+    final newName = await showCruxDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.signalGroupRenameDialogTitle),
+      builder: (ctx) => CruxDialog(
+        title: l10n.signalGroupRenameDialogTitle,
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -1713,13 +1719,14 @@ class _GroupTileState extends State<_GroupTile> {
           onSubmitted: (v) => Navigator.of(ctx).pop(v),
         ),
         actions: [
-          TextButton(
+          CruxDialogAction(
+            label: MaterialLocalizations.of(ctx).cancelButtonLabel,
             onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
           ),
-          TextButton(
+          CruxDialogAction(
+            label: MaterialLocalizations.of(ctx).okButtonLabel,
+            role: CruxDialogActionRole.primary,
             onPressed: () => Navigator.of(ctx).pop(controller.text),
-            child: Text(MaterialLocalizations.of(ctx).okButtonLabel),
           ),
         ],
       ),

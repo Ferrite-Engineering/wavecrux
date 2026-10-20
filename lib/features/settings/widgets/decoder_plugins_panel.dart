@@ -3,6 +3,7 @@
 
 import 'dart:io';
 
+import 'package:crux_a11y/crux_a11y.dart';
 import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -500,7 +501,8 @@ class _PluginRow extends ConsumerWidget {
                     l10n.decoderPluginsRowDisableLabel,
                     style: theme.textTheme.labelSmall,
                   ),
-                  Switch(
+                  CruxSwitch(
+                    semanticLabel: l10n.decoderPluginsRowDisableLabel,
                     value: !disabled,
                     // Disabled, not hidden, when the organization refused it.
                     // A missing control invites "where did the toggle go?";

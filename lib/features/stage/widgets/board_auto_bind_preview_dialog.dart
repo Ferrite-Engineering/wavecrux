@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:wavecrux/domain/models/board_auto_bind_candidate.dart';
 import 'package:wavecrux/domain/models/stage_signal_binding.dart';
@@ -43,7 +44,7 @@ class BoardAutoBindPreviewDialog extends StatelessWidget {
     required BoardAutoBindResult result,
     String? title,
   }) {
-    return showDialog<BoardAutoBindApplyResult>(
+    return showCruxDialog<BoardAutoBindApplyResult>(
       context: context,
       builder: (_) => BoardAutoBindPreviewDialog(result: result, title: title),
     );
@@ -56,10 +57,11 @@ class BoardAutoBindPreviewDialog extends StatelessWidget {
 
     final entries = _groupForDisplay(result.candidates);
 
-    return AlertDialog(
-      title: Text(title ?? l10n.stageBoardAutoBindTitle),
+    return CruxDialog(
+      title: title ?? l10n.stageBoardAutoBindTitle,
+      width: 520,
+      scrollable: false,
       content: SizedBox(
-        width: 520,
         height: 480,
         child: entries.isEmpty
             ? Center(
@@ -79,21 +81,22 @@ class BoardAutoBindPreviewDialog extends StatelessWidget {
               ),
       ),
       actions: [
-        TextButton(
+        CruxDialogAction(
+          label: l10n.stageBoardAutoBindCancel,
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.stageBoardAutoBindCancel),
         ),
-        TextButton(
+        CruxDialogAction(
+          label: l10n.stageBoardAutoBindApplyConfirmed,
           onPressed: () => Navigator.of(context).pop(
             BoardAutoBindApplyResult(_collectBindings(confirmedOnly: true)),
           ),
-          child: Text(l10n.stageBoardAutoBindApplyConfirmed),
         ),
-        FilledButton(
+        CruxDialogAction(
+          label: l10n.stageBoardAutoBindApplyAll,
+          role: CruxDialogActionRole.primary,
           onPressed: () => Navigator.of(context).pop(
             BoardAutoBindApplyResult(_collectBindings(confirmedOnly: false)),
           ),
-          child: Text(l10n.stageBoardAutoBindApplyAll),
         ),
       ],
     );

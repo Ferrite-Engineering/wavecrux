@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -78,7 +79,7 @@ void main() {
       ),
     );
     await openDialog(tester);
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byType(CruxDialog), findsOneWidget);
     // Two state rows.
     expect(find.byType(TextField), findsNWidgets(2));
   });
@@ -213,7 +214,7 @@ void main() {
     await openDialog(tester);
     final fields = find.byType(TextField);
     await tester.enterText(fields.first, 'IDLE');
-    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Cancel'));
     await tester.pumpAndSettle();
     // Dirty form → the unsaved-changes prompt appears; confirm discarding.
     await tester.tap(
@@ -238,7 +239,7 @@ void main() {
 
     await tester.enterText(find.byType(TextField).first, 'IDLE');
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Cancel'));
     await tester.pumpAndSettle();
     expect(find.text('Discard changes?'), findsOneWidget);
 
@@ -261,7 +262,7 @@ void main() {
       ),
     );
     await openDialog(tester);
-    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Cancel'));
     await tester.pumpAndSettle();
     expect(find.text('Discard changes?'), findsNothing);
     expect(find.byType(FsmAnnotateDialog), findsNothing);

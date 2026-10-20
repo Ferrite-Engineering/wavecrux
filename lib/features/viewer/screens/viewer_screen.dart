@@ -337,10 +337,13 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
   // so without this a user leaning on Home would queue dozens of identical
   // snackbars, each waiting out the previous one's display.
   ActionRequirement? _visibleDisabledHint;
-  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>?
-  _disabledHintController;
+  Timer? _disabledHintTimer;
 
-  static const Duration _kDisabledHintDuration = Duration(seconds: 3);
+  /// How long the same hint is treated as still on screen. The toast helpers
+  /// return no controller to watch for the message closing, so this is a
+  /// window, longer than a key's auto-repeat interval and shorter than any
+  /// pause in which the user could have dismissed the message.
+  static const Duration _kDisabledHintDebounce = Duration(milliseconds: 350);
 
   /// Explains why a keyboard shortcut just did nothing.
   ///
@@ -350,37 +353,27 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
   /// is surfaced here through the viewer's ordinary snackbar idiom — the same
   /// surface the individual handlers used before the guard existed.
   ///
-  /// Storm control is stated as an invariant rather than a timer: *the same
-  /// hint is never shown twice while it is already on screen*. Key auto-repeat
-  /// therefore leaves the one snackbar up for its full duration instead of
-  /// re-animating (or worse, queueing) a copy per repeat, and the state clears
-  /// itself when the snackbar closes — however it closes. A *different*
+  /// Storm control: *the same hint is not shown again within a short window*.
+  /// Key auto-repeat therefore leaves the one message up instead of
+  /// re-showing a copy per repeat. The toast helpers hand back no controller
+  /// to watch for the message closing, so the state clears on a timer
+  /// ([_kDisabledHintDebounce]). A *different*
   /// requirement replaces the visible hint immediately rather than queueing
   /// behind it, because it is the more recent answer to what the user just
   /// pressed.
   void _showDisabledActionHint(ActionRequirement requirement) {
     if (!mounted) return;
-    if (_visibleDisabledHint == requirement &&
-        _disabledHintController != null) {
+    if (_visibleDisabledHint == requirement && _disabledHintTimer != null) {
       return;
     }
-    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
-    final controller = messenger.showSnackBar(
-      SnackBar(
-        content: Text(requirement.hint(L10N.of(context))),
-        behavior: SnackBarBehavior.floating,
-        duration: _kDisabledHintDuration,
-      ),
-    );
+    hideCruxSnack(context);
+    showCruxInfoSnack(context, requirement.hint(L10N.of(context)));
     _visibleDisabledHint = requirement;
-    _disabledHintController = controller;
-    unawaited(
-      controller.closed.whenComplete(() {
-        if (!identical(_disabledHintController, controller)) return;
-        _disabledHintController = null;
-        _visibleDisabledHint = null;
-      }),
-    );
+    _disabledHintTimer?.cancel();
+    _disabledHintTimer = Timer(_kDisabledHintDebounce, () {
+      _disabledHintTimer = null;
+      _visibleDisabledHint = null;
+    });
   }
 
   // Two-key marker chords (`M` then a–z = set, `⇧M` then a–z = jump) are owned
@@ -567,6 +560,7 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
   @override
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_onKeyEvent);
+    _disabledHintTimer?.cancel();
     _detachFileDrop();
     // The marker chord controller + coordinator are root-scope providers; their
     // lifecycle (and the chord timeout) is owned by Riverpod, not this State.

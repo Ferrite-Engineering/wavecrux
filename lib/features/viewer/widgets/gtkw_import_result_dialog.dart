@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/services/session/gtkw_import_service.dart';
@@ -21,7 +22,7 @@ class GtkwImportResultDialog extends StatelessWidget {
     BuildContext context, {
     required GtkwImportResult result,
   }) {
-    return showDialog<void>(
+    return showCruxDialog<void>(
       context: context,
       builder: (_) => GtkwImportResultDialog(result: result),
     );
@@ -31,56 +32,56 @@ class GtkwImportResultDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = L10N.of(context);
 
-    return AlertDialog(
-      title: Text(l10n.gtkwImportDialogTitle),
-      content: SizedBox(
-        width: 400,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _SummaryRow(
-              icon: Icons.signal_cellular_alt,
-              label: l10n.gtkwImportSignalsMatched(result.matchedSignalCount),
-            ),
-            const SizedBox(height: 4),
-            _SummaryRow(
-              icon: Icons.folder_outlined,
-              label: l10n.gtkwImportGroupCount(result.groupCount),
-            ),
-            const SizedBox(height: 4),
-            _SummaryRow(
-              icon: Icons.flag_outlined,
-              label: l10n.gtkwImportMarkerCount(result.markerCount),
-            ),
-            if (result.hasUnmatchedSignals) ...[
-              const SizedBox(height: 16),
-              _IssueList(
-                header: l10n.gtkwImportUnmatchedHeader(
-                  result.unmatchedSignalPaths.length,
-                ),
-                rows: result.unmatchedSignalPaths,
+    return CruxDialog(
+      title: l10n.gtkwImportDialogTitle,
+      width: 400,
+      onSubmit: () => Navigator.of(context).pop(),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SummaryRow(
+            icon: Icons.signal_cellular_alt,
+            label: l10n.gtkwImportSignalsMatched(result.matchedSignalCount),
+          ),
+          const SizedBox(height: 4),
+          _SummaryRow(
+            icon: Icons.folder_outlined,
+            label: l10n.gtkwImportGroupCount(result.groupCount),
+          ),
+          const SizedBox(height: 4),
+          _SummaryRow(
+            icon: Icons.flag_outlined,
+            label: l10n.gtkwImportMarkerCount(result.markerCount),
+          ),
+          if (result.hasUnmatchedSignals) ...[
+            const SizedBox(height: 16),
+            _IssueList(
+              header: l10n.gtkwImportUnmatchedHeader(
+                result.unmatchedSignalPaths.length,
               ),
-            ],
-            if (result.hasFilterIssues) ...[
-              const SizedBox(height: 16),
-              _IssueList(
-                header: l10n.gtkwImportFilterIssuesHeader(
-                  result.filterIssues.length,
-                ),
-                rows: [
-                  for (final issue in result.filterIssues)
-                    _filterIssueText(l10n, issue),
-                ],
-              ),
-            ],
+              rows: result.unmatchedSignalPaths,
+            ),
           ],
-        ),
+          if (result.hasFilterIssues) ...[
+            const SizedBox(height: 16),
+            _IssueList(
+              header: l10n.gtkwImportFilterIssuesHeader(
+                result.filterIssues.length,
+              ),
+              rows: [
+                for (final issue in result.filterIssues)
+                  _filterIssueText(l10n, issue),
+              ],
+            ),
+          ],
+        ],
       ),
       actions: [
-        TextButton(
+        CruxDialogAction(
+          label: l10n.gtkwImportClose,
+          role: CruxDialogActionRole.primary,
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.gtkwImportClose),
         ),
       ],
     );

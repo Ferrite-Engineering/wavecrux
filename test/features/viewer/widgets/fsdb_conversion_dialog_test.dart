@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wavecrux/features/viewer/widgets/fsdb_conversion_dialog.dart';
@@ -272,8 +273,8 @@ void main() {
         expect(tester.takeException(), isNull);
         await tester.tap(
           find.descendant(
-            of: find.byType(AlertDialog),
-            matching: find.byType(TextButton),
+            of: find.byType(CruxDialog),
+            matching: find.byType(FilledButton),
           ),
         );
         await tester.pumpAndSettle();
@@ -352,8 +353,8 @@ void main() {
           expect(tester.takeException(), isNull);
           await tester.tap(
             find.descendant(
-              of: find.byType(AlertDialog),
-              matching: find.byType(TextButton),
+              of: find.byType(CruxDialog),
+              matching: find.byType(FilledButton),
             ),
           );
           await tester.pumpAndSettle();

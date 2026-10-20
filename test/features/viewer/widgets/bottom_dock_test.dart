@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'package:crux_dock/crux_dock.dart';
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -219,7 +220,7 @@ void main() {
         // Add Panel opens the create dialog; OK creates a second panel.
         await tester.tap(find.byIcon(Icons.add_circle_outline));
         await tester.pumpAndSettle();
-        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(find.byType(CruxDialog), findsOneWidget);
         await tester.tap(find.text('OK'));
         await tester.pumpAndSettle();
         expect(

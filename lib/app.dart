@@ -1505,26 +1505,39 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
     // Apply chrome-token overrides on top of the base WaveCrux theme so
     // presets that ship chrome tokens (solarized-dark, oscilloscope, …)
     // recolor the scaffold, app bar, panel surfaces, and tab bar.
+    //
+    // `WavecruxTheme.resolve` picks the Crux Desktop theme on macOS, Windows,
+    // Linux and the web and the Material 3 theme on iOS and Android, by host
+    // platform (never by window size, so a narrowed desktop window keeps its
+    // controls).
     final lightTheme = applyChromeTokens(
-      WavecruxTheme.light.copyWith(
+      WavecruxTheme.resolve(
+        brightness: Brightness.light,
+        highContrast: false,
         extensions: [const WavecruxColorExtension.light(), chromeExt],
       ),
       chromeExt,
     );
     final darkTheme = applyChromeTokens(
-      WavecruxTheme.dark.copyWith(
+      WavecruxTheme.resolve(
+        brightness: Brightness.dark,
+        highContrast: false,
         extensions: [const WavecruxColorExtension.dark(), chromeExt],
       ),
       chromeExt,
     );
     final hcLightTheme = applyChromeTokens(
-      WavecruxTheme.highContrastLight.copyWith(
+      WavecruxTheme.resolve(
+        brightness: Brightness.light,
+        highContrast: true,
         extensions: [const WavecruxColorExtension.light(), chromeExt],
       ),
       chromeExt,
     );
     final hcDarkTheme = applyChromeTokens(
-      WavecruxTheme.highContrastDark.copyWith(
+      WavecruxTheme.resolve(
+        brightness: Brightness.dark,
+        highContrast: true,
         extensions: [const WavecruxColorExtension.dark(), chromeExt],
       ),
       chromeExt,

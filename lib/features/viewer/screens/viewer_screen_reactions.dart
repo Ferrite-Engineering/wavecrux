@@ -193,6 +193,7 @@ extension _ViewerScreenReactions on _ViewerScreenState {
     hint.markShown();
     final l10n = L10N.of(context);
     final messenger = ScaffoldMessenger.of(context);
+    // crux-desktop: phone-only, shown to a phone in portrait only
     messenger.showSnackBar(
       SnackBar(
         content: Text(l10n.landscapeHintSnackbar),

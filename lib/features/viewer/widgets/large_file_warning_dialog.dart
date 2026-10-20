@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 
@@ -31,7 +32,7 @@ class LargeFileWarningDialog extends StatelessWidget {
   }) async {
     final fileSizeMb = (fileSizeBytes / (1024 * 1024)).toStringAsFixed(1);
     final thresholdMb = (thresholdBytes / (1024 * 1024)).toStringAsFixed(0);
-    final result = await showDialog<bool>(
+    final result = await showCruxDialog<bool>(
       context: context,
       builder: (ctx) => LargeFileWarningDialog(
         fileSizeMb: fileSizeMb,
@@ -44,19 +45,20 @@ class LargeFileWarningDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = L10N.of(context);
-    return AlertDialog(
-      title: Text(l10n.largeFileWarningTitle),
+    return CruxDialog(
+      title: l10n.largeFileWarningTitle,
       content: Text(
         l10n.largeFileWarningBody(fileSizeMb, thresholdMb),
       ),
       actions: [
-        TextButton(
+        CruxDialogAction(
+          label: MaterialLocalizations.of(context).cancelButtonLabel,
           onPressed: () => Navigator.of(context).pop(false),
-          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
         ),
-        FilledButton(
+        CruxDialogAction(
+          label: l10n.largeFileWarningLoadAnyway,
+          role: CruxDialogActionRole.primary,
           onPressed: () => Navigator.of(context).pop(true),
-          child: Text(l10n.largeFileWarningLoadAnyway),
         ),
       ],
     );

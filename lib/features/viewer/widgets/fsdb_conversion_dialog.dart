@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/services/waveform/fsdb_conversion_service.dart';
@@ -40,7 +41,7 @@ class FsdbConversionDialog extends StatefulWidget {
     required String toolPath,
     required FsdbConversionService service,
   }) {
-    return showDialog<String?>(
+    return showCruxDialog<String?>(
       context: context,
       barrierDismissible: false,
       builder: (_) => FsdbConversionDialog(
@@ -56,17 +57,19 @@ class FsdbConversionDialog extends StatefulWidget {
   /// Used by the web file-open paths to replace the confusing generic
   /// "unsupported format" failure a raw `.fsdb` would otherwise produce.
   static Future<void> showWebUnsupported(BuildContext context) {
-    return showDialog<void>(
+    return showCruxDialog<void>(
       context: context,
       builder: (context) {
         final l10n = L10N.of(context);
-        return AlertDialog(
-          title: Text(l10n.fsdbWebUnsupportedTitle),
+        return CruxDialog(
+          title: l10n.fsdbWebUnsupportedTitle,
           content: Text(l10n.fsdbWebUnsupportedMessage),
+          onSubmit: () => Navigator.of(context).pop(),
           actions: [
-            TextButton(
+            CruxDialogAction(
+              label: l10n.fsdbNotFoundDialogClose,
+              role: CruxDialogActionRole.primary,
               onPressed: () => Navigator.of(context).pop(),
-              child: Text(l10n.fsdbNotFoundDialogClose),
             ),
           ],
         );
@@ -76,17 +79,19 @@ class FsdbConversionDialog extends StatefulWidget {
 
   /// Shows a simple dialog informing the user that `fsdb2vcd` is not in PATH.
   static Future<void> showNotFound(BuildContext context) {
-    return showDialog<void>(
+    return showCruxDialog<void>(
       context: context,
       builder: (context) {
         final l10n = L10N.of(context);
-        return AlertDialog(
-          title: Text(l10n.fsdbNotFoundDialogTitle),
+        return CruxDialog(
+          title: l10n.fsdbNotFoundDialogTitle,
           content: Text(l10n.fsdbNotFoundDialogMessage),
+          onSubmit: () => Navigator.of(context).pop(),
           actions: [
-            TextButton(
+            CruxDialogAction(
+              label: l10n.fsdbNotFoundDialogClose,
+              role: CruxDialogActionRole.primary,
               onPressed: () => Navigator.of(context).pop(),
-              child: Text(l10n.fsdbNotFoundDialogClose),
             ),
           ],
         );
@@ -136,51 +141,53 @@ class _FsdbConversionDialogState extends State<FsdbConversionDialog> {
 
   Widget _buildConfirm(L10N l10n) {
     final theme = Theme.of(context);
-    return AlertDialog(
-      title: Text(l10n.fsdbConversionDialogTitle),
-      content: SizedBox(
-        width: 420,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(l10n.fsdbConversionMessage),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                l10n.fsdbConversionToolInfo(widget.toolPath),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontFamily: 'monospace',
-                ),
+    return CruxDialog(
+      title: l10n.fsdbConversionDialogTitle,
+      width: 420,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.fsdbConversionMessage),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              l10n.fsdbConversionToolInfo(widget.toolPath),
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontFamily: 'monospace',
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
+      onSubmit: _startConversion,
       actions: [
-        TextButton(
+        CruxDialogAction(
+          label: l10n.fsdbConversionCancel,
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.fsdbConversionCancel),
         ),
-        FilledButton(
+        CruxDialogAction(
+          label: l10n.fsdbConversionConfirm,
+          role: CruxDialogActionRole.primary,
           onPressed: _startConversion,
-          child: Text(l10n.fsdbConversionConfirm),
         ),
       ],
     );
   }
 
   Widget _buildConverting(L10N l10n) {
-    return AlertDialog(
-      title: Text(l10n.fsdbConversionDialogTitle),
-      content: SizedBox(
+    // Escape does not close it while the conversion runs.
+    return PopScope(
+      canPop: false,
+      child: CruxDialog(
+        title: l10n.fsdbConversionDialogTitle,
         width: 320,
-        child: Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const LinearProgressIndicator(),
@@ -194,29 +201,28 @@ class _FsdbConversionDialogState extends State<FsdbConversionDialog> {
 
   Widget _buildError(L10N l10n) {
     final theme = Theme.of(context);
-    return AlertDialog(
-      title: Text(l10n.fsdbConversionDialogTitle),
-      content: SizedBox(
-        width: 420,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.fsdbConversionError(_errorMessage),
-              style: TextStyle(color: theme.colorScheme.error),
-            ),
-          ],
-        ),
+    return CruxDialog(
+      title: l10n.fsdbConversionDialogTitle,
+      width: 420,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.fsdbConversionError(_errorMessage),
+            style: TextStyle(color: theme.colorScheme.error),
+          ),
+        ],
       ),
       actions: [
-        TextButton(
+        CruxDialogAction(
+          label: l10n.fsdbConversionCancel,
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.fsdbConversionCancel),
         ),
-        FilledButton(
+        CruxDialogAction(
+          label: l10n.fsdbConversionRetry,
+          role: CruxDialogActionRole.primary,
           onPressed: _startConversion,
-          child: Text(l10n.fsdbConversionRetry),
         ),
       ],
     );

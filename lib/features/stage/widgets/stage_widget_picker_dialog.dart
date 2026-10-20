@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:crux_license/crux_license.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -51,7 +52,7 @@ class StageWidgetPickerDialog extends ConsumerWidget {
     BuildContext context, {
     ProviderContainer? tabContainer,
   }) {
-    return showDialog<void>(
+    return showCruxDialog<void>(
       context: context,
       builder: (_) {
         const dialog = StageWidgetPickerDialog();
@@ -89,11 +90,12 @@ class StageWidgetPickerDialog extends ConsumerWidget {
     // flip the gate from a test process. Mirrors `DecoderPickerDialog`.
     final beta = ref.watch(betaPeriodProvider);
 
-    return AlertDialog(
-      title: Text(l10n.stageWidgetPickerTitle),
-      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+    return CruxDialog(
+      title: l10n.stageWidgetPickerTitle,
+      width: 480,
+      scrollable: false,
+      contentPadding: const EdgeInsets.only(bottom: 8),
       content: SizedBox(
-        width: 480,
         height: 360,
         child: grouped.isEmpty
             ? Padding(
@@ -132,9 +134,9 @@ class StageWidgetPickerDialog extends ConsumerWidget {
               ),
       ),
       actions: [
-        TextButton(
+        CruxDialogAction(
+          label: MaterialLocalizations.of(context).cancelButtonLabel,
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
         ),
       ],
     );

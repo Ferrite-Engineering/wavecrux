@@ -48,7 +48,7 @@ void main() {
   final exemptions = <CruxOutlineExemption>[
     const CruxOutlineExemption(
       file: 'lib/core/theme/wavecrux_theme.dart',
-      line: 145,
+      line: 215,
       expectedTrimmed: 'borderSide: BorderSide(color: colorScheme.outline),',
       reason:
           'the default TextField border color (OutlineInputBorder.borderSide) '
@@ -65,7 +65,7 @@ void main() {
     ),
     const CruxOutlineExemption(
       file: 'lib/features/viewer/screens/viewer_screen_widgets.dart',
-      line: 377,
+      line: 375,
       expectedTrimmed: 'color: colorScheme.outline.withValues(alpha: 0.4),',
       reason:
           "Border.all() color for a jump-to-marker letter tile's cell "

@@ -44,19 +44,21 @@ Future<String?> defaultOpenWorkspacePicker({
 /// of them, which is destructive enough to warrant a single confirmation.
 Future<bool> defaultOpenWorkspaceConfirm(BuildContext context) async {
   final l10n = L10N.of(context);
-  final confirmed = await showDialog<bool>(
+  final confirmed = await showCruxDialog<bool>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(l10n.openWorkspaceDialogTitle),
+    builder: (ctx) => CruxDialog(
+      title: l10n.openWorkspaceDialogTitle,
       content: Text(l10n.openWorkspaceDialogBody),
+      onSubmit: () => Navigator.of(ctx).pop(true),
       actions: [
-        TextButton(
+        CruxDialogAction(
+          label: l10n.openWorkspaceDialogCancel,
           onPressed: () => Navigator.of(ctx).pop(false),
-          child: Text(l10n.openWorkspaceDialogCancel),
         ),
-        FilledButton(
+        CruxDialogAction(
+          label: l10n.openWorkspaceDialogConfirm,
+          role: CruxDialogActionRole.primary,
           onPressed: () => Navigator.of(ctx).pop(true),
-          child: Text(l10n.openWorkspaceDialogConfirm),
         ),
       ],
     ),

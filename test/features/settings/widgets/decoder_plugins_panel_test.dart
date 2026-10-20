@@ -3,6 +3,7 @@
 
 import 'dart:io';
 
+import 'package:crux_a11y/crux_a11y.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -381,7 +382,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Toggle off (i.e. disable the plugin).
-    await tester.tap(find.byType(Switch).first);
+    await tester.tap(find.byType(CruxSwitch).first);
     await tester.pumpAndSettle();
 
     // Verify save was called with perPluginDisabled containing the plugin id.

@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:crux_license/crux_license.dart';
 import 'package:crux_telemetry/crux_telemetry.dart';
 import 'package:flutter/material.dart';
@@ -79,7 +80,7 @@ Future<void> _expandAllSections(WidgetTester tester) async {
       if (tile.key != null) tile.key!,
   ];
   final scrollable = find.descendant(
-    of: find.byType(AlertDialog),
+    of: find.byType(CruxDialog),
     matching: find.byType(Scrollable),
   );
   for (final key in keys) {
@@ -209,7 +210,7 @@ void main() {
       await tester.tap(find.text(l10n.decoderConfigCancelButton).last);
       await tester.pumpAndSettle();
       // Use a more general approach — dialog should not be visible.
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byType(CruxDialog), findsNothing);
     });
   });
 
@@ -412,7 +413,7 @@ void main() {
       expect(find.byType(DecoderPickerDialog), findsNothing);
       // The dialog count: only the config dialog is open (1 AlertDialog),
       // not picker + upgrade dialog (would be 2).
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byType(CruxDialog), findsOneWidget);
     });
   });
 

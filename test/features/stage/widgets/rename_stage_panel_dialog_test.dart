@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wavecrux/features/stage/widgets/rename_stage_panel_dialog.dart';
@@ -52,7 +53,7 @@ void main() {
           locale: Locale(locale),
         );
         expect(tester.takeException(), isNull);
-        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(find.byType(CruxDialog), findsOneWidget);
       });
     }
   });

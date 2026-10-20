@@ -23,7 +23,7 @@ Section numbers are stable because source comments cite them (`// Per ARCHITECTU
 
 | Component | Choice | Rationale |
 |-----------|--------|-----------|
-| **UI Framework** | Flutter | Single codebase for Linux, macOS, Windows, iOS, Android, Web. A custom `RenderObject` for high-performance waveform rendering (§2.3). Material 3 for polished, native-feeling UI. |
+| **UI Framework** | Flutter | Single codebase for Linux, macOS, Windows, iOS, Android, Web. A custom `RenderObject` for high-performance waveform rendering (§2.3). Crux Desktop, the suite's shared desktop design system (`crux_theme`, `crux_ide_layout`, `crux_settings_ui`), on macOS, Windows, Linux and the web; Material 3 stays on iOS and Android (§9.3). |
 | **Language** | Dart + Rust | Dart for UI and application logic. Rust for performance-critical parsing and signal storage via wellen. |
 | **State Management** | Riverpod (with code generation) | Reactive model ideal for time-driven updates (cursor moves → all panels update). No BuildContext dependency — critical for background isolate communication. |
 | **Routing** | go_router | Declarative routing for multi-pane desktop layouts and deep-link support. |
@@ -1218,6 +1218,15 @@ FST and GHW are binary formats that cannot be hand-crafted:
 - **Spacing:** 4dp grid for dense panels. 8dp grid for settings/dialogs.
 - **Elevation:** Minimal. Panel boundaries via subtle borders, not shadows.
 - **Motion:** Minimal — smooth zoom transitions and cursor movement. No decorative animation.
+
+### 9.3 Crux Desktop
+
+The design system is **Crux Desktop**, one owned layer in `crux-shared` that is uniform across macOS, Windows and Linux, with Material kept underneath as plumbing. It sets the control size (28 px), the type (13 px body in the operating system's UI font; JetBrains Mono stays on signal values and times), the radii, the focus ring and the absence of ink ripples.
+
+- **Theme.** `WavecruxTheme.resolve` (`lib/core/theme/wavecrux_theme.dart`) builds each `MaterialApp` theme slot (light, dark and both high-contrast slots) through `cruxThemeForDevice`. The host platform decides, never the window size: macOS, Windows, Linux and the web get the desktop theme at any width, iOS and Android keep the Material 3 theme the same file still defines. WaveCrux supplies only its seed, surfaces, canvas tokens and `WavecruxColorExtension`; `bodySmall` and `labelSmall` stay JetBrains Mono on desktop.
+- **Components.** Dialogs open through `showCruxDialog` and are a `CruxDialog`; forms are label-left `CruxFormRow`s; a setting that applies at once is a `CruxSwitch` (`CruxFormRow.toggle`), an option inside a form that applies on OK is a checkbox (`CruxFormRow.checkbox`); transient feedback goes through `showCruxInfoSnack` and `showCruxErrorSnack`; a row's visible overflow is the "⋯" `CruxOverflowMenu` with the same items on right-click.
+- **Guard.** `test/static/crux_desktop_guard_test.dart` fails on a raw `showDialog`, `AlertDialog`, `SimpleDialog`, `SnackBar`, `Icons.more_vert`, `Switch`, `SwitchListTile` or `CheckboxListTile` in `lib/`. A call site that renders only in the phone layout carries `// crux-desktop: phone-only, <why>`; `test/static/crux_desktop_allow_list.txt` holds the exact counts of sites that have not moved yet and only shrinks.
+- **Editors.** A dialog that holds typed input is not dismissible by the scrim (`barrierDismissible: false`), and Escape on the multi-field editors asks before discarding unsaved changes (a `PopScope` around the `CruxDialog`).
 
 ---
 

@@ -2,41 +2,134 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'package:crux_theme/crux_theme.dart';
+import 'package:flutter/foundation.dart' show TargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:wavecrux/core/theme/wavecrux_colors.dart';
 
-/// WaveCrux Material 3 theme definitions.
+/// WaveCrux theme definitions.
+///
+/// On macOS, Windows, Linux and the web the app installs the Crux Desktop
+/// theme (`cruxThemeForDevice`) over WaveCrux's colour scheme, surfaces and
+/// canvas tokens; [resolve] builds it. On iOS and Android the app keeps the
+/// Material 3 theme below ([dark], [light], [highContrastDark],
+/// [highContrastLight]), which [resolve] hands back unchanged.
 ///
 /// Dark is the default (engineering-tool aesthetic — near-black background,
 /// muted borders, high-contrast signal colors). Light is available for bright
 /// environments.
 ///
-/// Both themes expose a [WavecruxColorExtension] via
+/// Every theme exposes a [WavecruxColorExtension] via
 /// `Theme.of(context).extension<WavecruxColorExtension>()!` for
 /// waveform-domain color tokens that are independent of the Material palette.
 abstract final class WavecruxTheme {
-  /// Dark theme — default engineering-tool aesthetic.
+  /// Dark Material 3 theme for phone and tablet — default engineering-tool
+  /// aesthetic.
   ///
   /// Computed once and reused; not recreated on every widget build.
   static final ThemeData dark = _build(brightness: Brightness.dark);
 
-  /// Light theme — alternative for bright work environments.
+  /// Light Material 3 theme for phone and tablet — alternative for bright work
+  /// environments.
   ///
   /// Computed once and reused; not recreated on every widget build.
   static final ThemeData light = _build(brightness: Brightness.light);
 
-  /// High-contrast dark theme — used when the platform reports high-contrast
-  /// accessibility mode is active. Passed to [MaterialApp.highContrastDarkTheme].
+  /// High-contrast dark Material 3 theme for phone and tablet — used when the
+  /// platform reports high-contrast accessibility mode is active. Passed to
+  /// [MaterialApp.highContrastDarkTheme].
   static final ThemeData highContrastDark = _build(
     brightness: Brightness.dark,
     highContrast: true,
   );
 
-  /// High-contrast light theme — used when the platform reports high-contrast
-  /// accessibility mode is active. Passed to [MaterialApp.highContrastTheme].
+  /// High-contrast light Material 3 theme for phone and tablet — used when the
+  /// platform reports high-contrast accessibility mode is active. Passed to
+  /// [MaterialApp.highContrastTheme].
   static final ThemeData highContrastLight = _build(
     brightness: Brightness.light,
     highContrast: true,
+  );
+
+  /// The theme for [brightness] on this host, with [extensions] layered on.
+  ///
+  /// The host platform decides, never the window size: macOS, Windows, Linux
+  /// and the web get the Crux Desktop theme over [colorScheme]; iOS and
+  /// Android get the Material 3 theme ([dark], [light] and the high-contrast
+  /// pair). The two technical-text slots stay WaveCrux's on desktop too:
+  /// `bodySmall` and `labelSmall` are JetBrains Mono, because they carry
+  /// signal values and time labels.
+  ///
+  /// [extensions] replace same-typed extensions of the base theme and keep
+  /// `CruxDesktopTokens`, which marks the desktop layer.
+  static ThemeData resolve({
+    required Brightness brightness,
+    required bool highContrast,
+    required List<ThemeExtension<dynamic>> extensions,
+    TargetPlatform? platform,
+    bool isWeb = kIsWeb,
+  }) {
+    final isDark = brightness == Brightness.dark;
+    final base = cruxThemeForDevice(
+      colorScheme: colorScheme(brightness, highContrast: highContrast),
+      highContrast: highContrast,
+      mobile: () => highContrast
+          ? (isDark ? highContrastDark : highContrastLight)
+          : (isDark ? dark : light),
+      platform: platform,
+      isWeb: isWeb,
+    );
+    final desktop = base.extension<CruxDesktopTokens>() != null;
+    return base.copyWith(
+      scaffoldBackgroundColor: isDark
+          ? WavecruxColors.darkBackground
+          : WavecruxColors.lightBackground,
+      textTheme: desktop ? _withMonoSlots(base.textTheme) : base.textTheme,
+      extensions: [...base.extensions.values, ...extensions],
+    );
+  }
+
+  /// WaveCrux's colour scheme: the signal-green seed over its surfaces and
+  /// borders, with the fully opaque borders of high-contrast mode.
+  static ColorScheme colorScheme(
+    Brightness brightness, {
+    bool highContrast = false,
+  }) {
+    final isDark = brightness == Brightness.dark;
+    return ColorScheme.fromSeed(
+      seedColor: WavecruxColors.signalGreen,
+      brightness: brightness,
+    ).copyWith(
+      surface: isDark
+          ? WavecruxColors.darkSurface
+          : WavecruxColors.lightSurface,
+      surfaceContainerHighest: isDark
+          ? WavecruxColors.darkSurfaceVariant
+          : WavecruxColors.lightSurfaceVariant,
+      // High-contrast mode: use fully-opaque, high-visibility border colors.
+      outline: highContrast
+          ? (isDark ? const Color(0xFFFFFFFF) : const Color(0xFF000000))
+          : (isDark ? WavecruxColors.darkBorder : WavecruxColors.lightBorder),
+      outlineVariant: highContrast
+          ? (isDark ? const Color(0xFFCCCCCC) : const Color(0xFF333333))
+          : (isDark
+                ? WavecruxColors.darkBorderSubtle
+                : WavecruxColors.lightBorderSubtle),
+      error: WavecruxColors.xValue,
+    );
+  }
+
+  static const TextStyle _monoStyle = TextStyle(
+    fontFamily: WavecruxColors.monoFontFamily,
+    fontFamilyFallback: WavecruxColors.monoFontFamilyFallback,
+  );
+
+  static TextTheme _withMonoSlots(TextTheme text) => text.copyWith(
+    bodySmall: text.bodySmall?.merge(
+      _monoStyle.copyWith(fontSize: 12, letterSpacing: 0.2),
+    ),
+    labelSmall: text.labelSmall?.merge(
+      _monoStyle.copyWith(fontSize: 11, letterSpacing: 0.4),
+    ),
   );
 
   static ThemeData _build({
@@ -45,35 +138,12 @@ abstract final class WavecruxTheme {
   }) {
     final isDark = brightness == Brightness.dark;
 
-    final colorScheme =
-        ColorScheme.fromSeed(
-          seedColor: WavecruxColors.signalGreen,
-          brightness: brightness,
-        ).copyWith(
-          surface: isDark
-              ? WavecruxColors.darkSurface
-              : WavecruxColors.lightSurface,
-          surfaceContainerHighest: isDark
-              ? WavecruxColors.darkSurfaceVariant
-              : WavecruxColors.lightSurfaceVariant,
-          // High-contrast mode: use fully-opaque, high-visibility border colors.
-          outline: highContrast
-              ? (isDark ? const Color(0xFFFFFFFF) : const Color(0xFF000000))
-              : (isDark
-                    ? WavecruxColors.darkBorder
-                    : WavecruxColors.lightBorder),
-          outlineVariant: highContrast
-              ? (isDark ? const Color(0xFFCCCCCC) : const Color(0xFF333333))
-              : (isDark
-                    ? WavecruxColors.darkBorderSubtle
-                    : WavecruxColors.lightBorderSubtle),
-          error: WavecruxColors.xValue,
-        );
-
-    const monoStyle = TextStyle(
-      fontFamily: WavecruxColors.monoFontFamily,
-      fontFamilyFallback: WavecruxColors.monoFontFamilyFallback,
+    final colorScheme = WavecruxTheme.colorScheme(
+      brightness,
+      highContrast: highContrast,
     );
+
+    const monoStyle = _monoStyle;
 
     return ThemeData(
       useMaterial3: true,

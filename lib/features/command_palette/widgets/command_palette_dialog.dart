@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'package:crux_command_palette/crux_command_palette.dart';
-import 'package:crux_ide_layout/crux_ide_layout.dart' show ModalGuard;
+import 'package:crux_ide_layout/crux_ide_layout.dart'
+    show ModalGuard, showCruxDialog;
 import 'package:crux_keybindings/crux_keybindings.dart'
     show formatShortcutLabel;
 import 'package:crux_license/crux_license.dart';
@@ -61,9 +62,8 @@ class CommandPaletteDialog extends ConsumerWidget {
     // the ViewerScreen dispatch path.
     return ModalGuard.run(
       'commandPalette',
-      () => showDialog<void>(
+      () => showCruxDialog<void>(
         context: context,
-        barrierColor: Colors.black54,
         builder: (_) {
           final dialog = CommandPaletteDialog(onAction: onAction);
           return tabContainer != null

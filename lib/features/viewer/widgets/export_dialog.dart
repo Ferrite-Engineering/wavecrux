@@ -1,6 +1,8 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
+import 'package:crux_settings_ui/crux_settings_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 
@@ -45,7 +47,7 @@ class ExportDialog extends StatefulWidget {
   /// Opens the export dialog and returns the user's configuration, or null if
   /// the user dismissed it.
   static Future<ExportDialogResult?> show(BuildContext context) =>
-      showDialog<ExportDialogResult>(
+      showCruxDialog<ExportDialogResult>(
         context: context,
         builder: (_) => const ExportDialog(),
       );
@@ -73,98 +75,87 @@ class _ExportDialogState extends State<ExportDialog> {
     // the current window with no indication. Disabled and explained instead.
     final rangeSelectable = _format != ExportFormat.png;
 
-    return AlertDialog(
-      title: Text(l10n.exportDialogTitle),
-      contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-      content: SizedBox(
-        width: 380,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _SectionLabel(l10n.exportDialogFormatSection),
-              _RadioGroup<ExportFormat>(
-                value: _format,
-                options: [
-                  (ExportFormat.vcd, l10n.exportDialogFormatVcd),
-                  (ExportFormat.saif, l10n.exportDialogFormatSaif),
-                  (ExportFormat.png, l10n.exportDialogFormatPng),
-                  (ExportFormat.svg, l10n.exportDialogFormatSvg),
-                ],
-                onChanged: (v) => setState(() => _format = v),
-              ),
-              const SizedBox(height: 12),
-              _SectionLabel(l10n.exportDialogTimeRangeSection),
-              _RadioGroup<ExportTimeRange>(
-                enabled: rangeSelectable,
-                value: _timeRange,
-                options: [
-                  (ExportTimeRange.visible, l10n.exportDialogTimeRangeVisible),
-                  (ExportTimeRange.full, l10n.exportDialogTimeRangeFull),
-                ],
-                onChanged: (v) => setState(() => _timeRange = v),
-              ),
-              const SizedBox(height: 12),
-              _SectionLabel(l10n.exportDialogSignalsSection),
-              _RadioGroup<ExportSignals>(
-                enabled: rangeSelectable,
-                value: _signals,
-                options: [
-                  (ExportSignals.visible, l10n.exportDialogSignalsVisible),
-                  (ExportSignals.all, l10n.exportDialogSignalsAll),
-                ],
-                onChanged: (v) => setState(() => _signals = v),
-              ),
-              if (showResolution) ...[
-                const SizedBox(height: 12),
-                _SectionLabel(l10n.exportDialogResolutionSection),
-                _RadioGroup<double>(
-                  value: _pixelRatio,
-                  options: [
-                    (1.0, l10n.exportDialogResolution1x),
-                    (2.0, l10n.exportDialogResolution2x),
-                    (3.0, l10n.exportDialogResolution3x),
-                  ],
-                  onChanged: (v) => setState(() => _pixelRatio = v),
-                ),
-              ],
-              if (!rangeSelectable)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    l10n.exportDialogImageIsWhatYouSee,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              if (isImage) ...[
-                const SizedBox(height: 4),
-                CheckboxListTile(
-                  value: _includeAnnotations,
-                  onChanged: (v) =>
-                      setState(() => _includeAnnotations = v ?? true),
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  title: Text(l10n.exportDialogIncludeAnnotations),
-                ),
-              ],
-              const SizedBox(height: 8),
+    return CruxDialog(
+      title: l10n.exportDialogTitle,
+      width: 380,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionLabel(l10n.exportDialogFormatSection),
+          _RadioGroup<ExportFormat>(
+            value: _format,
+            options: [
+              (ExportFormat.vcd, l10n.exportDialogFormatVcd),
+              (ExportFormat.saif, l10n.exportDialogFormatSaif),
+              (ExportFormat.png, l10n.exportDialogFormatPng),
+              (ExportFormat.svg, l10n.exportDialogFormatSvg),
             ],
+            onChanged: (v) => setState(() => _format = v),
           ),
-        ),
+          const SizedBox(height: 12),
+          _SectionLabel(l10n.exportDialogTimeRangeSection),
+          _RadioGroup<ExportTimeRange>(
+            enabled: rangeSelectable,
+            value: _timeRange,
+            options: [
+              (ExportTimeRange.visible, l10n.exportDialogTimeRangeVisible),
+              (ExportTimeRange.full, l10n.exportDialogTimeRangeFull),
+            ],
+            onChanged: (v) => setState(() => _timeRange = v),
+          ),
+          const SizedBox(height: 12),
+          _SectionLabel(l10n.exportDialogSignalsSection),
+          _RadioGroup<ExportSignals>(
+            enabled: rangeSelectable,
+            value: _signals,
+            options: [
+              (ExportSignals.visible, l10n.exportDialogSignalsVisible),
+              (ExportSignals.all, l10n.exportDialogSignalsAll),
+            ],
+            onChanged: (v) => setState(() => _signals = v),
+          ),
+          if (showResolution) ...[
+            const SizedBox(height: 12),
+            _SectionLabel(l10n.exportDialogResolutionSection),
+            _RadioGroup<double>(
+              value: _pixelRatio,
+              options: [
+                (1.0, l10n.exportDialogResolution1x),
+                (2.0, l10n.exportDialogResolution2x),
+                (3.0, l10n.exportDialogResolution3x),
+              ],
+              onChanged: (v) => setState(() => _pixelRatio = v),
+            ),
+          ],
+          if (!rangeSelectable)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                l10n.exportDialogImageIsWhatYouSee,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          if (isImage) ...[
+            const SizedBox(height: 4),
+            CruxFormRow.checkbox(
+              label: l10n.exportDialogIncludeAnnotations,
+              value: _includeAnnotations,
+              onChanged: (v) => setState(() => _includeAnnotations = v),
+            ),
+          ],
+        ],
       ),
       actions: [
-        TextButton(
+        CruxDialogAction(
+          label: l10n.exportDialogCancel,
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(
-            l10n.exportDialogCancel,
-            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-          ),
         ),
-        FilledButton(
+        CruxDialogAction(
+          label: l10n.exportDialogExport,
+          role: CruxDialogActionRole.primary,
           onPressed: () => Navigator.of(context).pop(
             ExportDialogResult(
               includeAnnotations: _includeAnnotations,
@@ -174,7 +165,6 @@ class _ExportDialogState extends State<ExportDialog> {
               pixelRatio: _pixelRatio,
             ),
           ),
-          child: Text(l10n.exportDialogExport),
         ),
       ],
     );

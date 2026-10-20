@@ -1,10 +1,12 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'dart:async';
 import 'dart:convert' show utf8;
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -29,13 +31,11 @@ class NamedEnumEditorDialog extends StatefulWidget {
     final initial = config != null
         ? NamedEnumConfig.fromMap(config)
         : const NamedEnumConfig();
-    final result = await showDialog<NamedEnumConfig>(
+    final result = await showCruxDialog<NamedEnumConfig>(
       context: context,
       // Editor dialogs hold in-progress user input: closing must be a
-      // deliberate act (Cancel / Save), never a stray scrim click — the
-      // suite-wide dialog rule. Note this
-      // also disables Escape (Flutter routes DismissIntent through the
-      // barrier flag).
+      // deliberate act (Cancel / Save, or Escape, which asks first), never a
+      // stray scrim click — the suite-wide dialog rule.
       barrierDismissible: false,
       builder: (_) => NamedEnumEditorDialog._(initial: initial),
     );
@@ -198,105 +198,116 @@ class _NamedEnumEditorDialogState extends State<NamedEnumEditorDialog> {
     final theme = Theme.of(context);
     final allValid = _rows.every((r) => BigInt.tryParse(r.value) != null);
 
-    return AlertDialog(
-      title: Text(l10n.namedEnumEditorTitle),
-      content: SizedBox(
+    // Escape asks to discard unsaved entries, as Cancel does.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) unawaited(_onCancel());
+      },
+      child: CruxDialog(
+        title: l10n.namedEnumEditorTitle,
         width: 480,
-        height: 360,
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    l10n.namedEnumEditorValueHeader,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurfaceVariant,
+        scrollable: false,
+        content: SizedBox(
+          height: 360,
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      l10n.namedEnumEditorValueHeader,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    l10n.namedEnumEditorLabelHeader,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurfaceVariant,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      l10n.namedEnumEditorLabelHeader,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 36),
-              ],
-            ),
-            const Divider(height: 8),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _rows.length,
-                itemBuilder: (_, i) => _RowWidget(
-                  row: _rows[i],
-                  onChanged: (r) => setState(() => _rows[i] = r),
-                  onDelete: () => _deleteRow(i),
-                  invalidValue: BigInt.tryParse(_rows[i].value) == null,
-                  invalidLabel: l10n.namedEnumEditorInvalidValue,
+                  const SizedBox(width: 36),
+                ],
+              ),
+              const Divider(height: 8),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _rows.length,
+                  itemBuilder: (_, i) => _RowWidget(
+                    row: _rows[i],
+                    onChanged: (r) => setState(() => _rows[i] = r),
+                    onDelete: () => _deleteRow(i),
+                    invalidValue: BigInt.tryParse(_rows[i].value) == null,
+                    invalidLabel: l10n.namedEnumEditorInvalidValue,
+                  ),
                 ),
               ),
-            ),
-            const Divider(height: 8),
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed: _addRow,
-                  tooltip: l10n.namedEnumEditorAddTooltip,
-                  iconSize: 18,
-                ),
-                const Spacer(),
-                Flexible(
-                  child: TextButton(
-                    onPressed: _dialogInFlight ? null : () => _importFile(l10n),
-                    child: Text(
-                      l10n.namedEnumEditorImport,
-                      style: const TextStyle(fontSize: 12),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+              const Divider(height: 8),
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.add),
+                    onPressed: _addRow,
+                    tooltip: l10n.namedEnumEditorAddTooltip,
+                    iconSize: 18,
+                  ),
+                  const Spacer(),
+                  Flexible(
+                    child: TextButton(
+                      onPressed: _dialogInFlight
+                          ? null
+                          : () => _importFile(l10n),
+                      child: Text(
+                        l10n.namedEnumEditorImport,
+                        style: const TextStyle(fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: TextButton(
-                    onPressed: (allValid && !_dialogInFlight)
-                        ? () => _exportFile(l10n)
-                        : null,
-                    child: Text(
-                      l10n.namedEnumEditorExport,
-                      style: const TextStyle(fontSize: 12),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: TextButton(
+                      onPressed: (allValid && !_dialogInFlight)
+                          ? () => _exportFile(l10n)
+                          : null,
+                      child: Text(
+                        l10n.namedEnumEditorExport,
+                        style: const TextStyle(fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
+        actions: [
+          CruxDialogAction(
+            label: MaterialLocalizations.of(context).cancelButtonLabel,
+            onPressed: _onCancel,
+          ),
+          CruxDialogAction(
+            label: MaterialLocalizations.of(context).okButtonLabel,
+            role: CruxDialogActionRole.primary,
+            onPressed: allValid
+                ? () => Navigator.of(context).pop(_buildConfig())
+                : null,
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: _onCancel,
-          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
-        ),
-        FilledButton(
-          onPressed: allValid
-              ? () => Navigator.of(context).pop(_buildConfig())
-              : null,
-          child: Text(MaterialLocalizations.of(context).okButtonLabel),
-        ),
-      ],
     );
   }
 }

@@ -326,7 +326,7 @@ extension _ViewerScreenTools on _ViewerScreenState {
       showCruxInfoSnack(context, L10N.of(context).markerNone);
       return;
     }
-    final letter = await showDialog<String>(
+    final letter = await showCruxDialog<String>(
       context: context,
       builder: (ctx) => _RemoveMarkerDialog(letters: letters),
     );

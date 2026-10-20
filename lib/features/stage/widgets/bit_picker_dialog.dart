@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 
@@ -43,7 +44,7 @@ class BitPickerDialog extends StatelessWidget {
     required String signalRef,
     required int bitWidth,
   }) {
-    return showDialog<BitPickerResult>(
+    return showCruxDialog<BitPickerResult>(
       context: context,
       builder: (_) => BitPickerDialog(
         signalRef: signalRef,
@@ -55,10 +56,11 @@ class BitPickerDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = L10N.of(context);
-    return AlertDialog(
-      title: Text(l10n.stageBitPickerTitle(signalRef)),
+    return CruxDialog(
+      title: l10n.stageBitPickerTitle(signalRef),
+      width: 320,
+      scrollable: false,
       content: SizedBox(
-        width: 320,
         height: 400,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -91,14 +93,15 @@ class BitPickerDialog extends StatelessWidget {
         ),
       ),
       actions: [
-        TextButton(
+        CruxDialogAction(
+          label: l10n.stageBitPickerCancel,
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.stageBitPickerCancel),
         ),
-        TextButton(
+        CruxDialogAction(
+          label: l10n.stageBitPickerBindWholeSignal,
+          role: CruxDialogActionRole.primary,
           onPressed: () =>
               Navigator.of(context).pop(const BitPickerResult.whole()),
-          child: Text(l10n.stageBitPickerBindWholeSignal),
         ),
       ],
     );

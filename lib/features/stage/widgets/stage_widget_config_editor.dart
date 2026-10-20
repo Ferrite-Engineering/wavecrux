@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'package:crux_a11y/crux_a11y.dart';
+import 'package:crux_settings_ui/crux_settings_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -199,38 +200,18 @@ class _ToggleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    // SwitchListTile builds an internal ListTile, which paints its background
-    // and ink splashes on the nearest Material ancestor. The bindings pane
-    // that hosts this editor paints its surface with a ColoredBox
-    // (`stage_bindings_pane.dart`), which sits *below* the pane's nearest
-    // Material — so without a Material of its own the splash is hidden and
-    // Flutter's debug assertion "ListTile background color or ink splashes
-    // may be invisible" fires on every build.
-    //
-    // MaterialType.transparency gives the tile its own ink surface without
-    // painting a background, so the pane's ColoredBox colour still shows
-    // through. This mirrors what the binding rows already do
-    // (`stage_bindings_pane.dart`, the Material wrapping their InkWell).
-    return Material(
-      type: MaterialType.transparency,
-      child: SwitchListTile(
-        title: Text(
-          resolveLabel(param.labelKey),
-          style: TextStyle(fontSize: metrics.bodyText),
-        ),
-        subtitle: param.descriptionKey == null
+    // A live panel toggle: the widget takes the change at once, so a switch.
+    // The row paints no ListTile background, so the bindings pane's
+    // ColoredBox shows through.
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: CruxFormRow.toggle(
+        label: resolveLabel(param.labelKey),
+        help: param.descriptionKey == null
             ? null
-            : Text(
-                resolveLabel(param.descriptionKey!),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontSize: metrics.labelText,
-                ),
-              ),
+            : resolveLabel(param.descriptionKey!),
         value: value,
         onChanged: onChanged,
-        dense: true,
-        visualDensity: VisualDensity.compact,
       ),
     );
   }

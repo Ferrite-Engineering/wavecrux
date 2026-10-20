@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:wavecrux/core/help_urls.dart';
@@ -18,7 +19,7 @@ class TranslateFilterPickerDialog extends StatelessWidget {
 
   /// Shows the dialog and returns the selected file path (or null).
   static Future<String?> show(BuildContext context) async {
-    return await showDialog<String?>(
+    return await showCruxDialog<String?>(
       context: context,
       builder: (_) => const TranslateFilterPickerDialog(),
     );
@@ -28,26 +29,22 @@ class TranslateFilterPickerDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = L10N.of(context);
 
-    return AlertDialog(
-      title: Row(
-        children: [
-          Expanded(child: Text(l10n.translateFilterPickerDialogTitle)),
-          HelpLink(
-            url: HelpUrls.translateFilters,
-            tooltip: l10n.helpLinkTranslateFilters,
-          ),
-        ],
+    return CruxDialog(
+      title: l10n.translateFilterPickerDialogTitle,
+      titleTrailing: HelpLink(
+        url: HelpUrls.translateFilters,
+        tooltip: l10n.helpLinkTranslateFilters,
       ),
-      content: SizedBox(
-        width: 420,
-        child: Text(l10n.translateFilterPickerDialogDescription),
-      ),
+      width: 420,
+      content: Text(l10n.translateFilterPickerDialogDescription),
       actions: [
-        TextButton(
+        CruxDialogAction(
+          label: l10n.dialogClose,
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.dialogClose),
         ),
-        FilledButton(
+        CruxDialogAction(
+          label: l10n.translateFilterPickerBrowseButton,
+          role: CruxDialogActionRole.primary,
           onPressed: () async {
             final result = await FilePicker.pickFiles(
               dialogTitle: l10n.translateFilterPickerTitle,
@@ -55,7 +52,6 @@ class TranslateFilterPickerDialog extends StatelessWidget {
             final path = result?.files.firstOrNull?.path;
             if (context.mounted) Navigator.of(context).pop(path);
           },
-          child: Text(l10n.translateFilterPickerBrowseButton),
         ),
       ],
     );

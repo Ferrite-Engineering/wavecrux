@@ -13,6 +13,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:crux_telemetry/crux_telemetry.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -272,7 +273,7 @@ void main() {
       await _tapShare(tester);
 
       expect(find.byType(SnackBar), findsOneWidget);
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byType(CruxDialog), findsNothing);
     });
 
     testWidgets('no signals in the view — explains, and opens no dialog', (
@@ -290,7 +291,7 @@ void main() {
       await _tapShare(tester);
 
       expect(find.byType(SnackBar), findsOneWidget);
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byType(CruxDialog), findsNothing);
     });
 
     testWidgets('a bundle past the hard ceiling is refused, not offered', (
@@ -310,7 +311,7 @@ void main() {
       );
       await _tapShare(tester);
 
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byType(CruxDialog), findsNothing);
       expect(find.byType(SnackBar), findsOneWidget);
     });
   });
@@ -325,7 +326,7 @@ void main() {
       );
       await _tapShare(tester);
 
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byType(CruxDialog), findsOneWidget);
       expect(find.text('top.core.clk'), findsOneWidget);
       expect(find.text('top.core.ack'), findsOneWidget);
     });
@@ -364,7 +365,7 @@ void main() {
         );
         await _tapShare(tester);
 
-        expect(find.byType(CheckboxListTile), findsNothing);
+        expect(find.byType(Checkbox), findsNothing);
       },
     );
 
@@ -383,7 +384,7 @@ void main() {
       );
       await _tapShare(tester);
 
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byType(CruxDialog), findsOneWidget);
       expect(find.byIcon(Icons.warning_amber_outlined), findsOneWidget);
     });
 
@@ -429,7 +430,7 @@ void main() {
       );
       await _tapShare(tester);
       if (stripAuthors) {
-        await tester.tap(find.byType(CheckboxListTile));
+        await tester.tap(find.byType(Checkbox));
         await tester.pump();
       }
       await tester.tap(find.text('Share…'));
@@ -547,7 +548,7 @@ void main() {
         );
         await _tapShare(tester);
 
-        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(find.byType(CruxDialog), findsOneWidget);
         // The signal paths are data, not copy — they must survive every
         // locale, including the ones that wrap differently.
         expect(find.text('top.core.ack'), findsOneWidget);

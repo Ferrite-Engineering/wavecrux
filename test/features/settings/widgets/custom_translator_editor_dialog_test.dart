@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wavecrux/domain/models/bitfield_translator_config.dart';
@@ -120,11 +121,11 @@ void main() {
       Locale('ko'),
     ]) {
       await _open(tester, locale: locale);
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byType(CruxDialog), findsOneWidget);
       expect(tester.takeException(), isNull);
       // Dismiss via Cancel before the next locale so routes don't stack —
       // editor dialogs are barrier-non-dismissible (suite dialog canon).
-      await tester.tap(find.byType(TextButton).first);
+      await tester.tap(find.byType(OutlinedButton).first);
       await tester.pumpAndSettle();
     }
   });

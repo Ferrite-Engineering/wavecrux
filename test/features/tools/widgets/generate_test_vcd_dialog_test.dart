@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:crux_io/crux_io.dart' show revealInFileManager;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -167,8 +168,12 @@ void main() {
         await tester.pumpWidget(
           _wrap(source: source, savePicker: picker, locale: locale),
         );
+        // The dialog is taller than the default test surface and scrolls its body
+        // behind the action row; a taller surface keeps every control tappable.
+        await tester.binding.setSurfaceSize(const Size(900, 1100));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
         await tester.tap(find.text('open'));
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
       });
     }
@@ -184,6 +189,10 @@ void main() {
         required String fileName,
       }) async => null;
       await tester.pumpWidget(_wrap(source: source, savePicker: picker));
+      // The dialog is taller than the default test surface and scrolls its body
+      // behind the action row; a taller surface keeps every control tappable.
+      await tester.binding.setSurfaceSize(const Size(900, 1100));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.tap(find.text('open'));
       await tester.pump();
 
@@ -211,15 +220,19 @@ void main() {
           required String fileName,
         }) async => null;
         await tester.pumpWidget(_wrap(source: source, savePicker: picker));
+        // The dialog is taller than the default test surface and scrolls its body
+        // behind the action row; a taller surface keeps every control tappable.
+        await tester.binding.setSurfaceSize(const Size(900, 1100));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
         await tester.tap(find.text('open'));
-        await tester.pump();
+        await tester.pumpAndSettle();
 
-        final openBtn = tester.widget<FilledButton>(
+        final openBtn = tester.widget<CruxDialogAction>(
           find.byKey(const Key('generate_test_vcd_generate_and_open')),
         );
         expect(openBtn.onPressed, isNull);
 
-        final revealBtn = tester.widget<OutlinedButton>(
+        final revealBtn = tester.widget<CruxDialogAction>(
           find.byKey(const Key('generate_test_vcd_generate_and_reveal')),
         );
         expect(revealBtn.onPressed, isNull);
@@ -237,23 +250,32 @@ void main() {
         }) async => destPath;
 
         await tester.pumpWidget(_wrap(source: source, savePicker: picker));
+        // The dialog is taller than the default test surface and scrolls its body
+        // behind the action row; a taller surface keeps every control tappable.
+        await tester.binding.setSurfaceSize(const Size(900, 1100));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
         await tester.tap(find.text('open'));
-        await tester.pump();
+        await tester.pumpAndSettle();
 
-        await tester.tap(
-          find.byKey(const Key('generate_test_vcd_choose_destination')),
-        );
+        // Invoked directly: the three action buttons stack in the test font,
+        // and their tap padding would cover this button.
+        tester
+            .widget<OutlinedButton>(
+              find.byKey(const Key('generate_test_vcd_choose_destination')),
+            )
+            .onPressed!();
+        await tester.pump();
         await tester.pump();
 
         // The path is rendered in the destination row.
         expect(find.text(destPath), findsOneWidget);
 
-        final openBtn = tester.widget<FilledButton>(
+        final openBtn = tester.widget<CruxDialogAction>(
           find.byKey(const Key('generate_test_vcd_generate_and_open')),
         );
         expect(openBtn.onPressed, isNotNull);
 
-        final revealBtn = tester.widget<OutlinedButton>(
+        final revealBtn = tester.widget<CruxDialogAction>(
           find.byKey(const Key('generate_test_vcd_generate_and_reveal')),
         );
         expect(revealBtn.onPressed, isNotNull);
@@ -275,13 +297,22 @@ void main() {
         }) async => destPath;
 
         await tester.pumpWidget(_wrap(source: source, savePicker: picker));
+        // The dialog is taller than the default test surface and scrolls its body
+        // behind the action row; a taller surface keeps every control tappable.
+        await tester.binding.setSurfaceSize(const Size(900, 1100));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
         await tester.tap(find.text('open'));
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         // Pick a destination.
-        await tester.tap(
-          find.byKey(const Key('generate_test_vcd_choose_destination')),
-        );
+        // Invoked directly: the three action buttons stack in the test font,
+        // and their tap padding would cover this button.
+        tester
+            .widget<OutlinedButton>(
+              find.byKey(const Key('generate_test_vcd_choose_destination')),
+            )
+            .onPressed!();
+        await tester.pump();
         await tester.pump();
 
         // Find the ProviderContainer so we can read the tab list after the
@@ -359,12 +390,21 @@ void main() {
             revealLauncher: revealer,
           ),
         );
+        // The dialog is taller than the default test surface and scrolls its body
+        // behind the action row; a taller surface keeps every control tappable.
+        await tester.binding.setSurfaceSize(const Size(900, 1100));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
         await tester.tap(find.text('open'));
-        await tester.pump();
+        await tester.pumpAndSettle();
 
-        await tester.tap(
-          find.byKey(const Key('generate_test_vcd_choose_destination')),
-        );
+        // Invoked directly: the three action buttons stack in the test font,
+        // and their tap padding would cover this button.
+        tester
+            .widget<OutlinedButton>(
+              find.byKey(const Key('generate_test_vcd_choose_destination')),
+            )
+            .onPressed!();
+        await tester.pump();
         await tester.pump();
 
         final revealFinder = find.byKey(
@@ -437,6 +477,10 @@ void main() {
       }) async => null;
 
       await tester.pumpWidget(_wrap(source: source, savePicker: picker));
+      // The dialog is taller than the default test surface and scrolls its body
+      // behind the action row; a taller surface keeps every control tappable.
+      await tester.binding.setSurfaceSize(const Size(900, 1100));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.tap(find.text('open'));
       await tester.pump();
       expect(find.text('Generate Test VCD'), findsOneWidget);
@@ -508,6 +552,10 @@ void main() {
         required String fileName,
       }) async => null;
       await tester.pumpWidget(_wrap(source: source, savePicker: picker));
+      // The dialog is taller than the default test surface and scrolls its body
+      // behind the action row; a taller surface keeps every control tappable.
+      await tester.binding.setSurfaceSize(const Size(900, 1100));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.tap(find.text('open'));
       await tester.pump();
 
@@ -538,6 +586,10 @@ void main() {
       required String fileName,
     }) => chosen.future;
     await tester.pumpWidget(_wrap(source: source, savePicker: picker));
+    // The dialog is taller than the default test surface and scrolls its body
+    // behind the action row; a taller surface keeps every control tappable.
+    await tester.binding.setSurfaceSize(const Size(900, 1100));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.tap(find.text('open'));
     await tester.pump();
 

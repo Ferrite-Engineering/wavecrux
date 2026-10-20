@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'dart:async';
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:crux_policy/crux_policy.dart' show PolicySource;
 import 'package:crux_settings_ui/crux_settings_ui.dart';
 import 'package:flutter/foundation.dart' show mapEquals;
@@ -135,13 +136,11 @@ class DecoderConfigDialog extends ConsumerStatefulWidget {
     ActiveDecodersNotifier? decodersNotifier,
     bool autoBindOnOpen = false,
   }) {
-    return showDialog<void>(
+    return showCruxDialog<void>(
       context: context,
       // Editor dialogs hold in-progress user input: closing must be a
-      // deliberate act (Cancel / Save), never a stray scrim click — the
-      // suite-wide dialog rule. Note this
-      // also disables Escape (Flutter routes DismissIntent through the
-      // barrier flag).
+      // deliberate act (Cancel / Save, or Escape, which asks first), never a
+      // stray scrim click — the suite-wide dialog rule.
       barrierDismissible: false,
       builder: (_) => _scoped(
         context,
@@ -167,13 +166,11 @@ class DecoderConfigDialog extends ConsumerStatefulWidget {
     Map<String, Variable>? signalMap,
     ActiveDecodersNotifier? decodersNotifier,
   }) {
-    return showDialog<void>(
+    return showCruxDialog<void>(
       context: context,
       // Editor dialogs hold in-progress user input: closing must be a
-      // deliberate act (Cancel / Save), never a stray scrim click — the
-      // suite-wide dialog rule. Note this
-      // also disables Escape (Flutter routes DismissIntent through the
-      // barrier flag).
+      // deliberate act (Cancel / Save, or Escape, which asks first), never a
+      // stray scrim click — the suite-wide dialog rule.
       barrierDismissible: false,
       builder: (_) => _scoped(
         context,
@@ -419,25 +416,29 @@ class _DecoderConfigDialogState extends ConsumerState<DecoderConfigDialog> {
         ? l10n.decoderConfigEditTitle(localizedName, widget.instanceNumber!)
         : l10n.decoderConfigTitle(localizedName);
 
-    return AlertDialog(
-      title: Row(
-        children: [
-          Expanded(child: Text(title)),
-          HelpLink(
-            url: HelpUrls.decoder(def.id),
-            tooltip: l10n.helpLinkDecoderDocs,
-          ),
-        ],
-      ),
-      content: SizedBox(
+    // Escape asks to discard unsaved changes, as Cancel does.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) unawaited(_onCancel());
+      },
+      child: CruxDialog(
+        title: title,
+        titleTrailing: HelpLink(
+          url: HelpUrls.decoder(def.id),
+          tooltip: l10n.helpLinkDecoderDocs,
+        ),
         width: 520,
+        // The body scrolls inside the ScrollConfiguration below, not in the
+        // dialog's own scroll view.
+        scrollable: false,
         // ScrollConfiguration removes PointerDeviceKind.mouse from dragDevices.
         // On desktop, kPrecisePointerPanSlop is 1px, so the scroll view's
         // VerticalDragGestureRecognizer would win the gesture arena on any
         // 1-pixel cursor drift during a click, cancelling the DropdownButton
         // tap before the dropdown route can open.  Mouse-wheel scrolling uses
         // PointerScrollEvent (a separate path) and is unaffected.
-        child: ScrollConfiguration(
+        content: ScrollConfiguration(
           behavior: ScrollConfiguration.of(context).copyWith(
             dragDevices: const <PointerDeviceKind>{PointerDeviceKind.touch},
           ),
@@ -509,21 +510,20 @@ class _DecoderConfigDialogState extends ConsumerState<DecoderConfigDialog> {
             ),
           ),
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _onCancel,
-          child: Text(l10n.decoderConfigCancelButton),
-        ),
-        FilledButton(
-          onPressed: _submit,
-          child: Text(
-            widget._isEditMode
+        actions: [
+          CruxDialogAction(
+            label: l10n.decoderConfigCancelButton,
+            onPressed: _onCancel,
+          ),
+          CruxDialogAction(
+            label: widget._isEditMode
                 ? l10n.decoderConfigUpdateButton
                 : l10n.decoderConfigAddButton,
+            role: CruxDialogActionRole.primary,
+            onPressed: _submit,
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -837,9 +837,11 @@ class _ParameterRow extends StatelessWidget {
       case DecoderParameterType.boolean:
         return Align(
           alignment: Alignment.centerLeft,
-          child: Switch(
+          // A checkbox, not a switch: this form applies on its Add / Update
+          // button, not at once.
+          child: Checkbox(
             value: (value as bool?) ?? false,
-            onChanged: onChanged,
+            onChanged: (v) => onChanged(v ?? false),
           ),
         );
       case DecoderParameterType.enumeration:

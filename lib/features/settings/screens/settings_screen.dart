@@ -32,6 +32,10 @@ import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/services/remote/remote_control_notifier.dart';
 import 'package:wavecrux/shared/widgets/help_link.dart';
 
+/// The inset every Settings row takes inside its card, the same one the shared
+/// `CruxSettings*` tiles use.
+const EdgeInsets _kSettingsRowPadding = EdgeInsets.fromLTRB(16, 10, 16, 10);
+
 /// Application settings screen (mobile/full-screen route).
 ///
 /// On desktop platforms call [SettingsScreen.openAdaptive] instead — it
@@ -277,40 +281,52 @@ class _GeneralSection extends ConsumerWidget {
 
     return CruxSettingsCard(
       children: [
-        SwitchListTile(
-          key: const Key('settingsAutoCheckUpdatesSwitch'),
-          title: Text(l10n.settingsAutoCheckUpdatesLabel),
-          subtitle: Text(l10n.settingsAutoCheckUpdatesDescription),
-          value: settings.autoCheckForUpdates,
-          onChanged: (v) => notifier.setAutoCheckForUpdates(enabled: v),
+        Padding(
+          padding: _kSettingsRowPadding,
+          child: CruxFormRow.toggle(
+            key: const Key('settingsAutoCheckUpdatesSwitch'),
+            label: l10n.settingsAutoCheckUpdatesLabel,
+            help: l10n.settingsAutoCheckUpdatesDescription,
+            value: settings.autoCheckForUpdates,
+            onChanged: (v) => notifier.setAutoCheckForUpdates(enabled: v),
+          ),
         ),
-        SwitchListTile(
-          key: const Key('settingsRestoreTabsSwitch'),
-          title: Text(l10n.settingsRestoreTabsOnLaunchLabel),
-          subtitle: Text(l10n.settingsRestoreTabsOnLaunchDescription),
-          value: settings.restoreTabsOnLaunch,
-          onChanged: (v) =>
-              unawaited(notifier.setRestoreTabsOnLaunch(enabled: v)),
+        Padding(
+          padding: _kSettingsRowPadding,
+          child: CruxFormRow.toggle(
+            key: const Key('settingsRestoreTabsSwitch'),
+            label: l10n.settingsRestoreTabsOnLaunchLabel,
+            help: l10n.settingsRestoreTabsOnLaunchDescription,
+            value: settings.restoreTabsOnLaunch,
+            onChanged: (v) =>
+                unawaited(notifier.setRestoreTabsOnLaunch(enabled: v)),
+          ),
         ),
         // Log verbosity — absorbed from the retired single-entry Diagnostics
         // category, as in every Crux app.
-        ListTile(
-          title: Text(l10n.settingsLogVerbosityLabel),
-          subtitle: Text(l10n.settingsLogVerbosityDescription),
-          trailing: DropdownButton<LogVerbosity>(
-            key: const Key('settingsLogVerbosityDropdown'),
-            value: settings.logVerbosity,
-            items: LogVerbosity.values
-                .map(
-                  (v) => DropdownMenuItem(
-                    value: v,
-                    child: Text(_verbosityLabel(v, l10n)),
-                  ),
-                )
-                .toList(),
-            onChanged: (v) {
-              if (v != null) unawaited(notifier.setLogVerbosity(v));
-            },
+        CruxSettingsControlTile(
+          title: l10n.settingsLogVerbosityLabel,
+          description: l10n.settingsLogVerbosityDescription,
+          control: InputDecorator(
+            decoration: const InputDecoration(isDense: true),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<LogVerbosity>(
+                key: const Key('settingsLogVerbosityDropdown'),
+                value: settings.logVerbosity,
+                isDense: true,
+                items: LogVerbosity.values
+                    .map(
+                      (v) => DropdownMenuItem(
+                        value: v,
+                        child: Text(_verbosityLabel(v, l10n)),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (v) {
+                  if (v != null) unawaited(notifier.setLogVerbosity(v));
+                },
+              ),
+            ),
           ),
         ),
       ],
@@ -363,13 +379,16 @@ class _AppearanceSection extends ConsumerWidget {
           valueText: settings.waveformFontSize.toStringAsFixed(0),
           onChanged: notifier.setWaveformFontSize,
         ),
-        SwitchListTile(
-          key: const Key('settingsCanvasLegibilityBoostSwitch'),
-          title: Text(l10n.settingsCanvasLegibilityBoostLabel),
-          subtitle: Text(l10n.settingsCanvasLegibilityBoostDescription),
-          value: settings.canvasLegibilityBoost,
-          onChanged: (v) =>
-              unawaited(notifier.setCanvasLegibilityBoost(enabled: v)),
+        Padding(
+          padding: _kSettingsRowPadding,
+          child: CruxFormRow.toggle(
+            key: const Key('settingsCanvasLegibilityBoostSwitch'),
+            label: l10n.settingsCanvasLegibilityBoostLabel,
+            help: l10n.settingsCanvasLegibilityBoostDescription,
+            value: settings.canvasLegibilityBoost,
+            onChanged: (v) =>
+                unawaited(notifier.setCanvasLegibilityBoost(enabled: v)),
+          ),
         ),
         // The color-theme composer lives *inside* the Appearance card so
         // its Presets / Color overrides / Theme packs subsections read as
@@ -396,22 +415,28 @@ class _WaveformDefaultsSection extends ConsumerWidget {
 
     return CruxSettingsCard(
       children: [
-        ListTile(
-          title: Text(l10n.settingsDefaultFormatLabel),
-          subtitle: Text(l10n.settingsDefaultFormatDescription),
-          trailing: DropdownButton<DisplayFormat>(
-            value: settings.defaultDisplayFormat,
-            items: DisplayFormat.values
-                .map(
-                  (f) => DropdownMenuItem(
-                    value: f,
-                    child: Text(_formatLabel(f, l10n)),
-                  ),
-                )
-                .toList(),
-            onChanged: (f) {
-              if (f != null) unawaited(notifier.setDefaultDisplayFormat(f));
-            },
+        CruxSettingsControlTile(
+          title: l10n.settingsDefaultFormatLabel,
+          description: l10n.settingsDefaultFormatDescription,
+          control: InputDecorator(
+            decoration: const InputDecoration(isDense: true),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<DisplayFormat>(
+                value: settings.defaultDisplayFormat,
+                isDense: true,
+                items: DisplayFormat.values
+                    .map(
+                      (f) => DropdownMenuItem(
+                        value: f,
+                        child: Text(_formatLabel(f, l10n)),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (f) {
+                  if (f != null) unawaited(notifier.setDefaultDisplayFormat(f));
+                },
+              ),
+            ),
           ),
         ),
         CruxSettingsSliderTile(
@@ -425,18 +450,24 @@ class _WaveformDefaultsSection extends ConsumerWidget {
           valueText: '${settings.defaultLaneHeight}px',
           onChanged: (v) => notifier.setDefaultLaneHeight(v.round()),
         ),
-        SwitchListTile(
-          title: Text(l10n.settingsWheelNavigatesTimeLabel),
-          subtitle: Text(l10n.settingsWheelNavigatesTimeDescription),
-          value: settings.wheelNavigatesTime,
-          onChanged: (v) => notifier.setWheelNavigatesTime(enabled: v),
+        Padding(
+          padding: _kSettingsRowPadding,
+          child: CruxFormRow.toggle(
+            label: l10n.settingsWheelNavigatesTimeLabel,
+            help: l10n.settingsWheelNavigatesTimeDescription,
+            value: settings.wheelNavigatesTime,
+            onChanged: (v) => notifier.setWheelNavigatesTime(enabled: v),
+          ),
         ),
-        SwitchListTile(
-          key: const Key('settings_signal_tree_natural_sort'),
-          title: Text(l10n.settingsSignalTreeSortLabel),
-          subtitle: Text(l10n.settingsSignalTreeSortDescription),
-          value: settings.signalTreeNaturalSort,
-          onChanged: (v) => notifier.setSignalTreeNaturalSort(enabled: v),
+        Padding(
+          padding: _kSettingsRowPadding,
+          child: CruxFormRow.toggle(
+            key: const Key('settings_signal_tree_natural_sort'),
+            label: l10n.settingsSignalTreeSortLabel,
+            help: l10n.settingsSignalTreeSortDescription,
+            value: settings.signalTreeNaturalSort,
+            onChanged: (v) => notifier.setSignalTreeNaturalSort(enabled: v),
+          ),
         ),
       ],
     );
@@ -641,45 +672,44 @@ class _RemoteControlSectionState extends ConsumerState<_RemoteControlSection> {
           child: CruxPolicyLock(
             source: wcpAllowed.source,
             placement: CruxPolicyLockNotePlacement.below,
-            child: SwitchListTile(
-              contentPadding: wcpLocked ? EdgeInsets.zero : null,
-              title: Row(
-                children: [
-                  // Flexible so the label shrinks (and ellipsises) before the
-                  // help-icon trailing the row gets pushed off-screen on
-                  // narrow viewports (e.g. SettingsScreen.openAdaptive at
-                  // 500x500, Issue 9).
-                  Flexible(
-                    child: Text(
-                      l10n.settingsRemoteControlEnabledLabel,
-                      overflow: TextOverflow.ellipsis,
+            child: Row(
+              children: [
+                // Expanded so the label shrinks (and ellipsises) before the
+                // help-icon trailing the row gets pushed off-screen on
+                // narrow viewports (e.g. SettingsScreen.openAdaptive at
+                // 500x500, Issue 9).
+                Expanded(
+                  child: Padding(
+                    padding: wcpLocked ? EdgeInsets.zero : _kSettingsRowPadding,
+                    child: CruxFormRow.toggle(
+                      label: l10n.settingsRemoteControlEnabledLabel,
+                      help: l10n.settingsRemoteControlEnabledDescription,
+                      value: wcpAllowed.value,
+                      // A locked org policy decides this, and the switch
+                      // stops deciding anything. Null disables it, and the
+                      // lock note says why, because a dead switch with no
+                      // reason given is a support ticket.
+                      onChanged: wcpLocked
+                          ? null
+                          : (enabled) async {
+                              await settingsNotifier.setRemoteControlEnabled(
+                                enabled: enabled,
+                              );
+                              // The WcpLifecycleBridge listens for the
+                              // settings change and starts / stops the server
+                              // automatically; no direct call needed here.
+                              // Starting it from this callback as well would
+                              // double-start (startServer stops-then-rebinds)
+                              // and race the bridge for the port.
+                            },
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  HelpLink(
-                    url: HelpUrls.remoteApi,
-                    tooltip: l10n.helpLinkRemoteApi,
-                  ),
-                ],
-              ),
-              subtitle: Text(l10n.settingsRemoteControlEnabledDescription),
-              value: wcpAllowed.value,
-              // A locked org policy decides this, and the switch stops
-              // deciding anything. Null disables it, and the lock note says
-              // why, because a dead switch with no reason given is a support
-              // ticket.
-              onChanged: wcpLocked
-                  ? null
-                  : (enabled) async {
-                      await settingsNotifier.setRemoteControlEnabled(
-                        enabled: enabled,
-                      );
-                      // The WcpLifecycleBridge listens for the settings
-                      // change and starts / stops the server automatically;
-                      // no direct call needed here. Starting it from this
-                      // callback as well would double-start (startServer
-                      // stops-then-rebinds) and race the bridge for the port.
-                    },
+                ),
+                HelpLink(
+                  url: HelpUrls.remoteApi,
+                  tooltip: l10n.helpLinkRemoteApi,
+                ),
+              ],
             ),
           ),
         ),

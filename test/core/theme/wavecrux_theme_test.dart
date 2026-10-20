@@ -173,6 +173,124 @@ void main() {
     );
   });
 
+  group('WavecruxTheme.resolve', () {
+    const extensions = <ThemeExtension<dynamic>>[
+      WavecruxColorExtension.dark(),
+    ];
+
+    for (final platform in [
+      TargetPlatform.macOS,
+      TargetPlatform.windows,
+      TargetPlatform.linux,
+    ]) {
+      test('$platform gets the Crux Desktop theme over WaveCrux colours', () {
+        final theme = WavecruxTheme.resolve(
+          brightness: Brightness.dark,
+          highContrast: false,
+          extensions: extensions,
+          platform: platform,
+          isWeb: false,
+        );
+        expect(theme.extension<CruxDesktopTokens>(), isNotNull);
+        expect(theme.extension<WavecruxColorExtension>(), isNotNull);
+        expect(
+          theme.colorScheme.primary,
+          equals(
+            WavecruxTheme.colorScheme(Brightness.dark).primary,
+          ),
+        );
+        expect(
+          theme.scaffoldBackgroundColor,
+          equals(WavecruxColors.darkBackground),
+        );
+      });
+    }
+
+    test('a web build gets the Crux Desktop theme at any size', () {
+      final theme = WavecruxTheme.resolve(
+        brightness: Brightness.light,
+        highContrast: false,
+        extensions: const [WavecruxColorExtension.light()],
+        platform: TargetPlatform.android,
+        isWeb: true,
+      );
+      expect(theme.extension<CruxDesktopTokens>(), isNotNull);
+    });
+
+    test('high contrast keeps the desktop marker and its wider focus ring', () {
+      final theme = WavecruxTheme.resolve(
+        brightness: Brightness.dark,
+        highContrast: true,
+        extensions: extensions,
+        platform: TargetPlatform.macOS,
+        isWeb: false,
+      );
+      expect(
+        theme.extension<CruxDesktopTokens>()!.focusRingWidth,
+        const CruxDesktopTokens.highContrast().focusRingWidth,
+      );
+      expect(
+        theme.colorScheme.outline,
+        equals(const Color(0xFFFFFFFF)),
+      );
+    });
+
+    test('desktop keeps the two JetBrains Mono slots, nothing else mono', () {
+      final theme = WavecruxTheme.resolve(
+        brightness: Brightness.dark,
+        highContrast: false,
+        extensions: extensions,
+        platform: TargetPlatform.linux,
+        isWeb: false,
+      );
+      expect(
+        theme.textTheme.bodySmall?.fontFamily,
+        equals(WavecruxColors.monoFontFamily),
+      );
+      expect(
+        theme.textTheme.labelSmall?.fontFamily,
+        equals(WavecruxColors.monoFontFamily),
+      );
+      expect(
+        theme.textTheme.bodyMedium?.fontFamily,
+        isNot(equals(WavecruxColors.monoFontFamily)),
+      );
+    });
+
+    for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
+      test('$platform keeps the Material 3 theme without the marker', () {
+        final theme = WavecruxTheme.resolve(
+          brightness: Brightness.dark,
+          highContrast: false,
+          extensions: extensions,
+          platform: platform,
+          isWeb: false,
+        );
+        expect(theme.extension<CruxDesktopTokens>(), isNull);
+        expect(theme.extension<WavecruxColorExtension>(), isNotNull);
+        expect(
+          theme.menuBarTheme.style?.backgroundColor?.resolve(<WidgetState>{}),
+          equals(WavecruxColors.darkSurface),
+        );
+      });
+    }
+
+    test("extensions passed in replace the base theme's of the same type", () {
+      final theme = WavecruxTheme.resolve(
+        brightness: Brightness.dark,
+        highContrast: false,
+        extensions: const [WavecruxColorExtension.light()],
+        platform: TargetPlatform.macOS,
+        isWeb: false,
+      );
+      expect(
+        theme.extension<WavecruxColorExtension>()!.zValue,
+        equals(const WavecruxColorExtension.light().zValue),
+      );
+      expect(theme.extension<CruxDesktopTokens>(), isNotNull);
+    });
+  });
+
   group('WavecruxColorExtension', () {
     const dark = WavecruxColorExtension.dark();
     const light = WavecruxColorExtension.light();

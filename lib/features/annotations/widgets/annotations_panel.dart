@@ -3,8 +3,8 @@
 
 import 'dart:async';
 
-import 'package:crux_ide_layout/crux_ide_layout.dart'
-    show kCruxInfoSnackDuration, showCruxInfoSnack;
+import 'package:crux_ide_layout/crux_ide_layout.dart';
+import 'package:crux_settings_ui/crux_settings_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/core/mobile_metrics.dart';
@@ -371,11 +371,7 @@ class _AnnotationsPanelState extends ConsumerState<AnnotationsPanel> {
     if (status == AnnotationStatus.orphaned && rowId != null) {
       _showSignal(rowId);
     } else if (status == AnnotationStatus.unresolved) {
-      ScaffoldMessenger.maybeOf(context)
-        ?..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text(l10n.annotationsPanelNotInFileEdit)),
-        );
+      showCruxInfoSnack(context, l10n.annotationsPanelNotInFileEdit);
       return;
     }
     _jumpTo(a.sortTime);
@@ -421,7 +417,7 @@ class _AnnotationsPanelState extends ConsumerState<AnnotationsPanel> {
     TimeFormatService formatter,
     L10N l10n,
   ) async {
-    final tick = await showDialog<int>(
+    final tick = await showCruxDialog<int>(
       context: context,
       builder: (ctx) => _AnchorTimeDialog(
         initialTick: annotation.sortTime,
@@ -527,20 +523,15 @@ class _Toolbar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(8, 6, 8, 4),
       child: Row(
         children: [
+          // Height, text size and border come from the theme: 28 px on the
+          // desktop layer, WaveCrux's compact field on phone and tablet.
           Expanded(
-            child: SizedBox(
-              height: 30,
-              child: TextField(
-                controller: controller,
-                onChanged: onSearchChanged,
-                style: const TextStyle(fontSize: 12),
-                decoration: InputDecoration(
-                  isDense: true,
-                  prefixIcon: const Icon(Icons.search, size: 16),
-                  hintText: hint,
-                  hintStyle: const TextStyle(fontSize: 12),
-                  border: const OutlineInputBorder(),
-                ),
+            child: TextField(
+              controller: controller,
+              onChanged: onSearchChanged,
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search, size: 16),
+                hintText: hint,
               ),
             ),
           ),
@@ -827,7 +818,23 @@ class _Row extends StatelessWidget {
     // press of it hung for a third of a second before the menu appeared. Same
     // family as the 5.9.1 defect where a tap recognizer beside a pan one cost
     // every drag its first slop-distance of travel.
-    return Container(
+    final menuEntries = <CruxMenuEntry>[
+      for (final action in menu)
+        CruxMenuItem(
+          key: ValueKey(
+            'annotation-row-action-${action.key}-${annotation.id}',
+          ),
+          label: action.label,
+          destructive: action.destructive,
+          onSelected: action.onSelected,
+        ),
+    ];
+    // A two-line row is 40 px on the desktop layer (plan row heights); the
+    // phone and tablet layout keeps the height its content gives it.
+    final rowHeight = CruxDesktopTokens.of(context)?.twoLineRowHeight ?? 0;
+    final row = Container(
+      constraints: BoxConstraints(minHeight: rowHeight),
+      alignment: Alignment.centerLeft,
       // A tinted ground plus a colour-bearing left edge, in the annotation's
       // own colour, so the row can be found by the same cue that identifies it
       // on the canvas. Deliberately not a colour *change* to the badge or the
@@ -840,7 +847,10 @@ class _Row extends StatelessWidget {
               border: Border(left: BorderSide(color: color, width: 3)),
             )
           : null,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: rowHeight > 0 ? 5 : 6,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -953,38 +963,19 @@ class _Row extends StatelessWidget {
               ),
             ),
           if (menu.isNotEmpty)
-            PopupMenuButton<_RowAction>(
+            CruxOverflowMenu(
               key: ValueKey('annotation-row-menu-${annotation.id}'),
               tooltip: l10n.annotationsPanelRowMenuTooltip,
-              iconSize: 16,
-              padding: EdgeInsets.zero,
-              icon: Icon(
-                Icons.more_vert,
-                size: 16,
-                color: scheme.onSurfaceVariant,
-              ),
-              onSelected: (action) => action.onSelected(),
-              itemBuilder: (context) => [
-                for (final action in menu)
-                  PopupMenuItem(
-                    key: ValueKey(
-                      'annotation-row-action-${action.key}-'
-                      '${annotation.id}',
-                    ),
-                    value: action,
-                    child: Text(
-                      action.label,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: action.destructive ? scheme.error : null,
-                      ),
-                    ),
-                  ),
-              ],
+              color: scheme.onSurfaceVariant,
+              entries: menuEntries,
             ),
         ],
       ),
     );
+    // The same commands on right-click, Shift+F10 and the menu key.
+    return menu.isEmpty
+        ? row
+        : CruxContextMenuRegion(entries: menuEntries, child: row);
   }
 }
 
@@ -1054,28 +1045,29 @@ class _AnchorTimeDialogState extends State<_AnchorTimeDialog> {
       Navigator.of(context).pop(int.tryParse(_controller.text.trim()));
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: Text(widget.title),
-    content: TextField(
-      key: const ValueKey('annotation-set-time-field'),
-      controller: _controller,
-      autofocus: true,
-      keyboardType: TextInputType.number,
-      decoration: InputDecoration(
-        labelText: widget.fieldLabel,
-        helperText: widget.helperText,
+  Widget build(BuildContext context) => CruxDialog(
+    title: widget.title,
+    content: CruxFormRow(
+      label: widget.fieldLabel,
+      help: widget.helperText,
+      child: TextField(
+        key: const ValueKey('annotation-set-time-field'),
+        controller: _controller,
+        autofocus: true,
+        keyboardType: TextInputType.number,
+        onSubmitted: (_) => _submit(),
       ),
-      onSubmitted: (_) => _submit(),
     ),
     actions: [
-      TextButton(
+      CruxDialogAction(
+        label: MaterialLocalizations.of(context).cancelButtonLabel,
         onPressed: () => Navigator.of(context).pop(),
-        child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
       ),
-      TextButton(
+      CruxDialogAction(
         key: const ValueKey('annotation-set-time-ok'),
+        label: MaterialLocalizations.of(context).okButtonLabel,
+        role: CruxDialogActionRole.primary,
         onPressed: _submit,
-        child: Text(MaterialLocalizations.of(context).okButtonLabel),
       ),
     ],
   );

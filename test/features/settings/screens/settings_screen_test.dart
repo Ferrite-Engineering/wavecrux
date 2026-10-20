@@ -216,11 +216,11 @@ void main() {
       );
       await tester.ensureVisible(toggle);
       await tester.pumpAndSettle();
-      expect(tester.widget<SwitchListTile>(toggle).value, isTrue);
+      expect(tester.widget<CruxFormRow>(toggle).value, isTrue);
 
       await tester.tap(toggle);
       await tester.pumpAndSettle();
-      expect(tester.widget<SwitchListTile>(toggle).value, isFalse);
+      expect(tester.widget<CruxFormRow>(toggle).value, isFalse);
 
       final container = ProviderScope.containerOf(
         tester.element(find.byType(SettingsScreen)),
@@ -339,13 +339,13 @@ void main() {
           const Key('settingsAutoCheckUpdatesSwitch'),
         );
         expect(switchFinder, findsOneWidget);
-        expect(tester.widget<SwitchListTile>(switchFinder).value, isTrue);
+        expect(tester.widget<CruxFormRow>(switchFinder).value, isTrue);
 
         await tester.tap(switchFinder);
         await tester.pumpAndSettle();
 
         // The toggle flipped and persisted via the notifier.
-        expect(tester.widget<SwitchListTile>(switchFinder).value, isFalse);
+        expect(tester.widget<CruxFormRow>(switchFinder).value, isFalse);
         verify(
           () => mock.save(
             any(
@@ -368,13 +368,13 @@ void main() {
           const Key('settingsCanvasLegibilityBoostSwitch'),
         );
         expect(switchFinder, findsOneWidget);
-        expect(tester.widget<SwitchListTile>(switchFinder).value, isFalse);
+        expect(tester.widget<CruxFormRow>(switchFinder).value, isFalse);
 
         await tester.tap(switchFinder);
         await tester.pumpAndSettle();
 
         // The toggle flipped on and persisted via the notifier.
-        expect(tester.widget<SwitchListTile>(switchFinder).value, isTrue);
+        expect(tester.widget<CruxFormRow>(switchFinder).value, isTrue);
         verify(
           () => mock.save(
             any(

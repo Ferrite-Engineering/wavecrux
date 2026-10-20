@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:crux_license/crux_license.dart';
 import 'package:crux_telemetry/crux_telemetry.dart';
 import 'package:flutter/gestures.dart';
@@ -32,7 +33,7 @@ class BindCustomTranslatorDialog extends ConsumerWidget {
   const BindCustomTranslatorDialog({super.key});
 
   static Future<Map<String, Object?>?> show(BuildContext context) =>
-      showDialog<Map<String, Object?>>(
+      showCruxDialog<Map<String, Object?>>(
         context: context,
         builder: (_) => const BindCustomTranslatorDialog(),
       );
@@ -49,92 +50,95 @@ class BindCustomTranslatorDialog extends ConsumerWidget {
     // rationale in `DecoderPickerDialog`.
     final beta = ref.watch(betaPeriodProvider);
 
-    return AlertDialog(
-      title: Text(l10n.bindCustomTranslatorTitle),
-      content: SizedBox(
-        width: 420,
-        // One scroll region for the whole list (presets + RISC-V + authored)
-        // so it scrolls as a unit. The default `ScrollBehavior` omits mouse
-        // and trackpad from its drag devices, so two-finger trackpad and
-        // click-drag scrolling don't work inside a dialog without this
-        // `ScrollConfiguration` — mirrors `DecoderPickerDialog`.
-        child: ScrollConfiguration(
-          behavior: ScrollConfiguration.of(context).copyWith(
-            dragDevices: const {
-              PointerDeviceKind.touch,
-              PointerDeviceKind.stylus,
-              PointerDeviceKind.mouse,
-              PointerDeviceKind.trackpad,
-            },
-          ),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 480),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Contributed presets (curated Pro pack). Each carries its
-                  // own tier badge + feature gate.
-                  for (final preset in presets)
-                    _PresetTile(
-                      preset: preset,
-                      currentTier: currentTier,
-                      beta: beta,
-                    ),
-                  if (presets.isNotEmpty) const Divider(),
-                  // Built-in RISC-V disassembly translator (Open Core).
-                  ListTile(
-                    leading: const Icon(Icons.memory_outlined),
-                    title: Text(l10n.bindCustomTranslatorRiscv),
-                    onTap: () => Navigator.of(context).pop(
-                      const <String, Object?>{
-                        kTranslatorIdConfigKey:
-                            RiscvDisasmTranslator.translatorId,
-                      },
-                    ),
+    return CruxDialog(
+      title: l10n.bindCustomTranslatorTitle,
+      width: 420,
+      // The list scrolls as one region below, so the dialog's own body does
+      // not.
+      scrollable: false,
+      contentPadding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+      // One scroll region for the whole list (presets + RISC-V + authored)
+      // so it scrolls as a unit. The default `ScrollBehavior` omits mouse
+      // and trackpad from its drag devices, so two-finger trackpad and
+      // click-drag scrolling don't work inside a dialog without this
+      // `ScrollConfiguration` — mirrors `DecoderPickerDialog`.
+      content: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(
+          dragDevices: const {
+            PointerDeviceKind.touch,
+            PointerDeviceKind.stylus,
+            PointerDeviceKind.mouse,
+            PointerDeviceKind.trackpad,
+          },
+        ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 480),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Contributed presets (curated Pro pack). Each carries its
+                // own tier badge + feature gate.
+                for (final preset in presets)
+                  _PresetTile(
+                    preset: preset,
+                    currentTier: currentTier,
+                    beta: beta,
                   ),
-                  const Divider(),
-                  if (translators.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Text(
-                        l10n.bindCustomTranslatorEmpty,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                if (presets.isNotEmpty) const Divider(),
+                // Built-in RISC-V disassembly translator (Open Core).
+                ListTile(
+                  leading: const Icon(Icons.memory_outlined),
+                  title: Text(l10n.bindCustomTranslatorRiscv),
+                  onTap: () => Navigator.of(context).pop(
+                    const <String, Object?>{
+                      kTranslatorIdConfigKey:
+                          RiscvDisasmTranslator.translatorId,
+                    },
+                  ),
+                ),
+                const Divider(),
+                if (translators.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      l10n.bindCustomTranslatorEmpty,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  )
+                else
+                  for (final def in translators)
+                    ListTile(
+                      leading: const Icon(Icons.account_tree_outlined),
+                      title: Text(def.name),
+                      subtitle: Text(
+                        l10n.customTranslatorFieldCount(
+                          def.config.fields.length,
                         ),
                       ),
-                    )
-                  else
-                    for (final def in translators)
-                      ListTile(
-                        leading: const Icon(Icons.account_tree_outlined),
-                        title: Text(def.name),
-                        subtitle: Text(
-                          l10n.customTranslatorFieldCount(
-                            def.config.fields.length,
-                          ),
-                        ),
-                        onTap: () => Navigator.of(context).pop(
-                          _bitfieldConfigMap(def.config),
-                        ),
+                      onTap: () => Navigator.of(context).pop(
+                        _bitfieldConfigMap(def.config),
                       ),
-                ],
-              ),
+                    ),
+              ],
             ),
           ),
         ),
       ),
       actions: [
-        TextButton(
+        CruxDialogAction(
+          label: l10n.bindCustomTranslatorManage,
+          role: CruxDialogActionRole.tertiary,
           onPressed: () async {
             await SettingsScreen.openAdaptive(context);
           },
-          child: Text(l10n.bindCustomTranslatorManage),
         ),
-        TextButton(
+        CruxDialogAction(
+          label: l10n.customTranslatorCancel,
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.customTranslatorCancel),
         ),
       ],
     );

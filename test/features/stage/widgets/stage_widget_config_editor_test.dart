@@ -82,11 +82,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(SwitchListTile), findsOneWidget);
+      expect(find.byType(Switch), findsOneWidget);
       expect(find.text('Show FFT'), findsOneWidget);
 
       // Default is true — tap to flip to false.
-      await tester.tap(find.byType(SwitchListTile));
+      await tester.tap(find.byType(Switch));
       await tester.pumpAndSettle();
 
       expect(_instanceFrom(container).configuration['showFft'], false);
@@ -129,10 +129,10 @@ void main() {
         // Pre-fix this threw "ListTile background color or ink splashes may
         // be invisible" during build.
         expect(tester.takeException(), isNull);
-        expect(find.byType(SwitchListTile), findsOneWidget);
+        expect(find.byType(Switch), findsOneWidget);
 
         // The tile still works through the added Material.
-        await tester.tap(find.byType(SwitchListTile));
+        await tester.tap(find.byType(Switch));
         await tester.pumpAndSettle();
         expect(_instanceFrom(container).configuration['showFft'], false);
       },
@@ -665,7 +665,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(SwitchListTile), findsNothing);
+      expect(find.byType(Switch), findsNothing);
       expect(find.byType(DropdownButtonFormField<String>), findsNothing);
       expect(find.byType(TextField), findsNothing);
       expect(find.byType(Slider), findsNothing);

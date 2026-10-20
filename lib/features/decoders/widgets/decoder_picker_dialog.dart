@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:crux_license/crux_license.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -78,7 +79,7 @@ class DecoderPickerDialog extends ConsumerWidget {
     ProviderContainer? tabContainer,
     bool autoBindOnSelect = false,
   }) {
-    return showDialog<void>(
+    return showCruxDialog<void>(
       context: context,
       builder: (_) => DecoderPickerDialog(
         signalMap: signalMap,
@@ -148,11 +149,12 @@ class DecoderPickerDialog extends ConsumerWidget {
     // a test process.
     final beta = ref.watch(betaPeriodProvider);
 
-    return AlertDialog(
-      title: Text(l10n.decoderPickerTitle),
-      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+    return CruxDialog(
+      title: l10n.decoderPickerTitle,
+      width: 480,
+      scrollable: false,
+      contentPadding: const EdgeInsets.only(bottom: 8),
       content: SizedBox(
-        width: 480,
         // Height grew from 360 → 520 when the RISC-V
         // instruction-trace decoder added a third populated category on
         // open core (Serial / AMBA / Instruction Trace). 360 dp left
@@ -212,9 +214,9 @@ class DecoderPickerDialog extends ConsumerWidget {
               ),
       ),
       actions: [
-        TextButton(
+        CruxDialogAction(
+          label: MaterialLocalizations.of(context).cancelButtonLabel,
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
         ),
       ],
     );

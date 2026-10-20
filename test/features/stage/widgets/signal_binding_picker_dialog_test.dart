@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -106,7 +107,7 @@ void main() {
       await tester.tap(
         find.text(
           MaterialLocalizations.of(
-            tester.element(find.byType(AlertDialog)),
+            tester.element(find.byType(CruxDialog)),
           ).cancelButtonLabel,
         ),
       );

@@ -101,13 +101,16 @@ class _AiSettingsSectionState extends ConsumerState<AiSettingsSection> {
             ],
           ),
         ),
-        SwitchListTile(
-          key: const Key('settingsAiExperimentalToggle'),
-          title: Text(l10n.settingsAiExperimentalLabel),
-          subtitle: Text(l10n.settingsAiExperimentalDescription),
-          value: settings.aiExperimentalEnabled,
-          onChanged: (v) =>
-              unawaited(notifier.setAiExperimentalEnabled(enabled: v)),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          child: CruxFormRow.toggle(
+            key: const Key('settingsAiExperimentalToggle'),
+            label: l10n.settingsAiExperimentalLabel,
+            help: l10n.settingsAiExperimentalDescription,
+            value: settings.aiExperimentalEnabled,
+            onChanged: (v) =>
+                unawaited(notifier.setAiExperimentalEnabled(enabled: v)),
+          ),
         ),
         if (enabled) ..._config(context, l10n, notifier, settings),
       ],

@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wavecrux/features/stage/widgets/fan_out_prompt_dialog.dart';
@@ -44,7 +45,7 @@ void main() {
         await tester.pumpWidget(_harness((_) {}, locale: Locale(locale)));
         await tester.tap(find.text('open'));
         await tester.pumpAndSettle();
-        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(find.byType(CruxDialog), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
     }

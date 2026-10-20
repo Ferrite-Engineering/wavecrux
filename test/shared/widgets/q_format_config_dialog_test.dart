@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wavecrux/domain/models/q_format_config.dart';
@@ -45,9 +46,9 @@ void main() {
     ) async {
       await _openDialog(tester);
 
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byType(CruxDialog), findsOneWidget);
       expect(find.byType(Slider), findsNWidgets(2));
-      expect(find.byType(SwitchListTile), findsOneWidget);
+      expect(find.byType(Checkbox), findsOneWidget);
     });
 
     testWidgets(
@@ -123,7 +124,7 @@ void main() {
       // A stray tap on the scrim must NOT discard the editor.
       await tester.tapAt(const Offset(10, 10));
       await tester.pumpAndSettle();
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byType(CruxDialog), findsOneWidget);
       expect(result, const {'sentinel': true});
 
       // Cancel remains the deliberate dismissal path.
@@ -140,7 +141,7 @@ void main() {
       await _openDialog(tester);
 
       // Dirty the form by flipping the signed switch.
-      await tester.tap(find.byType(SwitchListTile));
+      await tester.tap(find.byType(Checkbox));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Cancel'));
@@ -153,7 +154,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Discard changes?'), findsNothing);
-      expect(find.byType(SwitchListTile), findsOneWidget);
+      expect(find.byType(Checkbox), findsOneWidget);
 
       // "Discard" closes the editor.
       await tester.tap(find.text('Cancel'));
@@ -162,7 +163,7 @@ void main() {
         find.byKey(const ValueKey('editorDiscardConfirmDiscard')),
       );
       await tester.pumpAndSettle();
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byType(CruxDialog), findsNothing);
     });
 
     testWidgets('clean cancel closes without a prompt', (tester) async {
@@ -170,7 +171,7 @@ void main() {
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       expect(find.text('Discard changes?'), findsNothing);
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byType(CruxDialog), findsNothing);
     });
   });
 

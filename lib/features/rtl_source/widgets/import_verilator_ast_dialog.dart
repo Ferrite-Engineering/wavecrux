@@ -5,6 +5,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
+import 'package:crux_settings_ui/crux_settings_ui.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -55,13 +57,11 @@ class ImportVerilatorAstDialog extends ConsumerStatefulWidget {
     StemsSavePicker? savePicker,
     StemsFileSink? fileSink,
   }) {
-    return showDialog<GenerateStemsOutcome>(
+    return showCruxDialog<GenerateStemsOutcome>(
       context: context,
       // Editor dialogs hold in-progress user input: closing must be a
-      // deliberate act (Cancel / Save), never a stray scrim click — the
-      // suite-wide dialog rule. Note this
-      // also disables Escape (Flutter routes DismissIntent through the
-      // barrier flag).
+      // deliberate act (Cancel / Save, or Escape, which asks first), never a
+      // stray scrim click — the suite-wide dialog rule.
       barrierDismissible: false,
       builder: (_) => ImportVerilatorAstDialog(
         importer: importer,
@@ -80,7 +80,7 @@ class ImportVerilatorAstDialog extends ConsumerStatefulWidget {
 class _ImportVerilatorAstDialogState
     extends ConsumerState<ImportVerilatorAstDialog> {
   // Desktop-only modal; a fixed content width is the house style for dialogs.
-  static const double _contentWidth = 520;
+  static const double _contentWidth = 580;
 
   String? _astPath;
   final _topController = TextEditingController();
@@ -217,71 +217,77 @@ class _ImportVerilatorAstDialogState
   Widget build(BuildContext context) {
     final l10n = L10N.of(context);
     final theme = Theme.of(context);
-    return AlertDialog(
-      title: Text(l10n.rtlImportAstDialogTitle),
-      // Scrollable: the explanatory text plus error line can exceed the
-      // dialog's max height on short windows (and the test viewport).
-      content: SizedBox(
+    // Escape asks to discard unsaved input, as Cancel does, and does nothing
+    // while an import is running.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && !_busy) unawaited(_onCancel());
+      },
+      // The dialog's own scroll view: the explanatory text plus error line can
+      // exceed the dialog's max height on short windows (and the test
+      // viewport).
+      child: CruxDialog(
+        title: l10n.rtlImportAstDialogTitle,
         width: _contentWidth,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(l10n.rtlImportAstDialogDescription),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: _busy ? null : _chooseAstFile,
-                    icon: const Icon(Icons.data_object, size: 18),
-                    label: Text(l10n.rtlImportAstPickButton),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              _pickedFile(theme, l10n),
-              const SizedBox(height: 16),
-              TextField(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.rtlImportAstDialogDescription),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _busy ? null : _chooseAstFile,
+                  icon: const Icon(Icons.data_object, size: 18),
+                  label: Text(l10n.rtlImportAstPickButton),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _pickedFile(theme, l10n),
+            const SizedBox(height: 16),
+            CruxFormRow(
+              label: l10n.rtlGenerateTopModuleLabel,
+              child: TextField(
                 controller: _topController,
                 enabled: !_busy,
                 decoration: InputDecoration(
-                  labelText: l10n.rtlGenerateTopModuleLabel,
                   hintText: l10n.rtlGenerateTopModuleHint,
-                  border: const OutlineInputBorder(),
-                  isDense: true,
                 ),
               ),
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                Text(
-                  _error!,
-                  style: TextStyle(
-                    color: theme.colorScheme.error,
-                    fontSize: 12,
-                  ),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                _error!,
+                style: TextStyle(
+                  color: theme.colorScheme.error,
+                  fontSize: 12,
                 ),
-              ],
+              ),
             ],
+          ],
+        ),
+        actions: [
+          CruxDialogAction(
+            label: MaterialLocalizations.of(context).cancelButtonLabel,
+            onPressed: _busy ? null : _onCancel,
           ),
-        ),
+          if (_busy)
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          CruxDialogAction(
+            label: l10n.rtlImportAstButton,
+            role: CruxDialogActionRole.primary,
+            onPressed: _busy ? null : _import,
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: _busy ? null : _onCancel,
-          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
-        ),
-        FilledButton(
-          onPressed: _busy ? null : _import,
-          child: _busy
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(l10n.rtlImportAstButton),
-        ),
-      ],
     );
   }
 

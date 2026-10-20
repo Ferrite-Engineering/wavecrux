@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/core/mobile_metrics.dart';
@@ -47,7 +48,7 @@ class LegacyConversionProgressDialog extends ConsumerWidget {
     if (!context.mounted) return;
     final inProgress = ref.read(legacyConversionControllerProvider).inProgress;
     if (!inProgress) return;
-    await showDialog<void>(
+    await showCruxDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (_) => const LegacyConversionProgressDialog(),
@@ -56,10 +57,6 @@ class LegacyConversionProgressDialog extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = L10N.of(context);
-    final deviceClass = ref.watch(deviceClassProvider);
-    final metrics = MobileMetrics.of(context, deviceClass);
-
     final state = ref.watch(legacyConversionControllerProvider);
 
     // Auto-dismiss on idle transition: the open path drives the controller
@@ -76,54 +73,63 @@ class LegacyConversionProgressDialog extends ConsumerWidget {
       },
     );
 
+    // Escape does not close it while the conversion runs (Cancel does that).
+    return PopScope(canPop: false, child: _dialog(context, ref, state));
+  }
+
+  Widget _dialog(
+    BuildContext context,
+    WidgetRef ref,
+    LegacyConversionState state,
+  ) {
+    final l10n = L10N.of(context);
+    final deviceClass = ref.watch(deviceClassProvider);
+    final metrics = MobileMetrics.of(context, deviceClass);
     final originLabel = _originLabel(state.origin);
     final filename = _basename(state.sourcePath);
     final progress = state.progress;
     final cancelLabel = l10n.lxt2ConversionCancel;
-
-    return AlertDialog(
-      title: Text(l10n.lxt2ConversionTitle),
-      content: SizedBox(
-        width: 360,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (filename != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  l10n.lxt2ConversionFile(filename),
-                  style: Theme.of(context).textTheme.bodySmall,
-                  overflow: TextOverflow.ellipsis,
-                ),
+    return CruxDialog(
+      title: l10n.lxt2ConversionTitle,
+      width: 360,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (filename != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                l10n.lxt2ConversionFile(filename),
+                style: Theme.of(context).textTheme.bodySmall,
+                overflow: TextOverflow.ellipsis,
               ),
-            LinearProgressIndicator(
-              value: progress == null || progress.total == 0
-                  ? null
-                  : progress.fraction.clamp(0.0, 1.0),
             ),
-            const SizedBox(height: 12),
-            Text(l10n.lxt2ConversionStatus(originLabel)),
-          ],
-        ),
+          LinearProgressIndicator(
+            value: progress == null || progress.total == 0
+                ? null
+                : progress.fraction.clamp(0.0, 1.0),
+          ),
+          const SizedBox(height: 12),
+          Text(l10n.lxt2ConversionStatus(originLabel)),
+        ],
       ),
       actions: [
         // Wrap the Cancel button in a ConstrainedBox so the test that
         // verifies the ≥ 44 dp touch-target compliance has a stable surface
-        // to measure (rather than the inner TextButton's text-padded
-        // intrinsic size).
+        // to measure (rather than the inner button's text-padded intrinsic
+        // size).
         ConstrainedBox(
           constraints: BoxConstraints(
             minWidth: metrics.touchTarget,
             minHeight: metrics.touchTarget,
           ),
-          child: TextButton(
+          child: CruxDialogAction(
             key: const Key('legacyConversionCancelButton'),
+            label: cancelLabel,
             onPressed: () {
               ref.read(legacyConversionControllerProvider.notifier).cancel();
             },
-            child: Text(cancelLabel),
           ),
         ),
       ],

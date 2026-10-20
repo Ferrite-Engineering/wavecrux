@@ -1,7 +1,11 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'dart:async';
+
 import 'package:crux_a11y/crux_a11y.dart';
+import 'package:crux_ide_layout/crux_ide_layout.dart';
+import 'package:crux_settings_ui/crux_settings_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:wavecrux/domain/models/q_format_config.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
@@ -22,13 +26,11 @@ class QFormatConfigDialog extends StatefulWidget {
     final initial = config != null
         ? QFormatConfig.fromMap(config)
         : const QFormatConfig();
-    final result = await showDialog<QFormatConfig>(
+    final result = await showCruxDialog<QFormatConfig>(
       context: context,
       // Editor dialogs hold in-progress user input: closing must be a
-      // deliberate act (Cancel / Save), never a stray scrim click — the
-      // suite-wide dialog rule. Note this
-      // also disables Escape (Flutter routes DismissIntent through the
-      // barrier flag).
+      // deliberate act (Cancel / Save, or Escape, which asks first), never a
+      // stray scrim click — the suite-wide dialog rule.
       barrierDismissible: false,
       builder: (_) => QFormatConfigDialog._(initial: initial),
     );
@@ -77,11 +79,16 @@ class _QFormatConfigDialogState extends State<QFormatConfigDialog> {
     final l10n = L10N.of(context);
     final theme = Theme.of(context);
 
-    return AlertDialog(
-      title: Text(l10n.qFormatConfigTitle),
-      content: SizedBox(
+    // Escape asks to discard unsaved changes, as Cancel does.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) unawaited(_onCancel());
+      },
+      child: CruxDialog(
+        title: l10n.qFormatConfigTitle,
         width: 320,
-        child: Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -101,15 +108,11 @@ class _QFormatConfigDialogState extends State<QFormatConfigDialog> {
               onChanged: (v) => setState(() => _n = v),
             ),
             const SizedBox(height: 8),
-            SwitchListTile(
-              title: Text(
-                l10n.qFormatConfigSigned,
-                style: const TextStyle(fontSize: 13),
-              ),
+            // A checkbox, not a switch: this form applies on OK.
+            CruxFormRow.checkbox(
+              label: l10n.qFormatConfigSigned,
               value: _signed,
               onChanged: (v) => setState(() => _signed = v),
-              dense: true,
-              contentPadding: EdgeInsets.zero,
             ),
             const SizedBox(height: 12),
             Text(
@@ -122,17 +125,18 @@ class _QFormatConfigDialogState extends State<QFormatConfigDialog> {
             ),
           ],
         ),
+        actions: [
+          CruxDialogAction(
+            label: MaterialLocalizations.of(context).cancelButtonLabel,
+            onPressed: _onCancel,
+          ),
+          CruxDialogAction(
+            label: MaterialLocalizations.of(context).okButtonLabel,
+            role: CruxDialogActionRole.primary,
+            onPressed: () => Navigator.of(context).pop(_current),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: _onCancel,
-          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(_current),
-          child: Text(MaterialLocalizations.of(context).okButtonLabel),
-        ),
-      ],
     );
   }
 }

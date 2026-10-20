@@ -1,6 +1,8 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
+import 'package:crux_settings_ui/crux_settings_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 
@@ -29,7 +31,7 @@ class RenameStagePanelDialog extends StatefulWidget {
     required String initialName,
     required String titleText,
   }) {
-    return showDialog<String>(
+    return showCruxDialog<String>(
       context: context,
       builder: (context) => RenameStagePanelDialog(
         initialName: initialName,
@@ -79,30 +81,29 @@ class _RenameStagePanelDialogState extends State<RenameStagePanelDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = L10N.of(context);
-    return AlertDialog(
-      title: Text(widget.titleText),
-      content: SizedBox(
-        width: 360,
+    return CruxDialog(
+      title: widget.titleText,
+      width: 360,
+      content: CruxFormRow(
+        label: l10n.stageRenamePanelLabel,
         child: TextField(
           controller: _controller,
           focusNode: _focusNode,
           autofocus: true,
-          decoration: InputDecoration(
-            labelText: l10n.stageRenamePanelLabel,
-            hintText: l10n.stageRenamePanelHint,
-          ),
+          decoration: InputDecoration(hintText: l10n.stageRenamePanelHint),
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => _submit(),
         ),
       ),
       actions: [
-        TextButton(
+        CruxDialogAction(
+          label: MaterialLocalizations.of(context).cancelButtonLabel,
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
         ),
-        FilledButton(
+        CruxDialogAction(
+          label: MaterialLocalizations.of(context).okButtonLabel,
+          role: CruxDialogActionRole.primary,
           onPressed: _submit,
-          child: Text(MaterialLocalizations.of(context).okButtonLabel),
         ),
       ],
     );

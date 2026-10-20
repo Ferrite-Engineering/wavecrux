@@ -1,6 +1,10 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'dart:async';
+
+import 'package:crux_ide_layout/crux_ide_layout.dart';
+import 'package:crux_settings_ui/crux_settings_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:wavecrux/domain/enums/display_format.dart';
@@ -21,13 +25,11 @@ class CustomTranslatorEditorDialog extends StatefulWidget {
   static Future<CustomTranslatorDef?> show(
     BuildContext context, {
     CustomTranslatorDef? initial,
-  }) => showDialog<CustomTranslatorDef>(
+  }) => showCruxDialog<CustomTranslatorDef>(
     context: context,
     // Editor dialogs hold in-progress user input: closing must be a
-    // deliberate act (Cancel / Save), never a stray scrim click — the
-    // suite-wide dialog rule. Note this
-    // also disables Escape (Flutter routes DismissIntent through the
-    // barrier flag).
+    // deliberate act (Cancel / Save, or Escape), never a stray scrim click —
+    // the suite-wide dialog rule.
     barrierDismissible: false,
     builder: (_) => CustomTranslatorEditorDialog(initial: initial),
   );
@@ -180,54 +182,60 @@ class _CustomTranslatorEditorDialogState
   @override
   Widget build(BuildContext context) {
     final l10n = L10N.of(context);
-    return AlertDialog(
-      title: Text(
-        widget.initial == null
-            ? l10n.customTranslatorAddTitle
-            : l10n.customTranslatorEditTitle,
-      ),
-      content: SizedBox(
-        width: 520,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  labelText: l10n.customTranslatorNameLabel,
-                  errorText: _nameError,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                l10n.customTranslatorFieldsHeader,
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              const SizedBox(height: 8),
-              for (var i = 0; i < _fields.length; i++)
-                _buildFieldRow(context, l10n, _fields[i]),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: _addField,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: Text(l10n.customTranslatorAddField),
-                ),
-              ),
-            ],
+    // Escape asks to discard unsaved edits, as Cancel does.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) unawaited(_onCancel());
+      },
+      child: _buildDialog(l10n),
+    );
+  }
+
+  Widget _buildDialog(L10N l10n) {
+    return CruxDialog(
+      title: widget.initial == null
+          ? l10n.customTranslatorAddTitle
+          : l10n.customTranslatorEditTitle,
+      width: 520,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CruxFormRow(
+            label: l10n.customTranslatorNameLabel,
+            child: TextField(
+              controller: _nameController,
+              decoration: InputDecoration(errorText: _nameError),
+            ),
           ),
-        ),
+          const SizedBox(height: 16),
+          Text(
+            l10n.customTranslatorFieldsHeader,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 8),
+          for (var i = 0; i < _fields.length; i++)
+            _buildFieldRow(context, l10n, _fields[i]),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: _addField,
+              icon: const Icon(Icons.add, size: 18),
+              label: Text(l10n.customTranslatorAddField),
+            ),
+          ),
+        ],
       ),
       actions: [
-        TextButton(
+        CruxDialogAction(
+          label: l10n.customTranslatorCancel,
           onPressed: _onCancel,
-          child: Text(l10n.customTranslatorCancel),
         ),
-        FilledButton(
+        CruxDialogAction(
+          label: l10n.customTranslatorSave,
+          role: CruxDialogActionRole.primary,
           onPressed: _save,
-          child: Text(l10n.customTranslatorSave),
         ),
       ],
     );
@@ -280,16 +288,28 @@ class _CustomTranslatorEditorDialogState
             ),
           ),
           const SizedBox(width: 6),
-          DropdownButton<DisplayFormat>(
-            value: field.format,
-            isDense: true,
-            onChanged: (v) {
-              if (v != null) setState(() => field.format = v);
-            },
-            items: [
-              for (final f in _fieldFormats)
-                DropdownMenuItem(value: f, child: Text(_formatLabel(l10n, f))),
-            ],
+          SizedBox(
+            width: 132,
+            child: InputDecorator(
+              decoration: const InputDecoration(isDense: true),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<DisplayFormat>(
+                  value: field.format,
+                  isDense: true,
+                  isExpanded: true,
+                  onChanged: (v) {
+                    if (v != null) setState(() => field.format = v);
+                  },
+                  items: [
+                    for (final f in _fieldFormats)
+                      DropdownMenuItem(
+                        value: f,
+                        child: Text(_formatLabel(l10n, f)),
+                      ),
+                  ],
+                ),
+              ),
+            ),
           ),
           if (field.format == DisplayFormat.namedEnum)
             IconButton(

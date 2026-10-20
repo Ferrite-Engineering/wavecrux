@@ -240,6 +240,8 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
 
+      await tester.ensureVisible(find.text('All Loaded Signals'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('All Loaded Signals'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Export…'));

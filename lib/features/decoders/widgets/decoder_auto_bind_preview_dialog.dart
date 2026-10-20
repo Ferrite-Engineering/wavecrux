@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/core/mobile_metrics.dart';
@@ -71,7 +72,7 @@ class DecoderAutoBindPreviewDialog extends ConsumerStatefulWidget {
     required Map<String, String?> existingBindings,
     DecoderAutoBindService service = const DecoderAutoBindService(),
   }) {
-    return showDialog<DecoderAutoBindPreviewOutcome>(
+    return showCruxDialog<DecoderAutoBindPreviewOutcome>(
       context: context,
       builder: (context) => DecoderAutoBindPreviewDialog(
         definition: definition,
@@ -177,62 +178,59 @@ class _DecoderAutoBindPreviewDialogState
         .where((c) => c.confidence == AutoBindConfidence.noMatch)
         .length;
 
-    return AlertDialog(
-      title: Text(l10n.decoderAutoBindPreviewTitle(def.displayName)),
-      content: SizedBox(
-        width: 560,
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_result.hasAmbiguity)
-                _AmbiguousPrefixBanner(
-                  prefixes: _result.ambiguousPrefixes,
-                  selected: _selectedPrefix ?? _result.detectedPrefix,
-                  onSelected: _setForcedPrefix,
-                  metrics: metrics,
-                )
-              else
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    l10n.decoderAutoBindSummary(
-                      exactCount,
-                      fuzzyCount,
-                      unmatchedCount,
-                      _result.candidates.length,
-                    ),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontSize: metrics.bodyText,
-                    ),
-                  ),
+    return CruxDialog(
+      title: l10n.decoderAutoBindPreviewTitle(def.displayName),
+      width: 560,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_result.hasAmbiguity)
+            _AmbiguousPrefixBanner(
+              prefixes: _result.ambiguousPrefixes,
+              selected: _selectedPrefix ?? _result.detectedPrefix,
+              onSelected: _setForcedPrefix,
+              metrics: metrics,
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                l10n.decoderAutoBindSummary(
+                  exactCount,
+                  fuzzyCount,
+                  unmatchedCount,
+                  _result.candidates.length,
                 ),
-              const Divider(),
-              for (final binding in allBindings)
-                _BindingPreviewRow(
-                  binding: binding,
-                  isRequired: requiredNames.contains(binding.name),
-                  candidate: _result.candidates[binding.name],
-                  signalMap: widget.availableSignals,
-                  metrics: metrics,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontSize: metrics.bodyText,
                 ),
-            ],
-          ),
-        ),
+              ),
+            ),
+          const Divider(),
+          for (final binding in allBindings)
+            _BindingPreviewRow(
+              binding: binding,
+              isRequired: requiredNames.contains(binding.name),
+              candidate: _result.candidates[binding.name],
+              signalMap: widget.availableSignals,
+              metrics: metrics,
+            ),
+        ],
       ),
       actions: [
-        TextButton(
+        CruxDialogAction(
+          label: l10n.decoderAutoBindCancelButton,
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.decoderAutoBindCancelButton),
         ),
-        TextButton(
+        CruxDialogAction(
+          label: l10n.decoderAutoBindApplyConfirmedOnlyButton,
           onPressed: _applyConfirmedOnly,
-          child: Text(l10n.decoderAutoBindApplyConfirmedOnlyButton),
         ),
-        FilledButton(
+        CruxDialogAction(
+          label: l10n.decoderAutoBindApplyAllButton,
+          role: CruxDialogActionRole.primary,
           onPressed: _applyAll,
-          child: Text(l10n.decoderAutoBindApplyAllButton),
         ),
       ],
     );

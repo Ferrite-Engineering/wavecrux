@@ -5,6 +5,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
+import 'package:crux_settings_ui/crux_settings_ui.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -90,13 +92,11 @@ class GenerateStemsDialog extends ConsumerStatefulWidget {
     StemsSavePicker? savePicker,
     StemsFileSink? fileSink,
   }) {
-    return showDialog<GenerateStemsOutcome>(
+    return showCruxDialog<GenerateStemsOutcome>(
       context: context,
       // Editor dialogs hold in-progress user input: closing must be a
-      // deliberate act (Cancel / Save), never a stray scrim click — the
-      // suite-wide dialog rule. Note this
-      // also disables Escape (Flutter routes DismissIntent through the
-      // barrier flag).
+      // deliberate act (Cancel / Save, or Escape, which asks first), never a
+      // stray scrim click — the suite-wide dialog rule.
       barrierDismissible: false,
       builder: (_) => GenerateStemsDialog(
         generator: generator,
@@ -115,7 +115,7 @@ class GenerateStemsDialog extends ConsumerStatefulWidget {
 
 class _GenerateStemsDialogState extends ConsumerState<GenerateStemsDialog> {
   // Desktop-only modal; a fixed content width is the house style for dialogs.
-  static const double _contentWidth = 520;
+  static const double _contentWidth = 580;
 
   final _sources = <String>[];
   final _topController = TextEditingController();
@@ -280,11 +280,17 @@ class _GenerateStemsDialogState extends ConsumerState<GenerateStemsDialog> {
   Widget build(BuildContext context) {
     final l10n = L10N.of(context);
     final theme = Theme.of(context);
-    return AlertDialog(
-      title: Text(l10n.rtlGenerateDialogTitle),
-      content: SizedBox(
+    // Escape asks to discard unsaved input, as Cancel does, and does nothing
+    // while a generate is running.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && !_busy) unawaited(_onCancel());
+      },
+      child: CruxDialog(
+        title: l10n.rtlGenerateDialogTitle,
         width: _contentWidth,
-        child: Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -314,14 +320,14 @@ class _GenerateStemsDialogState extends ConsumerState<GenerateStemsDialog> {
             const SizedBox(height: 8),
             _sourceList(theme, l10n),
             const SizedBox(height: 16),
-            TextField(
-              controller: _topController,
-              enabled: !_busy,
-              decoration: InputDecoration(
-                labelText: l10n.rtlGenerateTopModuleLabel,
-                hintText: l10n.rtlGenerateTopModuleHint,
-                border: const OutlineInputBorder(),
-                isDense: true,
+            CruxFormRow(
+              label: l10n.rtlGenerateTopModuleLabel,
+              child: TextField(
+                controller: _topController,
+                enabled: !_busy,
+                decoration: InputDecoration(
+                  hintText: l10n.rtlGenerateTopModuleHint,
+                ),
               ),
             ),
             if (_error != null) ...[
@@ -333,23 +339,24 @@ class _GenerateStemsDialogState extends ConsumerState<GenerateStemsDialog> {
             ],
           ],
         ),
+        actions: [
+          CruxDialogAction(
+            label: MaterialLocalizations.of(context).cancelButtonLabel,
+            onPressed: _busy ? null : _onCancel,
+          ),
+          if (_busy)
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          CruxDialogAction(
+            label: l10n.rtlGenerateButton,
+            role: CruxDialogActionRole.primary,
+            onPressed: _busy ? null : _generate,
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: _busy ? null : _onCancel,
-          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
-        ),
-        FilledButton(
-          onPressed: _busy ? null : _generate,
-          child: _busy
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(l10n.rtlGenerateButton),
-        ),
-      ],
     );
   }
 

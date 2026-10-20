@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wavecrux/domain/models/named_enum_config.dart';
@@ -42,7 +43,7 @@ void main() {
   group('NamedEnumEditorDialog — rendering', () {
     testWidgets('shows an AlertDialog when opened empty', (tester) async {
       await _openDialog(tester);
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byType(CruxDialog), findsOneWidget);
     });
 
     testWidgets('shows existing entries as rows when config is provided', (
@@ -208,7 +209,7 @@ void main() {
         find.byKey(const ValueKey('editorDiscardConfirmDiscard')),
       );
       await tester.pumpAndSettle();
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byType(CruxDialog), findsNothing);
     });
 
     testWidgets('clean cancel closes without a prompt', (tester) async {
@@ -216,7 +217,7 @@ void main() {
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       expect(find.text('Discard changes?'), findsNothing);
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byType(CruxDialog), findsNothing);
     });
   });
 

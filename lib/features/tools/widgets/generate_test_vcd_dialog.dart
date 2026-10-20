@@ -8,6 +8,7 @@ import 'dart:math';
 import 'package:crux_a11y/crux_a11y.dart';
 import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:crux_io/crux_io.dart' show revealInFileManager;
+import 'package:crux_settings_ui/crux_settings_ui.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -77,13 +78,11 @@ class GenerateTestVcdDialog extends ConsumerStatefulWidget {
 
   /// Opens the dialog as a modal on the current navigator.
   static Future<void> show(BuildContext context) async {
-    await showDialog<void>(
+    await showCruxDialog<void>(
       context: context,
       // Editor dialogs hold in-progress user input: closing must be a
-      // deliberate act (Cancel / Save), never a stray scrim click — the
-      // suite-wide dialog rule. Note this
-      // also disables Escape (Flutter routes DismissIntent through the
-      // barrier flag).
+      // deliberate act (Close, Escape), never a stray scrim click — the
+      // suite-wide dialog rule.
       barrierDismissible: false,
       builder: (_) => const GenerateTestVcdDialog(),
     );
@@ -220,170 +219,122 @@ class _GenerateTestVcdDialogState extends ConsumerState<GenerateTestVcdDialog> {
     final notifier = ref.read(devToolsProvider.notifier);
     final hasDestination = _destinationPath != null;
 
-    return Dialog(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    return CruxDialog(
+      title: l10n.toolsGenerateTestVcdTitle,
+      width: 680,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _LabeledControl(
+            label: l10n.toolsGenerateTestVcdSignalCount,
+            value: '${state.signalCount}',
+            child: CruxSlider(
+              min: 1,
+              max: 500,
+              value: state.signalCount.toDouble(),
+              onChanged: (v) => notifier.setSignalCount(v.round()),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _LabeledControl(
+            label: l10n.toolsGenerateTestVcdDuration,
+            value: _formatDuration(state.duration),
+            child: CruxSlider(
+              value: _durationToSlider(state.duration),
+              onChanged: (v) => notifier.setDuration(_sliderToDuration(v)),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Options of a form that applies on its own buttons: checkboxes.
+          CruxFormRow.checkbox(
+            label: l10n.toolsGenerateTestVcdIncludeAnalog,
+            value: state.includeAnalog,
+            onChanged: (v) => notifier.setIncludeAnalog(value: v),
+          ),
+          const SizedBox(height: 4),
+          CruxFormRow.checkbox(
+            label: l10n.toolsGenerateTestVcdIncludeXz,
+            value: state.includeXz,
+            onChanged: (v) => notifier.setIncludeXz(value: v),
+          ),
+          const SizedBox(height: 8),
+          CruxFormRow(
+            label: l10n.toolsGenerateTestVcdSeed,
+            child: SizedBox(
+              width: 120,
+              child: TextField(
+                controller: _seedController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                onChanged: (v) {
+                  final n = int.tryParse(v);
+                  if (n != null) notifier.setSeed(n);
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Destination row.
+          Text(
+            l10n.toolsGenerateTestVcdDestinationLabel,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
             children: [
-              Text(
-                l10n.toolsGenerateTestVcdTitle,
-                style: theme.textTheme.titleLarge,
-              ),
-              const SizedBox(height: 12),
-              _LabeledControl(
-                label: l10n.toolsGenerateTestVcdSignalCount,
-                value: '${state.signalCount}',
-                child: CruxSlider(
-                  min: 1,
-                  max: 500,
-                  value: state.signalCount.toDouble(),
-                  onChanged: (v) => notifier.setSignalCount(v.round()),
+              Expanded(
+                child: Text(
+                  _destinationPath ?? l10n.toolsGenerateTestVcdNoDestination,
+                  key: const Key('generate_test_vcd_destination_text'),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontFamily: 'monospace',
+                    color: hasDestination
+                        ? theme.colorScheme.onSurface
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(height: 8),
-              _LabeledControl(
-                label: l10n.toolsGenerateTestVcdDuration,
-                value: _formatDuration(state.duration),
-                child: CruxSlider(
-                  value: _durationToSlider(state.duration),
-                  onChanged: (v) => notifier.setDuration(_sliderToDuration(v)),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: SwitchListTile(
-                      title: Text(l10n.toolsGenerateTestVcdIncludeAnalog),
-                      value: state.includeAnalog,
-                      onChanged: (v) => notifier.setIncludeAnalog(value: v),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                  Expanded(
-                    child: SwitchListTile(
-                      title: Text(l10n.toolsGenerateTestVcdIncludeXz),
-                      value: state.includeXz,
-                      onChanged: (v) => notifier.setIncludeXz(value: v),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Text(
-                    l10n.toolsGenerateTestVcdSeed,
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  const SizedBox(width: 12),
-                  SizedBox(
-                    width: 120,
-                    child: TextField(
-                      controller: _seedController,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
-                      decoration: const InputDecoration(
-                        isDense: true,
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 8,
-                        ),
-                      ),
-                      onChanged: (v) {
-                        final n = int.tryParse(v);
-                        if (n != null) notifier.setSeed(n);
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Destination row.
-              Text(
-                l10n.toolsGenerateTestVcdDestinationLabel,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      _destinationPath ??
-                          l10n.toolsGenerateTestVcdNoDestination,
-                      key: const Key('generate_test_vcd_destination_text'),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontFamily: 'monospace',
-                        color: hasDestination
-                            ? theme.colorScheme.onSurface
-                            : theme.colorScheme.onSurfaceVariant,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  OutlinedButton.icon(
-                    key: const Key('generate_test_vcd_choose_destination'),
-                    onPressed: _isGenerating ? null : _chooseDestination,
-                    icon: const Icon(Icons.folder_open, size: 16),
-                    label: Text(l10n.toolsGenerateTestVcdChooseDestination),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              // Action buttons.
-              Wrap(
-                alignment: WrapAlignment.end,
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  TextButton(
-                    onPressed: _isGenerating
-                        ? null
-                        : () => Navigator.of(context).pop(),
-                    child: Text(l10n.toolsGenerateTestVcdClose),
-                  ),
-                  OutlinedButton.icon(
-                    key: const Key('generate_test_vcd_generate_and_reveal'),
-                    onPressed: (_isGenerating || !hasDestination)
-                        ? null
-                        : _generateAndReveal,
-                    icon: const Icon(Icons.folder_open, size: 16),
-                    label: Text(
-                      l10n.toolsGenerateTestVcdGenerateAndReveal,
-                    ),
-                  ),
-                  FilledButton.icon(
-                    key: const Key('generate_test_vcd_generate_and_open'),
-                    onPressed: (_isGenerating || !hasDestination)
-                        ? null
-                        : _generateAndOpenInNewTab,
-                    icon: _isGenerating
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.play_arrow_rounded, size: 16),
-                    label: Text(l10n.toolsGenerateTestVcdGenerateAndOpen),
-                  ),
-                ],
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                key: const Key('generate_test_vcd_choose_destination'),
+                onPressed: _isGenerating ? null : _chooseDestination,
+                icon: const Icon(Icons.folder_open, size: 16),
+                label: Text(l10n.toolsGenerateTestVcdChooseDestination),
               ),
             ],
           ),
-        ),
+          if (_isGenerating) ...[
+            const SizedBox(height: 12),
+            const LinearProgressIndicator(),
+          ],
+        ],
       ),
+      actions: [
+        CruxDialogAction(
+          label: l10n.toolsGenerateTestVcdClose,
+          onPressed: _isGenerating ? null : () => Navigator.of(context).pop(),
+        ),
+        CruxDialogAction(
+          key: const Key('generate_test_vcd_generate_and_reveal'),
+          label: l10n.toolsGenerateTestVcdGenerateAndReveal,
+          onPressed: (_isGenerating || !hasDestination)
+              ? null
+              : _generateAndReveal,
+        ),
+        CruxDialogAction(
+          key: const Key('generate_test_vcd_generate_and_open'),
+          label: l10n.toolsGenerateTestVcdGenerateAndOpen,
+          role: CruxDialogActionRole.primary,
+          onPressed: (_isGenerating || !hasDestination)
+              ? null
+              : _generateAndOpenInNewTab,
+        ),
+      ],
     );
   }
 

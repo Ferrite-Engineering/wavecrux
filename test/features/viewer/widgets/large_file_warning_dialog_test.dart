@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wavecrux/features/viewer/widgets/large_file_warning_dialog.dart';
@@ -72,7 +73,7 @@ void main() {
       await tester.pumpWidget(_app());
       await tester.pumpAndSettle();
       // Title widget is rendered (exact text is locale-dependent; check type)
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byType(CruxDialog), findsOneWidget);
     });
 
     testWidgets('shows the file size in the body', (tester) async {
@@ -92,7 +93,7 @@ void main() {
     testWidgets('shows a cancel TextButton', (tester) async {
       await tester.pumpWidget(_app());
       await tester.pumpAndSettle();
-      expect(find.byType(TextButton), findsAtLeastNWidgets(1));
+      expect(find.byType(OutlinedButton), findsAtLeastNWidgets(1));
     });
 
     // ── show() return values ────────────────────────────────────────────────
@@ -128,8 +129,8 @@ void main() {
       await tester.pumpAndSettle();
       // Find the cancel button by its localized label inside the dialog.
       final cancelFinder = find.descendant(
-        of: find.byType(AlertDialog),
-        matching: find.byType(TextButton),
+        of: find.byType(CruxDialog),
+        matching: find.byType(OutlinedButton),
       );
       await tester.tap(cancelFinder.first);
       await tester.pumpAndSettle();

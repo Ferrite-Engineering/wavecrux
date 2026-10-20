@@ -3,6 +3,7 @@
 
 import 'dart:convert';
 
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -450,7 +451,7 @@ void _widgetTests() {
 
       expect(find.byType(SnackBar), findsOneWidget);
       // No export dialog should open.
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byType(CruxDialog), findsNothing);
     });
   });
 
@@ -480,7 +481,7 @@ void _widgetTests() {
       await tester.pump(const Duration(milliseconds: 300)); // dialog entrance
 
       // Export dialog is open.
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byType(CruxDialog), findsOneWidget);
 
       // User taps Cancel (exact localized string).
       await tester.tap(find.text('Cancel'));

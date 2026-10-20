@@ -1,6 +1,10 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'dart:async';
+
+import 'package:crux_ide_layout/crux_ide_layout.dart';
+import 'package:crux_settings_ui/crux_settings_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/domain/models/fsm_annotation.dart';
@@ -50,13 +54,11 @@ class FsmAnnotateDialog extends ConsumerStatefulWidget {
     final ids = model != null
         ? [for (final s in model.states) s.id]
         : const <String>[];
-    return showDialog<void>(
+    return showCruxDialog<void>(
       context: context,
       // Editor dialogs hold in-progress user input: closing must be a
-      // deliberate act (Cancel / Save), never a stray scrim click — the
-      // suite-wide dialog rule. Note this
-      // also disables Escape (Flutter routes DismissIntent through the
-      // barrier flag).
+      // deliberate act (Cancel / Save, or Escape), never a stray scrim click —
+      // the suite-wide dialog rule.
       barrierDismissible: false,
       builder: (ctx) {
         final dialog = FsmAnnotateDialog(
@@ -140,68 +142,55 @@ class _FsmAnnotateDialogState extends ConsumerState<FsmAnnotateDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = L10N.of(context);
-    return AlertDialog(
-      title: Text(l10n.fsmAnnotateDialogTitle),
-      content: SizedBox(
-        width: 360,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  l10n.fsmAnnotateDialogHint,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
+    // Escape asks to discard unsaved labels, as Cancel does.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) unawaited(_onCancel());
+      },
+      child: _buildDialog(l10n),
+    );
+  }
+
+  Widget _buildDialog(L10N l10n) {
+    return CruxDialog(
+      title: l10n.fsmAnnotateDialogTitle,
+      width: 360,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              l10n.fsmAnnotateDialogHint,
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
+            ),
+          ),
+          CruxFormSection(
+            labelWidth: 96,
+            children: [
               for (final id in _controllers.keys)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 96,
-                        child: Text(
-                          l10n.fsmAnnotateStateLabel(id),
-                          style: const TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: TextField(
-                          controller: _controllers[id],
-                          decoration: const InputDecoration(
-                            isDense: true,
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 8,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                CruxFormRow(
+                  label: l10n.fsmAnnotateStateLabel(id),
+                  child: TextField(controller: _controllers[id]),
                 ),
             ],
           ),
-        ),
+        ],
       ),
       actions: [
-        TextButton(
+        CruxDialogAction(
+          label: l10n.fsmAnnotateCancel,
           onPressed: _onCancel,
-          child: Text(l10n.fsmAnnotateCancel),
         ),
-        FilledButton(
+        CruxDialogAction(
+          label: l10n.fsmAnnotateSave,
+          role: CruxDialogActionRole.primary,
           onPressed: _save,
-          child: Text(l10n.fsmAnnotateSave),
         ),
       ],
     );

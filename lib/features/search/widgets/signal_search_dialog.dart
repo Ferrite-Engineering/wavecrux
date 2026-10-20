@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart' show showCruxDialog;
 import 'package:crux_telemetry/crux_telemetry.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -38,7 +39,7 @@ class SignalSearchDialog extends ConsumerStatefulWidget {
     BuildContext context, {
     ProviderContainer? tabContainer,
   }) {
-    return showDialog<void>(
+    return showCruxDialog<void>(
       context: context,
       builder: (_) {
         const dialog = SignalSearchDialog();
