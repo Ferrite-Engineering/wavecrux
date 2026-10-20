@@ -4,10 +4,13 @@
 import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wavecrux/domain/enums/display_format.dart';
 import 'package:wavecrux/domain/models/bitfield_translator_config.dart';
 import 'package:wavecrux/domain/models/custom_translator_def.dart';
+import 'package:wavecrux/domain/models/named_enum_config.dart';
 import 'package:wavecrux/features/settings/widgets/custom_translator_editor_dialog.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
+import 'package:wavecrux/shared/widgets/named_enum_table_form.dart';
 
 Future<CustomTranslatorDef?> _open(
   WidgetTester tester, {
@@ -128,5 +131,65 @@ void main() {
       await tester.tap(find.byType(OutlinedButton).first);
       await tester.pumpAndSettle();
     }
+  });
+
+  testWidgets('an enum field edits its label table inline, saved with the '
+      'translator', (tester) async {
+    CustomTranslatorDef? saved;
+    await tester.binding.setSurfaceSize(const Size(1000, 1000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: L10N.localizationsDelegates,
+        supportedLocales: L10N.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () async {
+                saved = await CustomTranslatorEditorDialog.show(
+                  context,
+                  initial: CustomTranslatorDef(
+                    name: 'FSM',
+                    config: BitfieldTranslatorConfig(
+                      fields: [
+                        BitFieldSpec(
+                          name: 'state',
+                          hiBit: 1,
+                          loBit: 0,
+                          format: DisplayFormat.namedEnum,
+                          subConfig: NamedEnumConfig(
+                            entries: [
+                              NamedEnumEntry(value: BigInt.zero, label: 'IDLE'),
+                            ],
+                          ).toMap(),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    // The table is in the editor itself: no second dialog.
+    expect(find.byType(CruxDialog), findsOneWidget);
+    expect(find.byType(NamedEnumTableForm), findsOneWidget);
+    expect(find.widgetWithText(TextField, 'IDLE'), findsOneWidget);
+    await tester.enterText(find.widgetWithText(TextField, 'IDLE'), 'READY');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    final field = saved!.config.fields.single;
+    expect(
+      NamedEnumConfig.fromMap(field.subConfig!).entries.single.label,
+      'READY',
+    );
   });
 }

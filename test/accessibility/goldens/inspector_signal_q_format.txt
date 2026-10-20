@@ -1,0 +1,5 @@
+# Tab walk: 4 stops, cycles
+1. Waveform text
+2. [Notation: Q7.8 grouping] Integer bits (m) 7 slider 11%
+3. Fractional bits (n) 8 slider 13%
+4. Signed (two's complement) check box checked

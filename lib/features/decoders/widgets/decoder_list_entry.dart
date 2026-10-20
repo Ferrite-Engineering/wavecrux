@@ -13,8 +13,8 @@ import 'package:wavecrux/domain/models/persisted_decoder.dart';
 import 'package:wavecrux/features/decoders/constants/transaction_lane_constants.dart';
 import 'package:wavecrux/features/decoders/providers/active_decoders_provider.dart';
 import 'package:wavecrux/features/decoders/providers/transaction_table_provider.dart';
-import 'package:wavecrux/features/decoders/widgets/decoder_config_dialog.dart';
-import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.dart';
+import 'package:wavecrux/features/viewer/inspector_openers.dart';
+import 'package:wavecrux/features/viewer/providers/inspector_providers.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/plugins/decoder_registry.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
@@ -262,12 +262,7 @@ class DecoderListEntry extends ConsumerWidget {
     if (!context.mounted) return;
     switch (result) {
       case _DecoderRowMenuAction.configure:
-        // A returning block, so `remove`'s `ref` below does not read as used
-        // after this await (crux_guards' ref-after-await scan).
-        {
-          await _configureDecoder(context, ref);
-          return;
-        }
+        _configureDecoder(context);
       case _DecoderRowMenuAction.remove:
         _removeDecoder(ref);
       case null:
@@ -275,25 +270,17 @@ class DecoderListEntry extends ConsumerWidget {
     }
   }
 
-  Future<void> _configureDecoder(BuildContext context, WidgetRef ref) async {
-    final definition = DecoderRegistry.instance.getDefinition(
-      decoder.decoderId,
-    );
-    if (definition == null) return;
-    final signalMap = ref.read(signalVariablesByPathProvider);
-    // Read the notifier via ref (which resolves from the nearest ancestor scope
-    // — the tab's UncontrolledProviderScope) BEFORE pushing the dialog route.
-    // The dialog context is a child of the Navigator (above the tab scope), so
-    // ref.read inside the dialog would resolve from the root container instead.
-    final decodersNotifier = ref.read(activeDecodersProvider.notifier);
-    await DecoderConfigDialog.showEdit(
+  /// Opens the decoder in this tab's Inspector, with focus. The row is
+  /// mounted inside the tab's provider scope, so the container found here is
+  /// the tab's.
+  void _configureDecoder(BuildContext context) {
+    if (DecoderRegistry.instance.getDefinition(decoder.decoderId) == null) {
+      return;
+    }
+    openWaveCruxInspector(
       context,
-      definition: definition,
-      instanceId: decoder.id,
-      instanceNumber: decoder.instanceNumber,
-      initialConfig: decoder.config,
-      signalMap: signalMap,
-      decodersNotifier: decodersNotifier,
+      ProviderScope.containerOf(context, listen: false),
+      InspectedDecoder(decoder.id),
     );
   }
 

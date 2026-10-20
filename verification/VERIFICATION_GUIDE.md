@@ -405,7 +405,7 @@ Three hierarchy-tree (SST panel) behaviors added on beta feedback:
 
 1. **Inline parameter values.** Leaves whose dump declares them as HDL parameters (`VarType.parameter` / `realParameter`) show their constant value directly in the row (`WIDTH  = 8  [7:0]`), read lazily via `loadSignal` + `valueAt(startTime)` — the parameter is never added to the timeline by displaying it. Values format as unsigned decimal; real parameters pass through (e.g. `3.14`).
 2. **Multi-select → bulk add.** Ctrl/Cmd+click toggles row selection (existing); **Shift+click now selects the visible range** between the last interaction and the clicked row. The context menu on any selected row (when ≥ 2 rows are selected) gains **"Add N Selected to Viewer"**, which adds the selection in tree order via the existing batch API.
-3. **Apply decoder to selection.** The same context menu gains **"Apply Decoder to Selection…"**, which opens the decoder picker scoped to only the selected signals; on decoder choice the config dialog opens with its binding dropdowns restricted to the selection **and pre-filled by the auto-bind name heuristic** (same five-tier engine as the config dialog's Auto-bind button — see §5.1). Unresolvable bindings stay empty and required-binding validation still gates Apply.
+3. **Apply decoder to selection.** The same context menu gains **"Apply Decoder to Selection…"**, which opens the decoder picker scoped to only the selected signals; on decoder choice the new decoder opens in the **Inspector** (right dock; a bottom sheet on a phone) with its binding pickers restricted to the selection **and pre-filled by the auto-bind name heuristic** (same five-tier engine as the Inspector's Auto-bind button — see §5.1). Unresolvable bindings stay empty and required-binding validation still gates Add Decoder.
 
 ### 4A.2 Setup
 
@@ -420,8 +420,8 @@ Three hierarchy-tree (SST panel) behaviors added on beta feedback:
 5. Select `sclk`…`cs` again (4 rows). Right-click a **selected** row: verify **"Add 4 Selected to Viewer"** and **"Apply Decoder to Selection…"** appear. Right-click an **unselected** row (e.g. `WIDTH`): verify neither bulk item appears.
 6. Tap "Add 4 Selected to Viewer" — all four land in the viewer in tree order (sclk, mosi, miso, cs), each with a distinct auto-assigned color.
 6a. **Idempotent bulk add.** Plain-tap `sclk` (it is added to the viewer), then Shift+click `cs` (range-selects sclk…cs, 4 rows), then "Add 4 Selected to Viewer": `sclk` is **not** duplicated — only mosi/miso/cs are appended, and `sclk` appears exactly once. The menu label still reads the selection count (4), matching the highlighted rows. Deliberate duplicates of one signal (e.g. two rows with different radixes) remain possible via repeated single-tap, which does not dedupe.
-7. Re-select the four SPI signals; tap "Apply Decoder to Selection…". The decoder picker opens normally (all categories). Pick **SPI**: the config dialog opens with SCLK/MOSI/MISO/CS **already bound** to `top.spi.*` (exact-suffix auto-bind) and every binding dropdown lists **only the four selected signals**. Apply — the decoder activates and transactions decode.
-8. Repeat step 7 but select only `sclk` and `mosi` before applying. In the SPI config dialog, `sclk`/`mosi` pre-fill; `miso`/`cs` stay unbound (optional — Apply still allowed). The dropdowns offer only the two selected signals.
+7. Re-select the four SPI signals; tap "Apply Decoder to Selection…". The decoder picker opens normally (all categories). Pick **SPI**: the Inspector shows the new SPI decoder with SCLK/MOSI/MISO/CS **already bound** to `top.spi.*` (exact-suffix auto-bind) and every binding picker lists **only the four selected signals**. **Add Decoder** — the decoder activates and transactions decode.
+8. Repeat step 7 but select only `sclk` and `mosi` before applying. In the Inspector, `sclk`/`mosi` pre-fill; `miso`/`cs` stay unbound (optional — Add Decoder still allowed). The pickers offer only the two selected signals.
 9. Search-filter interaction: type `s` in the tree search box, then Shift+click across the filtered rows — the range covers only **visible** (filtered) rows.
 10. Collapse `top.spi` with rows still selected, right-click a selected-but-hidden state is impossible (rows are hidden); re-expand — selection persists.
 
@@ -436,10 +436,10 @@ Three hierarchy-tree (SST panel) behaviors added on beta feedback:
 - Shift+click with no prior interaction: selects only the clicked row.
 - Shift+click after the anchor's scope was collapsed: falls back to selecting only the clicked row.
 - "Add N Selected to Viewer" with every selected signal already displayed: the action is a no-op (menu item still shown; nothing appended, nothing duplicated).
-- "Apply Decoder to Selection…" with a selection matching no decoder channel names: config dialog opens with all bindings empty; required-binding validation blocks Apply as usual.
+- "Apply Decoder to Selection…" with a selection matching no decoder channel names: the Inspector shows the new decoder with all bindings empty; required-binding validation blocks Add Decoder as usual.
 - Tier-gated (PRO/ENT) decoders picked from the selection-scoped picker still show tier badges and route through the same feature gate as the toolbar flow (`kBetaPeriod` short-circuit during beta; upgrade dialog post-beta — see §5.1 and the Pro guide).
 - **Natural (alphanumeric) sort (0.2.6).** The hierarchy sorts scopes and variables naturally: digit runs compare numerically, so bit-blasted gate-level names list `[0] [1] [2] … [10] [11]` instead of the dump's `[0] [1] [10] [11] [2]` (requested by the wellen author against the GF180 netlist). Sorting happens once at hierarchy build, so the rendered rows, Shift+click ranges, and bulk-add order always agree; escaped-identifier twins keep their dump order relative to each other (stable sort). **Settings → Waveform Defaults → "Sort hierarchy alphanumerically"** toggles it (default ON); turning it off restores the file's declaration order live, without reloading. Verify both states on a gate-level FST and confirm a bulk "Add Selected" lands in the on-screen order in both. `[Coverage: UNIT]` (`natural_compare_test.dart`, `hierarchy_natural_sort_test.dart` — both toggle states, instance identity, twin stability) + **WIDGET** (`settings_screen_test.dart` — toggle default + persistence).
-- **FST signal aliasing (0.2.3 regression fix).** FST dumps report a net wired through ports as *multiple hierarchy rows sharing one signal ref* (e.g. `wb_stream_reader_tb.clk` and `…wb_ram0.wb_clk_i` are the same signal). Selection is keyed by the row's **full path**, so: selecting a row in one scope must **not** highlight its aliases in other scopes, and "Apply Decoder to Selection…" must list **the names from the scope the user clicked** — never an alias's name from elsewhere in the hierarchy (the original defect: wrong-scope names + auto-bind matching nothing). Verify with an FST that aliases signals across scopes (a Wishbone testbench like fusesoc `wb_streamer`'s `wb_stream_reader_tb.fst` is ideal): expand two scopes sharing nets, select 4–5 pins in ONE scope, apply a Wishbone-shaped decoder, and confirm the config dialog shows exactly the clicked scope's pin names with auto-bind filled.
+- **FST signal aliasing (0.2.3 regression fix).** FST dumps report a net wired through ports as *multiple hierarchy rows sharing one signal ref* (e.g. `wb_stream_reader_tb.clk` and `…wb_ram0.wb_clk_i` are the same signal). Selection is keyed by the row's **full path**, so: selecting a row in one scope must **not** highlight its aliases in other scopes, and "Apply Decoder to Selection…" must list **the names from the scope the user clicked** — never an alias's name from elsewhere in the hierarchy (the original defect: wrong-scope names + auto-bind matching nothing). Verify with an FST that aliases signals across scopes (a Wishbone testbench like fusesoc `wb_streamer`'s `wb_stream_reader_tb.fst` is ideal): expand two scopes sharing nets, select 4–5 pins in ONE scope, apply a Wishbone-shaped decoder, and confirm the Inspector shows exactly the clicked scope's pin names with auto-bind filled.
 
 ### 4A.6 Automation Assessment
 
@@ -451,9 +451,9 @@ Three hierarchy-tree (SST panel) behaviors added on beta feedback:
 | Shift+click range / anchor semantics | **UNIT** (`signal_tree_providers_test.dart` — "selectRangeTo" group) + **WIDGET** (leaf test "multi-selection gestures") | Real key events drive HardwareKeyboard in widget test. |
 | Bulk context-menu items appear only for ≥2 selected incl. row; add-in-tree-order; picker scoped to subset with autoBind | **WIDGET** (leaf test "multi-selection context menu" group, incl. en/zh_CN/ja/ko sweep) | Full gesture-to-provider assertions. |
 | Bulk add skips already-displayed signals (tap → range → add doesn't duplicate); `displayedSignalRefs` recursion | **WIDGET** (leaf test — "skips signals already on the canvas") + **UNIT** (`test/domain/models/signal_group_test.dart` — displayedSignalRefs group) | The exact beta-reported flow, gesture-driven. |
-| Auto-bind prefill on open (confident bindings pre-filled, unresolved left empty, off by default) | **WIDGET** (`test/features/decoders/widgets/decoder_config_dialog_prefill_test.dart`) | Deterministic against synthetic signal maps. |
+| Auto-bind prefill on open (confident bindings pre-filled, unresolved left empty, off by default); the pickers offer only the selection | **WIDGET** (`test/features/decoders/widgets/decoder_config_section_test.dart` — "auto-bind prefill" group) | Deterministic against synthetic signal maps. |
 | FST aliasing: alias rows selectable independently; decoder subset carries the clicked scope's Variables; path-keyed map keeps aliases distinct | **WIDGET** (leaf test — "FST alias regression (wb_streamer report)" group) + **UNIT** (`signal_variables_map_provider_test.dart` — alias group) | Synthetic two-scopes-one-ref hierarchy reproduces the wellen FST alias shape deterministically. |
-| End-to-end: fixture load → badges → select → apply SPI → transactions decode | **MANUAL** (this section) / integration-test candidate | Crosses file open + FFI + three dialogs; good future integration test. |
+| End-to-end: fixture load → badges → select → apply SPI → transactions decode | **MANUAL** (this section) / integration-test candidate | Crosses file open + FFI + the picker and the Inspector; good future integration test. |
 
 ### 4A.7 Scope-row click latency — expand/collapse is instant
 
@@ -619,22 +619,22 @@ A cleared canvas is a real session state: saving after Clear Canvas writes an em
 
 #### 5.1.1 What it does
 
-The decoder picker dialog lists all available protocol decoders, lets you bind specific signals to protocol pins, validates that required signals are bound before allowing apply, and exposes per-decoder configuration parameters. In Pro-licensed builds the picker also surfaces Pro decoders with a `PRO` badge — open-core builds list only the open-core five.
+The decoder picker dialog lists all available protocol decoders. Choosing one starts it in the **Inspector** (§5.1.5), where you bind specific signals to protocol pins and set its configuration parameters; required signals must be bound before **Add Decoder** is accepted. Before 1.2 a separate configuration dialog did this. In Pro-licensed builds the picker also surfaces Pro decoders with a `PRO` badge — open-core builds list only the open-core five.
 
 #### 5.1.1a Steps — reconfiguring a decoder from the transaction table writes to the ACTIVE TAB
 
 1. Open two tabs with **different** waveforms, and add a decoder in each. Give the two decoders visibly different configuration (a different bit order, polarity, or bound signal).
-2. In tab B, open the **transaction table** panel, click the decoder filter dropdown, and choose **Configure…** on the decoder.
-3. Change a parameter and confirm. **The edit must apply to tab B's decoder.** Switch to tab A and confirm its decoder is *unchanged*.
+2. In tab B, open the **transaction table** panel, click the decoder filter dropdown, and choose **Configure…** on the decoder. Tab B's Inspector opens on that decoder.
+3. Change a parameter and press **Update Decoder**. **The edit must apply to tab B's decoder.** Switch to tab A and confirm its decoder is *unchanged*.
 4. Repeat the same edit from the two other entry points — the decoder list entry's Configure action, and the decoder picker — and confirm each also writes to the tab it was opened from.
 
-**Why this section exists.** A dialog route is a child of the Navigator, which sits **above** the per-tab `UncontrolledProviderScope`. So `ref` inside `DecoderConfigDialog` resolves the *root* container, where no file is loaded. Two of the three call sites already pre-read the signal map and the decoders notifier from their own per-tab `ref` and pass them in; the transaction-table panel did not, so the edit was written to the root notifier and the active tab silently kept its old configuration — no error, no visible change. Found 2026-07-21 by crux-shared's new `route_mounted_scope_leak_test` static guard; NetCrux hit the same defect class first.
+**Why this section exists.** A dialog route is a child of the Navigator, which sits **above** the per-tab `UncontrolledProviderScope`. So `ref` inside `DecoderConfigDialog` resolves the *root* container, where no file is loaded. Two of the three call sites already pre-read the signal map and the decoders notifier from their own per-tab `ref` and pass them in; the transaction-table panel did not, so the edit was written to the root notifier and the active tab silently kept its old configuration — no error, no visible change. Found 2026-07-21 by crux-shared's new `route_mounted_scope_leak_test` static guard; NetCrux hit the same defect class first. From 1.2 the dialog is gone: the Inspector is a dock tab inside the tab's own scope, and its state (the inspected object, the drafts, the controller) is re-bound per tab in `wavecruxTabOverrides`, so the class cannot recur through it. The two-tab check still applies.
 
 **Edge case worth checking once:** the failure is invisible in any single-tab session, because with one tab open the root and tab containers hold equivalent state. Two tabs are required to see it.
 
 | Check | Automatable? | How |
 |---|---|---|
-| Configure from the transaction table targets the active tab's notifier | **WIDGET** (`transaction_table_panel_test.dart` — "Configure hands the dialog the ACTIVE TAB container, not the root") | Builds the real two-container shape (root parent + per-tab child) and asserts the dialog receives the tab's notifier. Mutation-verified: reverting the fix gives `Expected: same instance as <_FixedDecodersNotifier> / Actual: <null>`. Note every *other* test in that file uses one `ProviderScope`, so none of them could ever have caught this. |
+| Configure from the transaction table targets the active tab's Inspector | **WIDGET** (`transaction_table_panel_test.dart` — "Configure opens the ACTIVE TAB Inspector, not the root one") | Builds the real two-container shape (root parent + per-tab child) and asserts the tab's Inspector, not the root's, inspects the decoder. Note every *other* test in that file uses one `ProviderScope`, so none of them could catch this. |
 | No route-mounted widget reads per-tab state without a bound scope | **STATIC** (crux-shared `route_mounted_scope_leak_test.dart`) | Guards the whole class rather than this one site. |
 | Cross-tab isolation end-to-end | **MANUAL** | Needs two real waveforms and two tabs. |
 
@@ -646,9 +646,9 @@ The decoder picker dialog lists all available protocol decoders, lets you bind s
 4. Verify the section header is `<Localized Name> (<count>)` via the `pickerCategoryHeader` ARB format.
 5. Verify all sections start expanded — every decoder is visible. Collapse and re-expand one section to verify the disclosure arrow toggles correctly.
 6. None of the Pro decoders should appear in an open-core build (no AXI4 full, USB, PCIe TLP, etc.).
-7. Select SPI. Verify signal binding fields appear for SCLK (required), MOSI (required), MISO (optional), CS (optional).
-8. Try to apply without binding required signals — verify it's blocked with a clear message.
-9. Bind required signals → Apply. Decoder should activate.
+7. Select SPI. The picker closes and the Inspector shows a new SPI decoder: signal binding rows for SCLK (required), MOSI (required), MISO (optional), CS (optional).
+8. Press **Add Decoder** without binding required signals — verify it's blocked with a clear message.
+9. Bind required signals → **Add Decoder**. Decoder should activate.
 
 #### 5.1.3 Reconfiguration / instance numbering
 
@@ -658,9 +658,9 @@ The decoder picker dialog lists all available protocol decoders, lets you bind s
 
 #### 5.1.3.1 Parameter-label localization
 
-Decoder parameter labels, descriptions, and enum-value labels are localized through an ARB-key indirection (mirroring the Stage widget `ConfigLabelResolver`): each `DecoderParameter` may carry a `labelKey` / `descriptionKey` / `enumLabelKeys`, resolved in the config dialog via `decoderConfigLabelResolverFactoryProvider`. When a key is absent the dialog falls back to the raw `displayName` / `description` / `enumLabels`, so user-contributed plugin decoders are unaffected.
+Decoder parameter labels, descriptions, and enum-value labels are localized through an ARB-key indirection (mirroring the Stage widget `ConfigLabelResolver`): each `DecoderParameter` may carry a `labelKey` / `descriptionKey` / `enumLabelKeys`, resolved in the Inspector's decoder section via `decoderConfigLabelResolverFactoryProvider`. When a key is absent the section falls back to the raw `displayName` / `description` / `enumLabels`, so user-contributed plugin decoders are unaffected.
 
-1. Open the config dialog for **SPI** in each of en / zh-CN / ja / ko. Verify the parameter labels (CPOL, CPHA, Bit Order, Word Size, CS Active Level), their help text, and the enum dropdown values ("0 (Idle Low)", "MSB First", "Active Low", …) render localized — not raw ARB keys like `spiParamCpol`. Repeat for RISC-V, I²C, AHB-Lite, Wishbone, SPI-Flash (the six converted decoders).
+1. Open an **SPI** decoder in the Inspector in each of en / zh-CN / ja / ko. Verify the parameter labels (CPOL, CPHA, Bit Order, Word Size, CS Active Level), their help text, and the enum dropdown values ("0 (Idle Low)", "MSB First", "Active Low", …) render localized — not raw ARB keys like `spiParamCpol`. Repeat for RISC-V, I²C, AHB-Lite, Wishbone, SPI-Flash (the six converted decoders).
 2. Acronyms (SPI, CPOL, CPHA, I²C, AHB, MSB/LSB, RISC-V, XLEN) stay untranslated in CJK locales.
 
 #### 5.1.4 Automation Assessment
@@ -674,8 +674,33 @@ Decoder parameter labels, descriptions, and enum-value labels are localized thro
 | Each open-core decoder lands in the expected category | **WIDGET** (`decoder_picker_dialog_open_core_set_test.dart` — "category assignment") |
 | Picker omits empty categories | **WIDGET** (`decoder_picker_dialog_test.dart` — "omits empty categories") |
 | `pickerCategoryHeader` count rendering | **WIDGET** (`decoder_picker_dialog_test.dart` — "renders the localized category label in section header") |
-| Required-signal validation blocks apply | **WIDGET** (`decoder_config_dialog_test.dart`) |
+| Required-signal validation blocks apply | **WIDGET** (`decoder_config_section_test.dart` — "Add with a required binding missing says so and adds nothing") |
 | Instance numbering and remove/re-add | **WIDGET** (`active_decoders_provider_test.dart` — "increments instanceNumber per decoder type" + "instanceNumber is not reused after removeDecoder" + "remove + re-add decoder → same transactions on second add") |
+
+#### 5.1.5 Decoder configuration in the Inspector (from 1.2)
+
+**What it does.** A decoder's bindings and parameters are edited in the **Inspector**, an on-demand tab of the right dock, instead of a modal dialog. Every entry point opens it with keyboard focus on its first control: the decoder list entry's Configure, the transaction table's **Configure…**, the decoder picker (a new decoder, shown with **Add Decoder** and **Cancel**), and "Apply Decoder to Selection…". On iOS and Android the same sections open in a bottom sheet over the tab. An unapplied edit holds the Inspector: choosing another object leaves the edit in place and says so, until you apply or revert it.
+
+**Steps.**
+
+1. Load `protocol/spi/generated/spi_basic.vcd` and add an SPI decoder from the picker. The **Inspector** tab appears in the right dock, showing "SPI" with **Add Decoder** and **Cancel**, and focus is on its first control. Press **Cancel**: the decoder is not added and the Inspector empties.
+2. Add the decoder again, bind SCLK and MOSI, press **Add Decoder**. Transactions decode once, and the Inspector now shows "SPI #1" with **Update Decoder** and **Revert** (both disabled until something changes).
+3. Change **Bit Order**. **Update Decoder** and **Revert** enable. Click a different decoder's Configure: the Inspector keeps SPI #1 and shows the held-edit message. Press **Revert**: the stored value returns and the other decoder can now be inspected.
+4. Change a parameter, switch the right dock to **Values** and back to **Inspector**: the unapplied edit is still there.
+5. With focus in the Inspector, press **Escape**: focus returns to the waveform pane and the edit is kept.
+6. Tab through the Inspector with a screen reader running: every stop is a named control (binding rows read "<binding> <signal>", parameters read their label and value), and the decoder documentation link is reachable.
+7. On a phone (iOS or Android), Configure a decoder: a bottom sheet opens with the same rows and buttons; **Update Decoder** applies to the open tab.
+
+| Check | Automatable? | How |
+|---|---|---|
+| New decoder: heading, bindings, Add Decoder / Cancel, validation, one decode on Add, locale sweep en/zh/ja/ko | **WIDGET** (`test/features/decoders/widgets/decoder_config_section_test.dart` — "a new decoder", "locale sweep") | Real section under a per-tab container. |
+| Held edit, Revert, survives a dock tab switch, Escape keeps the draft and focuses the waveform pane | **WIDGET** (same file — "drafts" group) | Drafts live in per-tab providers, not widget state. |
+| Picker widths, full paths, raw-ref fallback for a missing binding | **WIDGET** (same file — "signal pickers", "an existing decoder (issue #47 regression)") | Carried over from the dialog's tests. |
+| Auto-bind button and preview | **WIDGET** (`decoder_config_section_auto_bind_test.dart`) | |
+| Focus walk of a decoder in the Inspector | **WIDGET** (`test/accessibility/inspector_focus_walk_test.dart`, transcript `test/accessibility/goldens/inspector_decoder.txt`) | Text transcript, renderer-independent. |
+| Every opener reaches the Inspector; the state is per-tab; the dialogs are gone | **STATIC** (`test/static/inspector_reachability_test.dart`) | Guards against a second path coming back. |
+| Bottom sheet on a phone | **WIDGET** (`test/features/viewer/widgets/signal_format_section_test.dart` — "on iOS and Android the same sections open in a bottom sheet") | Same opener for decoders and signals. |
+| Screen reader by ear, real phone sheet | **MANUAL** (steps 6 and 7) | Needs a real screen reader and device. |
 
 ---
 
@@ -2045,7 +2070,7 @@ A spreadsheet-style table listing every decoded transaction across all active de
 3. **Down**: "2, APB #1, 25 to 35, R 0x00000008 to 0x12345678" — "to", not "question mark". **End**: row 4 adds ", error: Slave error (PSLVERR)". **Home**, **Page Down** and **Page Up** move as described. **Left** / **Right** scroll the field columns.
 4. On row 2 press **Enter**: the row turns selected, the primary cursor lands at 25, the view jumps there, and focus stays on the row.
 5. With the rows focused press **Left**, **Right**, **Home**, **End**, **Space**: the waveform does not pan, jump or start playback.
-6. Shift+Tab to **Decoder filter** and press **Enter**: the menu opens below the button, "All Decoders, selected" is read. **Down** to "APB #1", **Enter**: the table filters and focus is back on the button, which now reads "Decoder filter, APB #1". Open it again, Tab to **Configure APB #1**, Enter: the config dialog opens; close it and focus returns. **Remove APB #1** removes the decoder.
+6. Shift+Tab to **Decoder filter** and press **Enter**: the menu opens below the button, "All Decoders, selected" is read. **Down** to "APB #1", **Enter**: the table filters and focus is back on the button, which now reads "Decoder filter, APB #1". Open it again, Tab to **Configure APB #1**, Enter: the Inspector opens on APB #1 with focus on its first control; press **Escape** and focus returns to the waveform pane (before 1.2 a config dialog opened here and focus came back to the button). **Remove APB #1** removes the decoder.
 7. Sort by Start with the keyboard (Tab to the Start header, Enter twice): the header reads "Start, button, sorted descending", and the rows' Tab stop still returns to the same transaction.
 
 **Edge cases.**
@@ -5566,11 +5591,11 @@ Re-references §6.6 (GTKWave session import). Specifically:
 ### 17.11 Steps — fixed-point Q-format
 
 1. Add the 16-bit `word16` signal to the canvas. Right-click → **Format → Fixed-Point (Q-format)**.
-2. A configuration dialog opens with sliders for integer bits (m) and fractional bits (n), and a Signed toggle. The preview updates live showing the Q notation (e.g., "Q7.8").
-3. Set m=7, n=8, Signed=true → OK. Navigate cursor to **170 ns** (word16 = `0x0100` = decimal 256 raw) → verify `1.0` (256 / 2⁸ = 1.0).
-4. Right-click again → **Configure Q-Format…** Set m=0, n=15, Signed=true → OK. Navigate to **180 ns** (word16 = `0x4000` = decimal 16384 raw) → verify `0.5` (16384 / 2¹⁵).
-5. Set Signed=false (unsigned Q) → verify the notation changes to "UQ0.15" and the full 16-bit scale shifts accordingly.
-6. Open the configuration dialog again (right-click → **Configure Q-Format…**) → verify the previously saved m/n/signed values are pre-populated.
+2. Right-click → **Configure…** (enabled once the row is fixed-point). From 1.2 the **Inspector** opens on this row (right dock; a bottom sheet on a phone) with focus on its first control: the row's name, path and format as value rows, then sliders for integer bits (m) and fractional bits (n), and a Signed toggle. The notation updates live (e.g., "Q7.8"). Before 1.2 this was a configuration dialog with OK and Cancel.
+3. Set m=7, n=8, Signed=true → **Apply**. Navigate cursor to **170 ns** (word16 = `0x0100` = decimal 256 raw) → verify `1.0` (256 / 2⁸ = 1.0).
+4. Set m=0, n=15, Signed=true → **Apply**. Navigate to **180 ns** (word16 = `0x4000` = decimal 16384 raw) → verify `0.5` (16384 / 2¹⁵).
+5. Set Signed=false (unsigned Q) → verify the notation changes to "UQ0.15"; **Apply** and the full 16-bit scale shifts accordingly. Change m and press **Revert** → the applied values return.
+6. Inspect another row, then right-click `word16` → **Properties** → verify the applied m/n/signed values are shown.
 7. Verify the format and its configuration are preserved across session save/load.
 8. Navigate to **240 ns** (word16 is all x-bits) → verify graceful output (not a crash).
 
@@ -5598,19 +5623,20 @@ Re-references §6.6 (GTKWave session import). Specifically:
 5. Add the 4-bit `xnib` signal (it has x-state bits by design at multiple timestamps). Set its format to **Gray Code** → verify graceful output for all x-containing values (no crash).
 6. Switch to the 8-bit `byte8` signal and verify the standard 8-bit Gray encoding table holds.
 
-### 17.14 Steps — named enum (first-class, with editor dialog)
+### 17.14 Steps — named enum (first-class, edited in the Inspector)
 
 1. Add an 8-bit vector signal. Right-click → **Format → Named Enum**.
-2. An editor dialog opens with a table of (value, label) rows. Initially empty.
+2. Right-click → **Edit enum labels…**. From 1.2 the **Inspector** opens on this row with a table of (value, label) rows, initially empty. Before 1.2 this was an editor dialog with OK and Cancel.
 3. Click the `+` button → a new row appears with value `0` and an empty label field.
 4. Enter value `0`, label `IDLE`. Add another row: value `1`, label `RUNNING`. Add value `2`, label `ERROR`.
-5. Press **OK**. Navigate cursor to **0 ns** (byte8 = `0x00`) → verify `IDLE`; navigate to **190 ns** (byte8 = `0x01`) → verify `RUNNING`; navigate to **220 ns** (byte8 = `0x02`) → verify `ERROR`. Navigate to **10 ns** (byte8 = `0xCA`) → verify the raw hex value is shown (unmapped).
-6. Right-click the signal again → **Edit Enum Labels…** → verify the dialog re-opens with the three rows pre-populated.
-7. Delete one row, change a label, press OK → verify the value column reflects the updated mapping.
-8. **Import from GTKWave `.txt` filter**: click **Import** in the editor dialog, select `test/fixtures/gtkw/generated/sample_filter.txt` → verify rows are populated from the file.
+5. Press **Apply**. Navigate cursor to **0 ns** (byte8 = `0x00`) → verify `IDLE`; navigate to **190 ns** (byte8 = `0x01`) → verify `RUNNING`; navigate to **220 ns** (byte8 = `0x02`) → verify `ERROR`. Navigate to **10 ns** (byte8 = `0xCA`) → verify the raw hex value is shown (unmapped).
+6. Inspect another row, then right-click the signal again → **Edit enum labels…** → verify the Inspector shows the three rows pre-populated.
+7. Delete one row, change a label, press **Apply** → verify the value column reflects the updated mapping. Enter a value that is not a number: the row says so and **Apply** is refused.
+8. **Import from GTKWave `.txt` filter**: click **Import** in the Inspector's label table, select `test/fixtures/gtkw/generated/sample_filter.txt` → verify rows are populated from the file.
 9. **Export**: click **Export** → specify a path → verify a `.txt` file is written with each row on a separate line in the format `<value>  <label>`.
 10. At a value containing `x` or `z` → verify the value column shows a sensible fallback (the raw value or `x`), not a crash.
-11. Press **Cancel** (not OK) in the editor → verify the existing mapping is unchanged.
+11. Change a label and press **Revert** (not Apply) → verify the existing mapping is unchanged.
+11a. **Custom translator editor (Settings).** In a custom translator's enum field, the same label table is shown inline in the editor (from 1.2; before, a nested dialog). Add two labels, save the translator, reopen it → the labels are there. An invalid value blocks Save.
 12. Verify the enum mapping (all entries) is preserved across session save/load (`translatorConfig` round-trip).
 
 ### 17.15 Steps — format & translator config are **per-instance** (issue #39)
@@ -5618,7 +5644,7 @@ Re-references §6.6 (GTKWave session import). Specifically:
 Display format **and** its translator config (Q-format `{m,n,signed}`, named-enum labels, custom-translator bindings) are scoped to the **specific row**, not shared across every row of the same signal — matching how `format` already behaves. Adding the same signal twice lets you view/interpret it two ways side by side.
 
 1. Add the same vector signal to the canvas **twice** (two rows, same signal).
-2. On **row A**: right-click → Format → Fixed-Point (Q-format) → Configure → m=8, n=8. On **row B**: Format → Fixed-Point → Configure → m=4, n=12.
+2. On **row A**: right-click → Format → Fixed-Point (Q-format), then right-click → Configure… → m=8, n=8 → Apply. On **row B**: the same with m=4, n=12. The Inspector edits only the row it was opened on.
 3. Verify each row renders with **its own** scale (Q8.8 vs Q4.12) — changing one does **not** change the other. (Before #39 this was impossible: the config fanned out by signal-ref to all rows.)
 4. Repeat with named-enum labels and a custom-translator binding: editing row A's config leaves row B's untouched.
 5. Save the session and reload — each row restores its own config (`translatorConfig` is stored per entry).
@@ -5627,7 +5653,7 @@ Display format **and** its translator config (Q-format `{m,n,signed}`, named-enu
 
 - **Q-format with m+n > available bit-width** — should clamp silently, not crash.
 - **Named enum with duplicate values** — last definition wins; no crash.
-- **Named enum with very many entries (1000+)** — the scroll list in the editor should remain usable; OK/Cancel work.
+- **Named enum with very many entries (1000+)** — the label table in the Inspector should remain usable; Apply/Revert work.
 - **IEEE-754 format on a 1-bit signal** — disable or fall back gracefully; no crash.
 - **Gray code on a 64-bit wide signal** — should render the correctly decoded decimal without hang.
 - **Context-menu height on a short window (issue #40)** — shrink the window to its minimum height, then right-click a value-column row. The top-level menu must fit without clipping: the 12 display formats are collapsed behind a single **"Display Format ▸"** entry (showing the current format), so the translator entries (**Custom translator…**, **Clear custom translator**), **Copy value**, and the filter actions stay reachable without resizing. Clicking **Display Format** opens a nested menu with all 12 formats; it also fits the minimum window. (`showMenu` does not scroll on desktop, so reachability depends on the list fitting.)
@@ -5647,8 +5673,11 @@ Display format **and** its translator config (Q-format `{m,n,signed}`, named-enu
 | Signed-magnitude: ±0, ±1, ±127, 8-bit range | **WIDGET** (`value_format_service_test.dart`) |
 | Gray code: 4-bit and 8-bit encode/decode table | **WIDGET** (`value_format_service_test.dart`) |
 | Named enum: mapping, unmapped fallback, session round-trip | **WIDGET** (`value_format_service_test.dart`, `session_service_test.dart`) |
-| NamedEnumEditorDialog: render, add/delete, OK/Cancel, locale sweep | **WIDGET** (`test/shared/widgets/named_enum_editor_dialog_test.dart`) |
-| QFormatConfigDialog: render, sliders, preview, OK/Cancel, locale sweep | **WIDGET** (`test/shared/widgets/q_format_config_dialog_test.dart`) |
+| `NamedEnumTableForm` / `QFormatForm`: render, add/delete, invalid value, sliders, notation, locale sweep | **WIDGET** (`test/shared/widgets/display_format_forms_test.dart`) |
+| A signal row in the Inspector: value rows, Q-format and enum label edits applied together, held edit, invalid value refused, removed row empties it, phone bottom sheet, locale sweep | **WIDGET** (`test/features/viewer/widgets/signal_format_section_test.dart`) |
+| Focus walk of a fixed-point row in the Inspector | **WIDGET** (`test/accessibility/inspector_focus_walk_test.dart`, transcript `test/accessibility/goldens/inspector_signal_q_format.txt`) |
+| Properties, Configure… and Edit enum labels… open the Inspector on the row; no format dialog remains | **STATIC** (`test/static/inspector_reachability_test.dart`) |
+| Custom translator editor: label table inline, invalid value blocks Save | **WIDGET** (`test/features/settings/widgets/custom_translator_editor_dialog_test.dart`) |
 | `setSignalTranslatorConfigByRef` / `setSignalFormatByRef` provider mutation | **WIDGET** (`test/features/viewer/providers/signal_group_providers_test.dart`) |
 | Per-instance translator config — `setSignalTranslatorConfigById` targets one row; two rows of one signal carry different configs; byRef still fans out (issue #39) | **WIDGET** (`test/features/viewer/providers/signal_group_providers_test.dart` — "setSignalTranslatorConfigById (issue #39 — per-instance)" group) |
 | Large-width signals (256-bit, 1024-bit) render in reasonable time | **HYBRID** — correctness covered in unit tests; render-time perception **MANUAL** |

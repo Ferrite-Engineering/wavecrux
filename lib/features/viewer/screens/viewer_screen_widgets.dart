@@ -407,15 +407,20 @@ class _RemoveMarkerDialog extends StatelessWidget {
 /// container keeps that summary on this pane: without it the canvas label
 /// floated up to a node enclosing every dock, and each dock control was
 /// announced inside "Waveform viewer".
-class _FocusableWaveformPane extends StatelessWidget {
+class _FocusableWaveformPane extends ConsumerWidget {
   const _FocusableWaveformPane({required this.child});
 
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => Semantics(
+  Widget build(BuildContext context, WidgetRef ref) => Semantics(
     container: true,
-    child: Focus(autofocus: true, debugLabel: 'Waveform pane', child: child),
+    // The tab's node, so Escape in the Inspector can return focus here.
+    child: Focus(
+      focusNode: ref.watch(waveformPaneFocusNodeProvider),
+      autofocus: true,
+      child: child,
+    ),
   );
 }
 

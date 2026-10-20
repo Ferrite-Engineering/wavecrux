@@ -98,6 +98,7 @@ import 'package:wavecrux/features/viewer/providers/export_providers.dart';
 import 'package:wavecrux/features/viewer/providers/file_watcher_provider.dart';
 import 'package:wavecrux/features/viewer/providers/fsm_provider.dart';
 import 'package:wavecrux/features/viewer/providers/gtkw_import_apply.dart';
+import 'package:wavecrux/features/viewer/providers/inspector_providers.dart';
 import 'package:wavecrux/features/viewer/providers/landscape_hint_provider.dart';
 import 'package:wavecrux/features/viewer/providers/lane_geometry_provider.dart';
 import 'package:wavecrux/features/viewer/providers/mobile_memory_guard_provider.dart';

@@ -99,7 +99,7 @@ void main() {
     ),
     const CruxOutlineExemption(
       file: 'lib/features/decoders/widgets/transaction_table_panel.dart',
-      line: 500,
+      line: 488,
       expectedTrimmed: 'color: Theme.of(context).colorScheme.outline,',
       reason:
           "Border.all() color for the decoder filter button's cell border "

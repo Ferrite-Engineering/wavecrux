@@ -12,6 +12,7 @@ import 'package:wavecrux/domain/enums/decoder_category.dart';
 import 'package:wavecrux/domain/models/decoder_definition.dart';
 import 'package:wavecrux/domain/models/signal_binding.dart';
 import 'package:wavecrux/features/decoders/widgets/decoder_picker_dialog.dart';
+import 'package:wavecrux/features/viewer/providers/inspector_providers.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/plugins/decoder_registry.dart';
 import 'package:wavecrux/services/decoders/i2c_decoder.dart';
@@ -389,8 +390,8 @@ void main() {
       requiredTier: LicenseTier.pro,
     );
 
-    testWidgets('beta-period: Open Core tier still opens the config dialog '
-        '(FeatureGate short-circuits)', (tester) async {
+    testWidgets('beta-period: Open Core tier still starts the decoder in the '
+        'Inspector (FeatureGate short-circuits)', (tester) async {
       DecoderRegistry.instance.register(
         proDef,
         (_) => throw UnimplementedError(),
@@ -411,9 +412,17 @@ void main() {
       // blocked, the picker would still be visible and an upgrade dialog
       // would be stacked on top.
       expect(find.byType(DecoderPickerDialog), findsNothing);
-      // The dialog count: only the config dialog is open (1 AlertDialog),
-      // not picker + upgrade dialog (would be 2).
-      expect(find.byType(CruxDialog), findsOneWidget);
+      // No upgrade dialog stacked, and the decoder waits in the Inspector
+      // as an unapplied draft.
+      expect(find.byType(CruxDialog), findsNothing);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(Scaffold)),
+        listen: false,
+      );
+      expect(
+        container.read(decoderDraftsProvider),
+        contains(decoderDraftKey(InspectedNewDecoder(proDef.id))),
+      );
     });
   });
 

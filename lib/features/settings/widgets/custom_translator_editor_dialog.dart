@@ -10,9 +10,10 @@ import 'package:flutter/material.dart';
 import 'package:wavecrux/domain/enums/display_format.dart';
 import 'package:wavecrux/domain/models/bitfield_translator_config.dart';
 import 'package:wavecrux/domain/models/custom_translator_def.dart';
+import 'package:wavecrux/domain/models/named_enum_config.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/shared/widgets/confirm_discard_changes.dart';
-import 'package:wavecrux/shared/widgets/named_enum_editor_dialog.dart';
+import 'package:wavecrux/shared/widgets/named_enum_table_form.dart';
 
 /// Authoring dialog for a single [CustomTranslatorDef] (declarative bit-field
 /// translator). Returns the edited definition, or null when cancelled.
@@ -46,13 +47,24 @@ class _EditableField {
     required this.loBit,
     required this.format,
     this.subConfig,
-  });
+  }) : enumRows = namedEnumRowsOf(
+         subConfig != null && format == DisplayFormat.namedEnum
+             ? NamedEnumConfig.fromMap(subConfig)
+             : const NamedEnumConfig(),
+       );
 
   String name;
   int hiBit;
   int loBit;
   DisplayFormat format;
   Map<String, Object?>? subConfig;
+
+  /// The enum label table as edited, for a named-enum field. Kept as typed
+  /// (a value that does not parse yet included); [subConfig] follows it
+  /// whenever every value parses.
+  List<NamedEnumRow> enumRows;
+
+  bool get enumRowsValid => enumRows.every((r) => r.isValid);
 }
 
 class _CustomTranslatorEditorDialogState
@@ -143,14 +155,14 @@ class _CustomTranslatorEditorDialogState
     });
   }
 
-  Future<void> _editEnumTable(_EditableField field) async {
-    final updated = await NamedEnumEditorDialog.show(
-      context,
-      config: field.subConfig,
-    );
-    // This dialog can be removed from under the enum editor it opened (a
-    // route cleared programmatically), so the answer may find it disposed.
-    if (updated != null && mounted) setState(() => field.subConfig = updated);
+  /// The enum table of [field] was edited inline: keep the rows as typed and,
+  /// once every value parses, the field's config with them.
+  void _onEnumRows(_EditableField field, List<NamedEnumRow> rows) {
+    setState(() {
+      field.enumRows = rows;
+      final config = namedEnumConfigOf(rows);
+      if (config != null) field.subConfig = config.toMap();
+    });
   }
 
   void _save() {
@@ -159,6 +171,13 @@ class _CustomTranslatorEditorDialogState
       setState(
         () => _nameError = L10N.of(context).customTranslatorNameRequired,
       );
+      return;
+    }
+    // An enum table with a value that does not parse says so in its row and
+    // is not saved.
+    if (_fields.any(
+      (f) => f.format == DisplayFormat.namedEnum && !f.enumRowsValid,
+    )) {
       return;
     }
     final def = CustomTranslatorDef(
@@ -246,7 +265,7 @@ class _CustomTranslatorEditorDialogState
     L10N l10n,
     _EditableField field,
   ) {
-    return Padding(
+    final row = Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
@@ -311,12 +330,6 @@ class _CustomTranslatorEditorDialogState
               ),
             ),
           ),
-          if (field.format == DisplayFormat.namedEnum)
-            IconButton(
-              tooltip: l10n.valueColumnEditEnumLabels,
-              icon: const Icon(Icons.list_alt, size: 18),
-              onPressed: () => _editEnumTable(field),
-            ),
           IconButton(
             tooltip: l10n.customTranslatorRemoveField,
             icon: const Icon(Icons.close, size: 18),
@@ -324,6 +337,24 @@ class _CustomTranslatorEditorDialogState
           ),
         ],
       ),
+    );
+    if (field.format != DisplayFormat.namedEnum) return row;
+    // A named-enum field's label table, inline: the same editor the
+    // Inspector hosts for a signal row, not a dialog over this one.
+    return Column(
+      key: ObjectKey(field),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        row,
+        Padding(
+          padding: const EdgeInsetsDirectional.only(start: 24, bottom: 8),
+          child: NamedEnumTableForm(
+            rows: field.enumRows,
+            onChanged: (rows) => _onEnumRows(field, rows),
+          ),
+        ),
+      ],
     );
   }
 

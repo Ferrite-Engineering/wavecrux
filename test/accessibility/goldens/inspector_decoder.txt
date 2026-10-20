@@ -1,0 +1,7 @@
+# Tab walk: 6 stops, cycles
+1. Waveform text
+2. Decoder documentation text
+3. Auto-bind signals button
+4. rx tb.rx button collapsed
+5. tx Select signal… button collapsed
+6. baud edit 9600

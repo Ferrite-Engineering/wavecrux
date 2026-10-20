@@ -19,9 +19,9 @@ import 'package:wavecrux/domain/models/active_decoder.dart';
 import 'package:wavecrux/features/cursors/providers/cursor_providers.dart';
 import 'package:wavecrux/features/decoders/providers/active_decoders_provider.dart';
 import 'package:wavecrux/features/decoders/providers/transaction_table_provider.dart';
-import 'package:wavecrux/features/decoders/widgets/decoder_config_dialog.dart';
 import 'package:wavecrux/features/decoders/widgets/transaction_table_body.dart';
-import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.dart';
+import 'package:wavecrux/features/viewer/inspector_openers.dart';
+import 'package:wavecrux/features/viewer/providers/inspector_providers.dart';
 import 'package:wavecrux/features/viewer/providers/navigation_provider.dart';
 import 'package:wavecrux/features/viewer/providers/selected_transaction_provider.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
@@ -237,28 +237,16 @@ class _TransactionTablePanelState extends ConsumerState<TransactionTablePanel> {
             onConfigureDecoder: (id) {
               final target = decoders.where((d) => d.id == id).firstOrNull;
               if (target == null) return;
-              final definition = DecoderRegistry.instance.getDefinition(
-                target.decoderId,
-              );
-              if (definition == null) return;
-              unawaited(
-                DecoderConfigDialog.showEdit(
-                  context,
-                  definition: definition,
-                  instanceId: id,
-                  instanceNumber: target.instanceNumber,
-                  initialConfig: target.config,
-                  // Pre-read from THIS panel's per-tab ref. A dialog route is a
-                  // child of the Navigator, which sits above the per-tab
-                  // UncontrolledProviderScope, so the dialog's own `ref` would
-                  // resolve the root container — where no file is loaded. The
-                  // edit would then be written to the root notifier and the
-                  // active tab would silently keep its old config. The sibling
-                  // call sites (decoder_picker_dialog, decoder_list_entry)
-                  // already pass these; this one did not.
-                  signalMap: ref.read(signalVariablesByPathProvider),
-                  decodersNotifier: ref.read(activeDecodersProvider.notifier),
-                ),
+              if (DecoderRegistry.instance.getDefinition(target.decoderId) ==
+                  null) {
+                return;
+              }
+              // The panel is mounted inside the tab's provider scope, so the
+              // container found here is the tab's.
+              openWaveCruxInspector(
+                context,
+                ProviderScope.containerOf(context, listen: false),
+                InspectedDecoder(id),
               );
             },
             onSearchChanged: filterNotifier.setSearchQuery,

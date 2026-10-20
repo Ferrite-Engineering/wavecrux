@@ -16,9 +16,11 @@ import 'package:wavecrux/domain/models/decoder_definition.dart';
 import 'package:wavecrux/features/cursors/providers/cursor_providers.dart';
 import 'package:wavecrux/features/decoders/providers/active_decoders_provider.dart';
 import 'package:wavecrux/features/decoders/providers/transaction_table_provider.dart';
-import 'package:wavecrux/features/decoders/widgets/decoder_config_dialog.dart';
 import 'package:wavecrux/features/decoders/widgets/transaction_table_body.dart';
 import 'package:wavecrux/features/decoders/widgets/transaction_table_panel.dart';
+import 'package:wavecrux/features/viewer/inspector_openers.dart';
+import 'package:wavecrux/features/viewer/providers/inspector_providers.dart';
+import 'package:wavecrux/features/viewer/providers/panel_layout_provider.dart';
 import 'package:wavecrux/features/viewer/providers/selected_transaction_provider.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/plugins/decoder_registry.dart';
@@ -877,9 +879,8 @@ void main() {
       expect(container.read(activeDecodersProvider), isEmpty);
     });
 
-    testWidgets('configure icon in the menu opens the decoder config dialog', (
-      tester,
-    ) async {
+    testWidgets('configure icon in the menu opens the decoder in the '
+        'Inspector', (tester) async {
       DecoderRegistry.instance.register(
         _def('spi', 'SPI'),
         (_) => throw UnimplementedError(),
@@ -890,9 +891,13 @@ void main() {
           decoders: [
             _decoder('d0', 'spi', [_tx(0, 10, 'SPI Write')]),
           ],
+          extra: [inspectorInBottomSheetProvider.overrideWithValue(false)],
         ),
       );
       await tester.pumpAndSettle();
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(TransactionTablePanel)),
+      );
       final l10n = tester
           .element(find.byType(TransactionTablePanel))
           .let(L10N.of);
@@ -902,8 +907,14 @@ void main() {
       await tester.tap(find.byIcon(Icons.settings_outlined));
       await tester.pumpAndSettle();
 
-      // The edit dialog mounts; the menu's configure action ran without error.
-      expect(find.byType(DecoderConfigDialog), findsOneWidget);
+      // No dialog: the decoder is inspected, and the Inspector asked to
+      // take focus.
+      expect(
+        container.read(inspectedObjectProvider),
+        const InspectedDecoder('d0'),
+      );
+      expect(container.read(inspectorControllerProvider).focusPending, isTrue);
+      expect(container.read(panelLayoutProvider).inspectorVisible, isTrue);
       expect(tester.takeException(), isNull);
     });
   });
@@ -1036,23 +1047,15 @@ void main() {
   });
 
   testWidgets(
-    'Configure hands the dialog the ACTIVE TAB container, not the root',
+    'Configure opens the ACTIVE TAB Inspector, not the root one',
     (tester) async {
       // Regression for the route-mounted per-tab scope leak (a defect class
-      // NetCrux hit first, surfaced here by crux-shared's
-      // `route_mounted_scope_leak_test` guard).
-      //
-      // A dialog route is a child of the Navigator, which sits ABOVE the
-      // per-tab UncontrolledProviderScope. So `ref` inside
-      // DecoderConfigDialog resolves the ROOT container, where no file is
-      // loaded. Two of the three call sites already pre-read from their own
-      // per-tab ref and pass the values in; this panel did not, so
-      // configuring a decoder from the transaction table wrote the edit to
-      // the root notifier and the active tab silently kept its old config.
-      //
-      // Every other test in this file uses ONE ProviderScope, which is why
-      // none of them could see this: panel and dialog shared a container.
-      // This test builds the real two-container shape.
+      // NetCrux hit first): the configuration used to be a dialog route,
+      // above the per-tab scope, whose `ref` resolved the ROOT container.
+      // The Inspector is a dock tab inside the tab's scope, and the opener
+      // writes to the tab container the panel is mounted in. This test
+      // builds the real two-container shape: one ProviderScope would hide
+      // a leak, because panel and Inspector would share a container.
       // The Configure handler early-returns unless the registry knows the
       // decoder, so register it before pumping.
       DecoderRegistry.instance.register(
@@ -1063,6 +1066,7 @@ void main() {
       final rootContainer = ProviderContainer(
         overrides: [
           productTelemetryConfig,
+          inspectorInBottomSheetProvider.overrideWithValue(false),
           // Root has NO decoders — mirroring "no file loaded at root".
           activeDecodersProvider.overrideWith(
             () => _FixedDecodersNotifier(const []),
@@ -1074,6 +1078,11 @@ void main() {
       final tabContainer = ProviderContainer(
         parent: rootContainer,
         overrides: [
+          // The Inspector's per-tab bindings, as `wavecruxTabOverrides`
+          // re-binds them.
+          inspectedObjectProvider.overrideWith(InspectedObjectNotifier.new),
+          inspectorControllerProvider.overrideWith(buildInspectorController),
+          panelLayoutProvider.overrideWith(PanelLayoutNotifier.new),
           activeDecodersProvider.overrideWith(
             () => _FixedDecodersNotifier([_decoder('d0', 'spi', const [])]),
           ),
@@ -1115,108 +1124,17 @@ void main() {
       await tester.tap(configure);
       await tester.pumpAndSettle();
 
-      final dialog = tester.widget<DecoderConfigDialog>(
-        find.byType(DecoderConfigDialog),
-      );
-
-      // The assertion that bites. Before the fix both were null, the dialog
-      // fell back to `ref.read(...)` off the root container, and the edit
-      // landed nowhere the user could see.
+      // The assertion that bites: the tab's Inspector inspects the decoder,
+      // the root's does not.
       expect(
-        dialog.decodersNotifier,
-        same(tabContainer.read(activeDecodersProvider.notifier)),
-        reason: 'the dialog must write to the active tab notifier, not root',
+        tabContainer.read(inspectedObjectProvider),
+        const InspectedDecoder('d0'),
+        reason: 'Configure must open the active tab Inspector, not root',
       );
+      expect(rootContainer.read(inspectedObjectProvider), isNull);
       expect(
-        dialog.decodersNotifier,
-        isNot(same(rootContainer.read(activeDecodersProvider.notifier))),
-      );
-      expect(dialog.signalMap, isNotNull);
-    },
-  );
-
-  testWidgets(
-    'Configure lands on the tab container even with no arguments passed',
-    (tester) async {
-      // Closes the CLASS, not just the one call site.
-      //
-      // `signalMap` / `decodersNotifier` are optional, and the `??`
-      // fallbacks behind them read the dialog's own `ref` — which resolves
-      // ROOT, because a dialog route is a child of the Navigator, above the
-      // per-tab scope. Fixing the transaction-table caller (22231934) fixed
-      // one instance; any new call site that omitted an argument would have
-      // reintroduced it just as silently.
-      //
-      // DecoderConfigDialog.show/showEdit now bind the launching context's
-      // container to the dialog subtree, so the fallback is correct by
-      // construction. This test pushes the dialog from inside a tab scope
-      // passing NEITHER argument, and asserts the fallback still resolves
-      // the tab — which is what a future forgetful caller will rely on.
-      DecoderRegistry.instance.register(
-        _def('spi', 'SPI'),
-        (_) => throw UnimplementedError(),
-      );
-
-      final rootContainer = ProviderContainer(
-        overrides: [
-          productTelemetryConfig,
-          activeDecodersProvider.overrideWith(
-            () => _FixedDecodersNotifier(const []),
-          ),
-        ],
-      );
-      addTearDown(rootContainer.dispose);
-      final tabContainer = ProviderContainer(
-        parent: rootContainer,
-        overrides: [
-          activeDecodersProvider.overrideWith(
-            () => _FixedDecodersNotifier([_decoder('d0', 'spi', const [])]),
-          ),
-        ],
-      );
-      addTearDown(tabContainer.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: rootContainer,
-          child: MaterialApp(
-            theme: ThemeData(platform: TargetPlatform.macOS),
-            localizationsDelegates: L10N.localizationsDelegates,
-            supportedLocales: L10N.supportedLocales,
-            home: Scaffold(
-              body: UncontrolledProviderScope(
-                container: tabContainer,
-                child: Builder(
-                  builder: (ctx) => TextButton(
-                    // Deliberately passes no signalMap and no
-                    // decodersNotifier — the forgetful-caller shape.
-                    onPressed: () => DecoderConfigDialog.show(
-                      ctx,
-                      definition: _def('spi', 'SPI'),
-                    ),
-                    child: const Text('open'),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.text('open'));
-      await tester.pumpAndSettle();
-
-      // The dialog's own ref must see the TAB's decoder list (one entry),
-      // not root's (empty).
-      final dialogElement = tester.element(find.byType(DecoderConfigDialog));
-      final container = ProviderScope.containerOf(dialogElement, listen: false);
-      expect(
-        container.read(activeDecodersProvider),
-        hasLength(1),
-        reason: 'the dialog subtree must resolve the launching tab container',
-      );
-      expect(
-        container.read(activeDecodersProvider.notifier),
-        same(tabContainer.read(activeDecodersProvider.notifier)),
+        tabContainer.read(inspectorControllerProvider).focusPending,
+        isTrue,
       );
     },
   );

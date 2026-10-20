@@ -110,7 +110,9 @@ class ActiveDecodersNotifier extends _$ActiveDecodersNotifier {
   /// existing instance) all reach the same state without anyone choosing a
   /// decoder, and counting them would inflate the one usage number used to
   /// decide which protocols earn maintenance.
-  void addDecoder(String decoderId, DecoderConfig config) {
+  ///
+  /// Returns the new instance's [ActiveDecoder.id].
+  String addDecoder(String decoderId, DecoderConfig config) {
     ref
         .read(telemetryServiceProvider)
         .record(
@@ -161,6 +163,7 @@ class ActiveDecodersNotifier extends _$ActiveDecodersNotifier {
         instanceNumber: instanceNumber,
       ),
     ];
+    return id;
   }
 
   /// Removes the decoder instance identified by [id].

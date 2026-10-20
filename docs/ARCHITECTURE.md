@@ -664,6 +664,8 @@ UncontrolledProviderScope(container: ProviderContainer(parent: rootContainer))
 ├── panelLayoutProvider        ← this tab's dock visibility, sizes, active dock tabs
 ├── stageWorkspaceProvider     ← this tab's Stage panels and instances
 ├── sessionProvider / sessionAutoSaveProvider ← per-tab session sidecar
+├── inspectedObjectProvider / decoderDraftsProvider / signalFormatDraftsProvider
+│                              ← what this tab's Inspector shows and its unapplied edits
 └── … every other file-specific provider
 ```
 
@@ -724,7 +726,7 @@ The screen is a fixed chrome shell around a pane host; every tab carries its own
 └──────────────────────────────────────────────────────────────┘
 ```
 
-Each tab's content is a `CruxIdeLayout` (§2.4) whose centre region is `WaveformViewCenter` (signal list, time ruler, canvas, horizontal scrollbar) and whose left, right, and bottom regions are `CruxDock` tab strips assembled by `WaveCruxLeftDock`, `WaveCruxRightDock`, and `WaveCruxBottomDock` (`lib/features/viewer/widgets/side_docks.dart`, `bottom_dock.dart`). Entries are pinned (Signals, Values, Transactions), dynamic (one tab per Stage panel), or on-demand (present while the analysis or feature is active; closing the tab deactivates it). The movable on-demand entries (the analyses, cocotb, and Cross-Probe) can be dragged between the bottom and right docks; the placement persists in `PanelLayoutState.dockPlacements`. Panel state is per tab and persists through the tab's session sidecar (§6.4). Adding a panel means adding a `CruxDockEntry` to the relevant entry assembler; an overlay adds bottom-dock tabs through `extraBottomDockTabsProvider` (§10).
+Each tab's content is a `CruxIdeLayout` (§2.4) whose centre region is `WaveformViewCenter` (signal list, time ruler, canvas, horizontal scrollbar) and whose left, right, and bottom regions are `CruxDock` tab strips assembled by `WaveCruxLeftDock`, `WaveCruxRightDock`, and `WaveCruxBottomDock` (`lib/features/viewer/widgets/side_docks.dart`, `bottom_dock.dart`). Entries are pinned (Signals, Values, Transactions), dynamic (one tab per Stage panel), or on-demand (present while the analysis or feature is active; closing the tab deactivates it). The **Inspector** is an on-demand right-dock entry: `crux_dock`'s `CruxInspector` over the tab's `inspectedObjectProvider` (a decoder instance, a decoder being added, or a signal row), assembled by `WaveCruxInspectorPanel` (`lib/features/viewer/widgets/wavecrux_inspector_panel.dart`). Every opener goes through `openWaveCruxInspector` (`lib/features/viewer/inspector_openers.dart`), which reveals it with focus on the desktop and hosts the same sections in a bottom sheet on iOS and Android. Unapplied edits live in per-tab draft providers, not widget state, because the dock builds only its active tab; an overlay adds sections through `proInspectorSectionsProvider`. Decoder configuration and the Q-format and enum-label editors are Inspector sections; there is no dialog for them. The movable on-demand entries (the analyses, cocotb, and Cross-Probe) can be dragged between the bottom and right docks; the placement persists in `PanelLayoutState.dockPlacements`. Panel state is per tab and persists through the tab's session sidecar (§6.4). Adding a panel means adding a `CruxDockEntry` to the relevant entry assembler; an overlay adds bottom-dock tabs through `extraBottomDockTabsProvider` (§10).
 
 #### PaneHost (split-pane viewing)
 

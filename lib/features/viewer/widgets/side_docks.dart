@@ -12,11 +12,13 @@ import 'package:wavecrux/features/viewer/providers/panel_layout_provider.dart';
 import 'package:wavecrux/features/viewer/widgets/activity_heatmap_overlay.dart';
 import 'package:wavecrux/features/viewer/widgets/bottom_dock.dart';
 import 'package:wavecrux/features/viewer/widgets/value_column_panel.dart';
+import 'package:wavecrux/features/viewer/widgets/wavecrux_inspector_panel.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
 
 /// WaveCrux's right dock: Values (pinned) · RTL Source (on-demand, desktop) ·
-/// Cross-Probe (on-demand, desktop/tablet).
+/// Inspector (on-demand, desktop/tablet) · Cross-Probe (on-demand,
+/// desktop/tablet).
 ///
 /// Replaces the right region's 3-deep priority chain (Cross-Probe > RTL
 /// Source > Values), where toggling cross-probe silently *hid* the value
@@ -84,6 +86,16 @@ List<CruxDockEntry> buildRightDockEntries(
         // panel hides its own header × when none is supplied.
         builder: (_) => RtlSourcePanel(onLoadStems: onLoadStems),
         onClose: () => notifier.setRtlSourceVisible(visible: false),
+      ),
+    // On demand, so the pinned Values entry keeps its titled header until
+    // something is inspected. Every opener reveals it; its × removes it.
+    if (notPhone && panelState.inspectorVisible)
+      CruxDockEntry(
+        id: kRightDockTabInspector,
+        icon: Icons.tune,
+        label: l10n.dockTabInspector,
+        builder: (_) => const WaveCruxInspectorPanel(),
+        onClose: () => notifier.setInspectorVisible(visible: false),
       ),
     // Cross-Probe (native here) + any analyses dragged over from the
     // bottom dock — one shared assembler with the bottom dock, so an

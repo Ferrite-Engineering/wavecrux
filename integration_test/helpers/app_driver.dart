@@ -515,7 +515,7 @@ Future<void> activateDecoder(
   await tester.pumpAndSettle();
 
   if (runAutoBind) {
-    // DecoderConfigDialog is now open. Trigger auto-bind.
+    // The Inspector now shows the new decoder. Trigger auto-bind.
     await tester.tap(find.text('Auto-bind signals'));
     await tester.pumpAndSettle();
 
@@ -524,7 +524,7 @@ Future<void> activateDecoder(
     await tester.pumpAndSettle();
   }
 
-  // Confirm — add the decoder and trigger the decode pass.
+  // Confirm: the Inspector's Add Decoder adds it and runs the decode pass.
   await tester.tap(find.text('Add Decoder'));
   final container = activeTabContainer(tester);
   await pumpUntil(

@@ -18,6 +18,8 @@ import 'package:wavecrux/domain/models/bitfield_translator_config.dart';
 import 'package:wavecrux/domain/models/signal_group.dart';
 import 'package:wavecrux/domain/models/translated_field.dart';
 import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.dart';
+import 'package:wavecrux/features/viewer/inspector_openers.dart';
+import 'package:wavecrux/features/viewer/providers/inspector_providers.dart';
 import 'package:wavecrux/features/viewer/providers/translate_filter_provider.dart';
 import 'package:wavecrux/features/viewer/providers/translator_expansion_provider.dart';
 import 'package:wavecrux/features/viewer/providers/value_column_provider.dart';
@@ -30,9 +32,7 @@ import 'package:wavecrux/plugins/translator_preset.dart';
 import 'package:wavecrux/plugins/translator_registry.dart';
 import 'package:wavecrux/services/waveform_geom/lane_geometry.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
-import 'package:wavecrux/shared/widgets/named_enum_editor_dialog.dart';
 import 'package:wavecrux/shared/widgets/platform_context_menu.dart';
-import 'package:wavecrux/shared/widgets/q_format_config_dialog.dart';
 import 'package:wavecrux/shared/widgets/wavecrux_withheld_notice.dart';
 
 // Sentinel values for non-format context-menu actions.
@@ -45,6 +45,7 @@ const _kToggleRenderAsAnalog = 'toggle_render_as_analog';
 const _kBindCustomTranslator = 'bind_custom_translator';
 const _kClearCustomTranslator = 'clear_custom_translator';
 const _kSelectSignal = 'select_signal';
+const _kProperties = 'properties';
 
 // Basic formats shown above the "Advanced" divider.
 const List<DisplayFormat> _kBasicFormats = [
@@ -384,6 +385,17 @@ class ValueColumnRow extends ConsumerWidget {
         ),
         const PopupMenuDivider(),
       ],
+      // The row's properties (name, path, format and its knobs) in the
+      // Inspector, with focus.
+      if (signalRef != null)
+        PopupMenuItem<Object?>(
+          value: _kProperties,
+          height: 32,
+          child: Text(
+            l10n.valueColumnProperties,
+            style: const TextStyle(fontSize: 13),
+          ),
+        ),
       // Format opens a nested menu rather than listing all 12 formats inline:
       // showMenu does not scroll on desktop, so an inline format list pushed
       // the translator entries below the window's bottom edge (issue #40).
@@ -531,12 +543,17 @@ class ValueColumnRow extends ConsumerWidget {
       // Each awaiting branch returns, so a later branch's `ref` never reads
       // as used after an await (crux_guards' ref-after-await scan).
       return;
-    } else if (selected == _kConfigureFormat && signalRef != null) {
-      await _openConfigureDialog(context, ref, l10n, signalRef);
-      return;
-    } else if (selected == _kEditEnumLabels && signalRef != null) {
-      await _openEnumLabelsDialog(context, ref, l10n, signalRef);
-      return;
+    } else if ((selected == _kConfigureFormat ||
+            selected == _kEditEnumLabels ||
+            selected == _kProperties) &&
+        signalRef != null) {
+      // The row's properties are edited in the Inspector, opened on THIS
+      // row: the format lives on the row, and one path can be on several.
+      openWaveCruxInspector(
+        context,
+        ProviderScope.containerOf(context, listen: false),
+        InspectedSignal(entry.id),
+      );
     } else if (selected == _kAssignFilter && signalRef != null) {
       await _assignTranslateFilter(context, ref, l10n, signalRef);
       return;
@@ -572,34 +589,6 @@ class ValueColumnRow extends ConsumerWidget {
     ref
         .read(signalGroupsProvider.notifier)
         .setSignalTranslatorConfigById(entry.id, config);
-  }
-
-  Future<void> _openConfigureDialog(
-    BuildContext context,
-    WidgetRef ref,
-    L10N l10n,
-    String signalRef,
-  ) async {
-    final current = entry.translatorConfig;
-    final updated = await QFormatConfigDialog.show(context, config: current);
-    if (!context.mounted || updated == null) return;
-    ref
-        .read(signalGroupsProvider.notifier)
-        .setSignalTranslatorConfigById(entry.id, updated);
-  }
-
-  Future<void> _openEnumLabelsDialog(
-    BuildContext context,
-    WidgetRef ref,
-    L10N l10n,
-    String signalRef,
-  ) async {
-    final current = entry.translatorConfig;
-    final updated = await NamedEnumEditorDialog.show(context, config: current);
-    if (!context.mounted || updated == null) return;
-    ref
-        .read(signalGroupsProvider.notifier)
-        .setSignalTranslatorConfigById(entry.id, updated);
   }
 
   Future<void> _assignTranslateFilter(

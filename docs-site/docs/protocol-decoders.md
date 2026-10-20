@@ -26,11 +26,15 @@ Protocol violations and errors are flagged visually where they occur — for exa
 
     Choosing a decoder opens its configuration dialog. Review the proposed signals in the **Signal Bindings** section and override anything it got wrong; **Auto-bind signals** runs the guess again.
 
+    From WaveCrux 1.2 there is no configuration dialog: the new decoder opens in the **Inspector**, a tab in the right dock, with the same **Signal Bindings** and **Parameters** sections and the keyboard focus on the first of them. On a phone the Inspector opens as a sheet over the waveform.
+
     From 1.1, a signal the waveform declares under several names (an alias, such as the copies Verilator traces for `assign TxData = src_data;`) is listed under every one of those names, and auto-bind can match any of them. They are one signal, so whichever name you pick decodes the same data.
 
 3. **Set the parameters.**
 
     In the same dialog, the **Parameters** section matches the decoder to the hardware — set baud rate, clock polarity and phase, address width, or word size — then choose **Add Decoder**. To change the bindings or parameters later, right-click the decoder's lane (long-press on touch) and choose **Configure…**; **Remove Decoder** takes it off.
+
+    From WaveCrux 1.2, **Configure…** (on the lane, in the decoder list, or in the transaction table's decoder menu) opens the decoder in the Inspector. A change takes effect when you choose **Update Decoder**, and **Revert** puts back the values in use. While a change is unapplied, the Inspector stays on that decoder and says so if you select something else. ++esc++ returns the focus to the waveform and keeps the change for later.
 
 4. **Read the transactions.**
 

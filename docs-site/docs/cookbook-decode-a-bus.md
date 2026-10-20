@@ -12,7 +12,7 @@ Tier
 :   Open Core for SPI / I²C / UART / AXI4-Lite and the other built-in decoders. Full-spec buses (AXI4 full, USB 2.0, PCIe TLP) are <span class="tier tier-pro">Pro</span>.
 
 You will use
-:   The [decoder picker](protocol-decoders.md#how-decoders-work), the decoder configuration dialog, and the transaction table.
+:   The [decoder picker](protocol-decoders.md#how-decoders-work), the decoder configuration dialog (from WaveCrux 1.2, the Inspector), and the transaction table.
 
 ## Before you start { #before }
 
@@ -27,6 +27,8 @@ Know where the bus signals live in the hierarchy. For SPI that is a clock (`SCK`
 2. **Choose the protocol.**
 
     Pick the bus you captured — **SPI** here. WaveCrux opens the decoder's configuration dialog and **auto-binds** it to your signals, from the strongest evidence to the weakest: a family of signals sharing a scope and name prefix, then a matching leaf name, then a well-known alias, then a close fuzzy match.
+
+    From WaveCrux 1.2 the decoder opens in the **Inspector**, a tab in the right dock (a sheet over the waveform on a phone), instead of a dialog. The steps below are the same; the buttons are at the foot of the Inspector.
 
 3. **Check and fix the bindings.**
 

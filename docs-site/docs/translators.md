@@ -22,6 +22,8 @@ A translator can return more than a flat string. When it decomposes a value into
 
     Right-click the signal's value in the value column (long-press on touch). The top of the menu lists the built-in **Display Format** choices, with **Configure…** for fixed-point and **Edit enum labels…** for named enums.
 
+    From WaveCrux 1.2 these open the **Inspector**, a tab in the right dock (a sheet over the waveform on a phone), on the row you right-clicked, instead of a dialog. It shows the row's name, path and format, then the fixed-point knobs or the label table; choose **Apply** to use them, or **Revert** to put back the values in use. **Properties**, above **Display Format** in the same menu, opens the row in the Inspector whatever its format. In a custom translator's settings, the label table is part of the editor rather than a separate dialog.
+
 2. **Pick a translator.**
 
     Choose **Custom translator…** to open the list of translators you can bind: the Pro pack presets, the RISC-V instruction translator, and the custom translators you have authored. The value column re-renders immediately and the choice persists with the session. **Clear custom translator** returns the signal to its display format.

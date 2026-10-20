@@ -14,13 +14,12 @@ import 'package:wavecrux/domain/models/auto_bind_candidate.dart';
 import 'package:wavecrux/domain/models/decoder_definition.dart';
 import 'package:wavecrux/domain/models/signal_binding.dart';
 import 'package:wavecrux/domain/models/variable.dart';
-import 'package:wavecrux/features/decoders/widgets/decoder_config_dialog.dart';
 import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
-import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/services/decoders/decoder_auto_bind_service.dart';
 import 'package:wavecrux/services/waveform/wellen_provider.dart';
 
+import '../../helpers/inspector_test_host.dart';
 import '../../helpers/wellen_ffi_library_gate.dart';
 
 const _fixture = 'test/fixtures/vcd/aliased_signals.vcd';
@@ -87,23 +86,15 @@ void main() {
     expect(candidate.signalRef, byPath['tb.u_view.TxData']!.signalRef);
   });
 
-  Widget host({bool autoBindOnOpen = false}) => ProviderScope(
-    child: MaterialApp(
-      localizationsDelegates: L10N.localizationsDelegates,
-      supportedLocales: L10N.supportedLocales,
-      home: Scaffold(
-        body: DecoderConfigDialog(
-          definition: _txDef,
-          signalMap: byPath,
-          autoBindOnOpen: autoBindOnOpen,
-        ),
-      ),
-    ),
-  );
+  /// The Inspector on a new decoder of [_txDef], as the picker opens it.
+  Future<void> host(WidgetTester tester, {bool autoBind = false}) async {
+    registerInspectorTestDecoder(_txDef);
+    final container = await pumpInspectorHost(tester, signals: byPath);
+    await startNewDecoder(tester, container, _txDef, autoBind: autoBind);
+  }
 
   testWidgets('the signal picker lists every alias name', (tester) async {
-    await tester.pumpWidget(host());
-    await tester.pumpAndSettle();
+    await host(tester);
 
     await tester.tap(find.byType(DropdownButton<String>));
     await tester.pumpAndSettle();
@@ -125,8 +116,7 @@ void main() {
   testWidgets('auto-bind on open selects the matching alias name', (
     tester,
   ) async {
-    await tester.pumpWidget(host(autoBindOnOpen: true));
-    await tester.pumpAndSettle();
+    await host(tester, autoBind: true);
 
     final dropdown = tester.widget<DropdownButton<String>>(
       find.byType(DropdownButton<String>),

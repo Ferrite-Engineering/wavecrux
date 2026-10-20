@@ -2316,9 +2316,51 @@
   "@decoderConfigUpdateButton": {
     "description": "Confirm button label in the decoder config dialog when editing an existing decoder instance (replaces Add Decoder)"
   },
-  "decoderConfigEditTitle": "{decoderName} #{number} — 재구성",
-  "@decoderConfigEditTitle": {
-    "description": "Title for the decoder config dialog when editing an existing instance; decoderName is e.g. SPI, number is the instance number",
+  "dockTabInspector": "인스펙터",
+  "@dockTabInspector": {
+    "description": "Label of the right dock's on-demand Inspector tab, which shows and edits the properties of a decoder or a signal row."
+  },
+  "inspectorEmpty": "검사할 항목이 없습니다. 신호 행에서 속성을, 디코더에서 구성을 선택하세요.",
+  "@inspectorEmpty": {
+    "description": "The Inspector's empty state."
+  },
+  "inspectorHeldMessage": "{name}의 변경 사항을 적용하거나 되돌리면 선택을 따라갑니다.",
+  "@inspectorHeldMessage": {
+    "description": "Shown and announced in the Inspector when another object was chosen while this one holds unapplied edits. {name} is the Inspector heading of the object with the edits.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "SPI #2"
+      }
+    }
+  },
+  "inspectorApply": "적용",
+  "@inspectorApply": {
+    "description": "Button under a signal row's display-format knobs in the Inspector that applies them."
+  },
+  "inspectorRevert": "되돌리기",
+  "@inspectorRevert": {
+    "description": "Button in the Inspector that drops the unapplied edits of a decoder or a signal row."
+  },
+  "inspectorSignalSection": "신호",
+  "@inspectorSignalSection": {
+    "description": "Heading of the Inspector section with a signal row's name, path and display format."
+  },
+  "inspectorSignalName": "이름",
+  "@inspectorSignalName": {
+    "description": "Label of the Inspector row with a signal row's display name."
+  },
+  "inspectorSignalPath": "경로",
+  "@inspectorSignalPath": {
+    "description": "Label of the Inspector row with a signal's full hierarchical path."
+  },
+  "valueColumnProperties": "속성",
+  "@valueColumnProperties": {
+    "description": "Value column context-menu entry that opens the Inspector on this signal row with keyboard focus."
+  },
+  "inspectorDecoderTitle": "{decoderName} #{number}",
+  "@inspectorDecoderTitle": {
+    "description": "The Inspector's heading for an active decoder; decoderName is e.g. SPI, number is the instance number",
     "placeholders": {
       "decoderName": {
         "type": "String"

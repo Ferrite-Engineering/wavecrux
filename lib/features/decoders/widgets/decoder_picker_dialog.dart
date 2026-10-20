@@ -13,7 +13,7 @@ import 'package:wavecrux/domain/models/decoder_definition.dart';
 import 'package:wavecrux/domain/models/variable.dart';
 import 'package:wavecrux/features/decoders/l10n/decoder_strings.dart';
 import 'package:wavecrux/features/decoders/providers/active_decoders_provider.dart';
-import 'package:wavecrux/features/decoders/widgets/decoder_config_dialog.dart';
+import 'package:wavecrux/features/viewer/inspector_openers.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/plugins/decoder_registry.dart';
 import 'package:wavecrux/shared/widgets/wavecrux_feature_tier_badge.dart';
@@ -32,9 +32,9 @@ import 'package:wavecrux/shared/widgets/wavecrux_upgrade_dialog.dart';
 /// and — for tier-gated entries — a [FeatureTierBadge] (PRO/ENT). Tapping an entry
 /// routes through `FeatureGate.isAvailable`: when the active tier satisfies
 /// the decoder's `requiredTier` (always true during the public-beta period —
-/// see `kBetaPeriod`), the dialog closes and immediately opens
-/// [DecoderConfigDialog]. Post-beta, an unsatisfied tier surfaces an upgrade
-/// prompt instead.
+/// see `kBetaPeriod`), the dialog closes and the tab's Inspector opens on a
+/// new decoder of that type, held as a draft until its Add. Post-beta, an
+/// unsatisfied tier surfaces an upgrade prompt instead.
 class DecoderPickerDialog extends ConsumerWidget {
   const DecoderPickerDialog({
     required this.signalMap,
@@ -51,18 +51,17 @@ class DecoderPickerDialog extends ConsumerWidget {
   /// argument bypasses this Navigator-scope gap entirely.
   final Map<String, Variable> signalMap;
 
-  /// The per-tab [ProviderContainer] forwarded to [DecoderConfigDialog] when
-  /// a decoder is selected. Without this, `ref` inside [DecoderConfigDialog]
-  /// resolves from the root container (Navigator sits above the tab scope) and
-  /// writes to the root's [activeDecodersProvider] instead of the
-  /// tab's, so transactions never appear in [TransactionTablePanel].
+  /// The per-tab [ProviderContainer] the new decoder is started in when one
+  /// is selected. The picker's own `ref` resolves the root container
+  /// (Navigator sits above the tab scope), whose Inspector and decoders no
+  /// tab shows.
   final ProviderContainer? tabContainer;
 
-  /// When true, the config dialog opened on decoder selection pre-fills its
-  /// bindings by running the auto-bind name heuristic against [signalMap]
-  /// on open. Set by the signal tree's "Apply decoder to selection" flow,
-  /// where [signalMap] is the user's selected subset and an eager best-guess
-  /// mapping is the whole point of the gesture.
+  /// When true, the new decoder's bindings are pre-filled by the auto-bind
+  /// name heuristic against [signalMap]. Set by the signal tree's "Apply
+  /// decoder to selection" flow, where [signalMap] is the user's selected
+  /// subset and an eager best-guess mapping is the whole point of the
+  /// gesture.
   final bool autoBindOnSelect;
 
   /// Opens [DecoderPickerDialog] as a full-screen modal dialog.
@@ -71,8 +70,7 @@ class DecoderPickerDialog extends ConsumerWidget {
   /// ProviderScope before calling this method (e.g. from the viewer screen's
   /// toolbar handler, before the dialog route is pushed).
   ///
-  /// Pass [tabContainer] so that the config dialog opened on decoder selection
-  /// resolves providers from the correct tab scope.
+  /// Pass [tabContainer] so that the decoder is started in the correct tab.
   static Future<void> show(
     BuildContext context, {
     required Map<String, Variable> signalMap,
@@ -323,7 +321,7 @@ class _DecoderListTile extends StatelessWidget {
 
   final Map<String, Variable> signalMap;
 
-  /// Forwarded to [DecoderConfigDialog.show] — see
+  /// Forwarded to the new decoder's draft: see
   /// [DecoderPickerDialog.autoBindOnSelect].
   final bool autoBindOnSelect;
 
@@ -419,22 +417,19 @@ class _DecoderListTile extends StatelessWidget {
         beta ||
         currentTier.featureEquivalent.index >= definition.requiredTier.index;
     if (allowed) {
+      // The picker is a route above the tab's provider scope: start the new
+      // decoder in the tab's own container, read before the pop, and open the
+      // tab's Inspector on it. The draft is held there until its Add.
+      final tab =
+          tabContainer ?? ProviderScope.containerOf(context, listen: false);
+      final host = Navigator.of(context).context;
       Navigator.of(context).pop();
-      // Read the notifier from the tab container BEFORE pushing the dialog
-      // route. The dialog's context is a child of the Navigator (above the
-      // per-tab UncontrolledProviderScope), so ref.read inside the dialog
-      // would resolve from the root container — writing to the wrong notifier.
-      final decodersNotifier = tabContainer?.read(
-        activeDecodersProvider.notifier,
-      );
-      unawaited(
-        DecoderConfigDialog.show(
-          context,
-          definition: definition,
-          signalMap: signalMap,
-          decodersNotifier: decodersNotifier,
-          autoBindOnOpen: autoBindOnSelect,
-        ),
+      startNewDecoderInInspector(
+        host,
+        tab,
+        definition: definition,
+        autoBind: autoBindOnSelect,
+        autoBindSignals: signalsByFullPath(signalMap),
       );
     } else {
       _showUpgradeDialog(context);

@@ -18,7 +18,7 @@ import 'package:wavecrux/shared/layouts/device_class_provider.dart';
 ///
 /// `null` from the [showDialog] return value means the user cancelled. A
 /// non-null instance carries the bindings the user chose to apply, ready
-/// to be merged into the parent [DecoderConfigDialog]'s `_bindings` map.
+/// to be merged into the Inspector's decoder draft.
 @immutable
 class DecoderAutoBindPreviewOutcome {
   const DecoderAutoBindPreviewOutcome({

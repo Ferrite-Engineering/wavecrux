@@ -16,8 +16,9 @@ import 'package:wavecrux/domain/models/decoder_config.dart';
 import 'package:wavecrux/domain/models/decoder_definition.dart';
 import 'package:wavecrux/features/decoders/providers/active_decoders_provider.dart';
 import 'package:wavecrux/features/decoders/providers/transaction_table_provider.dart';
-import 'package:wavecrux/features/decoders/widgets/decoder_config_dialog.dart';
 import 'package:wavecrux/features/decoders/widgets/transaction_table_panel.dart';
+import 'package:wavecrux/features/viewer/inspector_openers.dart';
+import 'package:wavecrux/features/viewer/providers/inspector_providers.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/plugins/decoder_registry.dart';
 
@@ -61,7 +62,10 @@ Future<ProviderContainer> _pump(WidgetTester tester, {Locale? locale}) async {
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [activeDecodersProvider.overrideWith(_FixedDecoders.new)],
+      overrides: [
+        activeDecodersProvider.overrideWith(_FixedDecoders.new),
+        inspectorInBottomSheetProvider.overrideWithValue(false),
+      ],
       child: MaterialApp(
         theme: ThemeData(platform: TargetPlatform.windows),
         localizationsDelegates: L10N.localizationsDelegates,
@@ -204,7 +208,11 @@ void main() {
       await _key(tester, LogicalKeyboardKey.enter);
       await _tabToItem(tester, 'Configure APB #1');
       await _key(tester, LogicalKeyboardKey.enter);
-      expect(find.byType(DecoderConfigDialog), findsOneWidget);
+      // Configure inspects the decoder: the Inspector opens on it.
+      expect(
+        container.read(inspectedObjectProvider),
+        const InspectedDecoder('d1'),
+      );
       handle.dispose();
     });
 

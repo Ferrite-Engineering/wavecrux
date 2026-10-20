@@ -35,6 +35,7 @@ import 'package:wavecrux/features/viewer/providers/active_toolbar_height_provide
 import 'package:wavecrux/features/viewer/providers/export_providers.dart';
 import 'package:wavecrux/features/viewer/providers/file_watcher_provider.dart';
 import 'package:wavecrux/features/viewer/providers/fsm_provider.dart';
+import 'package:wavecrux/features/viewer/providers/inspector_providers.dart';
 import 'package:wavecrux/features/viewer/providers/navigation_provider.dart';
 import 'package:wavecrux/features/viewer/providers/panel_layout_provider.dart';
 import 'package:wavecrux/features/viewer/providers/pattern_search_provider.dart';
@@ -259,6 +260,16 @@ List<Override> wavecruxTabOverrides(crux.TabId tabId) {
     // start at the `PanelLayoutState()` defaults (clean slate); a restored tab
     // is rehydrated from its sidecar by `SessionNotifier`.
     panelLayoutProvider.overrideWith(PanelLayoutNotifier.new),
+    // The Inspector: what it shows, its controller (pending focus request and
+    // held draft), the waveform pane focus node Escape returns to, and the
+    // unapplied decoder and display-format drafts. Shared at root, an open
+    // in one tab would move focus in another and a draft would follow the
+    // user across traces.
+    inspectedObjectProvider.overrideWith(InspectedObjectNotifier.new),
+    inspectorControllerProvider.overrideWith(buildInspectorController),
+    waveformPaneFocusNodeProvider.overrideWith(buildWaveformPaneFocusNode),
+    decoderDraftsProvider.overrideWith(DecoderDraftsNotifier.new),
+    signalFormatDraftsProvider.overrideWith(SignalFormatDraftsNotifier.new),
 
     // Session.
     sessionProvider.overrideWith(SessionNotifier.new),

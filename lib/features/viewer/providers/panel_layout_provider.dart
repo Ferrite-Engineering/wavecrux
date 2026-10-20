@@ -60,6 +60,11 @@ const String kRightDockTabRtlSource = 'rtlSource';
 /// The docked cross-probe panel tab (on-demand, desktop/tablet).
 const String kRightDockTabCrossProbe = 'crossProbe';
 
+/// The Inspector tab (on-demand, desktop/tablet): the properties of a
+/// decoder or a signal row, opened by their Configure and Properties
+/// entries.
+const String kRightDockTabInspector = 'inspector';
+
 // ── left-dock tab ids ─────────────────────────────────────────────────────────
 
 /// The pinned signal-tree tab.
@@ -86,6 +91,7 @@ class PanelLayoutState {
     this.stageViewVisible = false,
     this.rtlSourceVisible = false,
     this.crossProbeVisible = false,
+    this.inspectorVisible = false,
     this.statisticsStripVisible = false,
     this.cocotbLogPanelVisible = false,
     this.annotationsPanelVisible,
@@ -155,6 +161,11 @@ class PanelLayoutState {
   /// on phone. Toggled by the toolbar button, the View menu, and Cmd/Ctrl+
   /// Shift+X; closed by the panel's own header chevron.
   final bool crossProbeVisible;
+
+  /// Whether the Inspector tab is in the right dock. Desktop/tablet only;
+  /// set by every Inspector opener, cleared by the tab's ×. Not persisted:
+  /// what it inspected does not survive a relaunch.
+  final bool inspectorVisible;
 
   /// Whether the live statistics strip is expanded.
   ///
@@ -249,6 +260,8 @@ class PanelLayoutState {
         if (crossProbeVisible) return tab;
       } else if (tab == kRightDockTabRtlSource) {
         if (rtlSourceVisible) return tab;
+      } else if (tab == kRightDockTabInspector) {
+        if (inspectorVisible) return tab;
       } else {
         return tab;
       }
@@ -280,6 +293,7 @@ class PanelLayoutState {
     bool? stageViewVisible,
     bool? rtlSourceVisible,
     bool? crossProbeVisible,
+    bool? inspectorVisible,
     bool? statisticsStripVisible,
     bool? cocotbLogPanelVisible,
     bool? annotationsPanelVisible,
@@ -301,6 +315,7 @@ class PanelLayoutState {
       stageViewVisible: stageViewVisible ?? this.stageViewVisible,
       rtlSourceVisible: rtlSourceVisible ?? this.rtlSourceVisible,
       crossProbeVisible: crossProbeVisible ?? this.crossProbeVisible,
+      inspectorVisible: inspectorVisible ?? this.inspectorVisible,
       statisticsStripVisible:
           statisticsStripVisible ?? this.statisticsStripVisible,
       cocotbLogPanelVisible:
@@ -329,6 +344,7 @@ class PanelLayoutState {
         other.stageViewVisible == stageViewVisible &&
         other.rtlSourceVisible == rtlSourceVisible &&
         other.crossProbeVisible == crossProbeVisible &&
+        other.inspectorVisible == inspectorVisible &&
         other.statisticsStripVisible == statisticsStripVisible &&
         other.cocotbLogPanelVisible == cocotbLogPanelVisible &&
         other.annotationsPanelVisible == annotationsPanelVisible &&
@@ -350,6 +366,7 @@ class PanelLayoutState {
     stageViewVisible,
     rtlSourceVisible,
     crossProbeVisible,
+    inspectorVisible,
     statisticsStripVisible,
     cocotbLogPanelVisible,
     annotationsPanelVisible,
@@ -513,6 +530,18 @@ class PanelLayoutNotifier extends _$PanelLayoutNotifier {
     rightDockTab: id,
     valueColumnVisible: true,
   );
+
+  /// Adds the Inspector tab to the right dock, activates it and opens the
+  /// region: every Inspector opener's reveal.
+  void revealInspector() => state = state.copyWith(
+    inspectorVisible: true,
+    rightDockTab: kRightDockTabInspector,
+    valueColumnVisible: true,
+  );
+
+  /// Shows or removes the Inspector tab (its × removes it).
+  void setInspectorVisible({required bool visible}) =>
+      state = state.copyWith(inspectorVisible: visible);
 
   // ── left dock ────────────────────────────────────────────────────────────────
 

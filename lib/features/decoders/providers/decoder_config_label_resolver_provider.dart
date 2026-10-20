@@ -25,7 +25,7 @@ typedef DecoderConfigLabelResolverFactory =
     );
 
 /// Open-core extension point that supplies the ARB-key resolver used by
-/// `DecoderConfigDialog` when rendering a protocol decoder's parameter
+/// the Inspector's decoder section when rendering a protocol decoder's parameter
 /// labels, descriptions, and enum value labels.
 ///
 /// The open-core default resolves the built-in decoders' config keys (see
