@@ -219,6 +219,35 @@ From 1.1, the transaction table's **More export options** menu has **Show statis
 
 The same menu has **Export** *decoder* **as JSON…** for every decoder, not only PCIe TLP. It writes the decoder's rows as the table currently shows them, with the same filter and order as **Export CSV**: each row's times, label and error, with its decoded fields as a nested object, so a script can read a field without knowing the decoder's column set. Times are in ticks, and the file states the timescale.
 
+## PCIe link analysis <span class="tier tier-pro">Pro</span> { #pcie-link-analysis }
+
+From 1.2, WaveCrux Pro analyzes a PCIe link on top of the open-source PCIe decoders in [wavecrux-decoders](https://github.com/Ferrite-Engineering/wavecrux-decoders): the PIPE, Data Link Layer and serial line decoders. Decoding stays free on every tier. The analysis reads what those decoders report, decodes nothing itself, and adds the link's training states and its Ack/Nak timing. It covers x1 links at 2.5 and 5.0 GT/s.
+
+### Setting it up { #pcie-link-setup }
+
+Install the PCIe plugin under **Settings > Extensions > Decoder Plugins**. For each direction of the link, add a symbol decoder (**PCIe serial line (symbols)**, or **PCIe PIPE** on a PIPE interface) and a Data Link Layer decoder (**PCIe serial line (Data Link Layer)**, or **PCIe Data Link Layer**) on the same line or data bus. Decoders that read the same signal are one side of the link.
+
+In the transaction table, **More export options > Analyze PCIe link for** *decoder* opens the **PCIe Link** tab in the bottom dock, with that decoder's side as **Side A**. When the trace has two sides, **Side B** is the other one. Choose either side, **Max payload** and **Rate** at the top of the tab. Choosing the same side for both pairs a loopback testbench's TLPs with its own Acks.
+
+### Link training states { #pcie-link-ltssm }
+
+A port's LTSSM state is internal to it, so the analysis reads each side's states from what its transmitter sends: the Link and Lane numbers and Training Control bits of its TS1 and TS2 ordered sets, EIOS, EIEOS, FTS, electrical idle, and its first DLLP or TLP. It names the states of the PCI Express Base Specification: Detect, Polling.Active, Polling.Configuration, Configuration.Linkwidth, Configuration.Lanenum, Configuration.Complete, Configuration.Idle, L0, Recovery.RcvrLock, Recovery.RcvrCfg, Recovery.Speed, Recovery.Idle, L0s, L0s.FTS, L1, L2, Disabled, Loopback and Hot Reset. Each state starts at the first ordered set or packet that shows it.
+
+- A lane per side draws the states over the waveform's visible range. Click a band to put the primary cursor at its start.
+- The **States** table lists every state with its start, its duration, the Link and Lane numbers and N_FTS the side advertised, and the line rate. Select a row and press Enter, or click it, to put the cursor there.
+- **Time in state** sums the time each side spent in each state, with how often it entered it.
+- The side that proposed the Link number first is labelled the Downstream Port, the other the Upstream Port.
+
+For each speed change, the summary shows the rates before and after, how long the line was in electrical idle, the time from EIOS to symbol lock at the new rate (serial decoders), and whether both sides advertised 5.0 GT/s and requested the change. A new rate that is not the highest rate both sides advertised is flagged.
+
+### Ack/Nak latency { #pcie-link-ack-nak }
+
+With a Data Link Layer decoder on both sides, the **Ack/Nak** table pairs each TLP with the first Ack or Nak from the other side whose sequence number covers it. Sequence numbers compare modulo 4096, so one Ack can cover several TLPs. The latency runs from the end of the TLP's END symbol to the start of the Ack's SDP, where the trace was taken, and is shown as a time and in symbol times (4 ns at 2.5 GT/s, 2 ns at 5.0 GT/s).
+
+Each latency is compared with the Ack Transmission Latency Limit in section 3.5.3.1 of the PCI Express Base Specification for an x1 link, the line rate, and **Max payload**. Max payload defaults to 128 bytes, the Device Control default; at 128 bytes the limit is 237 symbol times at 2.5 GT/s and 288 at 5.0 GT/s. The table marks an Ack above the limit, a TLP that a Nak asked to be replayed, a replay, and a TLP with no Ack. A TLP with a bad LCRC or a sequence error is left out, because the receiver does not acknowledge it. The summary counts TLPs, Acks above the limit, Naks and replays, with the shortest, mean and longest latency.
+
+**Rate** is **Detect** by default: the serial decoders' symbol lock gives it, and so does a speed change. A PIPE interface carries no rate, so choose 2.5 or 5.0 GT/s for a PIPE trace.
+
 ## Enterprise decoders <span class="tier tier-enterprise">Enterprise</span> { #enterprise-decoders }
 
 Enterprise extends the Ethernet front-ends to gigabit DDR signaling and adds offline frame synthesis from packet captures.

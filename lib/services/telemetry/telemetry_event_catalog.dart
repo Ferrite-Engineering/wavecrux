@@ -442,11 +442,19 @@ const List<String> kWavecruxGateFeatureIds = <String>[
   'translator_preset',
   'decoder_pack',
   'stage_widget_pack',
-  // Pro overlay — the five gated activations
+  // Pro overlay — the gated activations
   'sva_panel',
   'pcap_export',
   'debug_advisor',
   'ai_advisor',
+  // The transaction table's Pro actions: bus statistics, the JSON export and
+  // the PCIe link analysis over the open PCIe plugin decoders.
+  'bus_statistics',
+  'transaction_json_export',
+  'pcie_link_analysis',
+  // Collaboration's exports: the session recording and the review minutes.
+  'collaboration_export_recording',
+  'collaboration_export_minutes',
   // The only Enterprise-tier gate in WaveCrux, and therefore the only
   // possible source of `required: enterprise`. Its deny path was once a red
   // error snackbar, left over from before the upgrade dialog existed, which
