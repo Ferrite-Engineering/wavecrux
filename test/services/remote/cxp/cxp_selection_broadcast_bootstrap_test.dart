@@ -18,6 +18,7 @@ import 'package:wavecrux/services/remote/cxp/cxp_selection_emitter_provider.dart
 import 'package:wavecrux/services/remote/cxp/wavecrux_cxp_binding.dart';
 import 'package:wavecrux/services/remote/remote_control_notifier.dart';
 
+import '../../../helpers/cxp_test_teardown.dart';
 import '../../../helpers/fake_waveform_data_source.dart';
 import '../../../helpers/product_telemetry_config.dart';
 import '../../../helpers/wait_for.dart';
@@ -69,10 +70,9 @@ void main() {
   });
 
   tearDown(() async {
-    // Disposing the container stops the runtime and removes its manifest.
-    container.dispose();
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-    if (peersDir.existsSync()) peersDir.deleteSync(recursive: true);
+    // Stops the runtime and removes its manifest, and waits for both.
+    await disposeCxpContainer(container);
+    await deleteCxpTempDirectory(peersDir);
   });
 
   test(
@@ -107,9 +107,7 @@ void main() {
             container
                 .read(cruxCxpPeersProvider)
                 .any((p) => p.peerId == peer.identity.peerId) &&
-            peer.server.connectedPeers.any(
-              (p) => p.productName == 'wavecrux',
-            ),
+            peer.server.connectedPeers.any((p) => p.productName == 'wavecrux'),
         timeout: const Duration(seconds: 15),
         reason: 'the two nodes should find and dial each other',
       );

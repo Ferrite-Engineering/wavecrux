@@ -26,6 +26,7 @@ import 'package:wavecrux/services/remote/cxp/wavecrux_cxp_request_handler.dart';
 import 'package:wavecrux/services/remote/remote_control_notifier.dart';
 import 'package:wavecrux/services/settings/settings_service.dart';
 
+import '../../../helpers/cxp_test_teardown.dart';
 import '../../../helpers/fake_waveform_data_source.dart';
 import '../../../helpers/platform_absolute_path.dart';
 import '../../../helpers/product_telemetry_config.dart';
@@ -127,12 +128,13 @@ void main() {
           ),
         ),
         // Capture editor runner invocations without launching a process.
-        cxpEditorCommandRunnerProvider.overrideWithValue(
-          (command, target) async {
-            editorRunnerCalls.add((command, target));
-            return CruxCxpHandlerResult.ok;
-          },
-        ),
+        cxpEditorCommandRunnerProvider.overrideWithValue((
+          command,
+          target,
+        ) async {
+          editorRunnerCalls.add((command, target));
+          return CruxCxpHandlerResult.ok;
+        }),
       ],
     );
 
@@ -165,12 +167,9 @@ void main() {
 
   tearDown(() async {
     await client.dispose();
-    // Disposing the container stops the runtime and removes its manifest.
-    container.dispose();
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-    if (tempDir.existsSync()) {
-      tempDir.deleteSync(recursive: true);
-    }
+    // Stops the runtime and removes its manifest, and waits for both.
+    await disposeCxpContainer(container);
+    await deleteCxpTempDirectory(tempDir);
   });
 
   test('handshake completes — remote peer identifies as wavecrux', () async {
@@ -244,9 +243,7 @@ void main() {
       await waitFor(() => acks.isNotEmpty);
       expect(acks.single.honored, isTrue);
       // Wait for the post-ack Riverpod state update to settle.
-      await waitFor(
-        () => container.read(selectedSignalProvider) == 'top.clk',
-      );
+      await waitFor(() => container.read(selectedSignalProvider) == 'top.clk');
       expect(container.read(selectedSignalProvider), 'top.clk');
       final entries = container.read(signalGroupsProvider).entries;
       expect(entries.map((e) => e.signalRef), contains('top.clk'));
@@ -308,21 +305,13 @@ void main() {
   test('inbound RequestOpenSource invokes the editor runner + acks', () async {
     final inbound = client.inbound.asBroadcastStream();
     final cpuV = platformAbsolute('/rtl/cpu.v');
-    client.send(
-      RequestOpenSource(
-        filePath: cpuV,
-        line: 42,
-        column: 7,
-      ),
-    );
+    client.send(RequestOpenSource(filePath: cpuV, line: 42, column: 7));
     final ackEvent = await inbound
         .firstWhere((e) => e.message is RequestOpenSourceAck)
         .timeout(const Duration(seconds: 2));
     final ack = ackEvent.message as RequestOpenSourceAck;
     expect(ack.honored, isTrue);
-    expect(editorRunnerCalls, [
-      ('fake-editor -g', '$cpuV:42:7'),
-    ]);
+    expect(editorRunnerCalls, [('fake-editor -g', '$cpuV:42:7')]);
   });
 
   // The socket-level proof of the containment: this string is authored by
@@ -333,9 +322,7 @@ void main() {
     'inbound RequestOpenSource refuses a file_path that is not a path',
     () async {
       final inbound = client.inbound.asBroadcastStream();
-      client.send(
-        const RequestOpenSource(filePath: '+:!curl x|sh', line: 42),
-      );
+      client.send(const RequestOpenSource(filePath: '+:!curl x|sh', line: 42));
       final ackEvent = await inbound
           .firstWhere((e) => e.message is RequestOpenSourceAck)
           .timeout(const Duration(seconds: 2));

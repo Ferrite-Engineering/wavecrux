@@ -15,6 +15,7 @@ import 'package:wavecrux/services/remote/cxp/cxp_selection_emitter.dart';
 import 'package:wavecrux/services/remote/cxp/wavecrux_cxp_binding.dart';
 import 'package:wavecrux/services/remote/remote_control_notifier.dart';
 
+import '../../../helpers/cxp_test_teardown.dart';
 import '../../../support/fake_waveform_source.dart';
 import 'cxp_round_trip_barrier.dart';
 
@@ -69,9 +70,7 @@ void main() {
   tearDown(() async {
     await subscriber.dispose();
     await server.stop();
-    if (tempDir.existsSync()) {
-      tempDir.deleteSync(recursive: true);
-    }
+    await deleteCxpTempDirectory(tempDir);
   });
 
   group('CxpSelectionEmitter', () {
@@ -336,10 +335,7 @@ final _refProvider = Provider<Ref>((ref) => ref);
 /// the emitter reads its broadcast gate from them.
 ProviderContainer _container({
   List<Override> overrides = const [],
-  CruxCxpSettings settings = const CruxCxpSettings(
-    enabled: true,
-    port: 54322,
-  ),
+  CruxCxpSettings settings = const CruxCxpSettings(enabled: true, port: 54322),
 }) {
   final container = ProviderContainer(
     overrides: [
