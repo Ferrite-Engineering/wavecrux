@@ -211,7 +211,6 @@ class DraggableResizableInstance extends ConsumerWidget {
       pinName: pin.name,
       pinDescription: pin.description,
       currentSignalRef: instance.signalBindings[pin.name]?.signalRef,
-      tabContainer: ProviderScope.containerOf(context, listen: false),
     );
     if (result == null || !context.mounted) return;
     ref

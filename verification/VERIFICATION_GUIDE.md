@@ -3127,7 +3127,7 @@ The class responds to width+height, not to `Platform.isIOS` / `Platform.isAndroi
 
 #### 9.1.3 Steps
 
-1. **iPhone (portrait):** verify single-pane layout. Signal tree opens as a drawer (left status-bar chevron) **and is populated with the loaded file's signals** — you can browse the hierarchy and add signals to the canvas. (Regression: the phone drawer is hosted by the screen-level Scaffold, outside the per-tab provider scope; it must be re-bound to the active tab's container or it shows an empty tree and you cannot add any signals — even though iPad/desktop, which dock the tree inside the tab scope, work.) Value column opens as bottom sheet.
+1. **iPhone (portrait):** verify single-pane layout. Signal tree opens as a drawer (left status-bar chevron) **and is populated with the loaded file's signals** — you can browse the hierarchy and add signals to the canvas. (Regression: the phone drawer used to be hosted by the screen-level Scaffold, outside the per-tab provider scope, and showed an empty tree; from 1.2 it is a drawer hosted by the tab's own content (`PhoneSignalTreeDrawerHost`), under the tab's one scope, and its scrim covers the tab only. The left-edge swipe still opens it.) Value column opens as bottom sheet.
 2. **iPhone (landscape):** verify the layout adapts — typically still single-pane but waveform-focused (don't accidentally switch to tablet layout just because landscape adds width).
 3. **iPad (landscape):** verify simplified multi-pane.
 4. **iPad split-screen narrow:** verify the layout drops to phone layout when the width crosses below 600 dp.
@@ -7686,13 +7686,45 @@ Switch to zh_CN, ja, ko. Verify all three surfaces render correctly with no over
 
 | Test | Coverage | Notes |
 |---|---|---|
-| `TabDiagnosticsDrawer` widget tests | `[Coverage: WIDGET]` | `test/features/diagnostics/widgets/tab_diagnostics_drawer_test.dart` — three collapsible sections (File Info / Signal Health / Benchmark This File), follow-active-tab subtitle + re-keyed per-tab scope, close-on-tab-close, Copy Tab Diagnostics Report, non-modal interaction (Issue 24), locale sweep, touch target |
+| `TabDiagnosticsDrawer` widget tests | `[Coverage: WIDGET]` | `test/features/diagnostics/widgets/tab_diagnostics_drawer_test.dart` — three collapsible sections (File Info / Signal Health / Benchmark This File), follow-active-tab subtitle, close-on-tab-close, Copy Tab Diagnostics Report, non-modal interaction (Issue 24), locale sweep, touch target |
 | `AppDiagnosticsDialog` widget tests | `[Coverage: WIDGET]` | `test/features/diagnostics/widgets/app_diagnostics_dialog_test.dart` — per-tab breakdown table, Copy Full Report, scrollable content + trackpad/mouse drag, locale sweep, gating |
 | `PaneRenderStatsPopover` widget tests | `[Coverage: WIDGET]` | `test/features/diagnostics/widgets/pane_render_stats_popover_test.dart` — per-pane isolation under split-pane, two simultaneous popovers, activePaneIdProvider change does not swap content, placeholder when no frames recorded, single-tap reopen (Issue 27), locale sweep |
 | `diagnosticsEnabledProvider` gating | `[Coverage: WIDGET]` | reuse existing `diagnostics_providers_test.dart` (rename in-place) |
 | Legacy `DiagnosticsScreen` / `_DiagnosticsDialog` deleted (no widget references remain) | `[Coverage: STATIC]` | grep guard in `test/static/no_legacy_diagnostics_test.dart` |
 | End-to-end: open + switch tabs + verify drawer follows | `[Coverage: INTEGRATION_TEST]` | `integration_test/diagnostics/tab_drawer_follow_active_test.dart` — boots two CLI fixtures, opens `TabDiagnosticsDrawer` via the production `open(context)` entry-point, switches `activeTabIdProvider`, asserts the drawer's subtitle reflects the new active tab. |
 | End-to-end: split-pane → per-pane container isolation | `[Coverage: INTEGRATION_TEST]` | `integration_test/diagnostics/pane_popover_isolation_test.dart` — boots two CLI fixtures, splits right + `moveTabToPane`, asserts each pane's `paneRenderStatsProvider` (through `paneContainerManagerProvider.containerFor(id)`) holds its own state and active-pane changes / cross-pane mutations don't bleed between containers. (The popover UI display path is covered by the widget tier above; the integration tier focuses on the bootstrap + workspace + container-manager seam.) |
+
+### 22.10.8 Tab dialogs: one scope per tab container
+
+**What:** Before 1.2 a dialog that read per-tab state was given a second `UncontrolledProviderScope` over the tab's container. Riverpod flushes a container's pending rebuilds from inside the build of every scope that mounts it, and the dialog's scope builds first, so a per-tab change while the dialog was open marked the tab's own widgets dirty in the middle of a build: "setState() or markNeedsBuild() called during build" in debug builds. From 1.2 each tab's content sits on its own nested navigator (`PaneHost.tabNavigators`) and those dialogs are pushed on it with `ActiveTab.navigatorFor`, so they are built under the tab's one scope. The trade: a tab dialog covers the tab's area, not the window, and belongs to its tab.
+
+Tab dialogs: Search Signals, Pattern Search, the decoder picker, the Stage Add Widget and signal-binding pickers, the FSM state-name dialog, the phone FSM sheet and bottom-panel sheet, the Tab Diagnostics drawer, and (Pro) the Debug Advisor panel. The phone signal-tree drawer is hosted by the tab's content (`PhoneSignalTreeDrawerHost`). Window-modal by design, because they read no per-tab state: Settings, About, the EULA, App Diagnostics (process-wide), the command palette, confirmation prompts, the Generate Test VCD tool and the value-only dialogs (marker removal, signal group rename, annotation Set time, the large-file warning).
+
+**Setup:** Open two waveforms in two tabs. Debug build, or a release build with the console visible.
+
+**Steps:**
+1. Over tab A, open Search Signals (Ctrl/Cmd+F). Add a signal from it with the dialog still open: the signal appears in tab A's list behind it, nothing is logged.
+2. The dialog covers tab A's area only. The toolbar, the tab strip and the menu bar are usable. Click tab B's chip: the dialog is hidden with tab A. Press Ctrl/Cmd+F: tab B opens its own. Click tab A: its dialog is still there.
+3. With a dialog open over tab A, close tab A from its chip. The dialog closes with it, and Ctrl/Cmd+F opens the search on the tab that is now active.
+4. Split the panes (Ctrl/Cmd+\). Open Search Signals in the left pane: it covers the left pane only; the right pane stays interactive.
+5. With the dialog open, press Escape: only the dialog closes, and the cursors are not cleared.
+6. Open Tools > Tab Diagnostics over tab A, change tab A's cursor, then click tab B: the drawer is now over tab B and shows B's file. Close tab B: it follows to A. Close the last tab: it closes.
+7. With no tab open, App Diagnostics and Settings open over the whole window as before.
+
+**Edge cases:**
+- A tab dialog opened from a context inside a tab (a panel, or another tab dialog) lands on that tab's navigator; one opened from outside every tab (the menu bar, a shortcut, the command palette) lands on the active tab's.
+- Phone: the signal-tree drawer still opens from the status bar chevron and from the left-edge swipe, and its scrim covers the tab only.
+
+| Check | Automatable? | How |
+|---|---|---|
+| A per-tab write while a dialog reads the same tab, no mid-build dirtying | **WIDGET** | `test/services/tabs/active_tab_dialog_test.dart`: the real `WaveCruxPaneHost` with tab navigators; Search Signals open over tab A while A's cursors change three times. Mutation-verified: putting the dialog back on the root navigator under a second scope fails it with the field assertion. |
+| A dialog covers only its tab: one pane in a split | **WIDGET** | same file, "a dialog covers only its tab". |
+| A dialog stays with its tab; another tab opens its own (per-tab guard key) | **WIDGET** | same file, "a dialog stays with its tab". |
+| Closing a tab closes its dialog, completes its future and frees the guard key | **WIDGET** | same file, "closing a tab with its dialog open". |
+| The drawer follows the active tab and closes with the last tab | **WIDGET** | same file, "the diagnostics drawer". |
+| Escape in a tab dialog closes only the dialog | **WIDGET** | `test/accessibility/screen_reader_test.dart`, "Escape in the signal search dialog only closes it". |
+| No route builder wraps a second scope over a tab's container | **STATIC** | `test/static/route_mounted_scope_leak_test.dart` accepts a route given `ActiveTab.navigatorFor(...)`; its allowlist holds one entry, the command palette. |
+| Steps 1 to 7 in the running app | MANUAL | Release check. |
 
 ---
 

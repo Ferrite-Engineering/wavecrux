@@ -198,63 +198,10 @@ void main() {
       );
     });
 
-    // The drawer must remount its embedded
-    // FileInfoPanel/SignalHealthPanel/ParserBenchmarkRunner subtree against
-    // the new active tab's [ProviderContainer] when the user switches tabs.
-    // The implementation keys the UncontrolledProviderScope by the active
-    // tab id; this test pins that key change.
-    testWidgets(
-      'switching active tab reroutes drawer content to the new tab container',
-      (tester) async {
-        final c = _container(fileStats: _stats());
-        addTearDown(c.dispose);
-
-        await c.wavecruxWorkspace.openFile('/tmp/alpha.vcd');
-        await c.wavecruxWorkspace.openFile('/tmp/beta.vcd');
-
-        await _pumpHarness(tester, c);
-        await _openDrawer(tester);
-
-        // The drawer's embedded scope is keyed by the active tab id. Capture
-        // it for the initial active tab (the most recently opened one, beta).
-        final scrollKeyBefore = tester
-            .widget<UncontrolledProviderScope>(
-              find
-                  .ancestor(
-                    of: find.byKey(const Key('tabDiagnosticsScroll')),
-                    matching: find.byType(UncontrolledProviderScope),
-                  )
-                  .first,
-            )
-            .key;
-
-        // Switch the active tab to alpha.
-        final tabs = c.read(tabListProvider);
-        final alphaId = tabs
-            .firstWhere((t) => t.filePath == '/tmp/alpha.vcd')
-            .id;
-        c.read(activeTabIdProvider.notifier).activate(alphaId);
-        await tester.pumpAndSettle();
-
-        final scrollKeyAfter = tester
-            .widget<UncontrolledProviderScope>(
-              find
-                  .ancestor(
-                    of: find.byKey(const Key('tabDiagnosticsScroll')),
-                    matching: find.byType(UncontrolledProviderScope),
-                  )
-                  .first,
-            )
-            .key;
-
-        expect(
-          scrollKeyAfter,
-          isNot(equals(scrollKeyBefore)),
-          reason:
-              'the embedded per-tab UncontrolledProviderScope must be re-keyed when the active tab changes',
-        );
-      },
-    );
+    // Content follows the active tab by moving the drawer to that tab's own
+    // navigator overlay, under the tab's one scope (no scope of its own): that
+    // needs a real pane host, so it is pinned in
+    // test/services/tabs/active_tab_dialog_test.dart.
 
     testWidgets('closes when its target tab is closed', (tester) async {
       final c = _container(fileStats: _stats());

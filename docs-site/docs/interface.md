@@ -51,6 +51,16 @@ Splitting the center canvas gives you two side-by-side panes, each hosting its o
 
     Your whole arrangement — tabs, panes, panel layout, and statistics-strip state — auto-saves and restores on every launch. The session is implicit: there is no "unsaved changes?" prompt to dismiss. When you want a named, portable arrangement, save it as a `.wavecrux-workspace` file — see [Files & sessions](files-and-sessions.md).
 
+## Dialogs belong to their tab { #tab-dialogs }
+
+Before WaveCrux 1.2, every dialog covered the whole window. From WaveCrux 1.2, a dialog that works on a tab's own file or signals opens over that tab only: **Search Signals**, **Pattern Search**, the decoder picker (**Add Protocol Decoder**), the Stage **Add Widget** and signal-binding pickers, the FSM state-name dialog, and, in Pro, the Debug Advisor panel. The toolbar, the tab strip and the menus stay usable while one is open, and with two panes split side by side a dialog covers only the pane it belongs to, so the other pane keeps working.
+
+A tab's dialog stays with its tab. Switch to another tab and the dialog is hidden along with the tab it belongs to; switch back and it is where you left it. The other tab can open its own copy of the same dialog meanwhile. Closing a tab closes its dialog. ++esc++ closes only the dialog.
+
+The **Tab Diagnostics** drawer follows the same rule: it sits over the active tab and moves to the next tab you activate.
+
+Dialogs that are about the whole app still cover the window: **Settings**, **About**, **App Diagnostics**, the command palette, and confirmation prompts. On phone, the signal-tree drawer and the bottom-dock sheet cover only the tab on screen.
+
 ## Finding any action { #finding-actions }
 
 Almost every action in WaveCrux is reachable from more than one place, across several independent discovery surfaces. You never have to memorize where a command lives.

@@ -16,6 +16,7 @@ import 'package:wavecrux/features/decoders/providers/active_decoders_provider.da
 import 'package:wavecrux/features/viewer/inspector_openers.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/plugins/decoder_registry.dart';
+import 'package:wavecrux/services/tabs/active_tab_navigator.dart';
 import 'package:wavecrux/shared/widgets/wavecrux_feature_tier_badge.dart';
 import 'package:wavecrux/shared/widgets/wavecrux_upgrade_dialog.dart';
 
@@ -38,24 +39,14 @@ import 'package:wavecrux/shared/widgets/wavecrux_upgrade_dialog.dart';
 class DecoderPickerDialog extends ConsumerWidget {
   const DecoderPickerDialog({
     required this.signalMap,
-    this.tabContainer,
     this.autoBindOnSelect = false,
     super.key,
   });
 
-  /// Signal map captured from the per-tab provider before the dialog route was
-  /// pushed. Dialogs are rendered outside the per-tab UncontrolledProviderScope
-  /// (their context is a child of the Navigator, which sits above the tab
-  /// scope), so provider reads inside a dialog always resolve from the root
-  /// container where no file is loaded. Passing the map as a constructor
-  /// argument bypasses this Navigator-scope gap entirely.
+  /// The signals the new decoder may bind: all of the tab's, or the user's
+  /// selection for "Apply decoder to selection". Captured from the per-tab
+  /// provider by the caller, so the picker offers exactly what was chosen.
   final Map<String, Variable> signalMap;
-
-  /// The per-tab [ProviderContainer] the new decoder is started in when one
-  /// is selected. The picker's own `ref` resolves the root container
-  /// (Navigator sits above the tab scope), whose Inspector and decoders no
-  /// tab shows.
-  final ProviderContainer? tabContainer;
 
   /// When true, the new decoder's bindings are pre-filled by the auto-bind
   /// name heuristic against [signalMap]. Set by the signal tree's "Apply
@@ -64,24 +55,22 @@ class DecoderPickerDialog extends ConsumerWidget {
   /// gesture.
   final bool autoBindOnSelect;
 
-  /// Opens [DecoderPickerDialog] as a full-screen modal dialog.
+  /// Opens [DecoderPickerDialog] as a modal dialog on the tab's own navigator
+  /// ([ActiveTab.navigatorFor]), so it is built under the tab's one scope: it
+  /// reads the tab's active decoders and starts the new decoder in the tab's
+  /// Inspector. With no tab open it uses the root navigator.
   ///
-  /// [signalMap] must be read from a context that is inside the per-tab
-  /// ProviderScope before calling this method (e.g. from the viewer screen's
-  /// toolbar handler, before the dialog route is pushed).
-  ///
-  /// Pass [tabContainer] so that the decoder is started in the correct tab.
+  /// [signalMap] is read from the tab's providers by the caller.
   static Future<void> show(
     BuildContext context, {
     required Map<String, Variable> signalMap,
-    ProviderContainer? tabContainer,
     bool autoBindOnSelect = false,
   }) {
     return showCruxDialog<void>(
       context: context,
+      navigator: ActiveTab.navigatorFor(context),
       builder: (_) => DecoderPickerDialog(
         signalMap: signalMap,
-        tabContainer: tabContainer,
         autoBindOnSelect: autoBindOnSelect,
       ),
     );
@@ -102,12 +91,10 @@ class DecoderPickerDialog extends ConsumerWidget {
     // is open (uncommon — the parent decoder would have had to be
     // activated from outside the picker, e.g. via right-click on a
     // signal); the next open of the picker will pick up the new state.
-    final activeDecoderIds =
-        tabContainer
-            ?.read(activeDecodersProvider)
-            .map((a) => a.decoderId)
-            .toSet() ??
-        const <String>{};
+    final activeDecoderIds = ref
+        .read(activeDecodersProvider)
+        .map((a) => a.decoderId)
+        .toSet();
 
     final allByCategory = DecoderRegistry.instance.listByCategory();
     final regularByCategory = <DecoderCategory, List<DecoderDefinition>>{};
@@ -194,7 +181,6 @@ class DecoderPickerDialog extends ConsumerWidget {
                           currentTier: currentTier,
                           beta: beta,
                           signalMap: signalMap,
-                          tabContainer: tabContainer,
                           autoBindOnSelect: autoBindOnSelect,
                         ),
                       if (stackedVisible.isNotEmpty)
@@ -203,7 +189,6 @@ class DecoderPickerDialog extends ConsumerWidget {
                           currentTier: currentTier,
                           beta: beta,
                           signalMap: signalMap,
-                          tabContainer: tabContainer,
                           autoBindOnSelect: autoBindOnSelect,
                         ),
                     ],
@@ -231,7 +216,6 @@ class _DecoderCategorySection extends StatelessWidget {
     required this.beta,
     required this.signalMap,
     required this.autoBindOnSelect,
-    this.tabContainer,
   });
 
   final DecoderCategory category;
@@ -240,7 +224,6 @@ class _DecoderCategorySection extends StatelessWidget {
   final bool beta;
   final Map<String, Variable> signalMap;
   final bool autoBindOnSelect;
-  final ProviderContainer? tabContainer;
 
   @override
   Widget build(BuildContext context) {
@@ -260,7 +243,6 @@ class _DecoderCategorySection extends StatelessWidget {
             currentTier: currentTier,
             beta: beta,
             signalMap: signalMap,
-            tabContainer: tabContainer,
             autoBindOnSelect: autoBindOnSelect,
           ),
       ],
@@ -305,7 +287,6 @@ class _DecoderListTile extends StatelessWidget {
     required this.beta,
     required this.signalMap,
     required this.autoBindOnSelect,
-    this.tabContainer,
   });
 
   final DecoderDefinition definition;
@@ -324,8 +305,6 @@ class _DecoderListTile extends StatelessWidget {
   /// Forwarded to the new decoder's draft: see
   /// [DecoderPickerDialog.autoBindOnSelect].
   final bool autoBindOnSelect;
-
-  final ProviderContainer? tabContainer;
 
   @override
   Widget build(BuildContext context) {
@@ -417,11 +396,10 @@ class _DecoderListTile extends StatelessWidget {
         beta ||
         currentTier.featureEquivalent.index >= definition.requiredTier.index;
     if (allowed) {
-      // The picker is a route above the tab's provider scope: start the new
-      // decoder in the tab's own container, read before the pop, and open the
-      // tab's Inspector on it. The draft is held there until its Add.
-      final tab =
-          tabContainer ?? ProviderScope.containerOf(context, listen: false);
+      // The picker is built under the tab's scope: start the new decoder in
+      // that container, read before the pop, and open the tab's Inspector on
+      // it. The draft is held there until its Add.
+      final tab = ProviderScope.containerOf(context, listen: false);
       final host = Navigator.of(context).context;
       Navigator.of(context).pop();
       startNewDecoderInInspector(
@@ -475,7 +453,6 @@ class _StackedDecodersSection extends StatelessWidget {
     required this.beta,
     required this.signalMap,
     required this.autoBindOnSelect,
-    this.tabContainer,
   });
 
   final List<DecoderDefinition> decoders;
@@ -483,7 +460,6 @@ class _StackedDecodersSection extends StatelessWidget {
   final bool beta;
   final Map<String, Variable> signalMap;
   final bool autoBindOnSelect;
-  final ProviderContainer? tabContainer;
 
   @override
   Widget build(BuildContext context) {
@@ -506,7 +482,6 @@ class _StackedDecodersSection extends StatelessWidget {
             currentTier: currentTier,
             beta: beta,
             signalMap: signalMap,
-            tabContainer: tabContainer,
             autoBindOnSelect: autoBindOnSelect,
           ),
       ],

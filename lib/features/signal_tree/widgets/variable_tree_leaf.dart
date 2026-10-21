@@ -388,11 +388,6 @@ class VariableTreeLeaf extends ConsumerWidget {
       DecoderPickerDialog.show(
         context,
         signalMap: subset,
-        // The leaf renders inside the per-tab UncontrolledProviderScope, so
-        // this resolves the tab's container — the picker forwards it so the
-        // config dialog writes to the tab's decoder notifier rather than the
-        // root container's (dialog routes sit above the tab scope).
-        tabContainer: ProviderScope.containerOf(context, listen: false),
         autoBindOnSelect: true,
       ),
     );

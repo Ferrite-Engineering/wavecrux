@@ -74,6 +74,9 @@ const Map<String, String> _orchestrationTier = <String, String>{
   'lib/services/tabs/active_tab_container.dart':
       "Resolves the active tab's container so app-level code can reach "
       'per-tab feature state.',
+  'lib/services/tabs/active_tab_navigator.dart':
+      "Resolves the active tab's own navigator (and guard key) so a dialog "
+      "that reads the tab's providers is built under the tab's one scope.",
   'lib/services/panes/pane_container_manager.dart':
       'Pane hosting — mounts per-pane feature UI (incl. the viewer '
       'render-stats collector) into IdeLayout panes.',

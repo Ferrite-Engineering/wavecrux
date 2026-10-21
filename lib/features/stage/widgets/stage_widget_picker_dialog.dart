@@ -16,6 +16,7 @@ import 'package:wavecrux/features/stage/providers/stage_workspace_provider.dart'
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/plugins/custom_stage_widget_registry_provider.dart';
 import 'package:wavecrux/plugins/stage_registry.dart';
+import 'package:wavecrux/services/tabs/active_tab_navigator.dart';
 import 'package:wavecrux/shared/widgets/wavecrux_feature_tier_badge.dart';
 import 'package:wavecrux/shared/widgets/wavecrux_upgrade_dialog.dart';
 
@@ -44,22 +45,14 @@ class StageWidgetPickerDialog extends ConsumerWidget {
 
   /// Opens the picker as a modal dialog.
   ///
-  /// Pass [tabContainer] so the picker's `stageWorkspaceProvider` writes
-  /// (Add Widget) target the active tab's Stage workspace. The dialog is pushed
-  /// by the root navigator, outside the per-tab [UncontrolledProviderScope], so
-  /// without this it mutates the empty root workspace instead of the tab's.
-  static Future<void> show(
-    BuildContext context, {
-    ProviderContainer? tabContainer,
-  }) {
+  /// The picker's `stageWorkspaceProvider` writes (Add Widget) target the
+  /// tab's Stage workspace, so it is shown on the tab's own navigator
+  /// ([ActiveTab.navigatorFor]) and built under the tab's one scope.
+  static Future<void> show(BuildContext context) {
     return showCruxDialog<void>(
       context: context,
-      builder: (_) {
-        const dialog = StageWidgetPickerDialog();
-        return tabContainer != null
-            ? UncontrolledProviderScope(container: tabContainer, child: dialog)
-            : dialog;
-      },
+      navigator: ActiveTab.navigatorFor(context),
+      builder: (_) => const StageWidgetPickerDialog(),
     );
   }
 

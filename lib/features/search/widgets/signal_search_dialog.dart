@@ -14,6 +14,7 @@ import 'package:wavecrux/features/search/providers/search_providers.dart';
 import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/services/signal_query/signal_search_service.dart';
+import 'package:wavecrux/services/tabs/active_tab_navigator.dart';
 
 /// Modal signal search dialog opened via Ctrl+F / Cmd+F.
 ///
@@ -28,25 +29,16 @@ class SignalSearchDialog extends ConsumerStatefulWidget {
 
   /// Opens the dialog, resetting the filter to a clean state first.
   ///
-  /// Pass [tabContainer] so that [hierarchyProvider] and
-  /// [signalGroupsProvider] resolve from the active tab's
-  /// [ProviderContainer] rather than the root container. Dialogs are rendered
-  /// outside the per-tab [UncontrolledProviderScope] (their context is a child
-  /// of the Navigator, which sits above the tab scope), so provider reads
-  /// inside the dialog always resolve from the root container where no file is
-  /// loaded — passing the container bypasses this Navigator-scope gap.
-  static Future<void> show(
-    BuildContext context, {
-    ProviderContainer? tabContainer,
-  }) {
+  /// The dialog reads [hierarchyProvider] and [signalGroupsProvider], which
+  /// are per-tab, so it is shown on the tab's own navigator
+  /// ([ActiveTab.navigatorFor]) and built under the tab's one scope. It covers
+  /// the tab's area, stays with its tab across a tab switch, and closes with
+  /// it. With no tab open it uses the root navigator.
+  static Future<void> show(BuildContext context) {
     return showCruxDialog<void>(
       context: context,
-      builder: (_) {
-        const dialog = SignalSearchDialog();
-        return tabContainer != null
-            ? UncontrolledProviderScope(container: tabContainer, child: dialog)
-            : dialog;
-      },
+      navigator: ActiveTab.navigatorFor(context),
+      builder: (_) => const SignalSearchDialog(),
     );
   }
 

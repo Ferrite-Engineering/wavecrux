@@ -115,6 +115,7 @@ import 'package:wavecrux/services/session/last_session_service.dart';
 import 'package:wavecrux/services/session/restore_guard_service.dart';
 import 'package:wavecrux/services/session/session_reset.dart';
 import 'package:wavecrux/services/settings/settings_service.dart';
+import 'package:wavecrux/services/tabs/active_tab_navigator.dart';
 import 'package:wavecrux/services/tabs/tab_container_manager.dart';
 import 'package:wavecrux/services/workspace/last_session_migration.dart';
 import 'package:wavecrux/services/workspace/wavecrux_workspace_codec.dart';
@@ -660,7 +661,12 @@ Future<bool> bootstrap({
   // "new" tab the DEAD tab's container, which presents as cross-tab state
   // bleed rather than as memory growth. Registered before the hydration read
   // below so the first snapshot the notifier emits already reaches them.
+  //
+  // The tab navigators go first: they close a closing tab's dialogs, whose
+  // widgets are still mounted under that tab's container until the next frame,
+  // so they are popped before the container manager disposes it.
   rootContainer.read(workspaceProvider.notifier)
+    ..addScopeReconciler(rootContainer.read(tabNavigatorsProvider))
     ..addScopeReconciler(tcm)
     ..addScopeReconciler(pcm);
 

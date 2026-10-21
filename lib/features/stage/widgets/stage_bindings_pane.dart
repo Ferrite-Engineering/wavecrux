@@ -371,7 +371,6 @@ class StageBindingRow extends ConsumerWidget {
                 pinName: pinName,
                 pinDescription: pinDescription,
                 currentSignalRef: currentBinding?.signalRef,
-                tabContainer: ProviderScope.containerOf(context, listen: false),
               );
               if (result == null || !context.mounted) return;
               ref

@@ -23,6 +23,7 @@ import 'package:wavecrux/features/viewer/providers/session_providers.dart';
 import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/services/panes/pane_container_manager.dart';
+import 'package:wavecrux/services/tabs/active_tab_navigator.dart';
 import 'package:wavecrux/services/tabs/tab_container_manager.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
 import 'package:wavecrux/shared/platform/reveal_tab_file.dart';
@@ -72,6 +73,9 @@ class WaveCruxPaneHost extends ConsumerWidget {
       tabContentBuilder: tabContentBuilder,
       tabContainerFor: tcm.containerFor,
       paneContainerFor: pcm.containerFor,
+      // Each tab on its own navigator, so a dialog that reads the tab's
+      // providers is built under the tab's one scope (`ActiveTab.navigatorFor`).
+      tabNavigators: ref.read(tabNavigatorsProvider),
       // Never rendered: ViewerScreen branches on the empty workspace before
       // mounting the pane host, so the workspace here always has tabs.
       emptyCanvasContent: const SizedBox.shrink(),

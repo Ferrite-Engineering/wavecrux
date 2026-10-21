@@ -631,13 +631,15 @@ void main() {
       'phone signal-tree drawer reads the active tab scope, not the empty root',
       (tester) async {
         // Regression: on iPhone the signal tree was empty (no signals to add)
-        // while iPad/desktop worked. The phone signal-tree lives in the
+        // while iPad/desktop worked. The phone signal-tree used to live in the
         // screen-level Scaffold.drawer, which is built OUTSIDE the per-tab
         // UncontrolledProviderScope that PaneHost wraps the body in — so its
-        // SignalTreePanel read the empty ROOT waveformSourceProvider. Here the
-        // ACTIVE TAB's source is overridden to an error; if the drawer is bound
-        // to the tab scope it shows the signal-tree error message, and if it
-        // still reads the empty root it shows the "open a file" placeholder.
+        // SignalTreePanel read the empty ROOT waveformSourceProvider. It is now
+        // a drawer hosted by the active tab's own content, under the tab's one
+        // scope. Here the ACTIVE TAB's source is overridden to an error; if the
+        // drawer is under the tab scope it shows the signal-tree error
+        // message, and if it reads the empty root it shows the "open a file"
+        // placeholder.
         await tester.pumpWidget(
           _buildApp(
             overrides: [
@@ -653,11 +655,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        tester
-            .state<ScaffoldState>(
-              find.byWidgetPredicate((w) => w is Scaffold && w.drawer != null),
-            )
-            .openDrawer();
+        await tester.tap(find.byTooltip('Show Signal Tree'));
         await tester.pumpAndSettle();
 
         final drawer = find.byType(Drawer);

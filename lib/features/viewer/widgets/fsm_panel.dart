@@ -8,6 +8,7 @@ import 'package:wavecrux/domain/models/fsm_model.dart';
 import 'package:wavecrux/features/viewer/providers/fsm_provider.dart';
 import 'package:wavecrux/features/viewer/widgets/fsm_bubble_painter.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
+import 'package:wavecrux/services/tabs/active_tab_navigator.dart';
 
 /// Panel hosting the FSM bubble-diagram visualisation.
 ///
@@ -105,26 +106,17 @@ class FsmPanel extends ConsumerWidget {
 
   /// Shows the FSM panel as a modal bottom sheet — used on phone where the
   /// bottom pane is unavailable.
-  /// Pass [tabContainer] so the sheet's [FsmPanel] reads the active tab's
-  /// `fsmProvider` (and friends). The sheet is built by the root navigator,
-  /// outside the per-tab [UncontrolledProviderScope], so without this it shows
-  /// the empty root FSM state.
-  static Future<void> showFsmModal(
-    BuildContext context, {
-    ProviderContainer? tabContainer,
-  }) {
-    return showModalBottomSheet<void>(
+  /// The sheet's [FsmPanel] reads the tab's `fsmProvider` (and friends), so
+  /// the sheet is shown on the tab's own navigator ([showTabModalBottomSheet])
+  /// and built under the tab's one scope.
+  static Future<void> showFsmModal(BuildContext context) {
+    return showTabModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      builder: (ctx) {
-        const sheet = FractionallySizedBox(
-          heightFactor: 0.85,
-          child: FsmPanel(),
-        );
-        return tabContainer != null
-            ? UncontrolledProviderScope(container: tabContainer, child: sheet)
-            : sheet;
-      },
+      builder: (ctx) => const FractionallySizedBox(
+        heightFactor: 0.85,
+        child: FsmPanel(),
+      ),
     );
   }
 }

@@ -14,6 +14,7 @@ import 'package:wavecrux/features/viewer/providers/time_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/services/signal_query/pattern_search_service.dart';
+import 'package:wavecrux/services/tabs/active_tab_navigator.dart';
 import 'package:wavecrux/shared/widgets/help_link.dart';
 
 // ── dialog-local enums ────────────────────────────────────────────────────────
@@ -45,24 +46,17 @@ class PatternSearchDialog extends ConsumerStatefulWidget {
 
   /// Shows the dialog modally.
   ///
-  /// Pass [tabContainer] so the dialog's reads of the per-tab
-  /// `waveformSourceProvider` / `waveformIsLoadedProvider` (and its dispatch to
-  /// the per-tab `PatternSearchNotifier`) resolve against the active tab. The
-  /// dialog is pushed by the root navigator, outside the per-tab
-  /// [UncontrolledProviderScope], so without this it reads the empty root scope
-  /// and behaves as if no file were loaded.
-  static Future<void> show(
-    BuildContext context, {
-    ProviderContainer? tabContainer,
-  }) {
+  /// The dialog reads the per-tab `waveformSourceProvider` /
+  /// `waveformIsLoadedProvider` and dispatches to the per-tab
+  /// `PatternSearchNotifier`, so it is shown on the tab's own navigator
+  /// ([ActiveTab.navigatorFor]) and built under the tab's one scope. It covers
+  /// the tab's area and belongs to its tab. With no tab open it uses the root
+  /// navigator.
+  static Future<void> show(BuildContext context) {
     return showCruxDialog<void>(
       context: context,
-      builder: (_) {
-        const dialog = PatternSearchDialog();
-        return tabContainer != null
-            ? UncontrolledProviderScope(container: tabContainer, child: dialog)
-            : dialog;
-      },
+      navigator: ActiveTab.navigatorFor(context),
+      builder: (_) => const PatternSearchDialog(),
     );
   }
 

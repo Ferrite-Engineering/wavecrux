@@ -112,13 +112,13 @@ import 'package:wavecrux/features/viewer/providers/switching_activity_provider.d
 import 'package:wavecrux/features/viewer/providers/time_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
 import 'package:wavecrux/features/viewer/providers/x_trace_provider.dart';
-import 'package:wavecrux/features/viewer/widgets/activity_heatmap_overlay.dart';
 import 'package:wavecrux/features/viewer/widgets/bottom_dock.dart';
 import 'package:wavecrux/features/viewer/widgets/dock_restore_bars.dart';
 import 'package:wavecrux/features/viewer/widgets/fsdb_conversion_dialog.dart';
 import 'package:wavecrux/features/viewer/widgets/gtkw_import_result_dialog.dart';
 import 'package:wavecrux/features/viewer/widgets/large_file_warning_dialog.dart';
 import 'package:wavecrux/features/viewer/widgets/pattern_search_dialog.dart';
+import 'package:wavecrux/features/viewer/widgets/phone_signal_tree_drawer.dart';
 import 'package:wavecrux/features/viewer/widgets/side_docks.dart';
 import 'package:wavecrux/features/viewer/widgets/signal_removal_feedback.dart';
 import 'package:wavecrux/features/viewer/widgets/status_bar.dart';
@@ -149,6 +149,7 @@ import 'package:wavecrux/services/samples/sample_waveform_service.dart';
 import 'package:wavecrux/services/session/crux_project_resolution.dart';
 import 'package:wavecrux/services/session/gtkw_parser.dart';
 import 'package:wavecrux/services/session/session_service.dart';
+import 'package:wavecrux/services/tabs/active_tab_navigator.dart';
 import 'package:wavecrux/services/tabs/tab_container_manager.dart';
 import 'package:wavecrux/services/time_format/time_format_service.dart';
 import 'package:wavecrux/services/waveform/fsdb_conversion_service.dart';
@@ -398,7 +399,13 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
     if (!isDown && !isRepeat) return false;
     // A dialog, menu or Settings on top owns the keyboard: Escape there must
     // not clear the cursors, nor a bare key pan or mark the waveform behind.
-    if (!mounted || !(ModalRoute.of(context)?.isCurrent ?? true)) return false;
+    // A tab dialog is pushed on the tab's own navigator, inside this screen's
+    // route, so this route stays current under it: ask where focus is as well.
+    if (!mounted ||
+        !(ModalRoute.of(context)?.isCurrent ?? true) ||
+        cruxFocusIsInPushedRoute()) {
+      return false;
+    }
 
     // 1. An armed marker chord consumes the next key-down: a letter a–z
     //    completes it, anything else cancels it. Either way the key is swallowed
@@ -737,27 +744,10 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
     // items dispatch back into this screen through `ShortcutActionIntent`, the
     // same path the command palette uses.
     return Scaffold(
-      // The phone signal-tree drawer is hosted by the screen-level Scaffold,
-      // OUTSIDE the per-tab UncontrolledProviderScope that PaneHost wraps the
-      // body in. SignalTreePanel (inside ActivityHeatmapOverlay) reads per-tab
-      // providers (waveformSourceProvider, signalTreeProvider, …) which are
-      // overridden per tab; without re-binding the drawer to the active tab's
-      // container it reads the empty root scope and shows no signals on phone
-      // (tablet/desktop dock the tree inside the tab scope, so they were fine).
-      // Keyed by activeTabId so it rebinds when the active tab changes.
-      drawer: isPhoneWidth
-          ? Drawer(
-              child: SafeArea(
-                child: UncontrolledProviderScope(
-                  // Namespaced so it never collides with the tab chip's
-                  // `ValueKey(tab.id)` (see tab_drag_reorder regression).
-                  key: ValueKey('tabScope.drawer:${activeTabId.value}'),
-                  container: tcm.containerFor(activeTabId),
-                  child: const ActivityHeatmapOverlay(),
-                ),
-              ),
-            )
-          : null,
+      // The phone signal-tree drawer is not a Scaffold drawer: SignalTreePanel
+      // (inside ActivityHeatmapOverlay) reads per-tab providers, and a drawer
+      // hosted here would sit OUTSIDE the tab's scope. The tab's own content
+      // hosts it (`PhoneSignalTreeDrawerHost`), under the tab's one scope.
       // Wrap chrome + body in SafeArea per ARCHITECTURE.md §3.1.8.2 so the
       // toolbar is not covered by the iPad system status bar (clock,
       // wifi, battery) in landscape, and so the status bar isn't lost
@@ -983,7 +973,7 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
           MediaQuery.sizeOf(context),
         );
 
-        return Column(
+        final content = Column(
           children: [
             // In-flow banner above the waveform area announcing
             // a fresh LXT/LXT2 → FST conversion. The widget itself short-
@@ -1074,6 +1064,10 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
             ),
           ],
         );
+        // The phone signal tree is a drawer hosted by the tab's own content,
+        // under the tab's one scope (a screen-level `Scaffold.drawer` would sit
+        // outside it).
+        return PhoneSignalTreeDrawerHost(enabled: isPhoneWidth, child: content);
       },
     );
   }

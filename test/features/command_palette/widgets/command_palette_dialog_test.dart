@@ -173,31 +173,21 @@ void main() {
     });
 
     testWidgets(
-      'show() with a tabContainer resolves the action context in the tab '
+      'show() is app-level: it resolves the action context from the root '
       'scope',
       (tester) async {
-        // The palette is pushed by the root navigator, OUTSIDE the per-tab
-        // UncontrolledProviderScope. Action gating reads [actionContextProvider];
-        // wrapping the dialog in the tab container must resolve that provider
-        // against the tab (which reports a loaded file) rather than the root
-        // (which reports none) — so Add Protocol Decoder appears.
+        // The palette is an app-level surface on the root navigator, not a
+        // tab dialog. Action gating reads [actionContextProvider], a root
+        // provider that already follows the active tab, so a root context that
+        // reports a loaded file shows Add Protocol Decoder.
         final root = ProviderContainer(
-          overrides: [
-            actionContextProvider.overrideWithValue(
-              _desktopContext(fileLoaded: false),
-            ),
-          ],
-        );
-        addTearDown(root.dispose);
-        final tab = ProviderContainer(
-          parent: root,
           overrides: [
             actionContextProvider.overrideWithValue(
               _desktopContext(fileLoaded: true),
             ),
           ],
         );
-        addTearDown(tab.dispose);
+        addTearDown(root.dispose);
 
         await tester.pumpWidget(
           UncontrolledProviderScope(
@@ -208,11 +198,8 @@ void main() {
               home: Builder(
                 builder: (ctx) => Scaffold(
                   body: ElevatedButton(
-                    onPressed: () => CommandPaletteDialog.show(
-                      ctx,
-                      onAction: (_) {},
-                      tabContainer: tab,
-                    ),
+                    onPressed: () =>
+                        CommandPaletteDialog.show(ctx, onAction: (_) {}),
                     child: const Text('open'),
                   ),
                 ),

@@ -167,13 +167,7 @@ List<CruxDockEntry> buildBottomDockEntries(
             _dockAction(
               icon: Icons.add,
               tooltip: l10n.stagePanelAddWidgetTooltip,
-              onPressed: () => StageWidgetPickerDialog.show(
-                context,
-                tabContainer: ProviderScope.containerOf(
-                  context,
-                  listen: false,
-                ),
-              ),
+              onPressed: () => StageWidgetPickerDialog.show(context),
             ),
           ],
           // Closing the last panel's tab turns the Stage feature off —

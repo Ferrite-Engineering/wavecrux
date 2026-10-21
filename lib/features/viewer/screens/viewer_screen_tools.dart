@@ -338,11 +338,7 @@ extension _ViewerScreenTools on _ViewerScreenState {
     // Re-entrancy guarded inside CommandPaletteDialog.show (also covers the
     // global Cmd/Ctrl+Shift+P handler wired in app.dart).
     unawaited(
-      CommandPaletteDialog.show(
-        context,
-        onAction: _handleShortcut,
-        tabContainer: _activeTabContainer,
-      ),
+      CommandPaletteDialog.show(context, onAction: _handleShortcut),
     );
   }
 
@@ -393,13 +389,12 @@ extension _ViewerScreenTools on _ViewerScreenState {
     // One entry per name, so every name of an aliased signal is offered.
     final signalMap = _activeTabContainer.read(signalVariablesByPathProvider);
     unawaited(
+      // Keyed per tab: the picker stays with its tab, hidden, while another
+      // tab is active, and that tab may open its own.
       ModalGuard.run(
-        'addDecoder',
-        () async => await DecoderPickerDialog.show(
-          context,
-          signalMap: signalMap,
-          tabContainer: _activeTabContainer,
-        ),
+        ActiveTab.guardKey(context, 'addDecoder'),
+        () async =>
+            await DecoderPickerDialog.show(context, signalMap: signalMap),
       ),
     );
   }
@@ -407,11 +402,8 @@ extension _ViewerScreenTools on _ViewerScreenState {
   void _openSearch() {
     unawaited(
       ModalGuard.run(
-        'openSearch',
-        () async => await SignalSearchDialog.show(
-          context,
-          tabContainer: _activeTabContainer,
-        ),
+        ActiveTab.guardKey(context, 'openSearch'),
+        () async => await SignalSearchDialog.show(context),
       ),
     );
   }
@@ -419,11 +411,8 @@ extension _ViewerScreenTools on _ViewerScreenState {
   void _openPatternSearch() {
     unawaited(
       ModalGuard.run(
-        'patternSearch',
-        () async => await PatternSearchDialog.show(
-          context,
-          tabContainer: _activeTabContainer,
-        ),
+        ActiveTab.guardKey(context, 'patternSearch'),
+        () async => await PatternSearchDialog.show(context),
       ),
     );
   }

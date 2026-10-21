@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/domain/models/variable.dart';
 import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
+import 'package:wavecrux/services/tabs/active_tab_navigator.dart';
 
 /// Result returned from [SignalBindingPickerDialog].
 ///
@@ -39,29 +40,23 @@ class SignalBindingPickerDialog extends ConsumerStatefulWidget {
   final String pinDescription;
   final String? currentSignalRef;
 
-  /// Pass [tabContainer] so the picker reads the active tab's
-  /// `signalVariablesByPathProvider` (the bindable signal list). The dialog is
-  /// pushed by the root navigator, outside the per-tab
-  /// [UncontrolledProviderScope], so without this the signal list is empty.
+  /// The picker reads the tab's `signalVariablesByPathProvider` (the bindable
+  /// signal list), so it is shown on the tab's own navigator
+  /// ([ActiveTab.navigatorFor]) and built under the tab's one scope.
   static Future<SignalBindingPickerResult?> show(
     BuildContext context, {
     required String pinName,
     required String pinDescription,
     String? currentSignalRef,
-    ProviderContainer? tabContainer,
   }) {
     return showCruxDialog<SignalBindingPickerResult>(
       context: context,
-      builder: (_) {
-        final dialog = SignalBindingPickerDialog(
-          pinName: pinName,
-          pinDescription: pinDescription,
-          currentSignalRef: currentSignalRef,
-        );
-        return tabContainer != null
-            ? UncontrolledProviderScope(container: tabContainer, child: dialog)
-            : dialog;
-      },
+      navigator: ActiveTab.navigatorFor(context),
+      builder: (_) => SignalBindingPickerDialog(
+        pinName: pinName,
+        pinDescription: pinDescription,
+        currentSignalRef: currentSignalRef,
+      ),
     );
   }
 

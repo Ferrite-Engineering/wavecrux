@@ -97,26 +97,21 @@ extension _ViewerScreenReactions on _ViewerScreenState {
   /// modal bottom sheet. Driven by the [StatusBar] bottom chevron's
   /// `onShowBottomPanelSheet` callback.
   void _showBottomPanelSheet() {
-    // showModalBottomSheet builds via the root navigator, OUTSIDE the per-tab
-    // UncontrolledProviderScope that PaneHost wraps the body in. The sheet
-    // hosts the REAL bottom dock (same entry list, same select-and-persist
-    // wiring as the desktop region — see [WaveCruxBottomDockSheet]); rebind
-    // to the active tab's container so it resolves THIS tab's
-    // [panelLayoutProvider] (and source/cursor/etc.) rather than the empty
-    // root scope.
-    final tabContainer = _activeTabContainer;
+    // The sheet hosts the REAL bottom dock (same entry list, same
+    // select-and-persist wiring as the desktop region — see
+    // [WaveCruxBottomDockSheet]), so it must resolve THIS tab's
+    // [panelLayoutProvider] (and source/cursor/etc.), not the empty root
+    // scope: it is shown on the active tab's own navigator, under the tab's
+    // one scope.
     unawaited(
-      showModalBottomSheet<void>(
+      showTabModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
         showDragHandle: true,
-        builder: (sheetContext) => UncontrolledProviderScope(
-          container: tabContainer,
-          child: SafeArea(
-            child: SizedBox(
-              height: MediaQuery.sizeOf(sheetContext).height * 0.7,
-              child: const WaveCruxBottomDockSheet(),
-            ),
+        builder: (sheetContext) => SafeArea(
+          child: SizedBox(
+            height: MediaQuery.sizeOf(sheetContext).height * 0.7,
+            child: const WaveCruxBottomDockSheet(),
           ),
         ),
       ),

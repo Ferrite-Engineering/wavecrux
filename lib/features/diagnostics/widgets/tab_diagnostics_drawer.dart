@@ -17,7 +17,7 @@ import 'package:wavecrux/features/diagnostics/widgets/signal_health_panel.dart';
 import 'package:wavecrux/features/tabs/providers/tab_providers.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/services/diagnostics/tab_diagnostics_report_service.dart';
-import 'package:wavecrux/services/tabs/tab_container_manager.dart';
+import 'package:wavecrux/services/tabs/active_tab_navigator.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
 
 /// Non-modal per-tab side drawer (see `docs/ARCHITECTURE.md` §8.8).
@@ -42,38 +42,32 @@ class TabDiagnosticsDrawer extends ConsumerStatefulWidget {
 
   /// Opens the drawer as a right-aligned non-modal overlay.
   ///
-  /// Inserts an [OverlayEntry] into the root [Overlay] rather than pushing a
-  /// modal dialog route. The former [showGeneralDialog] implementation
-  /// (Issue 24) installed a full-screen [ModalBarrier] beneath the drawer
-  /// that — even with `barrierColor: Colors.transparent` — captured every
-  /// pointer event outside the drawer's bounds, making the tab close (×)
-  /// button (and every other surface outside the drawer) unresponsive
-  /// while the drawer was open. The overlay-entry approach leaves the
-  /// underlying chrome fully interactive; only the drawer's own Material
-  /// region absorbs events.
+  /// Inserts an [OverlayEntry] into the ACTIVE tab's navigator overlay
+  /// ([ActiveTab.navigatorFor]) rather than pushing a modal dialog route, so
+  /// the drawer is built under the tab's one provider scope and reads the
+  /// tab's providers (a root-scope mount would show "No waveform loaded" with
+  /// a file open). When another tab becomes active the drawer moves to that
+  /// tab's overlay, so it keeps following the active tab. With no tab
+  /// navigator (a host with no tabs mounted) it goes on the root overlay.
+  ///
+  /// The former [showGeneralDialog] implementation (Issue 24) installed a
+  /// full-screen [ModalBarrier] beneath the drawer that — even with
+  /// `barrierColor: Colors.transparent` — captured every pointer event
+  /// outside the drawer's bounds, making the tab close (×) button (and every
+  /// other surface outside the drawer) unresponsive while the drawer was
+  /// open. The overlay-entry approach leaves the underlying chrome fully
+  /// interactive; only the drawer's own Material region absorbs events.
   ///
   /// Returns when the drawer is closed (close button, Escape key, or the
   /// no-tabs-remaining auto-dismiss).
   static Future<void> open(BuildContext context) {
     // Re-entrancy guard: a second trigger (Cmd/Ctrl+Shift+I auto-repeat, the
     // per-pane `i`-icon, or the menu while the drawer is already up) must not
-    // stack a second overlay drawer on top of itself.
-    return ModalGuard.run('tabDiagnostics', () {
-      final overlay = Overlay.of(context, rootOverlay: true);
-      final completer = Completer<void>();
-      late OverlayEntry entry;
-      void close() {
-        if (entry.mounted) entry.remove();
-        if (!completer.isCompleted) completer.complete();
-      }
-
-      entry = OverlayEntry(
-        builder: (overlayContext) => _TabDiagnosticsDrawerHost(
-          onClose: close,
-        ),
-      );
-      overlay.insert(entry);
-      return completer.future;
+    // stack a second overlay drawer on top of itself. One key for the window:
+    // there is one drawer, and it follows the active tab.
+    return ModalGuard.run('tabDiagnostics', () async {
+      final drawer = _TabDiagnosticsDrawerPlacement(context)..show();
+      await drawer.closed;
     });
   }
 
@@ -82,13 +76,108 @@ class TabDiagnosticsDrawer extends ConsumerStatefulWidget {
       _TabDiagnosticsDrawerState();
 }
 
+/// Keeps the drawer's one overlay entry on the active tab's navigator.
+///
+/// The entry is built under whichever tab's scope owns that navigator, so
+/// following the active tab means moving the entry: when the active tab
+/// changes (a switch, or the drawer's own tab closing) the entry is
+/// re-inserted into the new active tab's overlay after the frame that built
+/// it. No tab left closes the drawer.
+class _TabDiagnosticsDrawerPlacement {
+  _TabDiagnosticsDrawerPlacement(BuildContext callerContext)
+    : _rootOverlay = Overlay.of(callerContext, rootOverlay: true);
+
+  final OverlayState _rootOverlay;
+  final Completer<void> _closed = Completer<void>();
+  ProviderSubscription<TabId>? _activeSubscription;
+  ProviderSubscription<List<WavecruxTab>>? _tabsSubscription;
+  OverlayEntry? _entry;
+  TabId? _tab;
+  bool _syncScheduled = false;
+
+  /// The ROOT container: the root overlay sits above every tab scope. Not a
+  /// tab's container, which closes with its tab.
+  ProviderContainer get _root =>
+      ProviderScope.containerOf(_rootOverlay.context, listen: false);
+
+  /// Completes when the drawer has closed.
+  Future<void> get closed => _closed.future;
+
+  void show() {
+    _place(animateIn: true);
+    if (_closed.isCompleted) return;
+    _activeSubscription = _root.listen<TabId>(
+      activeTabIdProvider,
+      (_, _) => _scheduleSync(),
+    );
+    _tabsSubscription = _root.listen<List<WavecruxTab>>(
+      tabListProvider,
+      (_, _) => _scheduleSync(),
+    );
+  }
+
+  void close() {
+    _activeSubscription?.close();
+    _activeSubscription = null;
+    _tabsSubscription?.close();
+    _tabsSubscription = null;
+    _entry?.remove();
+    _entry = null;
+    if (!_closed.isCompleted) _closed.complete();
+  }
+
+  void _place({required bool animateIn}) {
+    final tabs = _root.read(tabListProvider);
+    if (tabs.isEmpty) {
+      close(); // the no-tabs auto-dismiss
+      return;
+    }
+    final active = _root.read(activeTabIdProvider);
+    final navigator = _root.read(tabNavigatorsProvider).navigatorFor(active);
+    _entry?.remove();
+    _tab = navigator == null ? null : active;
+    final entry = OverlayEntry(
+      builder: (_) =>
+          _TabDiagnosticsDrawerHost(onClose: close, animateIn: animateIn),
+    );
+    _entry = entry;
+    (navigator?.overlay ?? _rootOverlay).insert(entry);
+  }
+
+  void _scheduleSync() {
+    if (_syncScheduled || _closed.isCompleted) return;
+    _syncScheduled = true;
+    WidgetsBinding.instance
+      ..addPostFrameCallback((_) {
+        _syncScheduled = false;
+        if (_closed.isCompleted) return;
+        final tabs = _root.read(tabListProvider);
+        if (tabs.isEmpty) {
+          close();
+          return;
+        }
+        if (_root.read(activeTabIdProvider) != _tab) _place(animateIn: false);
+      })
+      ..ensureVisualUpdate();
+  }
+}
+
 /// Wraps [TabDiagnosticsDrawer] with the slide-in transition and an
 /// Escape-to-close keyboard shortcut. Owns the [AnimationController] so
-/// the entrance animation runs the first time the entry mounts.
+/// the entrance animation runs the first time the entry mounts. It is built
+/// under the tab scope of the navigator its entry is on, so the drawer reads
+/// that tab's providers without a scope of its own.
 class _TabDiagnosticsDrawerHost extends StatefulWidget {
-  const _TabDiagnosticsDrawerHost({required this.onClose});
+  const _TabDiagnosticsDrawerHost({
+    required this.onClose,
+    required this.animateIn,
+  });
 
   final VoidCallback onClose;
+
+  /// False when the drawer moves to another tab: it is already open, so it
+  /// neither slides in again nor takes focus.
+  final bool animateIn;
 
   @override
   State<_TabDiagnosticsDrawerHost> createState() =>
@@ -115,6 +204,10 @@ class _TabDiagnosticsDrawerHostState extends State<_TabDiagnosticsDrawerHost>
         ).animate(
           CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
         );
+    if (!widget.animateIn) {
+      _controller.value = 1;
+      return;
+    }
     _controller.forward();
   }
 
@@ -151,7 +244,7 @@ class _TabDiagnosticsDrawerHostState extends State<_TabDiagnosticsDrawerHost>
           ),
         },
         child: FocusScope(
-          autofocus: true,
+          autofocus: widget.animateIn,
           child: SlideTransition(
             position: _offset,
             child: TabDiagnosticsDrawer(onClose: () => unawaited(_close())),
@@ -168,10 +261,18 @@ class _TabDiagnosticsDrawerState extends ConsumerState<TabDiagnosticsDrawer> {
   @override
   void initState() {
     super.initState();
-    // Snapshot the active tab at open time. The drawer follows the active
-    // tab thereafter (build() re-reads `activeTabIdProvider`); this
-    // initial value drives the auto-dismiss check when no tabs are open.
-    _targetTabId = ref.read(activeTabIdProvider);
+    _targetTabId = _ownTabId() ?? ref.read(activeTabIdProvider);
+  }
+
+  /// The tab whose scope this drawer is built under, or null on the root
+  /// overlay (no tab navigator): the drawer then shows the active tab's name
+  /// over the root scope's empty state.
+  TabId? _ownTabId() {
+    try {
+      return ref.read(tabIdProvider);
+    } on Object {
+      return null;
+    }
   }
 
   @override
@@ -206,110 +307,97 @@ class _TabDiagnosticsDrawerState extends ConsumerState<TabDiagnosticsDrawer> {
       return const SizedBox.shrink();
     }
 
-    // Follow the active tab. The user may have switched tabs since the
-    // drawer opened; mirror that update so the sections re-render against
-    // the new tab's per-tab providers.
-    _targetTabId = activeTabId;
+    // The tab this drawer is built under (the placement moves the drawer to
+    // the new active tab's navigator when the active tab changes). On the
+    // root overlay there is no such tab: follow the active one.
+    _targetTabId = _ownTabId() ?? activeTabId;
+    final targetTabId = _targetTabId;
     final WavecruxTab? activeTab = _firstWhereOrNull(
       tabs,
-      (t) => t.id == activeTabId,
+      (t) => t.id == targetTabId,
     );
 
-    final mediaSize = MediaQuery.sizeOf(context);
     // The drawer hosts the existing FileInfoPanel / SignalHealthPanel /
     // ParserBenchmarkRunner widgets, which were designed for a full
-    // diagnostics dialog (~800 dp). The drawer takes ~45% of the viewport
-    // with a 480 dp floor and a 720 dp ceiling so these panels still fit
-    // without overflow.
-    final drawerWidth = mediaSize.width * 0.45;
-    final clampedWidth = drawerWidth.clamp(480.0, 720.0);
-
-    return Align(
-      alignment: AlignmentDirectional.centerEnd,
-      child: Padding(
-        padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top),
-        child: Material(
-          elevation: 8,
-          color: theme.colorScheme.surface,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: clampedWidth),
-            child: SizedBox(
-              width: clampedWidth,
-              height: mediaSize.height,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _Header(
-                    key: const Key('tabDiagnosticsHeader'),
-                    activeTab: activeTab,
-                    onCopy: () => _copyReport(context, ref, l10n, activeTab),
-                    onClose: widget.onClose,
-                  ),
-                  const Divider(height: 1),
-                  Expanded(
-                    // The embedded panels (FileInfoPanel,
-                    // SignalHealthPanel, ParserBenchmarkRunner) read
-                    // per-tab providers — `waveformSourceProvider`,
-                    // `hierarchyProvider`, etc. — that are only
-                    // overridden inside each tab's [ProviderContainer].
-                    // showGeneralDialog mounts this drawer above the
-                    // Navigator, which sits above every per-tab
-                    // [UncontrolledProviderScope], so without an
-                    // explicit scope wrapper the panels would resolve
-                    // those providers from the root container where no
-                    // file is loaded — File Info would show "No
-                    // waveform loaded" and Signal Health would report
-                    // zero clocks even when the active tab has a file
-                    // open (Issue 10).
-                    child: UncontrolledProviderScope(
-                      // Keyed by the target tab id so a tab switch fully
-                      // remounts this subtree against the new tab's
-                      // container — without the key, Flutter reuses the
-                      // existing scope state across container changes
-                      // and the embedded panels' subscriptions can race
-                      // teardown of the previous container's elements.
-                      // Namespaced so it never collides with the tab chip's
-                      // `ValueKey(tab.id)` (see tab_drag_reorder regression).
-                      key: ValueKey('tabScope.diag:${_targetTabId.value}'),
-                      container: ref
-                          .read(tabContainerManagerProvider)
-                          .containerFor(_targetTabId),
-                      child: SingleChildScrollView(
-                        key: const Key('tabDiagnosticsScroll'),
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _Section(
-                              key: const Key('tabDiagnosticsSectionFileInfo'),
-                              title: l10n.tabDiagnosticsSectionFileInfo,
-                              child: const FileInfoPanel(),
-                            ),
-                            _Section(
-                              key: const Key(
-                                'tabDiagnosticsSectionSignalHealth',
+    // diagnostics dialog (~800 dp). The drawer takes ~45% of the overlay it
+    // is on (the tab's area) with a 480 dp floor and a 720 dp ceiling so these
+    // panels still fit without overflow, and never more than that area.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final drawerWidth = (constraints.maxWidth * 0.45).clamp(480.0, 720.0);
+        final clampedWidth = constraints.maxWidth < drawerWidth
+            ? constraints.maxWidth
+            : drawerWidth;
+        return Align(
+          alignment: AlignmentDirectional.centerEnd,
+          child: Padding(
+            padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top),
+            child: Material(
+              elevation: 8,
+              color: theme.colorScheme.surface,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: clampedWidth),
+                child: SizedBox(
+                  width: clampedWidth,
+                  height: double.infinity,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _Header(
+                        key: const Key('tabDiagnosticsHeader'),
+                        activeTab: activeTab,
+                        onCopy: () =>
+                            _copyReport(context, ref, l10n, activeTab),
+                        onClose: widget.onClose,
+                      ),
+                      const Divider(height: 1),
+                      Expanded(
+                        // The embedded panels (FileInfoPanel,
+                        // SignalHealthPanel, ParserBenchmarkRunner) read
+                        // per-tab providers (`waveformSourceProvider`,
+                        // `hierarchyProvider`, ...) that only a tab's
+                        // container overrides. The drawer's overlay entry is
+                        // on that tab's navigator, so it is built under the
+                        // tab's one scope; no scope of its own.
+                        child: SingleChildScrollView(
+                          key: const Key('tabDiagnosticsScroll'),
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _Section(
+                                key: const Key(
+                                  'tabDiagnosticsSectionFileInfo',
+                                ),
+                                title: l10n.tabDiagnosticsSectionFileInfo,
+                                child: const FileInfoPanel(),
                               ),
-                              title: l10n.tabDiagnosticsSectionSignalHealth,
-                              child: const SignalHealthPanel(),
-                            ),
-                            _Section(
-                              key: const Key(
-                                'tabDiagnosticsSectionBenchmarkFile',
+                              _Section(
+                                key: const Key(
+                                  'tabDiagnosticsSectionSignalHealth',
+                                ),
+                                title: l10n.tabDiagnosticsSectionSignalHealth,
+                                child: const SignalHealthPanel(),
                               ),
-                              title: l10n.tabDiagnosticsSectionBenchmarkFile,
-                              child: const ParserBenchmarkRunner(),
-                            ),
-                          ],
+                              _Section(
+                                key: const Key(
+                                  'tabDiagnosticsSectionBenchmarkFile',
+                                ),
+                                title: l10n.tabDiagnosticsSectionBenchmarkFile,
+                                child: const ParserBenchmarkRunner(),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

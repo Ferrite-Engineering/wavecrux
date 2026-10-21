@@ -24,14 +24,32 @@
 // of them used a single `ProviderScope` so the panel and the dialog shared a
 // container.
 //
-// The allowlist is deliberately empty. A violation is fixed, not listed.
+// The allowlist is one entry: the command palette. A violation is otherwise
+// fixed, not listed. A dialog that reads a tab's providers is shown on that
+// tab's own navigator (`ActiveTab.navigatorFor`), under the tab's one scope;
+// it is never wrapped in a second `UncontrolledProviderScope`.
 
 import 'dart:io';
 
 import '../../crux-shared/packages/crux_workspace/test/static/route_mounted_scope_leak_guard.dart';
 
+/// The command palette lists actions from `actionContextProvider`, which is a
+/// ROOT provider that follows the active tab through root-scope bridges
+/// (`tabListProvider`, `activeTabActionFlagsProvider`, ...). The taint scan
+/// reaches a per-tab provider only through its `waveformIsLoadedProvider`
+/// fallback, which is false at the root and exists so a widget test can drive
+/// the loaded-file branch. In the running app the palette reads no per-tab
+/// state, and it is an app-level surface: it covers the window, so it stays on
+/// the root navigator.
+const Map<String, String> _allowlist = <String, String>{
+  'CommandPaletteDialog @ lib/features/command_palette/widgets/command_palette_dialog.dart:64':
+      'app-level palette over root-scope action context; the per-tab read is '
+      'an inert test-only fallback',
+};
+
 void main() {
   defineRouteMountedScopeLeakGuard(
+    allowlist: _allowlist,
     sourceRoots: _sourceRoots,
     // Same seed sources as the sibling provider guard: the open-core per-tab
     // override list, unioned with the Pro overlay's when it is present —

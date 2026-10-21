@@ -11,6 +11,7 @@ import 'package:wavecrux/domain/models/fsm_annotation.dart';
 import 'package:wavecrux/domain/models/fsm_model.dart';
 import 'package:wavecrux/features/viewer/providers/fsm_provider.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
+import 'package:wavecrux/services/tabs/active_tab_navigator.dart';
 import 'package:wavecrux/shared/widgets/confirm_discard_changes.dart';
 
 /// Dialog that lets the user attach human-readable names to numeric FSM
@@ -41,15 +42,14 @@ class FsmAnnotateDialog extends ConsumerStatefulWidget {
 
   /// Convenience static helper. Builds the dialog from the current FSM
   /// model, if any. Returns null when no FSM is active.
-  /// Pass [tabContainer] so the dialog reads and writes the active tab's
-  /// `fsmAnnotationProvider` / `fsmProvider`. The dialog is pushed by the root
-  /// navigator, outside the per-tab [UncontrolledProviderScope], so without
-  /// this it reads/writes the empty root FSM state instead of the tab's.
+  /// The dialog reads and writes the tab's `fsmAnnotationProvider` /
+  /// `fsmProvider`, so it is shown on the tab's own navigator
+  /// ([ActiveTab.navigatorFor]) and built under the tab's one scope. With no
+  /// tab open it uses the root navigator.
   static Future<void> show(
     BuildContext context, {
     required String signalRef,
     required FsmModel? model,
-    ProviderContainer? tabContainer,
   }) {
     final ids = model != null
         ? [for (final s in model.states) s.id]
@@ -60,15 +60,9 @@ class FsmAnnotateDialog extends ConsumerStatefulWidget {
       // deliberate act (Cancel / Save, or Escape), never a stray scrim click —
       // the suite-wide dialog rule.
       barrierDismissible: false,
-      builder: (ctx) {
-        final dialog = FsmAnnotateDialog(
-          signalRef: signalRef,
-          knownStateIds: ids,
-        );
-        return tabContainer != null
-            ? UncontrolledProviderScope(container: tabContainer, child: dialog)
-            : dialog;
-      },
+      navigator: ActiveTab.navigatorFor(context),
+      builder: (ctx) =>
+          FsmAnnotateDialog(signalRef: signalRef, knownStateIds: ids),
     );
   }
 }

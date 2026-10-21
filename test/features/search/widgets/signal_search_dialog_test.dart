@@ -1,6 +1,8 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_workspace/crux_workspace.dart'
+    show CruxTabNavigatorHost, CruxTabNavigators;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -9,10 +11,12 @@ import 'package:wavecrux/domain/enums/scope_type.dart';
 import 'package:wavecrux/domain/enums/var_direction.dart';
 import 'package:wavecrux/domain/enums/var_type.dart';
 import 'package:wavecrux/domain/models/scope.dart';
+import 'package:wavecrux/domain/models/tab_id.dart';
 import 'package:wavecrux/domain/models/variable.dart';
 import 'package:wavecrux/features/search/providers/search_providers.dart';
 import 'package:wavecrux/features/search/widgets/signal_search_dialog.dart';
 import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.dart';
+import 'package:wavecrux/features/tabs/providers/tab_providers.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 
 import '../../../helpers/product_telemetry_config.dart';
@@ -507,7 +511,7 @@ void main() {
     // ── show() tab-scope routing ────────────────────────────────────────────
 
     testWidgets(
-      'show() with tabContainer resolves hierarchyProvider from tab scope',
+      'show() from inside a tab resolves hierarchyProvider from the tab scope',
       (tester) async {
         final clk = _makeVar('clk');
         final scopes = [
@@ -519,11 +523,16 @@ void main() {
           overrides: [productTelemetryConfig],
         );
         addTearDown(rootContainer.dispose);
+        final tabId = TabId.generate();
         final tabContainer = ProviderContainer(
           parent: rootContainer,
-          overrides: [hierarchyProvider.overrideWith((_) => AsyncData(scopes))],
+          overrides: [
+            tabIdProvider.overrideWithValue(tabId),
+            hierarchyProvider.overrideWith((_) => AsyncData(scopes)),
+          ],
         );
         addTearDown(tabContainer.dispose);
+        final navigators = CruxTabNavigators();
 
         late BuildContext ctx;
         await tester.pumpWidget(
@@ -532,18 +541,25 @@ void main() {
             child: MaterialApp(
               localizationsDelegates: L10N.localizationsDelegates,
               supportedLocales: L10N.supportedLocales,
-              home: Builder(
-                builder: (c) {
-                  ctx = c;
-                  return const Scaffold(body: SizedBox.shrink());
-                },
+              // The tab's content on its own navigator, under the tab's one
+              // scope, as PaneHost builds it.
+              home: UncontrolledProviderScope(
+                container: tabContainer,
+                child: CruxTabNavigatorHost(
+                  navigatorKey: navigators.keyFor(tabId),
+                  builder: (c) {
+                    ctx = c;
+                    return const Scaffold(body: SizedBox.shrink());
+                  },
+                ),
               ),
             ),
           ),
         );
 
-        // Open via show() with the tab container — dialog must see tab's signals.
-        SignalSearchDialog.show(ctx, tabContainer: tabContainer).ignore();
+        // Opened from inside the tab: the dialog is built on the tab's
+        // navigator, under the tab's scope, and sees the tab's signals.
+        SignalSearchDialog.show(ctx).ignore();
         await tester.pumpAndSettle();
 
         expect(find.text('clk'), findsOneWidget);
@@ -552,7 +568,7 @@ void main() {
     );
 
     testWidgets(
-      'show() without tabContainer falls back to root scope (no signals)',
+      'show() with no tab falls back to root scope (no signals)',
       (tester) async {
         final rootContainer = ProviderContainer(
           overrides: [productTelemetryConfig],

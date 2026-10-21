@@ -710,10 +710,7 @@ class SignalListPanel extends ConsumerWidget {
     final deviceClass = ref.read(deviceClassProvider);
     if (deviceClass == DeviceClass.phone ||
         deviceClass == DeviceClass.phoneLandscape) {
-      await FsmPanel.showFsmModal(
-        context,
-        tabContainer: ProviderScope.containerOf(context, listen: false),
-      );
+      await FsmPanel.showFsmModal(context);
     }
   }
 
@@ -730,7 +727,6 @@ class SignalListPanel extends ConsumerWidget {
       context,
       signalRef: signalRef,
       model: relevantModel,
-      tabContainer: ProviderScope.containerOf(context, listen: false),
     );
   }
 }

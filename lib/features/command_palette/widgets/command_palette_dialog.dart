@@ -48,14 +48,13 @@ class CommandPaletteDialog extends ConsumerWidget {
   /// [onAction] will be called (after the dialog is dismissed) with the
   /// [ShortcutAction] the user selected.
   ///
-  /// Pass [tabContainer] so the palette runs inside the active tab's
-  /// [ProviderScope]; the dialog is pushed by the root navigator, outside the
-  /// per-tab [UncontrolledProviderScope], and this keeps any per-tab providers
-  /// it touches resolved against the focused tab.
+  /// The palette is an app-level surface: it lists actions from the root
+  /// `actionContextProvider`, which already follows the active tab, and reads
+  /// no per-tab provider itself, so it stays on the root navigator and covers
+  /// the window.
   static Future<void> show(
     BuildContext context, {
     required void Function(ShortcutAction) onAction,
-    ProviderContainer? tabContainer,
   }) {
     // Re-entrancy guard: Cmd/Ctrl+Shift+P auto-repeat or a double-press must
     // not stack multiple palettes. Covers both the app.dart global handler and
@@ -64,15 +63,7 @@ class CommandPaletteDialog extends ConsumerWidget {
       'commandPalette',
       () => showCruxDialog<void>(
         context: context,
-        builder: (_) {
-          final dialog = CommandPaletteDialog(onAction: onAction);
-          return tabContainer != null
-              ? UncontrolledProviderScope(
-                  container: tabContainer,
-                  child: dialog,
-                )
-              : dialog;
-        },
+        builder: (_) => CommandPaletteDialog(onAction: onAction),
       ),
     );
   }

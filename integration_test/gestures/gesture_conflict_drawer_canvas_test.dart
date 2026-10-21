@@ -105,11 +105,11 @@ void main() {
     drainTransientLayoutExceptions(tester);
 
     // ── Phone-class only: the left drawer exists and opens cleanly ─────────
-    final scaffoldWithDrawer = find.byWidgetPredicate(
-      (w) => w is Scaffold && w.drawer != null,
-    );
-    if (scaffoldWithDrawer.evaluate().isNotEmpty) {
-      tester.state<ScaffoldState>(scaffoldWithDrawer.first).openDrawer();
+    // The status bar's left chevron is phone-only; it opens the signal tree
+    // drawer hosted by the active tab's own content.
+    final showSignalTree = find.byTooltip('Show Signal Tree');
+    if (showSignalTree.evaluate().isNotEmpty) {
+      await tester.tap(showSignalTree.first);
       await tester.pumpAndSettle();
       expect(
         find.byType(Drawer),

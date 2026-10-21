@@ -29,23 +29,22 @@ const _locales = <Locale>[
   Locale('ko'),
 ];
 
+/// Pumps the picker under [container], the tab's scope: the picker is built
+/// on the tab's own navigator, so its `ref` is the tab's.
 Future<void> _pumpPicker(
   WidgetTester tester, {
-  ProviderContainer? tabContainer,
+  required ProviderContainer container,
   Locale? locale,
 }) async {
   await tester.pumpWidget(
-    ProviderScope(
-      overrides: [productTelemetryConfig],
+    UncontrolledProviderScope(
+      container: container,
       child: MaterialApp(
         localizationsDelegates: L10N.localizationsDelegates,
         supportedLocales: L10N.supportedLocales,
         locale: locale,
-        home: Scaffold(
-          body: DecoderPickerDialog(
-            signalMap: const {},
-            tabContainer: tabContainer,
-          ),
+        home: const Scaffold(
+          body: DecoderPickerDialog(signalMap: {}),
         ),
       ),
     ),
@@ -96,7 +95,7 @@ void main() {
               ),
             );
 
-        await _pumpPicker(tester, tabContainer: container, locale: locale);
+        await _pumpPicker(tester, container: container, locale: locale);
         await _expandAll(tester);
 
         expect(tester.takeException(), isNull);
@@ -112,7 +111,7 @@ void main() {
     // Sanity: container has no active decoders.
     expect(container.read(activeDecodersProvider), isEmpty);
 
-    await _pumpPicker(tester, tabContainer: container);
+    await _pumpPicker(tester, container: container);
     final l10n = L10N.of(tester.element(find.byType(DecoderPickerDialog)));
 
     // The stacked section header (via pickerCategoryHeader) should NOT
@@ -151,7 +150,7 @@ void main() {
           );
       expect(container.read(activeDecodersProvider), hasLength(1));
 
-      await _pumpPicker(tester, tabContainer: container);
+      await _pumpPicker(tester, container: container);
       final l10n = L10N.of(tester.element(find.byType(DecoderPickerDialog)));
 
       // The Stacked Decoders section header should now render.
@@ -196,7 +195,7 @@ void main() {
             ),
           );
 
-      await _pumpPicker(tester, tabContainer: container);
+      await _pumpPicker(tester, container: container);
       await _expandAll(tester);
 
       // Both rows are Open Core (requiredTier == LicenseTier.openCore), so the

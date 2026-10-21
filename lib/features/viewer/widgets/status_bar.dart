@@ -14,6 +14,7 @@ import 'package:wavecrux/features/viewer/providers/panel_layout_provider.dart';
 import 'package:wavecrux/features/viewer/providers/time_providers.dart';
 import 'package:wavecrux/features/viewer/providers/value_column_provider.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
+import 'package:wavecrux/features/viewer/widgets/phone_signal_tree_drawer.dart';
 import 'package:wavecrux/features/viewer/widgets/signal_load_indicator.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/services/time_format/time_format_service.dart';
@@ -276,11 +277,11 @@ class StatusBar extends ConsumerWidget {
             semanticsLabel: l10n.panelSignalTree,
             onTap: () {
               // On phone the IdeLayout left pane is force-hidden — present
-              // the same content as a Drawer instead. ViewerScreen provides
-              // the drawer; we just open it here.
-              final scaffold = Scaffold.maybeOf(context);
-              if (scaffold?.hasDrawer ?? false) {
-                scaffold!.openDrawer();
+              // the same content as a drawer instead. The tab's content hosts
+              // the drawer (under the tab's one scope); we just open it here.
+              final drawer = PhoneSignalTreeDrawerHost.maybeOf(context);
+              if (drawer != null) {
+                drawer.open();
                 return;
               }
               setSignalTreeVisible(

@@ -30,6 +30,7 @@ import 'package:wavecrux/features/viewer/providers/mobile_memory_guard_provider.
 import 'package:wavecrux/features/viewer/providers/session_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
 import 'package:wavecrux/features/viewer/screens/viewer_screen.dart';
+import 'package:wavecrux/features/viewer/widgets/phone_signal_tree_drawer.dart';
 import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/services/panes/pane_container_manager.dart';
@@ -488,22 +489,20 @@ Future<void> _pumpUntil(
   fail('timed out: $reason');
 }
 
+/// Opens the phone signal-tree drawer the way a user does: the status bar's
+/// left chevron. The drawer is hosted by the active tab's own content.
 Future<void> _openDrawer(WidgetTester tester) async {
-  tester
-      .state<ScaffoldState>(
-        find.byWidgetPredicate((w) => w is Scaffold && w.drawer != null),
-      )
-      .openDrawer();
+  await tester.tap(find.byTooltip('Show Signal Tree'));
   await tester.pumpAndSettle();
   expect(find.byType(Drawer), findsOneWidget);
 }
 
 Future<void> _closeDrawer(WidgetTester tester) async {
   tester
-      .state<ScaffoldState>(
-        find.byWidgetPredicate((w) => w is Scaffold && w.drawer != null),
+      .state<PhoneSignalTreeDrawerHostState>(
+        find.byType(PhoneSignalTreeDrawerHost),
       )
-      .closeDrawer();
+      .close();
   await tester.pumpAndSettle();
 }
 
