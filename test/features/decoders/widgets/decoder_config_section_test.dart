@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'package:crux_dock/crux_dock.dart';
+import 'package:crux_ide_layout/crux_ide_layout.dart' show CruxPopUpButton;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -282,7 +283,7 @@ void main() {
         ),
       );
       expect(find.text('tb.sclk'), findsOneWidget);
-      await tester.tap(find.byType(DropdownButton<String>).last);
+      await tester.tap(find.byType(CruxPopUpButton<String?>).last);
       await tester.pumpAndSettle();
       expect(find.text('tb.other'), findsNothing);
     });
@@ -308,12 +309,16 @@ void main() {
           inspectorTestVar('top.mmm', ref: '2'),
         ]),
       );
-      await tester.tap(find.byType(DropdownButton<String>).first);
+      await tester.tap(find.byType(CruxPopUpButton<String?>).first);
       await tester.pumpAndSettle();
       final items = tester
           .widgetList<Text>(
             find.descendant(
-              of: find.byType(DropdownMenuItem<String>),
+              of: find.byWidgetPredicate((w) {
+                final key = w.key;
+                return key is ValueKey<String> &&
+                    key.value.startsWith('cruxPopUpItem-');
+              }),
               matching: find.byType(Text),
             ),
           )
@@ -333,7 +338,7 @@ void main() {
         definition: _spiWidthDef,
         signals: _signals({'top.clk': 1, 'top.bus': 8}),
       );
-      await tester.tap(find.byType(DropdownButton<String>).first);
+      await tester.tap(find.byType(CruxPopUpButton<String?>).first);
       await tester.pumpAndSettle();
       expect(find.text('top.clk'), findsWidgets);
       expect(find.text('top.bus'), findsNothing);
@@ -367,7 +372,7 @@ void main() {
         definition: def,
         signals: _signals({'top.pipe16': 16, 'top.pipe64': 64}),
       );
-      await tester.tap(find.byType(DropdownButton<String>).first);
+      await tester.tap(find.byType(CruxPopUpButton<String?>).first);
       await tester.pumpAndSettle();
       expect(find.text('top.pipe16'), findsWidgets);
       expect(find.text('top.pipe64'), findsNothing);

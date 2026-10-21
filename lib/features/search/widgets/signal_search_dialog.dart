@@ -1,7 +1,8 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
-import 'package:crux_ide_layout/crux_ide_layout.dart' show showCruxDialog;
+import 'package:crux_ide_layout/crux_ide_layout.dart'
+    show CruxSegment, CruxSegmentedControl, showCruxDialog;
 import 'package:crux_telemetry/crux_telemetry.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -301,24 +302,21 @@ class _SearchBar extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 8),
-          SegmentedButton<SearchMode>(
+          CruxSegmentedControl<SearchMode>(
             segments: [
-              ButtonSegment(
+              CruxSegment(
                 value: SearchMode.substring,
-                label: Text(l10n.searchDialogModeSubstring),
+                label: l10n.searchDialogModeSubstring,
               ),
-              ButtonSegment(
+              CruxSegment(
                 value: SearchMode.glob,
-                label: Text(l10n.searchDialogModeGlob),
+                label: l10n.searchDialogModeGlob,
               ),
             ],
-            selected: {filter.mode},
-            onSelectionChanged: (sel) => ref
-                .read(searchDialogFilterProvider.notifier)
-                .setMode(sel.first),
-            style: const ButtonStyle(
-              visualDensity: VisualDensity.compact,
-            ),
+            selected: filter.mode,
+            onChanged: (m) =>
+                ref.read(searchDialogFilterProvider.notifier).setMode(m),
+            semanticLabel: l10n.searchDialogModeLabel,
           ),
         ],
       ),

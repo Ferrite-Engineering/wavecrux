@@ -1,6 +1,8 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart'
+    show CruxPopUpButton, CruxSegmentedControl;
 import 'package:crux_settings/crux_settings.dart';
 import 'package:crux_settings_ui/crux_settings_ui.dart';
 import 'package:crux_telemetry/crux_telemetry.dart';
@@ -203,9 +205,9 @@ void main() {
     ) async {
       await tester.pumpWidget(_wrap());
       await tester.pumpAndSettle();
-      expect(find.byType(DropdownButton<DisplayFormat>), findsNothing);
+      expect(find.byType(CruxPopUpButton<DisplayFormat>), findsNothing);
       await _selectCategory(tester, 'Waveform Defaults');
-      expect(find.byType(DropdownButton<DisplayFormat>), findsOneWidget);
+      expect(find.byType(CruxPopUpButton<DisplayFormat>), findsOneWidget);
     });
 
     testWidgets('Waveform Defaults hosts the natural-sort toggle, ON by '
@@ -391,14 +393,14 @@ void main() {
     testWidgets(
       'Appearance no longer shows the legacy light/dark/system selector',
       (tester) async {
-        // The redundant theme-mode SegmentedButton was removed: brightness is
+        // The redundant theme-mode segmented control was removed: brightness is
         // now driven by the color-theme preset picker (see ColorThemeSection),
         // not a separate AppThemeMode flag. None of its segment labels should
         // render in the Appearance detail.
         await tester.pumpWidget(_wrap());
         await tester.pumpAndSettle();
         await _selectCategory(tester, 'Appearance');
-        expect(find.byType(SegmentedButton<AppThemeMode>), findsNothing);
+        expect(find.byType(CruxSegmentedControl<AppThemeMode>), findsNothing);
         expect(find.text('System'), findsNothing);
         // The preset picker (which carries brightness) renders instead.
         expect(find.byType(ColorThemeSection), findsOneWidget);

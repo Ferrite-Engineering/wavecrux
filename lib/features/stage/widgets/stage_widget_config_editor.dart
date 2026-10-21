@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'package:crux_a11y/crux_a11y.dart';
+import 'package:crux_ide_layout/crux_ide_layout.dart'
+    show CruxPopUpButton, CruxPopUpItem;
 import 'package:crux_settings_ui/crux_settings_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -37,7 +39,7 @@ typedef ConfigLabelResolver = String Function(String key);
 ///                                   are set, else a numeric [TextField]
 /// - [ConfigParamType.decimal]     → same as integer, parsed as `double`
 /// - [ConfigParamType.text]        → [TextField]
-/// - [ConfigParamType.enumChoice]  → [DropdownButton]
+/// - [ConfigParamType.enumChoice]  → [CruxPopUpButton]
 ///
 /// Widgets needing bespoke editing UI (palette tables, layout grids)
 /// should leave [StageWidget.configParams] empty and supply their own
@@ -235,7 +237,6 @@ class _EnumChoiceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final choices = param.choices ?? const <ConfigParamChoice>[];
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -247,36 +248,25 @@ class _EnumChoiceRow extends StatelessWidget {
             style: TextStyle(fontSize: metrics.labelText),
           ),
           const SizedBox(height: 4),
-          DropdownButtonFormField<String>(
-            initialValue: value,
-            // isExpanded forces the dropdown to size to the column width
-            // and ellipsize its closed-state selected-value display, rather
-            // than sizing to the widest menu item's intrinsic width — which
-            // overflows the bindings pane's narrow column when a Pro pack
-            // widget has long enum-choice labels (e.g. the orientation
-            // widget's "Accelerometer + gyroscope (fusion)"). The full
-            // text is still visible when the dropdown is opened.
-            isExpanded: true,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              isDense: true,
-              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            ),
-            style: TextStyle(
-              fontSize: metrics.bodyText,
-              color: theme.colorScheme.onSurface,
-            ),
+          CruxPopUpButton<String>(
+            value: value,
+            // expand sizes the control to the column width and ellipsizes its
+            // closed-state value, rather than sizing to the widest menu item's
+            // intrinsic width, which overflows the bindings pane's narrow
+            // column when a Pro pack widget has long enum-choice labels (e.g.
+            // the orientation widget's "Accelerometer + gyroscope (fusion)").
+            // The full text is still visible when the menu is opened.
+            expand: true,
             items: [
               for (final c in choices)
-                DropdownMenuItem<String>(
+                CruxPopUpItem<String>(
                   value: c.id,
-                  child: Text(
-                    resolveLabel(c.labelKey),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  label: resolveLabel(c.labelKey),
                 ),
             ],
             onChanged: onChanged,
+            semanticLabel: resolveLabel(param.labelKey),
+            valueStyle: TextStyle(fontSize: metrics.bodyText),
           ),
         ],
       ),

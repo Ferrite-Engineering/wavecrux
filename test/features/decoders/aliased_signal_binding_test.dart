@@ -6,7 +6,7 @@
 // lines). Every name must be offered and must be an auto-bind candidate; the
 // binding stores the shared signalRef.
 
-import 'package:flutter/material.dart';
+import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wavecrux/domain/interfaces/waveform_data_source.dart';
@@ -96,7 +96,7 @@ void main() {
   testWidgets('the signal picker lists every alias name', (tester) async {
     await host(tester);
 
-    await tester.tap(find.byType(DropdownButton<String>));
+    await tester.tap(find.byType(CruxPopUpButton<String?>));
     await tester.pumpAndSettle();
 
     for (final path in _aliases) {
@@ -107,8 +107,8 @@ void main() {
     // signalRef happens to resolve to first.
     await tester.tap(find.text('tb.u_view.src_data').last);
     await tester.pumpAndSettle();
-    final dropdown = tester.widget<DropdownButton<String>>(
-      find.byType(DropdownButton<String>),
+    final dropdown = tester.widget<CruxPopUpButton<String?>>(
+      find.byType(CruxPopUpButton<String?>),
     );
     expect(dropdown.value, 'tb.u_view.src_data');
   });
@@ -118,8 +118,8 @@ void main() {
   ) async {
     await host(tester, autoBind: true);
 
-    final dropdown = tester.widget<DropdownButton<String>>(
-      find.byType(DropdownButton<String>),
+    final dropdown = tester.widget<CruxPopUpButton<String?>>(
+      find.byType(CruxPopUpButton<String?>),
     );
     expect(dropdown.value, 'tb.u_view.TxData');
   });

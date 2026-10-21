@@ -4,7 +4,8 @@
 import 'dart:async';
 
 import 'package:crux_dock/crux_dock.dart';
-import 'package:crux_ide_layout/crux_ide_layout.dart' show announceCrux;
+import 'package:crux_ide_layout/crux_ide_layout.dart'
+    show CruxPopUpButton, CruxPopUpItem, announceCrux;
 import 'package:crux_policy/crux_policy.dart' show PolicySource;
 import 'package:crux_settings_ui/crux_settings_ui.dart';
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
@@ -464,8 +465,8 @@ class _SignalBindingRow extends StatelessWidget {
             )
             .toList()
           ..sort();
-    // The current binding must be exactly one item, or DropdownButton
-    // asserts. A reconfigured decoder can name a signal the width filter
+    // The current binding must be exactly one item, or the pop-up shows its
+    // placeholder instead of it. A reconfigured decoder can name a signal the width filter
     // excludes, or one the trace no longer has: list it first so it stays
     // visible and selectable.
     final dropdownValues = [
@@ -484,34 +485,21 @@ class _SignalBindingRow extends StatelessWidget {
       help: isRequired
           ? '${l10n.decoderConfigRequiredLabel}. $description'
           : description,
-      // The menu is a route: its items are plain widgets built from values
-      // already read.
-      child: DropdownButton<String>(
+      // The row label names the pop-up, so it takes no label of its own.
+      child: CruxPopUpButton<String?>(
         value: currentValue,
-        hint: Text(
-          l10n.decoderConfigSelectSignal,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        isExpanded: true,
         items: [
           if (!isRequired)
-            DropdownMenuItem<String>(
-              child: Text(
-                l10n.decoderConfigSelectSignal,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+            CruxPopUpItem<String?>(
+              value: null,
+              label: l10n.decoderConfigSelectSignal,
             ),
-          ...dropdownValues.map(
-            (value) => DropdownMenuItem<String>(
-              value: value,
-              child: Text(
-                value,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontFamily: 'monospace'),
-              ),
-            ),
-          ),
+          for (final value in dropdownValues)
+            CruxPopUpItem<String?>(value: value, label: value),
         ],
+        placeholder: l10n.decoderConfigSelectSignal,
+        expand: true,
+        valueStyle: const TextStyle(fontFamily: 'monospace'),
         onChanged: onChanged,
       ),
     );
@@ -602,24 +590,19 @@ class _ParameterRow extends StatelessWidget {
       case DecoderParameterType.boolean:
         return const SizedBox.shrink();
       case DecoderParameterType.enumeration:
-        return DropdownButton<String>(
+        return CruxPopUpButton<String>(
           value: value as String?,
-          isExpanded: true,
-          items: (parameter.enumValues ?? <String>[])
-              .map(
-                (e) => DropdownMenuItem<String>(
-                  value: e,
-                  child: Text(
-                    parameter.enumLabelKeys?[e] != null
-                        ? resolveLabel(parameter.enumLabelKeys![e]!)
-                        : (parameter.enumLabels?[e] ?? e),
-                  ),
-                ),
-              )
-              .toList(),
-          onChanged: (v) {
-            if (v != null) onChanged(v);
-          },
+          items: [
+            for (final e in parameter.enumValues ?? <String>[])
+              CruxPopUpItem<String>(
+                value: e,
+                label: parameter.enumLabelKeys?[e] != null
+                    ? resolveLabel(parameter.enumLabelKeys![e]!)
+                    : (parameter.enumLabels?[e] ?? e),
+              ),
+          ],
+          onChanged: onChanged,
+          expand: true,
         );
       case DecoderParameterType.integer:
         return TextFormField(

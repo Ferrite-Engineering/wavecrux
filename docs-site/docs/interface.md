@@ -113,7 +113,7 @@ WaveCrux keeps a rolling, in-memory log of what it is doing — files opening, d
 
 Open the **App Diagnostics** dialog (++cmd+shift+m++ / ++ctrl+shift+m++) and scroll to the **Logs** section, below Frame Stats. Each line reads `time LEVEL source: message`, newest first, colour-coded by severity — errors in red, warnings in amber, ordinary events in the default text colour, and fine-grained traces muted.
 
-- **Level filter.** The dropdown limits the view to a minimum level — pick *Quiet* to see only warnings and errors, or *Verbose* to see everything down to fine-grained traces. It starts at your saved verbosity (below) and only changes this view.
+- **Level filter.** The dropdown limits the view to a minimum level — pick *Quiet* to see only warnings and errors, or *Verbose* to see everything down to fine-grained traces. It starts at your saved verbosity (below) and only changes this view. From WaveCrux 1.2 it is a pop-up button: open it with a click, ++space++, ++enter++ or ++alt+down++, type the start of an item to jump to it, and press ++esc++ to close it.
 - **Copy.** Puts the lines that pass the filter on your clipboard as plain text, oldest first with full timestamps — handy for pasting into a bug report or a message.
 - **Clear.** Empties the log. Because the report and this view share one buffer, clearing here also clears what a *subsequent* bug report would carry, so clear right before reproducing a problem to capture just the relevant lines.
 

@@ -299,23 +299,18 @@ class _AmbiguousPrefixBanner extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: DropdownButton<String>(
+                child: CruxPopUpButton<String>(
                   value: selected != null && prefixes.contains(selected)
                       ? selected
                       : prefixes.first,
-                  isExpanded: true,
-                  items: prefixes
-                      .map(
-                        (p) => DropdownMenuItem<String>(
-                          value: p,
-                          child: Text(
-                            p,
-                            style: const TextStyle(fontFamily: 'monospace'),
-                          ),
-                        ),
-                      )
-                      .toList(),
+                  items: [
+                    for (final p in prefixes)
+                      CruxPopUpItem<String>(value: p, label: p),
+                  ],
                   onChanged: onSelected,
+                  expand: true,
+                  semanticLabel: l10n.decoderAutoBindPrefixDropdownLabel,
+                  valueStyle: const TextStyle(fontFamily: 'monospace'),
                 ),
               ),
             ],

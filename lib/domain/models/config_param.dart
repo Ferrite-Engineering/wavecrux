@@ -25,7 +25,7 @@ enum ConfigParamType {
   text,
 
   /// One-of-N selection. Stored as a `String` id from
-  /// [ConfigParam.choices]. Renders as a [DropdownButton].
+  /// [ConfigParam.choices]. Renders as a pop-up button.
   enumChoice,
 }
 

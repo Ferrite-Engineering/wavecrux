@@ -55,20 +55,19 @@ class _LogsPanelState extends ConsumerState<LogsPanel> {
       children: [
         Row(
           children: [
-            DropdownButton<LogVerbosity>(
+            CruxPopUpButton<LogVerbosity>(
               key: const Key('logsPanelLevelFilter'),
               value: filter,
-              isDense: true,
               items: [
                 for (final v in LogVerbosity.values)
-                  DropdownMenuItem(
+                  CruxPopUpItem<LogVerbosity>(
                     value: v,
-                    child: Text(_verbosityLabel(v, l10n)),
+                    label: _verbosityLabel(v, l10n),
                   ),
               ],
-              onChanged: (v) {
-                if (v != null) setState(() => _filter = v);
-              },
+              onChanged: (v) => setState(() => _filter = v),
+              semanticLabel: l10n.logsPanelLevelLabel,
+              dense: true,
             ),
             const Spacer(),
             IconButton(

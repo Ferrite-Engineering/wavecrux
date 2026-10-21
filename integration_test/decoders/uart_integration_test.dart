@@ -62,7 +62,7 @@ void main() {
     // ── Step 4: set baud_rate = 1 000 000 ────────────────────────────────────
     // The first TextFormField in the config dialog is baud_rate (the first
     // integer parameter in UartDecoder.decoderDefinition). Signal binding rows
-    // use DropdownButton, not TextFormField, so .first is unambiguous.
+    // use pop-up buttons, not TextFormField, so .first is unambiguous.
     await tester.enterText(find.byType(TextFormField).first, '1000000');
     await tester.pumpAndSettle();
 

@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart' show CruxPopUpButton;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -257,7 +258,7 @@ void main() {
       await _openDialog(tester);
 
       // The dropdown items should exist — open the dropdown to reveal them.
-      final dropdownFinder = find.byType(DropdownButtonFormField<String>);
+      final dropdownFinder = find.byType(CruxPopUpButton<String>);
       expect(dropdownFinder, findsOneWidget);
       await tester.tap(dropdownFinder);
       await tester.pumpAndSettle();

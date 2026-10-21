@@ -8288,5 +8288,29 @@
         "type": "String"
       }
     }
+  },
+  "cocotbLogTestFilterLabel": "Test",
+  "@cocotbLogTestFilterLabel": {
+    "description": "Accessible name of the test-name filter pop-up in the cocotb log panel toolbar. Read by screen readers; not drawn."
+  },
+  "logsPanelLevelLabel": "Level",
+  "@logsPanelLevelLabel": {
+    "description": "Accessible name of the level filter pop-up in the Logs panel. Read by screen readers; not drawn."
+  },
+  "searchDialogModeLabel": "Match mode",
+  "@searchDialogModeLabel": {
+    "description": "Accessible name of the Substring/Glob segmented control in the signal search dialog. Read by screen readers; not drawn."
+  },
+  "customTranslatorFieldFormat": "Format",
+  "@customTranslatorFieldFormat": {
+    "description": "Accessible name of the display-format pop-up on a bit-field row in the custom translator editor. Read by screen readers; not drawn."
+  },
+  "patternSearchOperatorLabel": "Operator",
+  "@patternSearchOperatorLabel": {
+    "description": "Accessible name of the comparison-operator pop-up on a condition row in the pattern search dialog. Read by screen readers; not drawn."
+  },
+  "patternSearchConnectorLabel": "Combine conditions with",
+  "@patternSearchConnectorLabel": {
+    "description": "Accessible name of the AND/OR segmented control between condition rows in the pattern search dialog. Read by screen readers; not drawn."
   }
 }

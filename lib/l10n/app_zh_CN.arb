@@ -7198,5 +7198,29 @@
   "actionRequiresWaveCruxPro": "{action}需要 WaveCrux Pro。",
   "actionRequiresWaveCruxEnterprise": "{action}需要 WaveCrux Enterprise。",
   "cruxProjectLegacyFileName": "此设计清单使用旧文件名 .crux-project，文件选择器会隐藏该文件。请将其重命名为 {fileName}。",
-  "cruxProjectAmbiguousDirectory": "{directory} 包含多个设计清单（{candidates}）。每个设计文件夹只保留一个 .crux-project 文件。"
+  "cruxProjectAmbiguousDirectory": "{directory} 包含多个设计清单（{candidates}）。每个设计文件夹只保留一个 .crux-project 文件。",
+  "cocotbLogTestFilterLabel": "测试",
+  "@cocotbLogTestFilterLabel": {
+    "description": "Accessible name of the test-name filter pop-up in the cocotb log panel toolbar. Read by screen readers; not drawn."
+  },
+  "logsPanelLevelLabel": "级别",
+  "@logsPanelLevelLabel": {
+    "description": "Accessible name of the level filter pop-up in the Logs panel. Read by screen readers; not drawn."
+  },
+  "searchDialogModeLabel": "匹配模式",
+  "@searchDialogModeLabel": {
+    "description": "Accessible name of the Substring/Glob segmented control in the signal search dialog. Read by screen readers; not drawn."
+  },
+  "customTranslatorFieldFormat": "格式",
+  "@customTranslatorFieldFormat": {
+    "description": "Accessible name of the display-format pop-up on a bit-field row in the custom translator editor. Read by screen readers; not drawn."
+  },
+  "patternSearchOperatorLabel": "运算符",
+  "@patternSearchOperatorLabel": {
+    "description": "Accessible name of the comparison-operator pop-up on a condition row in the pattern search dialog. Read by screen readers; not drawn."
+  },
+  "patternSearchConnectorLabel": "条件组合方式",
+  "@patternSearchConnectorLabel": {
+    "description": "Accessible name of the AND/OR segmented control between condition rows in the pattern search dialog. Read by screen readers; not drawn."
+  }
 }

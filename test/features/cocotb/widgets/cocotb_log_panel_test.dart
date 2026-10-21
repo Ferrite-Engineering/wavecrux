@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart' show CruxPopUpButton;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -151,6 +152,36 @@ void main() {
       await tester.pumpAndSettle();
       final l10n = await L10N.delegate.load(const Locale('en'));
       expect(find.text(l10n.cocotbLogEmpty), findsOneWidget);
+    });
+
+    testWidgets('choosing All Tests from a named test clears the test filter', (
+      tester,
+    ) async {
+      final file = _file(
+        [
+          _e(line: 1, severity: CocotbLogSeverity.info, message: 'x', ticks: 1),
+        ],
+        testNames: ['test_a', 'test_b'],
+      );
+      await tester.pumpWidget(_wrap(file: file));
+      await tester.pumpAndSettle();
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(CocotbLogPanel)),
+      );
+      final l10n = await L10N.delegate.load(const Locale('en'));
+      final picker = find.byType(CruxPopUpButton<String?>);
+
+      await tester.tap(picker);
+      await tester.pump();
+      await tester.tap(find.text('test_b').last);
+      await tester.pump();
+      expect(container.read(cocotbFilterProvider).testNameFilter, 'test_b');
+
+      await tester.tap(picker);
+      await tester.pump();
+      await tester.tap(find.text(l10n.cocotbLogAllTests).last);
+      await tester.pump();
+      expect(container.read(cocotbFilterProvider).testNameFilter, isNull);
     });
 
     group('clearing the keyword filter', () {

@@ -234,21 +234,20 @@ class _FilterBar extends StatelessWidget {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           // Test name dropdown.
-          DropdownButton<String?>(
+          CruxPopUpButton<String?>(
             value: selectedTestName,
-            isDense: true,
-            hint: Text(l10n.cocotbLogAllTests),
-            items: <DropdownMenuItem<String?>>[
-              DropdownMenuItem<String?>(
-                child: Text(l10n.cocotbLogAllTests),
+            items: <CruxPopUpItem<String?>>[
+              CruxPopUpItem<String?>(
+                value: null,
+                label: l10n.cocotbLogAllTests,
               ),
               for (final name in testNames)
-                DropdownMenuItem<String?>(
-                  value: name,
-                  child: Text(name),
-                ),
+                CruxPopUpItem<String?>(value: name, label: name),
             ],
+            placeholder: l10n.cocotbLogAllTests,
             onChanged: onTestNameChanged,
+            semanticLabel: l10n.cocotbLogTestFilterLabel,
+            dense: true,
           ),
           // Severity chips.
           const CocotbSeverityChips(),

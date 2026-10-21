@@ -307,28 +307,19 @@ class _CustomTranslatorEditorDialogState
             ),
           ),
           const SizedBox(width: 6),
-          SizedBox(
-            width: 132,
-            child: InputDecorator(
-              decoration: const InputDecoration(isDense: true),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<DisplayFormat>(
-                  value: field.format,
-                  isDense: true,
-                  isExpanded: true,
-                  onChanged: (v) {
-                    if (v != null) setState(() => field.format = v);
-                  },
-                  items: [
-                    for (final f in _fieldFormats)
-                      DropdownMenuItem(
-                        value: f,
-                        child: Text(_formatLabel(l10n, f)),
-                      ),
-                  ],
+          CruxPopUpButton<DisplayFormat>(
+            value: field.format,
+            items: [
+              for (final f in _fieldFormats)
+                CruxPopUpItem<DisplayFormat>(
+                  value: f,
+                  label: _formatLabel(l10n, f),
                 ),
-              ),
-            ),
+            ],
+            onChanged: (v) => setState(() => field.format = v),
+            width: 132,
+            dense: true,
+            semanticLabel: l10n.customTranslatorFieldFormat,
           ),
           IconButton(
             tooltip: l10n.customTranslatorRemoveField,

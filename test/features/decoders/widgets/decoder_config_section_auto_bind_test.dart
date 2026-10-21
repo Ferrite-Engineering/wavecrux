@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'package:crux_dock/crux_dock.dart';
+import 'package:crux_ide_layout/crux_ide_layout.dart' show CruxPopUpButton;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -237,7 +238,7 @@ void main() {
       final l10n = _l10n(tester);
 
       // Manually bind sclk to tb.foo_clk: the first picker is the sclk row.
-      await tester.tap(find.byType(DropdownButton<String>).first);
+      await tester.tap(find.byType(CruxPopUpButton<String?>).first);
       await tester.pumpAndSettle();
       await tester.tap(find.text('tb.foo_clk').last);
       await tester.pumpAndSettle();
@@ -289,7 +290,7 @@ void main() {
 
         final prefixDropdown = find.descendant(
           of: find.byType(DecoderAutoBindPreviewDialog),
-          matching: find.byType(DropdownButton<String>),
+          matching: find.byType(CruxPopUpButton<String>),
         );
         expect(prefixDropdown, findsOneWidget);
         await tester.tap(prefixDropdown);
@@ -302,7 +303,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // The Inspector's pickers show the s_axi_ paths, one per binding.
-        final dropdowns = find.byType(DropdownButton<String>);
+        final dropdowns = find.byType(CruxPopUpButton<String?>);
         expect(dropdowns, findsNWidgets(_axiLite.requiredSignals.length));
         expect(find.text('tb.dut.s_axi_aclk'), findsOneWidget);
         expect(find.text('tb.dut.s_axi_awvalid'), findsOneWidget);

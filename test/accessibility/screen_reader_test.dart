@@ -467,11 +467,13 @@ void main() {
     // Shift+Tab visits the same stops in the opposite order: the rows the
     // list builds below its visible edge no longer sort after the buttons.
     final backward = await walkFocus(tester, reverse: true);
+    // A group's name leads the first stop entered in it, whichever way the
+    // walk enters, so the comparison is on the stop itself.
+    String stop(String line) =>
+        line.replaceFirst(RegExp(r'^(\[[^\]]*\] )+'), '');
     expect(
-      backward.stops.map((s) => s.line).toList().reversed,
-      forward.stops.map(
-        (s) => s.line.replaceFirst(RegExp(r'^(\[[^\]]*\] )+'), ''),
-      ),
+      backward.stops.map((s) => stop(s.line)).toList().reversed,
+      forward.stops.map((s) => stop(s.line)),
     );
     handle.dispose();
   });

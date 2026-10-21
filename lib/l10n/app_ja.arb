@@ -7198,5 +7198,29 @@
   "actionRequiresWaveCruxPro": "{action}には WaveCrux Pro が必要です。",
   "actionRequiresWaveCruxEnterprise": "{action}には WaveCrux Enterprise が必要です。",
   "cruxProjectLegacyFileName": "このデザインマニフェストは旧ファイル名 .crux-project を使用しています。この名前はファイル選択ダイアログに表示されません。{fileName} に名前を変更してください。",
-  "cruxProjectAmbiguousDirectory": "{directory} に複数のデザインマニフェスト（{candidates}）があります。デザインフォルダーごとに .crux-project ファイルは 1 つにしてください。"
+  "cruxProjectAmbiguousDirectory": "{directory} に複数のデザインマニフェスト（{candidates}）があります。デザインフォルダーごとに .crux-project ファイルは 1 つにしてください。",
+  "cocotbLogTestFilterLabel": "テスト",
+  "@cocotbLogTestFilterLabel": {
+    "description": "Accessible name of the test-name filter pop-up in the cocotb log panel toolbar. Read by screen readers; not drawn."
+  },
+  "logsPanelLevelLabel": "レベル",
+  "@logsPanelLevelLabel": {
+    "description": "Accessible name of the level filter pop-up in the Logs panel. Read by screen readers; not drawn."
+  },
+  "searchDialogModeLabel": "一致モード",
+  "@searchDialogModeLabel": {
+    "description": "Accessible name of the Substring/Glob segmented control in the signal search dialog. Read by screen readers; not drawn."
+  },
+  "customTranslatorFieldFormat": "形式",
+  "@customTranslatorFieldFormat": {
+    "description": "Accessible name of the display-format pop-up on a bit-field row in the custom translator editor. Read by screen readers; not drawn."
+  },
+  "patternSearchOperatorLabel": "演算子",
+  "@patternSearchOperatorLabel": {
+    "description": "Accessible name of the comparison-operator pop-up on a condition row in the pattern search dialog. Read by screen readers; not drawn."
+  },
+  "patternSearchConnectorLabel": "条件の結合方法",
+  "@patternSearchConnectorLabel": {
+    "description": "Accessible name of the AND/OR segmented control between condition rows in the pattern search dialog. Read by screen readers; not drawn."
+  }
 }

@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart' show CruxPopUpButton;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -141,7 +142,7 @@ void main() {
 
   group('StageWidgetConfigEditor — enumChoice param', () {
     testWidgets(
-      'renders DropdownButtonFormField and commits on selection',
+      'renders a pop-up button and commits on selection',
       (tester) async {
         final container = _makeContainer();
         addTearDown(container.dispose);
@@ -169,10 +170,10 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.byType(DropdownButtonFormField<String>), findsOneWidget);
+        expect(find.byType(CruxPopUpButton<String>), findsOneWidget);
         expect(find.text('FFT Window'), findsOneWidget);
 
-        await tester.tap(find.byType(DropdownButtonFormField<String>));
+        await tester.tap(find.byType(CruxPopUpButton<String>));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Hamming').last);
         await tester.pumpAndSettle();
@@ -188,12 +189,12 @@ void main() {
       'long enum-choice labels do not overflow the bindings-pane column',
       (tester) async {
         // Regression: in narrow side panes (bindings pane is ~200 dp wide
-        // by default), a DropdownButtonFormField sized to its widest
-        // intrinsic menu item produced a 2.5 px RenderFlex overflow when
-        // a Pro pack widget had long enum-choice labels (e.g. the
-        // orientation widget's "Accelerometer + gyroscope (fusion)").
-        // The fix: isExpanded:true on the dropdown so it fills the column
-        // and ellipsizes the closed-state display.
+        // by default), a dropdown sized to its widest intrinsic menu item
+        // produced a 2.5 px RenderFlex overflow when a Pro pack widget had
+        // long enum-choice labels (e.g. the orientation widget's
+        // "Accelerometer + gyroscope (fusion)"). The fix: expand:true on the
+        // pop-up so it fills the column and ellipsizes the closed-state
+        // display.
         final container = _makeContainer();
         addTearDown(container.dispose);
 
@@ -229,7 +230,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(tester.takeException(), isNull);
-        expect(find.byType(DropdownButtonFormField<String>), findsOneWidget);
+        expect(find.byType(CruxPopUpButton<String>), findsOneWidget);
       },
     );
   });
@@ -666,7 +667,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(Switch), findsNothing);
-      expect(find.byType(DropdownButtonFormField<String>), findsNothing);
+      expect(find.byType(CruxPopUpButton<String>), findsNothing);
       expect(find.byType(TextField), findsNothing);
       expect(find.byType(Slider), findsNothing);
     });

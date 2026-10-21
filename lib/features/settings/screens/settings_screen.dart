@@ -3,6 +3,8 @@
 
 import 'dart:async';
 import 'package:crux_cxp_ui/crux_cxp_ui.dart';
+import 'package:crux_ide_layout/crux_ide_layout.dart'
+    show CruxPopUpButton, CruxPopUpItem;
 import 'package:crux_license/crux_license.dart';
 import 'package:crux_policy/crux_policy.dart';
 import 'package:crux_settings/crux_settings.dart';
@@ -306,26 +308,17 @@ class _GeneralSection extends ConsumerWidget {
         CruxSettingsControlTile(
           title: l10n.settingsLogVerbosityLabel,
           description: l10n.settingsLogVerbosityDescription,
-          control: InputDecorator(
-            decoration: const InputDecoration(isDense: true),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<LogVerbosity>(
-                key: const Key('settingsLogVerbosityDropdown'),
-                value: settings.logVerbosity,
-                isDense: true,
-                items: LogVerbosity.values
-                    .map(
-                      (v) => DropdownMenuItem(
-                        value: v,
-                        child: Text(_verbosityLabel(v, l10n)),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (v) {
-                  if (v != null) unawaited(notifier.setLogVerbosity(v));
-                },
-              ),
-            ),
+          control: CruxPopUpButton<LogVerbosity>(
+            key: const Key('settingsLogVerbosityDropdown'),
+            value: settings.logVerbosity,
+            items: [
+              for (final v in LogVerbosity.values)
+                CruxPopUpItem<LogVerbosity>(
+                  value: v,
+                  label: _verbosityLabel(v, l10n),
+                ),
+            ],
+            onChanged: (v) => unawaited(notifier.setLogVerbosity(v)),
           ),
         ),
       ],
@@ -417,25 +410,16 @@ class _WaveformDefaultsSection extends ConsumerWidget {
         CruxSettingsControlTile(
           title: l10n.settingsDefaultFormatLabel,
           description: l10n.settingsDefaultFormatDescription,
-          control: InputDecorator(
-            decoration: const InputDecoration(isDense: true),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<DisplayFormat>(
-                value: settings.defaultDisplayFormat,
-                isDense: true,
-                items: DisplayFormat.values
-                    .map(
-                      (f) => DropdownMenuItem(
-                        value: f,
-                        child: Text(_formatLabel(f, l10n)),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (f) {
-                  if (f != null) unawaited(notifier.setDefaultDisplayFormat(f));
-                },
-              ),
-            ),
+          control: CruxPopUpButton<DisplayFormat>(
+            value: settings.defaultDisplayFormat,
+            items: [
+              for (final f in DisplayFormat.values)
+                CruxPopUpItem<DisplayFormat>(
+                  value: f,
+                  label: _formatLabel(f, l10n),
+                ),
+            ],
+            onChanged: (f) => unawaited(notifier.setDefaultDisplayFormat(f)),
           ),
         ),
         CruxSettingsSliderTile(
@@ -562,6 +546,7 @@ class _OrientationSection extends ConsumerWidget {
     final l10n = L10N.of(context);
     final notifier = ref.read(appSettingsProvider.notifier);
 
+    // crux-desktop: phone-only, the Orientation category is offered only when !isDesktopPlatform
     return CruxSettingsCard(
       children: [
         CruxSettingsControlTile(

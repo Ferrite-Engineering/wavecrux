@@ -3,6 +3,8 @@
 
 import 'dart:async';
 
+import 'package:crux_ide_layout/crux_ide_layout.dart'
+    show CruxPopUpButton, CruxPopUpItem;
 import 'package:crux_license/crux_license.dart';
 import 'package:crux_settings_ui/crux_settings_ui.dart';
 import 'package:flutter/material.dart';
@@ -130,18 +132,21 @@ class _AiSettingsSectionState extends ConsumerState<AiSettingsSection> {
       const Divider(height: 1),
       ListTile(
         title: Text(l10n.settingsAiProviderLabel),
-        trailing: DropdownButton<AiProvider>(
+        trailing: CruxPopUpButton<AiProvider>(
           key: const Key('settingsAiProviderDropdown'),
           value: provider,
           items: [
             for (final p in AiProvider.values)
-              DropdownMenuItem(value: p, child: Text(_providerLabel(p, l10n))),
+              CruxPopUpItem<AiProvider>(
+                value: p,
+                label: _providerLabel(p, l10n),
+              ),
           ],
           onChanged: (p) {
-            if (p == null) return;
             unawaited(notifier.setAiProvider(p));
             unawaited(_loadKey(p));
           },
+          semanticLabel: l10n.settingsAiProviderLabel,
         ),
       ),
       Padding(

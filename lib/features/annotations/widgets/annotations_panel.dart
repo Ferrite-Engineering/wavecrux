@@ -620,22 +620,17 @@ class _WalkthroughControls extends ConsumerWidget {
           ),
         Tooltip(
           message: l10n.annotationWalkthroughDwellTooltip,
-          child: DropdownButton<int>(
+          child: CruxPopUpButton<int>(
             value: state.dwell.inSeconds,
-            isDense: true,
-            underline: const SizedBox.shrink(),
-            style: const TextStyle(fontSize: 11),
-            items: const [2, 4, 6, 10]
-                .map(
-                  (seconds) => DropdownMenuItem(
-                    value: seconds,
-                    child: Text('${seconds}s'),
-                  ),
-                )
-                .toList(),
-            onChanged: (seconds) => seconds == null
-                ? null
-                : walkthrough.setDwell(Duration(seconds: seconds)),
+            items: [
+              for (final seconds in const [2, 4, 6, 10])
+                CruxPopUpItem<int>(value: seconds, label: '${seconds}s'),
+            ],
+            onChanged: (seconds) =>
+                walkthrough.setDwell(Duration(seconds: seconds)),
+            semanticLabel: l10n.annotationWalkthroughDwellTooltip,
+            dense: true,
+            valueStyle: const TextStyle(fontSize: 11),
           ),
         ),
       ],

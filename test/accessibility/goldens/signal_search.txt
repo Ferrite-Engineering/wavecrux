@@ -1,17 +1,16 @@
-# Tab walk: 16 stops, cycles
-1. Substring button selected
-2. Glob button
-3. Wire button
-4. Reg button
-5. Integer button
-6. Real button
-7. Port button
-8. Filters button
-9. Input button
-10. Output button
-11. Inout button
-12. ACLK, axi4lite_tb check box not checked
-13. ARADDR, axi4lite_tb, [31:0] check box not checked
-14. Add All button
-15. Close button
-16. Signal name or pattern… edit
+# Tab walk: 15 stops, cycles
+1. [Match mode grouping] Substring button selected
+2. Wire button
+3. Reg button
+4. Integer button
+5. Real button
+6. Port button
+7. Filters button
+8. Input button
+9. Output button
+10. Inout button
+11. ACLK, axi4lite_tb check box not checked
+12. ARADDR, axi4lite_tb, [31:0] check box not checked
+13. Add All button
+14. Close button
+15. Signal name or pattern… edit

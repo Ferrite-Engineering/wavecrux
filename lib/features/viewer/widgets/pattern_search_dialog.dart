@@ -1,7 +1,13 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
-import 'package:crux_ide_layout/crux_ide_layout.dart' show showCruxDialog;
+import 'package:crux_ide_layout/crux_ide_layout.dart'
+    show
+        CruxPopUpButton,
+        CruxPopUpItem,
+        CruxSegment,
+        CruxSegmentedControl,
+        showCruxDialog;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/core/help_urls.dart';
@@ -236,22 +242,20 @@ class _PatternSearchDialogState extends ConsumerState<PatternSearchDialog> {
                     tooltip: l10n.helpLinkPatternSearchSyntax,
                   ),
                   const SizedBox(width: 8),
-                  SegmentedButton<_DialogMode>(
+                  CruxSegmentedControl<_DialogMode>(
                     segments: [
-                      ButtonSegment(
+                      CruxSegment(
                         value: _DialogMode.builder,
-                        label: Text(l10n.patternSearchBuilderMode),
+                        label: l10n.patternSearchBuilderMode,
                       ),
-                      ButtonSegment(
+                      CruxSegment(
                         value: _DialogMode.expression,
-                        label: Text(l10n.patternSearchAdvancedMode),
+                        label: l10n.patternSearchAdvancedMode,
                       ),
                     ],
-                    selected: {_mode},
-                    onSelectionChanged: (s) => setState(() => _mode = s.first),
-                    style: const ButtonStyle(
-                      visualDensity: VisualDensity.compact,
-                    ),
+                    selected: _mode,
+                    onChanged: (m) => setState(() => _mode = m),
+                    semanticLabel: l10n.patternSearchDialogTitle,
                   ),
                 ],
               ),
@@ -398,54 +402,38 @@ class _PatternSearchDialogState extends ConsumerState<PatternSearchDialog> {
           // Signal dropdown.
           Expanded(
             flex: 3,
-            child: DropdownButtonFormField<String>(
+            child: CruxPopUpButton<String>(
               key: ValueKey('signal_${index}_${row.signalRef}'),
-              initialValue: row.signalRef,
-              isExpanded: true,
-              decoration: InputDecoration(
-                labelText: l10n.patternSearchSignalHint,
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 6,
-                ),
-                border: const OutlineInputBorder(),
-              ),
-              items: sortedRefs.map((signalRef) {
-                final variable = signalsMap[signalRef];
-                final displayName = variable?.name ?? signalRef;
-                final fullPath = variable?.fullPath ?? signalRef;
-                return DropdownMenuItem(
-                  value: signalRef,
-                  child: Tooltip(
-                    message: fullPath,
-                    child: Text(
-                      displayName,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+              value: row.signalRef,
+              items: [
+                for (final signalRef in sortedRefs)
+                  CruxPopUpItem<String>(
+                    value: signalRef,
+                    label: signalsMap[signalRef]?.name ?? signalRef,
                   ),
-                );
-              }).toList(),
+              ],
               onChanged: (v) => setState(() => row.signalRef = v),
+              expand: true,
+              dense: true,
+              semanticLabel: l10n.patternSearchSignalHint,
+              placeholder: l10n.patternSearchSignalHint,
             ),
           ),
           const SizedBox(width: 6),
 
           // Operator dropdown.
-          DropdownButton<ConditionOperator>(
+          CruxPopUpButton<ConditionOperator>(
             value: row.operator,
-            isDense: true,
-            items: ConditionOperator.values
-                .map(
-                  (op) => DropdownMenuItem(
-                    value: op,
-                    child: Text(_operatorLabel(l10n, op)),
-                  ),
-                )
-                .toList(),
-            onChanged: (v) {
-              if (v != null) setState(() => row.operator = v);
-            },
+            items: [
+              for (final op in ConditionOperator.values)
+                CruxPopUpItem<ConditionOperator>(
+                  value: op,
+                  label: _operatorLabel(l10n, op),
+                ),
+            ],
+            onChanged: (v) => setState(() => row.operator = v),
+            dense: true,
+            semanticLabel: l10n.patternSearchOperatorLabel,
           ),
           const SizedBox(width: 6),
 
@@ -487,23 +475,15 @@ class _PatternSearchDialogState extends ConsumerState<PatternSearchDialog> {
     final isAnd = index >= _connectorIsAnd.length || _connectorIsAnd[index];
     return Padding(
       padding: const EdgeInsets.only(left: 8, top: 2, bottom: 2),
-      child: SegmentedButton<bool>(
+      child: CruxSegmentedControl<bool>(
         segments: [
-          ButtonSegment(
-            value: true,
-            label: Text(l10n.patternSearchConnectorAnd),
-          ),
-          ButtonSegment(
-            value: false,
-            label: Text(l10n.patternSearchConnectorOr),
-          ),
+          CruxSegment(value: true, label: l10n.patternSearchConnectorAnd),
+          CruxSegment(value: false, label: l10n.patternSearchConnectorOr),
         ],
-        selected: {isAnd},
-        onSelectionChanged: (s) =>
-            setState(() => _connectorIsAnd[index] = s.first),
-        style: const ButtonStyle(
-          visualDensity: VisualDensity.compact,
-        ),
+        selected: isAnd,
+        onChanged: (v) => setState(() => _connectorIsAnd[index] = v),
+        dense: true,
+        semanticLabel: l10n.patternSearchConnectorLabel,
       ),
     );
   }
