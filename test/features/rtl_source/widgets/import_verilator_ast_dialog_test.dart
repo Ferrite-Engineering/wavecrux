@@ -50,12 +50,29 @@ Widget _host({
 
 /// Taps the confirm button and waits out the real-IO import inside runAsync
 /// (the busy spinner means pumpAndSettle would never settle).
-Future<void> _tapImport(WidgetTester tester) async {
+///
+/// The wait is for the import to finish, not for a fixed time: the import is
+/// real file IO plus the picker and the sink, so how long it takes depends on
+/// the machine, and a fixed wait that is long enough on one runner reads an
+/// unfinished import as a missing result on a slower one. The busy spinner is
+/// the dialog's own signal; once it is gone the import has either popped the
+/// dialog or reported its error inline. [limit] only bounds a hung import,
+/// which then fails the caller's expectations rather than the helper.
+Future<void> _tapImport(
+  WidgetTester tester, {
+  Duration limit = const Duration(seconds: 30),
+}) async {
   await tester.runAsync(() async {
     await tester.tap(find.byType(FilledButton));
-    await Future<void>.delayed(const Duration(milliseconds: 300));
   });
-  await tester.pump();
+  final deadline = DateTime.now().add(limit);
+  while (DateTime.now().isBefore(deadline)) {
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 20)),
+    );
+    await tester.pump(const Duration(milliseconds: 50));
+    if (find.byType(CircularProgressIndicator).evaluate().isEmpty) break;
+  }
 }
 
 void main() {
@@ -194,6 +211,37 @@ void main() {
     expect(written, isNotNull);
     expect(written, contains('top.gen_blink[0].u_blink.led'));
     expect(written, contains('top.gen_blink[3].u_blink'));
+  });
+
+  // The import is real IO, so on a slow or loaded machine it outlasts any
+  // fixed wait. A sink that takes longer than the old 300 ms wait stands in
+  // for that machine, so the helper's wait-for-completion is exercised on
+  // every platform, not only on the runner that happens to be slow.
+  testWidgets('an import that is slow to finish still lands its result', (
+    tester,
+  ) async {
+    GenerateStemsOutcome? result;
+    String? written;
+    await tester.pumpWidget(
+      _host(
+        onResult: (r) => result = r,
+        astPicker: () async => '$_fixtureRoot/genloop/Vtop.tree.json',
+        savePicker: (suggested) async => '${tmp.path}/$suggested',
+        fileSink: (path, contents) async {
+          await Future<void>.delayed(const Duration(milliseconds: 900));
+          written = contents;
+        },
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.data_object));
+    await tester.pumpAndSettle();
+    await _tapImport(tester);
+
+    expect(written, contains('top.gen_blink[0].u_blink.led'));
+    expect(result, isNotNull);
+    expect(find.byType(ImportVerilatorAstDialog), findsNothing);
   });
 
   testWidgets('shows an inline error when no AST file is picked', (
