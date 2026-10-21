@@ -168,7 +168,9 @@ Each preset's **Data Width (bits)** parameter defaults to **Auto (from the data 
 
 !!! note "Not decoded yet"
 
-    Two packing modes are not decoded: UltraScale 256-bit requester completion straddle (two completions in one beat, with `m_axis_rc_tlast` tied low), and Avalon-ST with two TLPs in one beat (`rx_st_sop[1]` / `rx_st_eop[1]`). The Avalon-ST preset flags the second case once rather than decoding it.
+    Avalon-ST with two TLPs in one beat (`rx_st_sop[1]` / `rx_st_eop[1]`) is not decoded; the preset flags it once rather than decoding it.
+
+    From 1.2 the UltraScale preset decodes the 256-bit requester completion interface with the straddle option enabled (two completions in one beat, with `m_axis_rc_tlast` tied low). It frames completions from `is_sof_0`, `is_sof_1`, `is_eof_0` and `is_eof_1` in `m_axis_rc_tuser`, so bind `m_axis_rc_tuser`; the mode is detected from the trace. The straddle option needs Dword-aligned payload, so **Payload Alignment** is ignored for it. Without `m_axis_rc_tuser` bound, the preset flags the missing framing once instead of decoding nothing.
 
 ### Requests and completions { #pcie-tlp-pairing }
 
