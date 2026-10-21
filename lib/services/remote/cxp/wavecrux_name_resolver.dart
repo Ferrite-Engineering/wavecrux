@@ -79,6 +79,9 @@ class WaveCruxNameResolver implements NameResolver {
         // arrive inbound from a peer product (instance, rule, …);
         // those are handled by [toLocal] rather than [toCanonical].
         return null;
+      case KnownElementKind.property:
+      case KnownElementKind.timingPath:
+      case KnownElementKind.cell:
       case null:
         // Unrecognised kind from a newer peer. Ignore it gracefully:
         // WaveCrux has no local object to name, so there is nothing to
@@ -113,6 +116,9 @@ class WaveCruxNameResolver implements NameResolver {
         // These element kinds belong to peer products (rule, breakpoint,
         // …) and have no natural WaveCrux mapping.
         return null;
+      case KnownElementKind.property:
+      case KnownElementKind.timingPath:
+      case KnownElementKind.cell:
       case null:
         // A kind this build has never heard of, minted by a peer built
         // against a later protocol revision. Ignore it gracefully rather

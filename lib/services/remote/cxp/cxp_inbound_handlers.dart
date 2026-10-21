@@ -379,6 +379,9 @@ Future<_ElementOutcome> _dispatchCxpHighlight(
     case KnownElementKind.rule:
     case KnownElementKind.test:
     case KnownElementKind.breakpoint:
+    case KnownElementKind.property:
+    case KnownElementKind.timingPath:
+    case KnownElementKind.cell:
     case null:
       // `null` = a kind this build has never heard of. Ignored gracefully,
       // with the same honored=false reply the known-but-unhandled kinds
