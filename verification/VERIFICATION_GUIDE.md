@@ -3102,6 +3102,147 @@ bindings pane) are Flutter gestures, not OS drags, and are unaffected.
 | Booted app: plugin channel messages → overlay → tab opened and saved in the workspace | **INTEGRATION_TEST** (`integration_test/workspace/empty_canvas_drag_drop_test.dart`) |
 | A real OS drag from Finder / Explorer / a Linux file manager, per platform | **MANUAL** (the OS drag session cannot be driven from a test; steps 1–10 above) |
 
+### 8.9 Opening a waveform from a `wavecrux://` link (macOS, Windows, Linux; from 1.2)
+
+#### 8.9.1 What it does
+
+A link such as `wavecrux://open?file=/abs/path/dump.vcd&signal=top.data&t=40ns`
+opens the file in WaveCrux (or brings its tab to the front if it is already
+open), adds and selects the signal, and puts the primary cursor at the time. A
+CI log, a regression report or a chat message can point at evidence instead of
+describing it. The format is documented on the docs site (Files and sessions,
+"Opening a waveform from a link").
+
+A link can come from anywhere, so it is handled as hostile input:
+
+- **Strict parse.** Only `wavecrux://open?` with the keys `file`, `signal` and
+  `t`, each at most once, each percent-encoded and bounded in length. An
+  unknown key, a repeated key, a fragment, a user name, a port, white space, a
+  control character or a bidirectional-text control refuses the whole link.
+- **One file, a waveform, local.** The path must pass the same receive floor a
+  CXP peer's path does (absolute, well-formed, no NUL, no padding, no network
+  or device path on Windows). It must exist and be a `.vcd`, `.fst`, `.ghw`,
+  `.lxt` or `.lxt2` both as named and once symbolic links resolve; a
+  `dump.vcd` that links to a key file is refused. A link never opens a
+  session, a pack, a manifest or an FSDB file, never runs anything, never
+  fetches anything.
+- **Consent.** A file that is not open in a tab and not in Recent Files is
+  confirmed first, in a dialog that names the file and its full resolved
+  path, with focus on **Cancel**. The answer is not remembered: a file opened
+  from a link is not added to Recent Files.
+- **Launch arguments.** On Windows and Linux the system starts WaveCrux with
+  the link as its argument; every other argument on such a launch is dropped,
+  so a link cannot smuggle `--reset` in after a quote.
+- An unknown signal still opens the file and a toast names the signal. A time
+  past either end of the file puts the cursor at that end and a toast says
+  so. A time with a unit in a file with no timescale leaves the cursor where it
+  was and a toast says so.
+
+Delivery: macOS sends the link to the running instance. Windows and Linux have
+no single-instance mechanism, so each link starts a new WaveCrux window, which
+restores the workspace and then applies the link; that is the accepted 1.2
+behaviour. The scheme is registered by the macOS bundle itself, by the Windows
+installer and MSI, and by the Linux `.deb` and `.rpm` packages; the AppImage
+does not register it yet. The browser build, iOS and Android do not register
+it.
+
+#### 8.9.2 Setup
+
+- A desktop build of each platform installed the way users install it (the
+  scheme is registered at install time on Windows and Linux; a `flutter run`
+  build on those platforms is not registered).
+- A copy of `verification/fixtures/vcd/scalar_basics.vcd` in a fresh folder
+  that WaveCrux has never opened, for example `~/linktest/scalar_basics.vcd`
+  (Windows: `C:\linktest\scalar_basics.vcd`). Make sure it is not in Recent
+  Files (remove the row if it is).
+- How to send a link, per platform:
+  - macOS: `open 'wavecrux://open?file=/Users/<you>/linktest/scalar_basics.vcd&signal=top.data&t=40ns'`
+  - Linux: `xdg-open 'wavecrux://open?file=/home/<you>/linktest/scalar_basics.vcd&signal=top.data&t=40ns'`
+  - Windows (Command Prompt): `start "" "wavecrux://open?file=C:/linktest/scalar_basics.vcd&signal=top.data&t=40ns"`
+
+#### 8.9.3 Steps and expected behavior
+
+1. **First link to a new file.** With WaveCrux running, send the link above.
+   A dialog titled **Open a waveform from a link?** names
+   `scalar_basics.vcd` and shows the full path. Focus is on **Cancel** (a
+   screen reader announces the dialog title, then Cancel). Press Enter: the
+   dialog closes and nothing opens.
+2. **Open it.** Send the same link and choose **Open**. A new tab opens on
+   `scalar_basics.vcd`, `top.data` is in the signal list and selected, and the
+   primary cursor is at 40 ns. The file is **not** added to Recent Files.
+3. **Already open.** Open a second waveform so another tab is active, then
+   send the link again with `t=70`. No dialog: the `scalar_basics.vcd` tab
+   comes to the front (no second tab for it) and the cursor moves to 70 ns.
+4. **Consent is not remembered.** Close the `scalar_basics.vcd` tab and send
+   the link again: the dialog asks again. Cancel. Now open the file yourself
+   with File > Open File, close its tab, and send the link: no dialog (it is
+   in Recent Files).
+5. **Unknown signal.** Send the link with `signal=top.nope`: the file opens
+   and a toast says it has no signal named `top.nope`.
+6. **Time outside the file.** Send it with `t=5ms`: the cursor is at the end
+   of the file and a toast says the time was outside it.
+7. **Refusals (nothing opens, an error toast says why).** Send each of:
+   - a missing file (`file=/tmp/does-not-exist.vcd`): "was not found";
+   - a non-waveform (`file=` a `.txt` or `.sh` file): "is not a waveform file
+     a link can open";
+   - a relative path (`file=scalar_basics.vcd`): "not given as a full local
+     path";
+   - an unknown key (`...&cmd=x`), the key twice (`file=a&file=b`), or another
+     action (`wavecrux://run?file=...`): "not a valid WaveCrux link".
+8. **Cold start.** Quit WaveCrux and send the link from step 2. WaveCrux
+   starts, restores the workspace, then shows the dialog (or opens the tab
+   directly if the file is already restored).
+9. **Per platform (manual, once per release).**
+   - **macOS**: with WaveCrux running, the link reaches the running instance
+     (no second Dock icon). With both the free and Pro builds installed,
+     LaunchServices picks one; check `open` reaches the one you expect, or set
+     it with a link handler preference tool.
+   - **Windows**: after installing with the `.exe` (per user), confirm the
+     key `HKCU\Software\Classes\wavecrux` exists with an empty `URL Protocol`
+     value and `shell\open\command` pointing at the installed `.exe` with
+     `"%1"`; after the `.msi`, the same under `HKLM\Software\Classes`. Send
+     the link from a browser address bar as well as `start`: the browser asks
+     to open WaveCrux, and a new WaveCrux window opens the file. Uninstall and
+     confirm the key is gone.
+   - **Linux** (`.deb` or `.rpm`): `xdg-mime query default
+     x-scheme-handler/wavecrux` names the WaveCrux URL-handler entry; the
+     entry is hidden from the application menu; the link opens a new
+     WaveCrux window. On the AppImage, `xdg-open` reports no handler (not yet
+     supported).
+
+#### 8.9.4 Diagnostics-assisted verification
+
+- Tab Diagnostics, File Info for the opened tab shows the resolved path the
+  dialog named (a symbolic link in the link is shown and opened as its
+  target).
+- Recent Files does not gain an entry from a link open (step 2).
+
+#### 8.9.5 Edge cases
+
+- A path with spaces (`my%20sim`) or non-ASCII characters (percent-encoded
+  UTF-8) opens; the same characters unencoded are refused as an invalid link.
+- `+` in a path is a plus sign (`/work/c++/dump.vcd`).
+- A link whose `file` is a symbolic link named `x.vcd` pointing at a
+  non-waveform file is refused; one pointing at a real `.fst` opens the
+  `.fst` and the dialog names the `.fst`.
+- Several links fired quickly while the dialog is up: when it closes, only
+  the newest one is handled.
+- Windows: a path naming a device (`C:/x/NUL.vcd`), an alternate stream
+  (`C:/x/a.vcd:s`) or a UNC share (`//server/share/a.vcd`, `%5C%5Cserver...`)
+  is refused without touching the network.
+
+#### 8.9.6 Automation Assessment
+
+| Test | Coverage |
+|---|---|
+| Parser: grammar, every refusal, bounds, encoding, `+`, Windows paths, time units, launch-argument split; seeded fuzz of mutated and random links (never throws, accepted links keep the invariants) | **UNIT** (`test/services/links/wavecrux_link_test.dart`) |
+| Containment: floor refusals, Windows device and stream names, extension on the spelled and resolved path, missing file, directory, dangling link, link to a non-waveform, character device, opened-before by file identity | **UNIT** (`test/services/links/wavecrux_link_target_test.dart`) |
+| Whole flow over the real workspace and VCD reader: confirm only for a new file, decline opens nothing, focus not duplicate, Recent Files skips the question, consent not remembered, a file swapped during the question, refusals ask nothing, signal exact / tail / unknown, time units, ticks, clamping, no timescale; the inbox's readiness and newest-wins rule | **UNIT** (`test/services/links/wavecrux_link_handler_test.dart`) |
+| Confirmation dialog: names file and path, focus on Cancel, Enter / Space / Escape answer no, Open and Tab-then-Enter answer yes, no orphan semantics node, every locale at 800 × 500; outcome messages | **WIDGET** (`test/features/links/open_link_confirm_dialog_test.dart`) |
+| macOS `Info.plist` declares the scheme; the app delegate forwards it on the channel the Dart side reads; iOS and Android declare none; `bootstrap` splits the command line and the app reaches the handler | **STATIC** (`test/static/url_scheme_registration_test.dart`) |
+| Windows registry and Linux URL-handler entries in the release packaging | **STATIC**, in the release packaging's own tests |
+| A real link from the OS, browser and terminal, per platform | **MANUAL** (step 9) |
+
 ---
 
 ## 9. Mobile, tablet, and adaptive layout

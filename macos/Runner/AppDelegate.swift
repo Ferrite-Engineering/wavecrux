@@ -11,19 +11,99 @@ class AppDelegate: FlutterAppDelegate {
     return true
   }
 
-  /// Finder double-click, `open -a`, and drag-onto-the-Dock-icon.
+  /// Finder double-click, `open -a`, drag-onto-the-Dock-icon, and
+  /// `wavecrux://` links (the scheme `Info.plist` declares under
+  /// `CFBundleURLTypes`).
   ///
-  /// File URLs are ours; everything else (custom schemes a plugin registered
-  /// for) goes to `super`. Splitting rather than always calling `super` keeps
-  /// this the single path for a document — the base class may also push the
-  /// URL at the framework as a deep link, and two routes opening the same file
-  /// is how you get a duplicate tab.
+  /// File URLs and `wavecrux:` links are ours; everything else (custom
+  /// schemes a plugin registered for) goes to `super`. Splitting rather than
+  /// always calling `super` keeps this the single path for a document — the
+  /// base class may also push the URL at the framework as a deep link, and two
+  /// routes opening the same file is how you get a duplicate tab.
   override func application(_ application: NSApplication, open urls: [URL]) {
     IncomingFilePlugin.shared.handle(urls: urls)
-    let others = urls.filter { !$0.isFileURL }
+    IncomingLinkPlugin.shared.handle(urls: urls)
+    let others = urls.filter { !$0.isFileURL && !IncomingLinkPlugin.isLink($0) }
     if !others.isEmpty {
       super.application(application, open: others)
     }
+  }
+}
+
+/// Delivers `wavecrux://` links to Dart, exactly as the system handed them
+/// over.
+///
+/// Nothing here parses, decodes or trusts a link: it is forwarded as its
+/// string and the Dart side (`lib/services/links/`) refuses anything that is
+/// not a well-formed link to a waveform. A link that arrives before Dart is
+/// listening (the link that launched the app) waits in a small buffer and is
+/// replayed on the first listen. The buffer keeps the newest few: a burst of
+/// links at launch cannot grow it without bound, and Dart handles one link at
+/// a time anyway.
+final class IncomingLinkPlugin: NSObject {
+  static let shared = IncomingLinkPlugin()
+
+  /// The longest link forwarded. Dart refuses anything over an eighth of this
+  /// with a message; past this the string is dropped here.
+  private static let maxLength = 65536
+
+  /// How many links wait for Dart to listen.
+  private static let maxPending = 4
+
+  private var eventChannel: FlutterEventChannel?
+  private var eventSink: FlutterEventSink?
+  private var pending: [String] = []
+
+  private override init() {}
+
+  /// Whether [url] uses the `wavecrux` scheme, in any case.
+  static func isLink(_ url: URL) -> Bool {
+    return url.scheme?.lowercased() == "wavecrux"
+  }
+
+  /// Call from `MainFlutterWindow.awakeFromNib()`, once the engine exists.
+  func register(with messenger: FlutterBinaryMessenger) {
+    let ec = FlutterEventChannel(
+      name: "com.wavecrux/incoming_link",
+      binaryMessenger: messenger)
+    ec.setStreamHandler(self)
+    eventChannel = ec
+  }
+
+  /// Forwards each `wavecrux:` URL; every other URL is someone else's.
+  func handle(urls: [URL]) {
+    for url in urls where IncomingLinkPlugin.isLink(url) {
+      let link = url.absoluteString
+      guard !link.isEmpty, link.count <= IncomingLinkPlugin.maxLength else { continue }
+      if let sink = eventSink {
+        sink(link)
+      } else {
+        pending.append(link)
+        if pending.count > IncomingLinkPlugin.maxPending {
+          pending.removeFirst(pending.count - IncomingLinkPlugin.maxPending)
+        }
+      }
+    }
+  }
+}
+
+extension IncomingLinkPlugin: FlutterStreamHandler {
+  func onListen(
+    withArguments arguments: Any?,
+    eventSink events: @escaping FlutterEventSink
+  ) -> FlutterError? {
+    eventSink = events
+    let queued = pending
+    pending.removeAll()
+    for link in queued {
+      events(link)
+    }
+    return nil
+  }
+
+  func onCancel(withArguments arguments: Any?) -> FlutterError? {
+    eventSink = nil
+    return nil
   }
 }
 

@@ -423,6 +423,18 @@ Fixtures live under `test/fixtures/gtkw/{generated,captured}/` (consumed directl
 - [ ] A non-waveform drop opens into **Failed to load waveform**, never a silent no-op; `.fsdb` gets the conversion offer — `[Coverage: WIDGET]` (unsupported) + `[Coverage: MANUAL]` (FSDB, needs `fsdb2vcd`)
 - [ ] No overlay and no open while a dialog (e.g. Settings) is in front; tab-chip reorder, signal drags and the Stage bindings pane's drop still work with no overlay — `[Coverage: WIDGET]` (dialog / gate) + `[Coverage: MANUAL]` (in-app drags)
 
+### `wavecrux://` links (§8.9, from 1.2)
+
+- [ ] A link to a file not open and not in Recent Files asks first: the dialog names the file and its full resolved path, focus is on **Cancel**, Enter / Space / Escape open nothing, **Open** opens it in a new tab with the signal added and selected and the cursor at the time; the file is not added to Recent Files — `[Coverage: UNIT]` (`test/services/links/wavecrux_link_handler_test.dart`) + `[Coverage: WIDGET]` (`test/features/links/open_link_confirm_dialog_test.dart`) + real link `[Coverage: MANUAL]` (§8.9.3 steps 1–2)
+- [ ] A link to a file already open focuses its tab without asking and without a second tab; a file in Recent Files opens without asking; after closing the tab of a file opened only from a link, the next link asks again — `[Coverage: UNIT]` (`test/services/links/wavecrux_link_handler_test.dart`) + `[Coverage: MANUAL]` (§8.9.3 steps 3–4)
+- [ ] An unknown signal opens the file with a toast naming it; a time outside the file clamps with a toast; a time with a unit in a file with no timescale leaves the cursor with a toast — `[Coverage: UNIT]` (`test/services/links/wavecrux_link_handler_test.dart`)
+- [ ] Refused with an error toast and nothing opened: missing file, non-waveform (also through a symbolic link), relative or network path, Windows device or stream name, unknown or repeated key, another action, unencoded white space or controls — `[Coverage: UNIT]` (`test/services/links/wavecrux_link_test.dart`, `test/services/links/wavecrux_link_target_test.dart`) + `[Coverage: MANUAL]` (§8.9.3 step 7)
+- [ ] Parser fuzz (mutated and random links) never throws and accepted links keep the bounds — `[Coverage: UNIT]` (`test/services/links/wavecrux_link_test.dart`)
+- [ ] A Windows or Linux launch carrying a link drops every other argument (no `--reset` smuggled in) — `[Coverage: UNIT]` (`test/services/links/wavecrux_link_test.dart`) + `[Coverage: STATIC]` (`test/static/url_scheme_registration_test.dart`)
+- [ ] macOS: `Info.plist` declares the scheme and the app delegate forwards it; a link reaches the running instance; a cold-start link waits for the workspace restore — `[Coverage: STATIC]` (`test/static/url_scheme_registration_test.dart`) + `[Coverage: MANUAL]` (§8.9.3 steps 8–9)
+- [ ] Windows: the `.exe` install writes `HKCU\Software\Classes\wavecrux` (the `.msi` writes it under HKLM), a link from `start` and from a browser opens a new WaveCrux window, uninstall removes the key — `[Coverage: MANUAL]` (§8.9.3 step 9)
+- [ ] Linux `.deb` / `.rpm`: `xdg-mime query default x-scheme-handler/wavecrux` names the hidden WaveCrux URL-handler entry and `xdg-open` opens a new window; the AppImage does not register the scheme yet — `[Coverage: MANUAL]` (§8.9.3 step 9)
+
 ### Contributed bottom-dock tabs (§22.5.2)
 
 - [ ] Every tab an overlay contributes through `extraBottomDockTabsProvider` shows a `×` like FSM / X-Trace; the `×` hides only that tab and leaves its panel state alone (`BottomDockTab.onDismiss` is required) — `[Coverage: WIDGET]` (`test/features/viewer/widgets/bottom_dock_contributed_tabs_test.dart`)

@@ -36,6 +36,9 @@ class MainFlutterWindow: NSWindow {
     // buffers anything that arrived before now, which on a cold launch is the
     // document that caused the launch in the first place.
     IncomingFilePlugin.shared.register(with: flutterViewController.engine.binaryMessenger)
+    // The same for `wavecrux://` links: a link that launched the app waits in
+    // the plugin's buffer until Dart listens.
+    IncomingLinkPlugin.shared.register(with: flutterViewController.engine.binaryMessenger)
 
     super.awakeFromNib()
   }

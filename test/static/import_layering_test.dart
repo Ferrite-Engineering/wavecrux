@@ -93,6 +93,12 @@ const Map<String, String> _orchestrationTier = <String, String>{
       'Editor-host bridge — the third front door onto the same providers WCP '
       "and CXP already drive; applies an extension host's messages to feature "
       'providers (the waveform source) and mirrors selection back to it.',
+  'lib/services/links/wavecrux_link_handler.dart':
+      'wavecrux:// links — the fourth front door onto the providers WCP, CXP '
+      'and the editor host drive: opens or focuses the tab, adds and selects '
+      'the signal and places the cursor, and reads the open tabs and Recent '
+      'Files to decide whether to ask first. The parser and the file vetting '
+      'beside it import no feature.',
   'lib/services/host_bridge/host_annotation_value_service.dart':
       'Editor-host RTL annotation — answers the extension '
       "host's standing value query by reading the active tab's waveform, "

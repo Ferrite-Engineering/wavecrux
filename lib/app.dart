@@ -58,6 +58,7 @@ import 'package:wavecrux/features/cursors/providers/marker_chord_providers.dart'
 import 'package:wavecrux/features/diagnostics/providers/log_console_sink_provider.dart';
 import 'package:wavecrux/features/eula/wavecrux_eula_overrides.dart';
 import 'package:wavecrux/features/issue_reporter/wavecrux_issue_reporter_overrides.dart';
+import 'package:wavecrux/features/links/widgets/open_link_confirm_dialog.dart';
 import 'package:wavecrux/features/menu_bar/widgets/desktop_menu_bar.dart';
 import 'package:wavecrux/features/settings/providers/orientation_lock_provider.dart';
 import 'package:wavecrux/features/settings/providers/settings_providers.dart';
@@ -104,9 +105,12 @@ import 'package:wavecrux/services/decoders/wishbone_decoder.dart';
 import 'package:wavecrux/services/host_bridge/editor_host_provider.dart';
 import 'package:wavecrux/services/host_bridge/host_bridge.dart';
 import 'package:wavecrux/services/host_bridge/host_bridge_provider.dart';
+import 'package:wavecrux/services/links/wavecrux_link.dart';
+import 'package:wavecrux/services/links/wavecrux_link_handler.dart';
 import 'package:wavecrux/services/logging/severe_log_stderr_sink.dart';
 import 'package:wavecrux/services/panes/pane_container_manager.dart';
 import 'package:wavecrux/services/platform/incoming_file_service.dart';
+import 'package:wavecrux/services/platform/incoming_link_service.dart';
 import 'package:wavecrux/services/policy/org_theme_application.dart';
 import 'package:wavecrux/services/remote/cxp/cxp_selection_emitter_provider.dart';
 import 'package:wavecrux/services/remote/cxp/wavecrux_cxp_overrides.dart';
@@ -251,11 +255,19 @@ Future<bool> bootstrap({
   List<Override> extraTabOverrides = const [],
   LinuxDesktopApp? linuxDesktopApp,
 }) async {
+  // Windows and Linux open a `wavecrux://` link by starting the app with the
+  // link as an argument. Such a launch is the link and nothing else: every
+  // other argument is dropped before anything reads the command line, because
+  // a link carrying a quote can break out of the registered command's quoting
+  // and smuggle `--reset` or a file in after it. See [WaveCruxLaunchArgs].
+  final launch = WaveCruxLaunchArgs.split(args);
+  final argv = launch.args;
+
   // `--help` / `-h` short-circuits before the platform binding so the
   // ergonomic `wavecrux --help` prints usage on stdout and exits cleanly
   // (the exit is [runWaveCrux]'s), matching every other CLI tool an HDL
   // engineer reaches for.
-  if (args.contains('--help') || args.contains('-h')) {
+  if (argv.contains('--help') || argv.contains('-h')) {
     stdout.writeln(cliHelpText());
     return true;
   }
@@ -273,7 +285,7 @@ Future<bool> bootstrap({
   // `TelemetryConsentStore` start reading their persisted values the moment
   // anything touches their graphs. The telemetry installation id is left
   // alone — see `resetTelemetryConsent`.
-  await applyFirstRunResetFlags(args);
+  await applyFirstRunResetFlags(argv);
 
   // Windows / Linux: switch to a frameless window and draw our own title bar
   // (logo + inline menus + caption buttons). macOS keeps its native title bar
@@ -288,7 +300,7 @@ Future<bool> bootstrap({
     // hasn't hydrated yet); skipped under `--reset`, which intentionally
     // launches fresh at the default geometry. Null (first launch / restore
     // unavailable) falls through to the centered 1280×720 default.
-    final restoreBounds = args.contains('--reset')
+    final restoreBounds = argv.contains('--reset')
         ? null
         : await peekPersistedWindowBounds();
     await initWindowChrome(restore: restoreBounds);
@@ -379,7 +391,7 @@ Future<bool> bootstrap({
   // flow at startup. The parser lives in
   // [services/cli/cli_args.dart] so it is exercisable from unit tests
   // without spinning up a Flutter binding.
-  final cli = parseCliArgs(args);
+  final cli = parseCliArgs(argv);
   final initialFiles = List<String>.from(cli.initialFiles);
   final initialSession = cli.initialSession;
   final initialWorkspace = cli.initialWorkspace;
@@ -492,6 +504,8 @@ Future<bool> bootstrap({
       if (pipePath != null) initialPipePathProvider.overrideWithValue(pipePath),
       if (wcpPortOverride != null)
         wcpPortOverrideProvider.overrideWithValue(wcpPortOverride),
+      if (launch.links.isNotEmpty)
+        initialWaveCruxLinksProvider.overrideWithValue(launch.links),
       tabContainerManagerProvider.overrideWithValue(tcm),
       paneContainerManagerProvider.overrideWithValue(pcm),
       // A mobile store build is not distributed as a public beta, so nothing
@@ -753,6 +767,14 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
   // Cancelled in dispose so the channel is released on hot restart.
   late final StreamSubscription<String> _incomingFileSub;
 
+  /// `wavecrux://` links delivered while the app runs (macOS). Cancelled in
+  /// [dispose].
+  late final StreamSubscription<String> _incomingLinkSub;
+
+  /// Holds links until the startup restore settles, then opens them one at a
+  /// time. See [WaveCruxLinkInbox].
+  late final WaveCruxLinkInbox _linkInbox;
+
   /// Tabs whose deferred waveform load is currently in flight, so the
   /// [activeTabIdProvider] listener doesn't kick off a second load for a tab
   /// that is already loading. See [_ensureTabLoaded].
@@ -789,6 +811,36 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
       onError: (_) {
         /* ignore — channel errors are non-fatal */
       },
+    );
+
+    // `wavecrux://` links: delivered to this instance on macOS, and taken off
+    // the command line on Windows and Linux. Listening now replays a link that
+    // launched the app; the inbox holds every link until the startup restore
+    // has settled, so a link to an already-restored file focuses that tab.
+    _linkInbox = WaveCruxLinkInbox(_openLink);
+    _incomingLinkSub = IncomingLinkService.incomingLinks.listen(
+      _linkInbox.add,
+      onError: (_) {
+        // A channel error delivers no link; there is nothing to open.
+      },
+    );
+    final launchLinks = ref.read(initialWaveCruxLinksProvider);
+    if (launchLinks.length == 1) _linkInbox.add(launchLinks.single);
+    unawaited(
+      ref.read(startupReconcileProvider).future.then((_) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          if (launchLinks.length > 1) {
+            _showLinkOutcome(
+              const WaveCruxLinkOutcome.failed(
+                WaveCruxLinkFailure.malformed,
+                parseRefusal: WaveCruxLinkRefusal.tooManyLinks,
+              ),
+            );
+          }
+          _linkInbox.markReady();
+        });
+      }),
     );
 
     // Register decoders contributed via the [extraDecodersProvider] extension
@@ -1296,10 +1348,50 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
         );
   }
 
+  /// Opens what a `wavecrux://` link names, asking first when the file is not
+  /// one the user has opened before, and says what was not done.
+  Future<void> _openLink(String raw) async {
+    if (!mounted) return;
+    final container = ProviderScope.containerOf(context, listen: false);
+    final outcome = await openWaveCruxLink(
+      container,
+      raw,
+      confirm: _confirmLink,
+    );
+    if (!mounted) return;
+    _showLinkOutcome(outcome);
+  }
+
+  /// The link confirmation, over the root navigator so it shows whichever
+  /// screen is up. No navigator yet means no answer, which opens nothing.
+  Future<bool> _confirmLink(String path) async {
+    final navContext = rootNavigatorKey.currentContext;
+    if (navContext == null || !navContext.mounted) return false;
+    return await OpenLinkConfirmDialog.show(navContext, path);
+  }
+
+  /// Tells the user what a link did not do, as a toast. Uses the messenger's
+  /// context for the localizations, for the reason [_openWorkspaceFromCli]
+  /// gives.
+  void _showLinkOutcome(WaveCruxLinkOutcome outcome) {
+    final messengerState = rootScaffoldMessengerKey.currentState;
+    if (messengerState == null || !messengerState.mounted) return;
+    final l10n = Localizations.of<L10N>(messengerState.context, L10N);
+    if (l10n == null) return;
+    final shown = waveCruxLinkOutcomeMessage(l10n, outcome);
+    if (shown == null) return;
+    if (shown.error) {
+      CruxToasts.showError(shown.message);
+    } else {
+      CruxToasts.showInfo(shown.message);
+    }
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     unawaited(_incomingFileSub.cancel());
+    unawaited(_incomingLinkSub.cancel());
     _deferredLoadSub?.close();
     super.dispose();
   }

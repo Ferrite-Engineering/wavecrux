@@ -7222,5 +7222,95 @@
   "patternSearchConnectorLabel": "条件组合方式",
   "@patternSearchConnectorLabel": {
     "description": "Accessible name of the AND/OR segmented control between condition rows in the pattern search dialog. Read by screen readers; not drawn."
+  },
+  "linkConfirmTitle": "从链接打开波形？",
+  "@linkConfirmTitle": {
+    "description": "Title of the dialog shown when a wavecrux:// link asks to open a file the user has not opened in WaveCrux before"
+  },
+  "linkConfirmBody": "一个链接请求 WaveCrux 打开 {fileName}。您之前没有在 WaveCrux 中打开过此文件。仅当您信任链接的来源时才打开它。",
+  "@linkConfirmBody": {
+    "description": "Body of the link confirmation dialog. fileName is the base name of the file the link names, after symbolic links are resolved",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "linkConfirmPathLabel": "完整路径",
+  "@linkConfirmPathLabel": {
+    "description": "Label above the full path of the file in the link confirmation dialog"
+  },
+  "linkConfirmOpen": "打开",
+  "@linkConfirmOpen": {
+    "description": "Button in the link confirmation dialog that opens the file"
+  },
+  "linkConfirmCancel": "取消",
+  "@linkConfirmCancel": {
+    "description": "Button in the link confirmation dialog that opens nothing. It has focus when the dialog opens"
+  },
+  "linkRefusedMalformed": "WaveCrux 未打开该链接，因为它不是有效的 WaveCrux 链接。",
+  "@linkRefusedMalformed": {
+    "description": "Toast shown when a wavecrux:// link does not parse"
+  },
+  "linkRefusedPath": "WaveCrux 未打开该链接，因为文件没有以完整的本地路径给出。",
+  "@linkRefusedPath": {
+    "description": "Toast shown when a wavecrux:// link names a relative, network or otherwise refused path"
+  },
+  "linkRefusedNotWaveform": "WaveCrux 未打开该链接，因为 {fileName} 不是可以从链接打开的波形文件。",
+  "@linkRefusedNotWaveform": {
+    "description": "Toast shown when a wavecrux:// link names a file that is not VCD, FST, GHW, LXT or LXT2",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "linkRefusedNotFound": "WaveCrux 未打开该链接，因为找不到 {fileName}。",
+  "@linkRefusedNotFound": {
+    "description": "Toast shown when the file a wavecrux:// link names does not exist",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "linkRefusedLoadFailed": "WaveCrux 无法读取 {fileName}。标签页中显示了原因。",
+  "@linkRefusedLoadFailed": {
+    "description": "Toast shown when the file a wavecrux:// link opened could not be parsed; the tab shows the parser's reason",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "linkSignalNotFound": "已打开 {fileName}，但其中没有名为 {signal} 的信号。",
+  "@linkSignalNotFound": {
+    "description": "Toast shown when a wavecrux:// link opened its file but named a signal the file does not have",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      },
+      "signal": {
+        "type": "String"
+      }
+    }
+  },
+  "linkTimeNotPlaced": "光标未移动，因为 {fileName} 没有声明可用于换算链接时间的时间刻度。",
+  "@linkTimeNotPlaced": {
+    "description": "Toast shown when a wavecrux:// link gave a time with a unit and the file declares no timescale to convert it",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "linkTimeClamped": "链接中的时间超出了 {fileName} 的范围，因此光标位于最近的一端。",
+  "@linkTimeClamped": {
+    "description": "Toast shown when the time in a wavecrux:// link lies outside the file and the cursor was placed at its start or end",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -7222,5 +7222,95 @@
   "patternSearchConnectorLabel": "조건 결합 방식",
   "@patternSearchConnectorLabel": {
     "description": "Accessible name of the AND/OR segmented control between condition rows in the pattern search dialog. Read by screen readers; not drawn."
+  },
+  "linkConfirmTitle": "링크에서 파형을 여시겠습니까?",
+  "@linkConfirmTitle": {
+    "description": "Title of the dialog shown when a wavecrux:// link asks to open a file the user has not opened in WaveCrux before"
+  },
+  "linkConfirmBody": "링크가 WaveCrux에 {fileName} 파일을 열도록 요청합니다. 이 파일을 WaveCrux에서 연 적이 없습니다. 링크의 출처를 신뢰하는 경우에만 여십시오.",
+  "@linkConfirmBody": {
+    "description": "Body of the link confirmation dialog. fileName is the base name of the file the link names, after symbolic links are resolved",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "linkConfirmPathLabel": "전체 경로",
+  "@linkConfirmPathLabel": {
+    "description": "Label above the full path of the file in the link confirmation dialog"
+  },
+  "linkConfirmOpen": "열기",
+  "@linkConfirmOpen": {
+    "description": "Button in the link confirmation dialog that opens the file"
+  },
+  "linkConfirmCancel": "취소",
+  "@linkConfirmCancel": {
+    "description": "Button in the link confirmation dialog that opens nothing. It has focus when the dialog opens"
+  },
+  "linkRefusedMalformed": "유효한 WaveCrux 링크가 아니므로 WaveCrux가 링크를 열지 않았습니다.",
+  "@linkRefusedMalformed": {
+    "description": "Toast shown when a wavecrux:// link does not parse"
+  },
+  "linkRefusedPath": "파일이 전체 로컬 경로로 지정되지 않았으므로 WaveCrux가 링크를 열지 않았습니다.",
+  "@linkRefusedPath": {
+    "description": "Toast shown when a wavecrux:// link names a relative, network or otherwise refused path"
+  },
+  "linkRefusedNotWaveform": "{fileName} 파일은 링크로 열 수 있는 파형 파일이 아니므로 WaveCrux가 링크를 열지 않았습니다.",
+  "@linkRefusedNotWaveform": {
+    "description": "Toast shown when a wavecrux:// link names a file that is not VCD, FST, GHW, LXT or LXT2",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "linkRefusedNotFound": "{fileName} 파일을 찾을 수 없으므로 WaveCrux가 링크를 열지 않았습니다.",
+  "@linkRefusedNotFound": {
+    "description": "Toast shown when the file a wavecrux:// link names does not exist",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "linkRefusedLoadFailed": "WaveCrux가 {fileName} 파일을 읽을 수 없습니다. 이유는 탭에 표시됩니다.",
+  "@linkRefusedLoadFailed": {
+    "description": "Toast shown when the file a wavecrux:// link opened could not be parsed; the tab shows the parser's reason",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "linkSignalNotFound": "{fileName} 파일을 열었지만 {signal} 신호가 없습니다.",
+  "@linkSignalNotFound": {
+    "description": "Toast shown when a wavecrux:// link opened its file but named a signal the file does not have",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      },
+      "signal": {
+        "type": "String"
+      }
+    }
+  },
+  "linkTimeNotPlaced": "{fileName} 파일에 링크의 시간을 변환할 타임스케일이 선언되어 있지 않아 커서를 이동하지 않았습니다.",
+  "@linkTimeNotPlaced": {
+    "description": "Toast shown when a wavecrux:// link gave a time with a unit and the file declares no timescale to convert it",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "linkTimeClamped": "링크의 시간이 {fileName} 범위를 벗어나 커서를 가장 가까운 끝에 두었습니다.",
+  "@linkTimeClamped": {
+    "description": "Toast shown when the time in a wavecrux:// link lies outside the file and the cursor was placed at its start or end",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
   }
 }

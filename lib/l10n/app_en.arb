@@ -8312,5 +8312,95 @@
   "patternSearchConnectorLabel": "Combine conditions with",
   "@patternSearchConnectorLabel": {
     "description": "Accessible name of the AND/OR segmented control between condition rows in the pattern search dialog. Read by screen readers; not drawn."
+  },
+  "linkConfirmTitle": "Open a waveform from a link?",
+  "@linkConfirmTitle": {
+    "description": "Title of the dialog shown when a wavecrux:// link asks to open a file the user has not opened in WaveCrux before"
+  },
+  "linkConfirmBody": "A link asks WaveCrux to open {fileName}. You have not opened this file in WaveCrux before. Open it only if you trust where the link came from.",
+  "@linkConfirmBody": {
+    "description": "Body of the link confirmation dialog. fileName is the base name of the file the link names, after symbolic links are resolved",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "linkConfirmPathLabel": "Full path",
+  "@linkConfirmPathLabel": {
+    "description": "Label above the full path of the file in the link confirmation dialog"
+  },
+  "linkConfirmOpen": "Open",
+  "@linkConfirmOpen": {
+    "description": "Button in the link confirmation dialog that opens the file"
+  },
+  "linkConfirmCancel": "Cancel",
+  "@linkConfirmCancel": {
+    "description": "Button in the link confirmation dialog that opens nothing. It has focus when the dialog opens"
+  },
+  "linkRefusedMalformed": "WaveCrux did not open the link because it is not a valid WaveCrux link.",
+  "@linkRefusedMalformed": {
+    "description": "Toast shown when a wavecrux:// link does not parse"
+  },
+  "linkRefusedPath": "WaveCrux did not open the link because the file is not given as a full local path.",
+  "@linkRefusedPath": {
+    "description": "Toast shown when a wavecrux:// link names a relative, network or otherwise refused path"
+  },
+  "linkRefusedNotWaveform": "WaveCrux did not open the link because {fileName} is not a waveform file a link can open.",
+  "@linkRefusedNotWaveform": {
+    "description": "Toast shown when a wavecrux:// link names a file that is not VCD, FST, GHW, LXT or LXT2",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "linkRefusedNotFound": "WaveCrux did not open the link because {fileName} was not found.",
+  "@linkRefusedNotFound": {
+    "description": "Toast shown when the file a wavecrux:// link names does not exist",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "linkRefusedLoadFailed": "WaveCrux could not read {fileName}. The tab shows why.",
+  "@linkRefusedLoadFailed": {
+    "description": "Toast shown when the file a wavecrux:// link opened could not be parsed; the tab shows the parser's reason",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "linkSignalNotFound": "Opened {fileName}, but it has no signal named {signal}.",
+  "@linkSignalNotFound": {
+    "description": "Toast shown when a wavecrux:// link opened its file but named a signal the file does not have",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      },
+      "signal": {
+        "type": "String"
+      }
+    }
+  },
+  "linkTimeNotPlaced": "The cursor was not moved because {fileName} declares no timescale for the link's time.",
+  "@linkTimeNotPlaced": {
+    "description": "Toast shown when a wavecrux:// link gave a time with a unit and the file declares no timescale to convert it",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "linkTimeClamped": "The link's time is outside {fileName}, so the cursor is at the nearest end.",
+  "@linkTimeClamped": {
+    "description": "Toast shown when the time in a wavecrux:// link lies outside the file and the cursor was placed at its start or end",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
   }
 }

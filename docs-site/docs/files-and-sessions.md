@@ -42,6 +42,55 @@ WaveCrux watches the loaded file and reacts when it changes on disk. **Settings 
 
 On iOS, iPadOS and Android the usual path is **Open with WaveCrux** — from Files, Mail, a chat app, a cloud drive, or AirDrop. The in-app file picker, with iCloud Drive, Google Drive and other document providers, is the other path. File-type associations are registered for `.vcd`, `.fst`, `.ghw`, `.lxt`, `.lxt2` and `.wavecrux` (and, on Android, `.wavecruxpack`), so those open in WaveCrux directly from other apps. A received file is copied into WaveCrux's own storage first.
 
+### Opening a waveform from a link { #links }
+
+From WaveCrux 1.2 the desktop app opens `wavecrux://` links. A link names one waveform file on your machine and, if you like, a signal and a time in it, so a CI log, a regression report, a review comment or a chat message can take the reader straight to the evidence instead of describing it.
+
+```text
+wavecrux://open?file=/home/me/uart/sim/uart_tx.vcd&signal=tb.dut.tx_busy&t=1.5us
+```
+
+| Key | Required | Meaning |
+|---|---|---|
+| `file` | Yes | The full local path of a `.vcd`, `.fst`, `.ghw`, `.lxt` or `.lxt2` file. |
+| `signal` | No | The hierarchical signal name, with dots between levels, as WaveCrux shows it: `tb.dut.tx_busy`. The end of a name also works (`dut.tx_busy`, or just `tx_busy`) when exactly one signal in the file ends that way. |
+| `t` | No | Where to put the primary cursor. A number and a unit, one of `fs`, `ps`, `ns`, `us` (or `µs`), `ms` and `s`, such as `1500ns` or `1.5us`; or a whole number with no unit, read as ticks of the file's own timescale, such as `t=42`. |
+
+When a link arrives, WaveCrux:
+
+- brings the file's tab to the front if the file is already open, and otherwise opens it in a new tab;
+- adds the signal to the view if it is not there yet, selects it and scrolls it into view;
+- puts the primary cursor at the time. A time before the start or after the end of the file puts the cursor at that end, and a message says so.
+
+If you have not opened the file in WaveCrux before (it is not open in a tab and not in Recent Files), WaveCrux asks first. The question names the file and its full path, with any symbolic links resolved, because that is the file that will open. **Cancel** has the focus, so pressing Enter or Space opens nothing. A file opened from a link is not added to Recent Files, so your answer is not remembered: the next link to the same file asks again unless its tab is still open, or you have since opened the file yourself.
+
+A link to a signal the file does not have still opens the file, and a message names the signal it could not find. So does a time with a unit in a file that declares no timescale; the cursor stays where it was.
+
+WaveCrux opens nothing, and says why, when a link is not exactly in this form: another action than `open`, a key it does not know, the same key twice, a path that is relative or on a network share, a file that is not there, or a file that is not one of the waveform formats above, whatever its name says once symbolic links are followed. A link never opens a session, a share bundle, a design manifest or an FSDB file (opening one runs an external converter), never runs anything, and never downloads anything.
+
+#### Writing a link { #links-writing }
+
+Percent-encode each value. A space in a path is `%20`, and any character outside plain ASCII is encoded as its UTF-8 bytes. A `+` is a plus sign, not a space, so `/work/c++/dump.vcd` needs no encoding.
+
+```text
+wavecrux://open?file=/home/me/my%20sim/dump.fst&t=20ns
+wavecrux://open?file=C:/work/sim/dump.vcd&signal=top.data&t=40
+```
+
+On Windows, write the path with forward slashes as above, or encode the backslashes as `%5C`. A script can build a link with Python's `urllib.parse.quote(path, safe="/:")`.
+
+To try one from a terminal, run `open 'wavecrux://open?file=...'` on macOS, `xdg-open 'wavecrux://open?file=...'` on Linux, or `start "" "wavecrux://open?file=..."` in a Windows command prompt.
+
+#### Where links work { #links-platforms }
+
+| Platform | Registered by | A link while WaveCrux is running |
+|---|---|---|
+| macOS | The app itself, the first time it runs | Opens in the running WaveCrux. |
+| Windows | The installer (`.exe`) or the `.msi` package | Starts a new WaveCrux window. |
+| Linux | The `.deb` and `.rpm` packages | Starts a new WaveCrux window. |
+
+The AppImage does not register the scheme yet. The browser build, iOS and Android do not open links.
+
 ## Opening a design with `<design>.crux-project` { #crux-project }
 
 A design usually spans more than one Crux product — the dump in WaveCrux, the RTL in NetCrux, the lint project in LintCrux, the regression suite in SimCrux. Without help that is four file-open rituals, each with its own recents list and its own chance of picking yesterday's dump.
