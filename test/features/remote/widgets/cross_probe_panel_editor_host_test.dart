@@ -289,7 +289,11 @@ void main() {
       // The host re-pushes its whole snapshot on every peer change, and the
       // refusal rides along until it is replaced. Correlating on
       // `in_reply_to` is what stops the same toast re-firing on each push.
-      await tester.pumpAndSettle(const Duration(seconds: 10));
+      // An error toast stays until it is dismissed, so the user dismisses it.
+      ScaffoldMessenger.of(
+        tester.element(find.byType(WaveCruxCrossProbePanel)),
+      ).hideCurrentSnackBar();
+      await tester.pumpAndSettle();
       expect(find.byKey(const Key('cross_probe_send_failure')), findsNothing);
       container
           .read(editorHostCrossProbeProvider.notifier)
@@ -344,7 +348,11 @@ void main() {
           .set(refusalOf('wc-0'));
       await tester.pumpAndSettle();
       expect(toast, findsOneWidget);
-      await tester.pumpAndSettle(const Duration(seconds: 10));
+      // An error toast stays until it is dismissed, so the user dismisses it.
+      ScaffoldMessenger.of(
+        tester.element(find.byType(WaveCruxCrossProbePanel)),
+      ).hideCurrentSnackBar();
+      await tester.pumpAndSettle();
       expect(toast, findsNothing);
 
       // A different send, refused for the same reason. Its failure equals the
