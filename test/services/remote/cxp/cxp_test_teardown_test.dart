@@ -14,7 +14,7 @@ import '../../../helpers/cxp_test_teardown.dart';
 import '../../../helpers/product_telemetry_config.dart';
 
 /// The teardown the CXP tests share: the node is fully stopped before its
-/// directory goes, and a refused delete is retried only where Windows needs it.
+/// directory goes, and the directory is then deleted once.
 void main() {
   setUpAll(() {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -83,9 +83,6 @@ void main() {
   });
 
   group('deleteCxpTempDirectory', () {
-    const noDelay = <Duration>[Duration.zero, Duration.zero, Duration.zero];
-    final dir = Directory('unused');
-
     test('deletes a real directory tree', () async {
       final real = await Directory.systemTemp.createTemp('wavecrux_cxp_del_');
       File(
@@ -102,80 +99,6 @@ void main() {
       real.deleteSync();
 
       await deleteCxpTempDirectory(real);
-    });
-
-    test('on Windows a refused delete is retried until it succeeds', () async {
-      var calls = 0;
-
-      await deleteCxpTempDirectory(
-        dir,
-        isWindows: true,
-        delays: noDelay,
-        delete: (_) {
-          calls++;
-          if (calls < 3) throw const PathAccessException('unused', OSError());
-        },
-      );
-
-      expect(calls, 3);
-    });
-
-    test('on Windows the original error surfaces once the retries are '
-        'spent', () async {
-      var calls = 0;
-
-      await expectLater(
-        deleteCxpTempDirectory(
-          dir,
-          isWindows: true,
-          delays: noDelay,
-          delete: (_) {
-            calls++;
-            throw const PathAccessException('unused', OSError());
-          },
-        ),
-        throwsA(isA<PathAccessException>()),
-      );
-
-      expect(calls, noDelay.length + 1);
-    });
-
-    test('off Windows a refused delete fails at once', () async {
-      var calls = 0;
-
-      await expectLater(
-        deleteCxpTempDirectory(
-          dir,
-          isWindows: false,
-          delays: noDelay,
-          delete: (_) {
-            calls++;
-            throw const PathAccessException('unused', OSError());
-          },
-        ),
-        throwsA(isA<PathAccessException>()),
-      );
-
-      expect(calls, 1);
-    });
-
-    test('an error that is not a file-system error is never retried', () async {
-      var calls = 0;
-
-      await expectLater(
-        deleteCxpTempDirectory(
-          dir,
-          isWindows: true,
-          delays: noDelay,
-          delete: (_) {
-            calls++;
-            throw StateError('not a lock');
-          },
-        ),
-        throwsStateError,
-      );
-
-      expect(calls, 1);
     });
   });
 }
