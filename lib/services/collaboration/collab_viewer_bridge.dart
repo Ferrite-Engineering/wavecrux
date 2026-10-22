@@ -327,7 +327,12 @@ class CollabViewerBridge {
     // waveform the user is actually looking at. (Reading these at the root
     // scope — the bug this fixes — sees dead instances the UI never updates, so
     // nothing was ever broadcast.)
-    _activeTabSub = _ref.listen<TabId>(
+    //
+    // The subscription is the container's, not [_ref]'s: the bridge provider is
+    // read once and nothing listens to it, so Riverpod pauses it, and a paused
+    // provider's `listen` on a derived provider such as `activeTabIdProvider`
+    // is never flushed, which would leave the bridge on the launch tab.
+    _activeTabSub = _ref.container.listen<TabId>(
       activeTabIdProvider,
       (_, _) => _bindActiveTab(),
       fireImmediately: true,

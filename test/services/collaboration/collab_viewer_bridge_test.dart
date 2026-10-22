@@ -32,7 +32,12 @@ import 'package:wavecrux/features/viewer/providers/signal_group_providers.dart';
 import 'package:wavecrux/features/viewer/providers/time_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_identity_provider.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
+import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
 import 'package:wavecrux/services/collaboration/collab_viewer_bridge.dart';
+import 'package:wavecrux/services/tabs/tab_container_manager.dart';
+
+import '../../helpers/in_memory_workspace_service.dart';
+import '../../helpers/product_telemetry_config.dart';
 
 /// Records every outbound call so the test can assert what the bridge
 /// forwarded. [sessionState] is driven manually via [emit] to simulate a
@@ -421,6 +426,57 @@ void main() {
         expect(fake.cursorPushes.last, (222, null));
       },
     );
+
+    test('re-binds to the new active tab after a tab switch, with the bridge '
+        'read once and nothing else listening to it', () async {
+      final fake = _FakeCollaborationService();
+      addTearDown(fake.close);
+      final tcm = TabContainerManager();
+      final container = ProviderContainer(
+        overrides: [
+          productTelemetryConfig,
+          ...testWorkspaceOverrides(),
+          tabContainerManagerProvider.overrideWithValue(tcm),
+          collaborationServiceProvider.overrideWithValue(fake),
+          followDetachIdleTimeoutProvider.overrideWithValue(null),
+        ],
+      );
+      tcm.init(container);
+      addTearDown(() {
+        tcm.dispose();
+        container.dispose();
+      });
+      await container.read(workspaceProvider.future);
+      final tabA = await container.wavecruxWorkspace.openFile('/designs/a.vcd');
+      final tabB = await container.wavecruxWorkspace.openFile('/designs/b.vcd');
+
+      // Launch order: the bridge is read once, with tab B active.
+      container.read(collabViewerBridgeProvider);
+      await _tick();
+      fake.emit(_session());
+      await _tick();
+
+      // Nothing reads the active tab id between the switch and the cursor move,
+      // so only a subscription the container owns can notice the switch.
+      await container.wavecruxWorkspace.setActiveTab(tabA);
+      await _tick();
+      final baseline = fake.cursorPushes.length;
+
+      // The old tab is no longer the one the user works in.
+      tcm
+          .containerFor(tabB)
+          .read(cursorStateProvider.notifier)
+          .placePrimary(90);
+      await _tick();
+      expect(fake.cursorPushes.length, baseline);
+
+      tcm
+          .containerFor(tabA)
+          .read(cursorStateProvider.notifier)
+          .placePrimary(77);
+      await _tick();
+      expect(fake.cursorPushes.last, (77, null));
+    });
 
     test('forwards the local waveform identity hash to the service', () async {
       final fake = _FakeCollaborationService();

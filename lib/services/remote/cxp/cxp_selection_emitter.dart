@@ -94,6 +94,12 @@ class CxpSelectionEmitter {
   /// are bound to the active tab's container and re-bound whenever the active
   /// tab changes — the CXP/collab scope-leak class. `selectedSignalProvider` is
   /// the CXP server's own global focus, so it stays on the root [_ref].
+  ///
+  /// The active-tab subscription is the container's, not [_ref]'s. The app
+  /// reads the emitter provider once and nothing listens to it, so Riverpod
+  /// pauses it, and a paused provider's `listen` on a derived provider such as
+  /// [activeTabIdProvider] is never flushed: the re-bind would never run and
+  /// the broadcast would stay on the tab the app launched with.
   void start() {
     if (_selectionSub != null) return;
     _lastSelection = _ref.read(selectedSignalProvider);
@@ -101,7 +107,7 @@ class CxpSelectionEmitter {
       selectedSignalProvider,
       _onSelectionChanged,
     );
-    _activeTabSub = _ref.listen<TabId>(
+    _activeTabSub = _ref.container.listen<TabId>(
       activeTabIdProvider,
       (_, _) => _bindActiveTab(),
     );
