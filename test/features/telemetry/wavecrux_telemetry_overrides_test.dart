@@ -78,7 +78,7 @@ void main() {
         EditorHostKind.none,
         transport: FakeHostBridgeTransport(),
       );
-      expect(fixture.container.read(telemetryEnabledProvider), isTrue);
+      expect(fixture.container.read(telemetryGateProvider), TelemetryGate.open);
       expect(
         fixture.container.read(telemetryServiceProvider),
         isA<LiveTelemetryService>(),

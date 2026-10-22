@@ -85,7 +85,7 @@ void main() {
       // no-op does.
       final unanswered = await shipping(TelemetryConsentState.unset);
       expect(unanswered.read(telemetryBetaPeriodProvider), isFalse);
-      expect(unanswered.read(telemetryEnabledProvider), isFalse);
+      expect(unanswered.read(telemetryGateProvider), isNot(TelemetryGate.open));
       expect(
         unanswered.read(telemetryServiceProvider),
         isA<PendingTelemetryService>(),
@@ -93,7 +93,7 @@ void main() {
 
       // A user who opted in is counted, with no define and no dev flag.
       final consented = await shipping(TelemetryConsentState.enabled);
-      expect(consented.read(telemetryEnabledProvider), isTrue);
+      expect(consented.read(telemetryGateProvider), TelemetryGate.open);
       expect(
         consented.read(telemetryServiceProvider),
         isA<LiveTelemetryService>(),
@@ -108,7 +108,7 @@ void main() {
       container.read(telemetryConsentStoreProvider.notifier).state =
           TelemetryConsentState.enabled;
 
-      expect(container.read(telemetryEnabledProvider), isFalse);
+      expect(container.read(telemetryGateProvider), isNot(TelemetryGate.open));
       expect(
         container.read(telemetryServiceProvider),
         isA<NoopTelemetryService>(),
@@ -139,7 +139,10 @@ void main() {
         container.read(telemetryConsentStoreProvider.notifier).state =
             TelemetryConsentState.enabled;
 
-        expect(container.read(telemetryEnabledProvider), isFalse);
+        expect(
+          container.read(telemetryGateProvider),
+          isNot(TelemetryGate.open),
+        );
         expect(
           container.read(telemetryServiceProvider),
           isA<NoopTelemetryService>(),
@@ -297,7 +300,7 @@ void main() {
       await container.read(telemetryConsentReadyProvider.future);
       await Future<void>.delayed(const Duration(milliseconds: 20));
 
-      expect(container.read(telemetryEnabledProvider), isFalse);
+      expect(container.read(telemetryGateProvider), isNot(TelemetryGate.open));
       expect(
         container.read(telemetryServiceProvider),
         isA<NoopTelemetryService>(),
@@ -329,9 +332,9 @@ void main() {
         ],
       );
 
-      expect(container.read(telemetryEnabledProvider), isFalse);
+      expect(container.read(telemetryGateProvider), isNot(TelemetryGate.open));
       await container.read(telemetryConsentReadyProvider.future);
-      expect(container.read(telemetryEnabledProvider), isTrue);
+      expect(container.read(telemetryGateProvider), TelemetryGate.open);
       expect(
         container.read(telemetryServiceProvider),
         isA<LiveTelemetryService>(),
