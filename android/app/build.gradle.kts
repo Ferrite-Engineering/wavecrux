@@ -74,6 +74,15 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    packaging {
+        jniLibs {
+            // Extract the .so files at install time. AGP 9 rejects
+            // android:extractNativeLibs set in the manifest, so the setting
+            // lives here instead (the merged manifest still carries it).
+            useLegacyPackaging = true
+        }
+    }
+
     defaultConfig {
         applicationId = "com.ferriteengineering.wavecrux"
 

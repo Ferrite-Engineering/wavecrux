@@ -328,3 +328,13 @@ jobs:
       # This verifies the complete Android build: Dart → DEX, Gradle, ProGuard, .so packaging.
       - name: Build Android APK (debug, x86_64 emulator)
         run: flutter build apk --debug --target-platform android-x64
+
+      # Release is a different build: R8, resource shrinking, release signing
+      # and a manifest that does not inherit the debug manifest's permissions.
+      # Debug alone missed an AGP 9 packaging failure and would miss a release
+      # APK that ships without INTERNET.
+      - name: Build Android APK (release, x86_64)
+        run: flutter build apk --release --target-platform android-x64
+
+      - name: Verify the release manifest declares INTERNET
+        run: grep -q 'android.permission.INTERNET' build/app/intermediates/merged_manifests/release/processReleaseManifest/AndroidManifest.xml
