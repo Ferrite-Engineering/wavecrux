@@ -89,6 +89,9 @@ const Map<String, String> _orchestrationTier = <String, String>{
       'providers.',
   'lib/services/remote/cxp/cxp_selection_emitter.dart':
       'CXP outbound — mirrors feature selection state to suite peers.',
+  'lib/services/remote/cxp/cxp_active_document.dart':
+      'CXP outbound: announces the file of the active tab (tab providers) '
+      'to suite peers through the shared runtime.',
   'lib/services/host_bridge/editor_host_bridge.dart':
       'Editor-host bridge — the third front door onto the same providers WCP '
       "and CXP already drive; applies an extension host's messages to feature "

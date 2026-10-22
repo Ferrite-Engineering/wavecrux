@@ -6,7 +6,8 @@ import 'dart:io';
 
 import 'package:crux_cxp/crux_cxp.dart';
 import 'package:crux_cxp_ui/crux_cxp_ui.dart';
-import 'package:crux_ide_layout/crux_ide_layout.dart' show CruxToasts;
+import 'package:crux_ide_layout/crux_ide_layout.dart'
+    show CruxToasts, announceCrux;
 import 'package:crux_io/crux_io.dart' show SpawnHost;
 import 'package:crux_telemetry/crux_telemetry.dart';
 import 'package:crux_window_chrome/crux_window_chrome.dart';
@@ -28,6 +29,8 @@ import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart
 import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/services/remote/cxp/cxp_workspace_link.dart';
+import 'package:wavecrux/services/remote/cxp/formal_eqy_pairing.dart';
+import 'package:wavecrux/services/remote/cxp/formal_stream_coordinate_resolver.dart';
 import 'package:wavecrux/services/remote/cxp/riscv_stream_coordinate_resolver.dart';
 import 'package:wavecrux/services/remote/remote_control_notifier.dart';
 import 'package:wavecrux/services/riscv/riscv_retire_stream_service.dart';
@@ -137,6 +140,9 @@ Future<CruxCxpHandlerResult> _applyStreamCoordinate(
   // Nothing to land *inside* an element that was not honoured. The element's
   // own reason is the more useful one, so it stands unmodified.
   if (!elementResult.honored) return elementResult;
+  if (FormalStreamCoordinateResolver.implementsStream(coordinate.streamId)) {
+    return await _applyFormalCoordinate(ref, coordinate);
+  }
   if (!RiscvStreamCoordinateResolver.implementsStream(coordinate.streamId)) {
     return CruxCxpHandlerResult(
       honored: true,
@@ -198,6 +204,97 @@ Future<CruxCxpHandlerResult> _applyStreamCoordinate(
         'no instruction retired at that step; the cursor was placed there '
         'and nothing was selected',
   );
+}
+
+/// Lands a CXP §9.9.3 `formal.trace_step` coordinate in the active tab's
+/// trace: the counterexample or cover hand-off SimCrux sends with the trace as
+/// a `source` element.
+///
+/// The same contract as the RVFI path: the element stays honoured whatever
+/// happens here, a step that cannot be placed becomes the ack's `reason`, and
+/// nothing throws. The user is told either way, by a toast that is also
+/// announced, because the inbound path has no `BuildContext` and a cursor
+/// that moved (or did not) without a word is invisible to a screen reader.
+Future<CruxCxpHandlerResult> _applyFormalCoordinate(
+  Ref ref,
+  CxpStreamCoordinate coordinate,
+) async {
+  FormalCoordinateResolution resolution;
+  try {
+    resolution = await _resolveFormalCoordinate(ref, coordinate);
+  } on Object catch (e) {
+    resolution = FormalCoordinateResolution.declined(
+      'could not resolve the stream coordinate: $e',
+    );
+  }
+  final time = resolution.time;
+  if (time == null) {
+    _announceFormalLanding((l10n) => l10n.formalTraceStepDeclined);
+    return CruxCxpHandlerResult(honored: true, reason: resolution.reason);
+  }
+  readActive(ref, cursorStateProvider.notifier).placePrimary(time);
+  final step = resolution.step!;
+  final replayed =
+      coordinate.attributes[CxpStreamCoordinate.formalModeAttribute] ==
+      RiscvCoordinateAttributes.demoMode;
+  _announceFormalLanding(
+    (l10n) => replayed
+        ? l10n.formalTraceLandedReplayed(step)
+        : l10n.formalTraceLanded(step),
+  );
+  return CruxCxpHandlerResult.ok;
+}
+
+/// Loads every variable the grid reads (the lazy-load trap, ARCHITECTURE
+/// §6.6) and resolves [coordinate] against the active tab's trace.
+Future<FormalCoordinateResolution> _resolveFormalCoordinate(
+  Ref ref,
+  CxpStreamCoordinate coordinate,
+) async {
+  final source = readActive(ref, waveformSourceProvider).value;
+  if (source == null) {
+    return const FormalCoordinateResolution.declined(
+      'no waveform file loaded, so the stream coordinate could not be '
+      'resolved',
+    );
+  }
+  final all = source.findVariables(const SignalFilter());
+  final variables = all.length > kFormalGridVariableCap
+      ? all.sublist(0, kFormalGridVariableCap)
+      : all;
+  for (final variable in variables) {
+    if (source.isSignalLoaded(variable.signalRef)) continue;
+    try {
+      await source.loadSignal(variable.signalRef);
+    } on Object {
+      // A signal the source will not load is read as having no changes; the
+      // grid then judges what it can see.
+    }
+  }
+  return const FormalStreamCoordinateResolver().resolve(
+    coordinate: coordinate,
+    source: source,
+    variables: variables,
+  );
+}
+
+/// Shows and announces the formal landing message [message] picks, through
+/// the context-free toast host.
+///
+/// Localized off the root messenger's context, the route
+/// [_autoStagePanelName] uses, because an inbound socket message has no
+/// `BuildContext`. With no messenger (a server-only start, a unit test) there
+/// is no one to tell, and nothing is shown. Where no toast host exists (phone
+/// and tablet layouts), the message is still announced.
+void _announceFormalLanding(String Function(L10N l10n) message) {
+  final messenger = rootScaffoldMessengerKey.currentState;
+  if (messenger == null || !messenger.mounted) return;
+  final l10n = Localizations.of<L10N>(messenger.context, L10N);
+  if (l10n == null) return;
+  final text = message(l10n);
+  if (!CruxToasts.showInfo(text)) {
+    announceCrux(messenger.context, text);
+  }
 }
 
 /// Builds the retire stream of the active tab's trace and resolves
@@ -375,7 +472,7 @@ Future<_ElementOutcome> _dispatchCxpHighlight(
     case KnownElementKind.marker:
       return _ElementOutcome(await _highlightMarker(ref, element.path));
     case KnownElementKind.source:
-      return await _highlightSource(ref, element.path);
+      return await _highlightSource(ref, element.path, metadata);
     case KnownElementKind.rule:
     case KnownElementKind.test:
     case KnownElementKind.breakpoint:
@@ -821,9 +918,14 @@ const CxpPathContainment _kSourceHandoffFloor = CxpPathContainment();
 /// * Missing / unreadable / unparseable waveform → `honored: false`,
 ///   `reason: "failed to open waveform: …"` (the notifier lands in
 ///   [AsyncError]).
+///
+/// [metadata] is the request's. When it names an equivalence trace's two
+/// halves (`formal.eqy.gold_scope`, `formal.eqy.gate_scope`, CXP §9.3.1), the
+/// new tab is arranged by [_applyEqyPairing] after the suggested signals.
 Future<_ElementOutcome> _highlightSource(
   Ref ref,
   String path,
+  Map<String, Object?> metadata,
 ) async {
   final lower = path.toLowerCase();
   final isWaveform = _waveformExtensions.any(lower.endsWith);
@@ -863,10 +965,44 @@ Future<_ElementOutcome> _highlightSource(
     );
   }
   _applySuggestedSignals(ref, container, loaded.value);
+  _applyEqyPairing(container, loaded.value, metadata);
   // This is the SimCrux counterexample hand-off's own path, and it always
   // creates a tab: a `source` element names a file to OPEN, never a place in
   // something already open.
   return const _ElementOutcome(CruxCxpHandlerResult.ok, openedTab: true);
+}
+
+/// Arranges an equivalence-check trace on the tab [container] holds: the
+/// miter's outputs first, then the gold and gate designs as a pair of groups
+/// ([EqyTracePairing]). A no-op unless [metadata] names both scopes and the
+/// trace holds them; the keys are advisory, so a trace without them opens
+/// exactly as any other.
+///
+/// Only ever called on a tab this hand-off has just created, so the
+/// arrangement rearranges nothing the user made.
+void _applyEqyPairing(
+  ProviderContainer container,
+  WaveformDataSource? source,
+  Map<String, Object?> metadata,
+) {
+  if (source == null) return;
+  final scopes = EqyTracePairing.scopesFrom(metadata);
+  if (scopes == null) return;
+  final arrangement = EqyTracePairing.arrange(
+    source.findVariables(const SignalFilter()),
+    goldScope: scopes.gold,
+    gateScope: scopes.gate,
+  );
+  if (arrangement == null) return;
+  container
+      .read(signalGroupsProvider.notifier)
+      .prependArrangement(
+        lead: arrangement.miterOutputs,
+        groups: [
+          (name: arrangement.goldScope, signals: arrangement.gold),
+          (name: arrangement.gateScope, signals: arrangement.gate),
+        ],
+      );
 }
 
 /// Drains the stashed `notify_selection` signal paths, resolves each against

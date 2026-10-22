@@ -120,6 +120,45 @@ class SignalGroupsNotifier extends _$SignalGroupsNotifier {
     return true;
   }
 
+  /// Puts [lead] signals at the top of the list, followed by one group per
+  /// entry of [groups] (its name and its signals), in one state change.
+  ///
+  /// A top-level signal row already showing one of these signals is removed
+  /// first, so a signal never appears twice. For a tab a cross-probe has just
+  /// opened, where the rows above came from the hand-off itself.
+  void prependArrangement({
+    required List<Variable> lead,
+    required List<({String name, List<Variable> signals})> groups,
+  }) {
+    final arranged = <String>{
+      for (final v in lead) v.signalRef,
+      for (final g in groups)
+        for (final v in g.signals) v.signalRef,
+    };
+    if (arranged.isEmpty) return;
+    var i = 0;
+    SignalEntry entryFor(Variable v) => SignalEntry.signal(
+      signalRef: v.signalRef,
+      signalPath: v.fullPath,
+      displayName: v.name,
+      argbColor: _nextColor(i++),
+    );
+    final top = <SignalEntry>[
+      for (final v in lead) entryFor(v),
+      for (final g in groups)
+        if (g.signals.isNotEmpty)
+          SignalEntry.group(
+            groupName: g.name,
+            children: [for (final v in g.signals) entryFor(v)],
+          ),
+    ];
+    final kept = state.entries.where(
+      (e) =>
+          e.kind != SignalEntryKind.signal || !arranged.contains(e.signalRef),
+    );
+    state = state.copyWith(entries: [...top, ...kept]);
+  }
+
   /// Removes the top-level entry at [index]. Out-of-bounds indices are ignored.
   void removeSignal(int index) {
     if (index < 0 || index >= state.entries.length) return;

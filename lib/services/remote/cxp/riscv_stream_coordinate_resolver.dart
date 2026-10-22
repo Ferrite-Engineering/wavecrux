@@ -4,6 +4,8 @@
 import 'package:crux_cxp/crux_cxp.dart';
 import 'package:meta/meta.dart';
 import 'package:wavecrux/domain/interfaces/waveform_data_source.dart';
+import 'package:wavecrux/services/remote/cxp/formal_stream_coordinate_resolver.dart'
+    show TraceStepLattice;
 import 'package:wavecrux/services/riscv/riscv_retired_instruction.dart';
 import 'package:wavecrux/services/riscv/rvfi_binding_set.dart';
 
@@ -46,6 +48,9 @@ abstract final class RiscvCoordinateAttributes {
 /// with a refusal**, not an assumption.
 ///
 /// ### How the grid is established
+///
+/// Rule 1 is RVFI's own; rules 2 to 4 are [TraceStepLattice.fromTicks], the
+/// recovery the generic `formal.trace_step` resolver shares.
 ///
 /// 1. Collect every tick at which **any bound RVFI signal** changes, together
 ///    with the trace's `startTime` and `endTime`. Only the RVFI channels
@@ -112,31 +117,22 @@ class RiscvTraceStepGrid {
     // the binding forbids.
     if (bindings.allRefs.isEmpty) return null;
 
-    final ticks = <int>{start, end};
+    final ticks = <int>[];
     for (final ref in bindings.allRefs) {
       // `changesInRange` is half-open, hence the `end + 1` idiom used
       // throughout the RISC-V substrate.
       for (final change in source.changesInRange(ref, start, end + 1)) {
-        if (change.time >= start && change.time <= end) ticks.add(change.time);
+        ticks.add(change.time);
       }
     }
-    if (ticks.length < 2) return null;
-
-    final sorted = ticks.toList()..sort();
-    var pitch = sorted[1] - sorted[0];
-    for (var i = 2; i < sorted.length; i++) {
-      final gap = sorted[i] - sorted[i - 1];
-      if (gap > 0 && gap < pitch) pitch = gap;
-    }
-    if (pitch <= 0) return null;
-
-    for (final tick in sorted) {
-      if ((tick - start) % pitch != 0) return null;
-    }
+    // Rules 2 to 4 are the shared lattice recovery the formal resolver uses
+    // too; only the choice of ticks (rule 1) is RVFI's own.
+    final lattice = TraceStepLattice.fromTicks(ticks, start: start, end: end);
+    if (lattice == null) return null;
     return RiscvTraceStepGrid(
-      origin: start,
-      pitch: pitch,
-      lastStep: (end - start) ~/ pitch,
+      origin: lattice.origin,
+      pitch: lattice.pitch,
+      lastStep: lattice.lastStep,
     );
   }
 

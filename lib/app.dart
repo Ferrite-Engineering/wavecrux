@@ -112,6 +112,7 @@ import 'package:wavecrux/services/panes/pane_container_manager.dart';
 import 'package:wavecrux/services/platform/incoming_file_service.dart';
 import 'package:wavecrux/services/platform/incoming_link_service.dart';
 import 'package:wavecrux/services/policy/org_theme_application.dart';
+import 'package:wavecrux/services/remote/cxp/cxp_active_document.dart';
 import 'package:wavecrux/services/remote/cxp/cxp_selection_emitter_provider.dart';
 import 'package:wavecrux/services/remote/cxp/wavecrux_cxp_overrides.dart';
 import 'package:wavecrux/services/remote/remote_control_notifier.dart';
@@ -868,7 +869,10 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
         // does not depend on the server, so this one read is enough: it
         // sends through whichever server is running when a selection
         // changes, and drops the message while none is.
-        ..read(cxpSelectionEmitterProvider);
+        ..read(cxpSelectionEmitterProvider)
+        // Tell peers which waveform this window shows, and keep telling them
+        // as the active tab changes.
+        ..read(cxpActiveDocumentPublisherProvider);
     }
 
     // Instantiate the WCP lifecycle bridge so the remote-control server

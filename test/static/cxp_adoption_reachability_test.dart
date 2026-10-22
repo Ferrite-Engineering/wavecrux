@@ -92,6 +92,35 @@ void main() {
     );
   });
 
+  test('the active document is published from launch', () {
+    expect(
+      _read('lib/app.dart'),
+      contains('..read(cxpActiveDocumentPublisherProvider)'),
+      reason:
+          'Nothing else reads the publisher: without this read no peer ever '
+          'sees which waveform this window shows.',
+    );
+  });
+
+  test('a formal trace step and an EQY pairing reach the inbound path', () {
+    final inbound = _read('lib/services/remote/cxp/cxp_inbound_handlers.dart');
+    for (final call in <String>[
+      'FormalStreamCoordinateResolver.implementsStream(',
+      'const FormalStreamCoordinateResolver().resolve(',
+      '_highlightSource(ref, element.path, metadata)',
+      '_applyEqyPairing(container, loaded.value, metadata)',
+      'EqyTracePairing.arrange(',
+      '.prependArrangement(',
+    ]) {
+      expect(inbound, contains(call), reason: call);
+    }
+    expect(
+      _read('lib/services/remote/cxp/riscv_stream_coordinate_resolver.dart'),
+      contains('TraceStepLattice.fromTicks('),
+      reason: 'the RVFI grid delegates to the shared lattice, never a copy',
+    );
+  });
+
   test('the shared send and Recent surfaces are called from the app', () {
     final sources = _libSources();
     for (final call in <String>[

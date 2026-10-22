@@ -1755,3 +1755,28 @@ Two things the re-run found that the original pass could not:
 - [ ] **A second session reassigning palette slots does not recolour the first
       layer** — `[Coverage: UNIT + MANUAL — Guide §22.33 step 20]`
 
+## 12.30 Formal trace landing and EQY pairing over CXP (§22.34, from 1.2)
+
+- [ ] A failing `sby` row sent from SimCrux opens the trace in a new tab with
+      the cursor on the reported step (`prove_bug`, step 6, time 60), never a
+      clock half step `[Coverage: UNIT + MANUAL]`
+- [ ] The landing is shown as a toast and spoken once by the screen reader;
+      a replayed fixture is said to be one `[Coverage: UNIT + MANUAL]`
+- [ ] A trace whose step grid cannot be established opens anyway, the cursor
+      does not move, the toast says so, and the ack carries the reason
+      `[Coverage: UNIT]`
+- [ ] A hand-off with no coordinate opens the trace and moves nothing
+      `[Coverage: UNIT]`
+- [ ] A `property` element is answered not honoured `[Coverage: UNIT]`
+- [ ] A failing EQY partition opens with the miter outputs first, then
+      **miter.gold** and **miter.gate** as two groups; without the scope keys it
+      opens unarranged `[Coverage: UNIT + MANUAL]`
+- [ ] A signal selected in the trace cross-probes back to SimCrux or NetCrux
+      unchanged; each landing is one `cxp.crossprobe` event, no new event
+      `[Coverage: MANUAL]`
+- [ ] Every committed corpus trace resolves every step to its `smt_step` time,
+      on both readers, and the copies match SimCrux's by digest
+      `[Coverage: UNIT]`
+- [ ] Peers' Cross-probe to menus name WaveCrux's active file, and follow a tab
+      switch `[Coverage: UNIT + MANUAL]`
+

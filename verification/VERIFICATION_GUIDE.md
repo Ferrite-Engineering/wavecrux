@@ -10275,6 +10275,103 @@ participants, then end the session.
 | Two real clients, two palettes, and colours that still look right next week | `[Coverage: MANUAL]` | Steps 20 above; no harness runs two sessions against two real palettes |
 | Whether the strip is noticed at all when a meeting ends | `[Coverage: MANUAL]` | A non-modal prompt trades interruption for the risk of being missed; that trade is a judgement about attention, not a test |
 
+## 22.34 Formal trace landing and EQY pairing over CXP (Open Core, from 1.2)
+
+**What it does.** SimCrux sends a formal counterexample or cover witness to
+WaveCrux as one cross-probe: the trace file as a `source` element, a
+`formal.trace_step` coordinate naming the step the solver reported (step 0 is
+the initial state), and, for an equivalence (EQY) trace, the
+`formal.eqy.gold_scope` and `formal.eqy.gate_scope` metadata keys. WaveCrux
+opens the trace in a new tab, puts the primary cursor on that step and says
+so, and for an EQY trace arranges the miter's outputs first with the gold and
+gate designs as a pair of groups. Open core, no tier gate anywhere. See
+ARCHITECTURE §6.6.3.1.
+
+**Why the step needs measuring.** A witness trace has times, not steps. Every
+trace SymbiYosys and EQY write puts step k at time 10·k, and the clock rises
+there and falls half way between. Reading every transition would place step 7
+at time 35, between two solver steps. WaveCrux measures one edge of the clock,
+and declines the step (opening the trace anyway) whenever it cannot establish
+the grid.
+
+**Setup.** WaveCrux and SimCrux from the same build, both with CXP on
+(Settings > CXP Cross-Probe). In SimCrux, a project with a failing `sby` task
+(the formal corpus's `handshake_imm` with `BUG_ACK_LATE`, task `prove_bug`,
+fails at step 6) and an EQY project with a failing partition (`alu_fail`,
+partition `alu.z`). The committed copies of every corpus trace are under
+`test/fixtures/formal/captured/` for the sender-free steps.
+
+### Counterexample landing
+
+1. In SimCrux, select the failing `prove_bug` row and send it to WaveCrux
+   (Cross-probe Selection, or the row's Cross-probe to menu). WaveCrux opens
+   `trace.vcd` in a **new tab** and the primary cursor sits at **60**, the
+   sample of step 6.
+2. A toast reads *"Formal trace opened. Cursor at step 6."* With VoiceOver
+   (macOS) or NVDA (Windows) running, the same sentence is spoken once.
+3. Read `f_wait` at the sample before the cursor (time 50, step 5): it is
+   **3**, the value the property rejects. The cursor is on the solver's step,
+   not on a clock half step.
+4. On a phone or tablet layout there is no toast stack: the sentence is still
+   announced.
+
+### Declines, never guesses
+
+5. Have a peer send an ordinary simulation VCD whose samples are irregular,
+   with a `formal.trace_step` coordinate (SimCrux never does this; the
+   automated case below covers it without a peer).
+   The trace opens, the cursor does not move, and the toast reads *"Formal
+   trace opened. The step could not be placed on this trace, so the cursor did
+   not move."* The sender's acknowledgement is honoured with the reason.
+6. A coordinate the sender marked as replayed (`formal.mode` = `demo`) is
+   announced as *"Formal trace opened from a replayed demo fixture. Cursor at
+   step N."*: replayed evidence never reads as a measured run.
+7. A hand-off with no coordinate (the sender omits it for multi-clock tasks,
+   whose step grid was never measured) opens the trace and moves nothing, with
+   no toast.
+8. A `property` element sent straight to WaveCrux is answered not honoured:
+   WaveCrux receives the trace, never the property.
+
+### EQY pairing
+
+9. In SimCrux, send the failing `alu.z` partition of `alu_fail` to WaveCrux.
+   The new tab's signal list starts with the ten miter comparison signals
+   (`__po_z__assert.okay` and its siblings, `__po_z__gold`, `__po_z__gate` and
+   their `_d` and `_x` forms), then a group **miter.gold** (14 signals), then a
+   group **miter.gate** (119 signals). The cursor is at step 1 (time 10).
+10. Collapse and expand both groups: each holds only its own design.
+11. Send the same trace from a peer that omits the two scope keys: it opens
+    unarranged, as any trace.
+
+### Back the other way
+
+12. Select a signal in the opened trace and use Cross-probe to > SimCrux (or
+    NetCrux): the selection goes back as a signal, unchanged from 1.1.
+13. Each landing in steps 1, 5, 7 and 9 records one `cxp.crossprobe` event
+    with `direction` = `inbound` and its `honored` value (telemetry inspector,
+    when enabled). There is no formal-specific event.
+
+### The active document peers see
+
+14. With two waveforms open, look at WaveCrux in SimCrux's Cross-probe to
+    menu: it names the active tab's file. Switch tabs in WaveCrux; the name in
+    SimCrux's menu follows within a few seconds. Only the file name travels,
+    never the directory.
+
+### 22.34.1 Automation Assessment
+
+| Test | Coverage | Notes |
+|---|---|---|
+| Every committed corpus trace (27, byte-identical to SimCrux's captures, pinned by digest) resolves every step to the time its `smt_step` value sits at, read from the file's text, never from the code under test | `[Coverage: UNIT]` | `test/services/remote/cxp/formal_stream_coordinate_resolver_test.dart`, with both the streaming parser and the native reader the app uses |
+| The half-step trap is real (every transition gives pitch 5) and the grid avoids it (pitch 10) | `[Coverage: UNIT]` | same file |
+| Property meaning at the resolved step: `f_wait` is 3 at step 5 in both `prove_bug` traces; `rst` is high at step 0 | `[Coverage: UNIT]` | same file |
+| Refusals: uneven samples with no clock, an uneven clock, two clocks sharing no edge, data changing between clock edges, a step past the end | `[Coverage: UNIT]` | same file |
+| The RVFI grid delegates to the shared lattice and its tests are unchanged | `[Coverage: UNIT + STATIC]` | `riscv_counterexample_handoff_test.dart`, `riscv_stream_coordinate_resolver_test.dart`; `test/static/cxp_adoption_reachability_test.dart` |
+| The end-to-end hand-off on the real reader: cursor, announcement (plain and replayed), decline with a reason, no coordinate, EQY arrangement, `property` declined | `[Coverage: UNIT]` | `test/services/remote/cxp/formal_counterexample_handoff_test.dart` |
+| EQY scope matching (suffix, shortest, ambiguous, nested) and the arrangement replacing duplicate rows | `[Coverage: UNIT]` | `test/services/remote/cxp/formal_eqy_pairing_test.dart` |
+| The active document follows the active tab and reaches a runtime that starts later | `[Coverage: UNIT + STATIC]` | `test/services/remote/cxp/cxp_active_document_test.dart`; the launch read in `cxp_adoption_reachability_test.dart` |
+| A live SimCrux sending a live `sby` and `eqy` result; the toast as seen and heard; the peer menu naming the active file | `[Coverage: MANUAL]` | Steps 1, 2, 9 and 14; needs both apps and a screen reader |
+
 ---
 
 ## 23. Sign-off checklist

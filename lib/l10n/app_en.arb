@@ -7505,6 +7505,28 @@
   "@riscvCommitLandingPanelName": {
     "description": "Name of the Stage panel a cross-probe creates to hold the RVFI Commit Inspector it auto-mounts"
   },
+  "formalTraceLanded": "Formal trace opened. Cursor at step {step}.",
+  "@formalTraceLanded": {
+    "description": "Toast and screen-reader announcement when a formal counterexample or cover trace received over cross-probe opens and the cursor lands on the step the solver reported",
+    "placeholders": {
+      "step": {
+        "type": "int"
+      }
+    }
+  },
+  "formalTraceLandedReplayed": "Formal trace opened from a replayed demo fixture. Cursor at step {step}.",
+  "@formalTraceLandedReplayed": {
+    "description": "As formalTraceLanded, when the sender marked the coordinate as derived from a replayed fixture (formal.mode=demo); replayed evidence must never be presented as measured",
+    "placeholders": {
+      "step": {
+        "type": "int"
+      }
+    }
+  },
+  "formalTraceStepDeclined": "Formal trace opened. The step could not be placed on this trace, so the cursor did not move.",
+  "@formalTraceStepDeclined": {
+    "description": "Toast and screen-reader announcement when a formal trace received over cross-probe opens but its step grid cannot be established, so WaveCrux declines the step rather than guessing"
+  },
   "riscvCommitLandingReplayed": "Replayed demo fixture, not a measured solver run.",
   "@riscvCommitLandingReplayed": {
     "description": "Provenance label shown when the sender marked the coordinate riscv.mode=demo; replayed evidence must never be presented as measured"
