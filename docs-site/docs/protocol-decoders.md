@@ -221,7 +221,7 @@ The same menu has **Export** *decoder* **as JSON…** for every decoder, not onl
 
 ## PCIe link analysis <span class="tier tier-pro">Pro</span> { #pcie-link-analysis }
 
-From 1.2, WaveCrux Pro analyzes a PCIe link on top of the open-source PCIe decoders in [wavecrux-decoders](https://github.com/Ferrite-Engineering/wavecrux-decoders): the PIPE, Data Link Layer and serial line decoders. Decoding stays free on every tier. The analysis reads what those decoders report, decodes nothing itself, and adds the link's training states, its Ack/Nak timing and its Flow Control credits. It covers x1 links at 2.5 and 5.0 GT/s.
+From 1.2, WaveCrux Pro analyzes a PCIe link on top of the open-source PCIe decoders in [wavecrux-decoders](https://github.com/Ferrite-Engineering/wavecrux-decoders): the PIPE, Data Link Layer and serial line decoders. Decoding stays free on every tier. The analysis reads what those decoders report, decodes nothing itself, and adds the link's training states, its Ack/Nak timing, its Flow Control credits and its replay timer. It covers x1 links at 2.5 and 5.0 GT/s.
 
 ### Setting it up { #pcie-link-setup }
 
@@ -259,6 +259,17 @@ From WaveCrux 1.2, the **Flow control** table counts the credits each side's TLP
 - Each side's InitFC1 and InitFC2 DLLPs must go P, NP, Cpl and round again for every virtual channel. The table flags an out-of-order DLLP, a first InitFC1 that is not P in a trace that shows the link coming up, and an InitFC1 that follows InitFC2 without the link going down between.
 
 The table has a row per direction, virtual channel and credit type with the credits advertised, the credits consumed and the number of UpdateFC DLLPs, followed by a row for each finding. A trace that starts after the link came up has no InitFC1 to count from, so its credits are not checked. A TLP whose type the decoder could not name is left out. When a trace has several virtual channels, only traffic class 0, which is always on VC0, is placed on a channel, because the traffic class to channel map is configuration the trace does not carry.
+
+### Replay timer and REPLAY_NUM { #pcie-link-replay }
+
+From WaveCrux 1.2, the **Replay** table checks each direction's TLPs against the Data Link Layer's replay rules in section 3.5.2.1 of the PCI Express Base Specification, with a Data Link Layer decoder on both sides.
+
+- The REPLAY_TIMER limit for an x1 link is three times the Ack Transmission Latency Limit for the line rate and **Max payload**. At 128 bytes that is 711 symbol times at 2.5 GT/s and 864 at 5.0 GT/s. The table's summary row for each direction states the limit it used.
+- The timer starts at the end of a TLP when none is running. It restarts when an Ack or Nak acknowledges some but not all outstanding TLPs, and when the transmitter replays. It stops when every TLP is acknowledged. A TLP still unacknowledged past the limit, with no replay since, when the next Ack, Nak or new TLP starts or the trace ends, is flagged: the transmitter ignored the timer's expiry. This needs the trace's timescale.
+- The specification adds an adjustment for a receiver in L0s. WaveCrux does not apply it. Instead, time that either side spent outside L0 (L0s, Recovery, and the training states) is not counted, so the check can only be more lenient than the specification, never stricter.
+- REPLAY_NUM is a two-bit counter. Each replay counts, and a burst of replayed TLPs is one replay. An Ack or Nak that acknowledges a TLP resets the count. The fourth replay without such forward progress rolls the counter over, and the link has to retrain first, so the table flags a fourth replay, and every fourth after it, that no Recovery state of the transmitting side precedes.
+
+The table has a summary row for each direction and a row for each finding, and the summary above the table counts replays and findings.
 
 ## Enterprise decoders <span class="tier tier-enterprise">Enterprise</span> { #enterprise-decoders }
 
