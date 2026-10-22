@@ -97,6 +97,11 @@ class StreamingVcdService implements WaveformDataSource {
   final List<_StreamScopeBuilder> _scopeStack = [];
   final List<Scope> _rootScopesList = [];
 
+  // Variables declared outside any `$scope` (yosys-smtbmc writes its
+  // `smt_step` and `smt_clock` this way). Presented as one unnamed root scope,
+  // the same shape the native reader gives them.
+  final List<Variable> _rootLevelVariables = [];
+
   // Current simulation timestamp (value section).
   int _currentTime = 0;
 
@@ -530,6 +535,8 @@ class StreamingVcdService implements WaveformDataSource {
 
     if (_scopeStack.isNotEmpty) {
       _scopeStack.last.variables.add(variable);
+    } else {
+      _rootLevelVariables.add(variable);
     }
     _allChanges.putIfAbsent(idcode, () => []);
   }
@@ -539,7 +546,16 @@ class StreamingVcdService implements WaveformDataSource {
     while (_scopeStack.isNotEmpty) {
       _popScope();
     }
-    _rootScopes = List.unmodifiable(_rootScopesList);
+    _rootScopes = List.unmodifiable([
+      if (_rootLevelVariables.isNotEmpty)
+        Scope(
+          name: '',
+          type: ScopeType.module,
+          path: '',
+          variables: List.unmodifiable(_rootLevelVariables),
+        ),
+      ..._rootScopesList,
+    ]);
     _allVariables = _flattenVariables(_rootScopes);
     _headerParsed = true;
     _activeDirective = _DirectiveKind.none;

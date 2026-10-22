@@ -592,12 +592,13 @@ List<Scope> _buildRootScopes(
   final totalScopes = wffi.wellen_num_scopes(handle);
   final totalVars = wffi.wellen_num_vars(handle);
 
-  if (totalScopes == 0) {
-    // No named scopes — check for root-level vars.
-    return _buildRootLevelVarScope(wffi, handle, totalVars);
-  }
+  // Variables declared outside any scope (yosys-smtbmc writes `smt_step` and
+  // `smt_clock` before its first `$scope`) sit in one unnamed root scope,
+  // ahead of the named ones; a file with no scopes at all shows only it.
+  final rootLevel = _buildRootLevelVarScope(wffi, handle, totalVars);
+  if (totalScopes == 0) return rootLevel;
 
-  return using((arena) {
+  final named = using((arena) {
     // One pair of worst-case index buffers shared across the entire walk.
     // Allocating these per scope is quadratic in design size: a gate-level
     // netlist with 142k scopes / 1.3M vars would otherwise calloc (and zero)
@@ -625,9 +626,11 @@ List<Scope> _buildRootScopes(
         ),
     ];
   });
+  return [...rootLevel, ...named];
 }
 
-/// Handles the rare case of variables declared at the top level with no scope.
+/// Variables declared at the top level with no enclosing scope, as one
+/// unnamed root scope (empty when there are none).
 List<Scope> _buildRootLevelVarScope(
   WellenFfi wffi,
   ffi.Pointer<WellenHandle> handle,

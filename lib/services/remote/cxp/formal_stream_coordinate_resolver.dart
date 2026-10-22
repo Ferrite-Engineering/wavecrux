@@ -167,9 +167,9 @@ class FormalTraceStepGridResult {
 ///    which the binding does not cover, and also a refusal.
 ///
 /// The trace also declares `smt_step`, the solver's own step counter, outside
-/// any scope. The waveform readers do not expose variables declared outside a
-/// scope, so this grid does not read it; the corpus test checks the grid
-/// against it from the file's text instead.
+/// any scope. The readers show it, but this grid does not read it: the
+/// receiver works from the trace's own clock. The corpus test checks the grid
+/// against `smt_step` from the file's text instead.
 abstract final class FormalTraceStepGrid {
   /// Derives the grid from [source] over [variables], every one of which the
   /// caller has loaded. See the class doc for the five rules.

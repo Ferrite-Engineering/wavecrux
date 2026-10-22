@@ -471,14 +471,16 @@ class WellenWasmProvider implements WaveformDataSource, CompactChangesSource {
   List<Scope> _buildRootScopes(_WellenHandle h) {
     final totalScopes = h.numScopes();
     final totalVars = h.numVars();
-    if (totalScopes == 0) {
-      return _buildRootLevelVarScope(h, totalVars);
-    }
+    // Variables declared outside any scope (yosys-smtbmc's `smt_step` and
+    // `smt_clock`) sit in one unnamed root scope ahead of the named ones.
+    final rootLevel = _buildRootLevelVarScope(h, totalVars);
+    if (totalScopes == 0) return rootLevel;
     final rootIndices = h.rootScopes().toDart;
-    return List<Scope>.generate(
-      rootIndices.length,
-      (i) => _buildScope(h, rootIndices[i], ''),
-    );
+    return [
+      ...rootLevel,
+      for (var i = 0; i < rootIndices.length; i++)
+        _buildScope(h, rootIndices[i], ''),
+    ];
   }
 
   List<Scope> _buildRootLevelVarScope(_WellenHandle h, int totalVars) {

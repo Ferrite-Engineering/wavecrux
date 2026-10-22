@@ -23,10 +23,9 @@ import 'package:wavecrux/services/waveform/wellen_provider.dart';
 /// The expected tick of every step is not computed by the code under test. It
 /// is read off each file's text by [_smtSteps]: the trace declares the
 /// solver's own step counter, `smt_step`, and the time of each of its values
-/// is the time that step sits at. The waveform readers do not expose that
-/// variable (it is declared outside every scope), which is exactly why the
-/// resolver has to recover the grid from the clock, and why this independent
-/// reading is the right oracle for it.
+/// is the time that step sits at. The resolver recovers the grid from the
+/// clock rather than reading that variable, so this independent reading of the
+/// text is the right oracle for it.
 void main() {
   final root = p.join(
     Directory.current.path,
