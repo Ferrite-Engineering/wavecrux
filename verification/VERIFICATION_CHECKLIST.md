@@ -1661,6 +1661,14 @@ Two things the re-run found that the original pass could not:
 - [ ] PNG export includes annotations; unticking excludes them and the canvas
       is left showing them afterwards
 - [ ] With PNG selected, Time range and Signals are disabled and explained
+- [ ] From 1.2 the balloon, numbered dot, leaders, drag and fold come from the
+      suite's shared annotation layer; every bullet above reads exactly as it
+      did in 1.1, and a 1.1 `.wavecrux` session and `.wavecruxpack` open with
+      the same notes, positions, folds and drift — `[Coverage: WIDGET]`
+      (the annotation suites under `test/features/annotations/`, unchanged by
+      the lift) + `[Coverage: UNIT]` (`wavecrux_pack_round_trip_test.dart`,
+      `session_annotations_round_trip_test.dart`) + `[Coverage: MANUAL]`
+      (VERIFICATION_GUIDE §22.28 step 38)
 
 ## 12.25 The `.wavecruxpack` share bundle (§22.29)
 

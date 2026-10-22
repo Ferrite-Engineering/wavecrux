@@ -3,7 +3,10 @@
 
 import 'dart:ui';
 
-/// The amber a **drifted** annotation wears.
+import 'package:crux_annotations/crux_annotations.dart';
+
+/// The amber a **drifted** annotation wears: the suite's shared drift colour,
+/// so a drifted note reads the same in WaveCrux and NetCrux.
 ///
 /// Lives in `core/theme/` rather than beside the overlay because three
 /// unrelated layers need the same value: the canvas overlay, the annotations
@@ -17,4 +20,4 @@ import 'dart:ui';
 /// the UI, so it must read the same in every palette the user picks, and the
 /// same on screen as in an exported document. Three surfaces disagreeing about
 /// which notes still hold would be worse than none of them saying so.
-const Color kAnnotationDriftedColor = Color(0xFFE8A33D);
+const Color kAnnotationDriftedColor = kCruxAnnotationDriftedColor;

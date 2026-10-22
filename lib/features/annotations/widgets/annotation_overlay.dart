@@ -1,15 +1,12 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
-import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:crux_annotations/crux_annotations.dart';
 import 'package:crux_ide_layout/crux_ide_layout.dart'
     show CruxToastAction, showCruxInfoSnack;
-import 'package:flutter/foundation.dart' show listEquals;
-import 'package:flutter/gestures.dart' show kDoubleTapSlop, kDoubleTapTimeout;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/core/mobile_metrics.dart';
 import 'package:wavecrux/core/providers/collaboration_service_provider.dart';
@@ -37,16 +34,22 @@ import 'package:wavecrux/shared/layouts/device_class_provider.dart';
 ///
 /// Ten open text boxes make a waveform unreadable, which defeats the point of
 /// drawing on it. Past this count the overlay folds the rest to numbered dots;
-/// nothing is hidden — the panel still lists every one.
-const int kMaxExpandedBalloons = 6;
+/// nothing is hidden — the panel still lists every one. The suite's shared
+/// crowding limit.
+const int kMaxExpandedBalloons = kCruxCalloutMaxExpanded;
 
 /// Width of an expanded callout balloon, in logical pixels.
-const double kAnnotationBalloonWidth = 190;
+const double kAnnotationBalloonWidth = kCruxCalloutBalloonWidth;
 
 /// Radius of a collapsed annotation's numbered dot.
-const double kAnnotationDotRadius = 9;
+const double kAnnotationDotRadius = kCruxCalloutDotRadius;
 
 /// Draws user-authored annotations above the waveform canvas.
+///
+/// Draws with the suite's shared callout layer (`crux_annotations`): the
+/// balloon, numbered dot, leaders, draggable and fold rule are the ones
+/// NetCrux draws on its schematic. What is WaveCrux's here is the projection,
+/// the bands, the arrows' dot-only rule and every string.
 ///
 /// Anchored in **waveform-data coordinates** — `(tick, rowId)` — and
 /// re-projected every build through the same [timeMapperProvider] (X) and
@@ -145,7 +148,7 @@ class AnnotationOverlay extends ConsumerWidget {
     void select(String id) =>
         ref.read(annotationSelectedProvider.notifier).selected = id;
 
-    final leaders = <Leader>[];
+    final leaders = <CruxCalloutLeader>[];
     final bands = <Widget>[];
     final labels = <Widget>[];
     var expandedDrawn = 0;
@@ -249,30 +252,35 @@ class AnnotationOverlay extends ConsumerWidget {
       // text yet, so every other rule here would fold it to a dot and the
       // editor would never appear — which makes authoring impossible.
       final isEditing = editingId == annotation.id;
-      final collapsed =
-          !isEditing &&
-          (annotation.collapsed ||
-              !annotation.hasText ||
-              annotation.shape == AnnotationShape.arrow ||
-              expandedDrawn >= kMaxExpandedBalloons);
+      // An arrow is a leader and a dot by definition, so it never opens.
+      final collapsed = CruxCalloutGeometry.isCollapsed(
+        isEditing: isEditing,
+        collapsed: annotation.collapsed,
+        hasText: annotation.hasText,
+        alwaysDot: annotation.shape == AnnotationShape.arrow,
+        expandedSoFar: expandedDrawn,
+      );
 
       if (!collapsed) expandedDrawn++;
 
       final anchorX = placement.left;
       final anchorY = placement.anchorY;
-      final labelX = anchorX + annotation.labelDx;
+      final anchorPoint = Offset(anchorX, anchorY);
       // Clamped off the top edge: the default offset places a balloon above
       // its anchor, which for a note on the first lane would put it under the
       // time ruler or off-canvas entirely. The leader still reaches down.
-      final labelY = math.max<double>(2, anchorY + annotation.labelDy);
+      final labelOrigin = CruxCalloutGeometry.labelOrigin(
+        anchorPoint,
+        labelDx: annotation.labelDx,
+        labelDy: annotation.labelDy,
+      );
+      final labelX = labelOrigin.dx;
+      final labelY = labelOrigin.dy;
 
       leaders.add(
-        Leader(
-          from: Offset(anchorX, anchorY),
-          to: Offset(
-            labelX + (collapsed ? 0 : kAnnotationBalloonWidth / 2),
-            labelY + (collapsed ? 0 : 16),
-          ),
+        CruxCalloutLeader(
+          from: anchorPoint,
+          to: CruxCalloutGeometry.leaderEnd(labelOrigin, collapsed: collapsed),
           color: color,
           dashed: drifted,
         ),
@@ -281,18 +289,9 @@ class AnnotationOverlay extends ConsumerWidget {
       labels
         ..add(
           Positioned(
-            left: anchorX - 3,
-            top: anchorY - 3,
-            child: IgnorePointer(
-              child: Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: color,
-                ),
-              ),
-            ),
+            left: anchorX - CruxCalloutAnchorDot.size / 2,
+            top: anchorY - CruxCalloutAnchorDot.size / 2,
+            child: CruxCalloutAnchorDot(color: color),
           ),
         )
         ..add(
@@ -309,7 +308,7 @@ class AnnotationOverlay extends ConsumerWidget {
                     onDragEnd: notifier.endTransaction,
                     onTap: () =>
                         notifier.setCollapsed(annotation.id, collapsed: false),
-                    child: _NumberDot(
+                    child: CruxCalloutNumberDot(
                       number: number,
                       color: color,
                       onColor: scheme.surface,
@@ -331,7 +330,11 @@ class AnnotationOverlay extends ConsumerWidget {
                         ? null
                         : (d) => notifier.nudgeLabel(annotation.id, d.dx, d.dy),
                     onDragEnd: isEditing ? null : notifier.endTransaction,
-                    child: _Balloon(
+                    child: CruxCalloutBalloon(
+                      collapseTooltip: l10n.annotationCollapseTooltip,
+                      deleteTooltip: l10n.annotationDeleteTooltip,
+                      editHint: l10n.annotationEditHint,
+                      maxLength: kAnnotationTextMaxLength,
                       text: annotation.text,
                       number: number,
                       color: color,
@@ -429,7 +432,7 @@ class AnnotationOverlay extends ConsumerWidget {
           ...bands,
           Positioned.fill(
             child: IgnorePointer(
-              child: CustomPaint(painter: _LeadersPainter(leaders)),
+              child: CustomPaint(painter: CruxCalloutLeadersPainter(leaders)),
             ),
           ),
           ...labels,
@@ -651,83 +654,12 @@ class _Placement {
   final bool anchorVisible;
 }
 
-/// Fires [onDoubleTap] without entering the gesture arena.
-///
-/// **A `GestureDetector` cannot be used here.** Its recognizer would compete
-/// with the pan that drags the balloon, and a pan that has to win the arena
-/// first emits nothing until it does — the drag silently loses its opening
-/// slop-distance of travel and the balloon trails the pointer by 20 px for the
-/// rest of the gesture. That is measured, not theoretical: wrapping the
-/// balloon's text in a double-tap detector turned a 60 px drag into a 40 px
-/// one, which is the same failure the [_Draggable.onPointerDown] comment
-/// describes for selection.
-///
-/// So this recognizes the pair by hand from raw pointer events, exactly as
-/// selection does. A [Listener] claims nothing, competes with nothing, and
-/// leaves the pan untouched.
-///
-/// Timing comes from [PointerEvent.timeStamp] rather than the wall clock, so
-/// the widget behaves identically under a test's fake clock.
-class _DoubleTapRegion extends StatefulWidget {
-  const _DoubleTapRegion({
-    required this.onDoubleTap,
-    required this.child,
-    this.behavior = HitTestBehavior.opaque,
-    super.key,
-  });
-
-  /// Null makes the region inert, which is how a read-only note refuses.
-  final VoidCallback? onDoubleTap;
-  final Widget child;
-
-  /// How much of the region answers a pointer.
-  ///
-  /// [HitTestBehavior.opaque] for a balloon, so the blank right-hand side of a
-  /// short line is still a target — a note whose words are "ack" would
-  /// otherwise offer one a few characters wide.
-  ///
-  /// [HitTestBehavior.deferToChild] for a band, where the layout box spans the
-  /// band's full width but only the label chip is painted in it. Opaque there
-  /// would swallow pan, zoom and cursor placement along the whole top strip of
-  /// a band that may cross the entire viewport.
-  final HitTestBehavior behavior;
-
-  @override
-  State<_DoubleTapRegion> createState() => _DoubleTapRegionState();
-}
-
-class _DoubleTapRegionState extends State<_DoubleTapRegion> {
-  Duration? _lastDown;
-  Offset? _lastPosition;
-
-  void _onPointerDown(PointerDownEvent event) {
-    final last = _lastDown;
-    final where = _lastPosition;
-    _lastDown = event.timeStamp;
-    _lastPosition = event.position;
-
-    if (last == null || where == null) return;
-    // Two presses close in both time and space. The distance check is what
-    // stops a press, a drag away, and a second press elsewhere from reading as
-    // a double-tap.
-    if (event.timeStamp - last > kDoubleTapTimeout) return;
-    if ((event.position - where).distance > kDoubleTapSlop) return;
-
-    _lastDown = null;
-    _lastPosition = null;
-    widget.onDoubleTap?.call();
-  }
-
-  @override
-  Widget build(BuildContext context) => Listener(
-    onPointerDown: _onPointerDown,
-    behavior: widget.behavior,
-    child: widget.child,
-  );
-}
-
 /// Wraps a balloon or dot so it can be dragged by its label without moving its
 /// anchor — the model's central invariant, expressed as a gesture.
+///
+/// The shared [CruxCalloutDraggable], bound to WaveCrux's
+/// [annotationGestureActiveProvider] so the claim reaches the
+/// WaveformGestureHandler underneath.
 class _Draggable extends ConsumerWidget {
   const _Draggable({
     required this.child,
@@ -759,250 +691,22 @@ class _Draggable extends ConsumerWidget {
   /// is the only hint that an edge can be dragged at all.
   final MouseCursor? cursor;
 
+  // The shared draggable's Listener claims the pointer sequence before the
+  // ancestor WaveformGestureHandler sees it — see AnnotationGestureActive for
+  // why a GestureDetector alone is not enough against a raw Listener ancestor
+  // — and releases it on a microtask, after that handler has seen the up.
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    void claim({required bool value}) =>
-        ref.read(annotationGestureActiveProvider.notifier).active = value;
-
-    // The outer Listener claims the pointer sequence before the ancestor
-    // WaveformGestureHandler sees it — see AnnotationGestureActive for why a
-    // GestureDetector alone is not enough against a raw Listener ancestor.
-    return Listener(
-      onPointerDown: (_) {
-        claim(value: true);
-        onPointerDown?.call();
-      },
-      // Released on a microtask, NOT synchronously. Pointer events dispatch
-      // deepest-first, so this Listener sees the up before the ancestor does.
-      // Clearing the claim here would let that handler process the very same
-      // event with claim=false and place the cursor at the release point.
-      onPointerUp: (_) => scheduleMicrotask(() => claim(value: false)),
-      onPointerCancel: (_) => scheduleMicrotask(() => claim(value: false)),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        onPanStart: onDragStart == null ? null : (_) => onDragStart!(),
-        onPanUpdate: onDragUpdate == null
-            ? null
-            : (d) => onDragUpdate!(d.delta),
-        onPanEnd: onDragEnd == null ? null : (_) => onDragEnd!(),
-        child: MouseRegion(
-          cursor:
-              cursor ??
-              (onDragUpdate == null
-                  ? MouseCursor.defer
-                  : SystemMouseCursors.move),
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
-class _NumberDot extends StatelessWidget {
-  const _NumberDot({
-    required this.number,
-    required this.color,
-    required this.onColor,
-    this.selected = false,
-  });
-
-  final int number;
-  final Color color;
-  final Color onColor;
-
-  /// Whether this is the annotation the keyboard nudge would move. Shown as a
-  /// ring rather than a colour change, so it never collides with the drift
-  /// styling — a note can be both selected and drifted, and those two facts
-  /// must stay separately legible.
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: kAnnotationDotRadius * 2,
-    height: kAnnotationDotRadius * 2,
-    alignment: Alignment.center,
-    decoration: BoxDecoration(
-      shape: BoxShape.circle,
-      color: color,
-      border: selected ? Border.all(color: onColor, width: 2) : null,
-    ),
-    child: Text(
-      '$number',
-      style: TextStyle(
-        color: onColor,
-        fontSize: 10,
-        fontWeight: FontWeight.w600,
-      ),
-    ),
+  Widget build(BuildContext context, WidgetRef ref) => CruxCalloutDraggable(
+    onClaim: (value) =>
+        ref.read(annotationGestureActiveProvider.notifier).active = value,
+    onPointerDown: onPointerDown,
+    onDragStart: onDragStart,
+    onDragUpdate: onDragUpdate,
+    onDragEnd: onDragEnd,
+    onTap: onTap,
+    cursor: cursor,
+    child: child,
   );
-}
-
-class _Balloon extends StatelessWidget {
-  const _Balloon({
-    required this.text,
-    required this.number,
-    required this.color,
-    required this.surface,
-    required this.onSurface,
-    required this.drifted,
-    required this.touchTarget,
-    required this.isEditing,
-    required this.onCollapse,
-    required this.onDelete,
-    required this.onCommit,
-    required this.onBeginEdit,
-    this.selected = false,
-  });
-
-  final String text;
-  final int number;
-  final Color color;
-  final Color surface;
-  final Color onSurface;
-  final bool drifted;
-  final double touchTarget;
-  final bool isEditing;
-
-  /// Folds this balloon back to its numbered dot.
-  ///
-  /// Tapping a dot has always expanded it; nothing on the canvas folded one
-  /// back, so `collapsed: true` could only ever be set by the walkthrough.
-  /// Null when this viewer may not fold the note — see [onDelete].
-  final VoidCallback? onCollapse;
-
-  /// Null when this viewer may not remove the note — somebody else's
-  /// live-session note, and this is not the host. The ✕ is absent rather than
-  /// inert: a control that does nothing is the failure the panel's row menu
-  /// already had.
-  final VoidCallback? onDelete;
-  final void Function(String text) onCommit;
-
-  /// Opens this balloon's editor from the canvas.
-  ///
-  /// **Double-tap, and scoped to the text alone.** Two constraints meet here:
-  ///
-  /// * A *single* tap cannot do it. Selection rides pointer-down (see
-  ///   [_Draggable.onPointerDown]) and selection is what ⌥-arrow nudges, so
-  ///   making one click also open the editor would send every subsequent
-  ///   keystroke to a text field and leave the nudge unreachable without an
-  ///   Escape first.
-  /// * The recognizer must not wrap the whole balloon. A double-tap recognizer
-  ///   above the collapse and delete buttons makes each of their taps wait out
-  ///   the double-tap timeout — the same ~300 ms lag an ancestor
-  ///   `InkWell.onDoubleTap` once put on the panel's ⋮ menu.
-  ///
-  /// Double-tap is also what the panel's own rows already use to open an
-  /// editor, so the canvas and the list ask for the same thing the same way.
-  /// Null when this note's words are somebody else's — an adopted layer, or a
-  /// live session where rights are author-only.
-  final VoidCallback? onBeginEdit;
-
-  /// See [_NumberDot.selected].
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = L10N.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        // High opacity rather than a solid block: the waveform stays faintly
-        // legible underneath, which matters when a balloon lands over the very
-        // edge it describes.
-        color: surface.withValues(alpha: 0.92),
-        border: Border.all(color: color, width: selected ? 2.5 : 1.5),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _NumberDot(
-              number: number,
-              color: color,
-              onColor: surface,
-              selected: selected,
-            ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: isEditing
-                  ? _InlineEditor(
-                      initialText: text,
-                      hint: l10n.annotationEditHint,
-                      color: onSurface,
-                      onCommit: onCommit,
-                    )
-                  : _DoubleTapRegion(
-                      key: const ValueKey('annotation-balloon-text'),
-                      onDoubleTap: onBeginEdit,
-                      child: Text(
-                        text,
-                        maxLines: 4,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 11,
-                          height: 1.25,
-                          color: onSurface,
-                          fontStyle: drifted
-                              ? FontStyle.italic
-                              : FontStyle.normal,
-                        ),
-                      ),
-                    ),
-            ),
-            // Fold, then delete. Tapping a dot has always expanded a note;
-            // until now nothing on the canvas folded one back, so the only
-            // thing that ever set `collapsed` was the walkthrough.
-            if (!isEditing)
-              if (onCollapse != null)
-                Semantics(
-                  label: l10n.annotationCollapseTooltip,
-                  button: true,
-                  child: Tooltip(
-                    message: l10n.annotationCollapseTooltip,
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: onCollapse,
-                      child: SizedBox(
-                        width: touchTarget * 0.6,
-                        height: touchTarget * 0.6,
-                        child: Icon(
-                          Icons.unfold_less,
-                          size: 12,
-                          color: onSurface.withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            if (onDelete != null)
-              Semantics(
-                label: l10n.annotationDeleteTooltip,
-                button: true,
-                child: Tooltip(
-                  message: l10n.annotationDeleteTooltip,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: onDelete,
-                    child: SizedBox(
-                      width: touchTarget * 0.6,
-                      height: touchTarget * 0.6,
-                      child: Icon(
-                        Icons.close,
-                        size: 12,
-                        color: onSurface.withValues(alpha: 0.7),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 /// `<name> is writing a note…`, drawn at the anchor of the note in progress.
@@ -1046,124 +750,10 @@ class _WritingChip extends StatelessWidget {
   );
 }
 
-/// Commits the inline editor. Its own Intent type rather than a reused one so
-/// the Enter binding cannot collide with anything the surrounding app maps.
-class _CommitIntent extends Intent {
-  const _CommitIntent();
-}
-
-/// The in-place text field a new annotation opens with.
-///
-/// Inline rather than a modal dialog: annotating is something a user does
-/// eight times in a row while reading a waveform, and a dialog per note breaks
-/// that rhythm completely. Enter commits, Escape cancels, and losing focus
-/// commits too — walking away should keep what you typed, not discard it.
-class _InlineEditor extends StatefulWidget {
-  const _InlineEditor({
-    required this.initialText,
-    required this.hint,
-    required this.color,
-    required this.onCommit,
-  });
-
-  final String initialText;
-  final String hint;
-  final Color color;
-  final void Function(String text) onCommit;
-
-  @override
-  State<_InlineEditor> createState() => _InlineEditorState();
-}
-
-class _InlineEditorState extends State<_InlineEditor> {
-  late final TextEditingController _controller = TextEditingController(
-    text: widget.initialText,
-  );
-  late final FocusNode _focus = FocusNode();
-  bool _committed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _focus.addListener(() {
-      if (!_focus.hasFocus) _commit();
-    });
-    WidgetsBinding.instance.addPostFrameCallback((_) => _focus.requestFocus());
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    _focus.dispose();
-    super.dispose();
-  }
-
-  void _commit() {
-    if (_committed) return;
-    _committed = true;
-    widget.onCommit(_controller.text.trim());
-  }
-
-  void _cancel() {
-    if (_committed) return;
-    _committed = true;
-    // Commits the text the annotation already had, so Escape reverts the edit
-    // rather than deleting a note that previously said something.
-    widget.onCommit(widget.initialText);
-  }
-
-  @override
-  Widget build(BuildContext context) => Shortcuts(
-    // Enter commits; Shift+Enter inserts a line break. A multi-line TextField
-    // never fires onSubmitted — Enter just inserts a newline — so binding the
-    // key explicitly is the only way to keep "type and press Enter" working
-    // while still allowing a two-line note.
-    shortcuts: const {
-      SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
-      SingleActivator(LogicalKeyboardKey.enter): _CommitIntent(),
-      SingleActivator(LogicalKeyboardKey.numpadEnter): _CommitIntent(),
-    },
-    child: Actions(
-      actions: {
-        DismissIntent: CallbackAction<DismissIntent>(
-          onInvoke: (_) {
-            _cancel();
-            return null;
-          },
-        ),
-        _CommitIntent: CallbackAction<_CommitIntent>(
-          onInvoke: (_) {
-            _commit();
-            return null;
-          },
-        ),
-      },
-      child: TextField(
-        controller: _controller,
-        focusNode: _focus,
-        maxLines: 4,
-        minLines: 1,
-        maxLength: kAnnotationTextMaxLength,
-        style: TextStyle(fontSize: 11, height: 1.25, color: widget.color),
-        decoration: InputDecoration(
-          isDense: true,
-          border: InputBorder.none,
-          counterText: '',
-          hintText: widget.hint,
-          hintStyle: TextStyle(
-            fontSize: 11,
-            color: widget.color.withValues(alpha: 0.45),
-          ),
-        ),
-        onSubmitted: (_) => _commit(),
-      ),
-    ),
-  );
-}
-
 /// The band's own inline text field.
 ///
-/// A thin wrapper over [_InlineEditor] that gives it a legible plate. A band's
+/// A thin wrapper over the shared [CruxCalloutInlineEditor] that gives it a
+/// legible plate. A band's
 /// label sits directly on the shaded region with no balloon behind it, so an
 /// unbacked field over a busy waveform is unreadable while you type in it.
 class _BandLabelEditor extends StatelessWidget {
@@ -1190,11 +780,12 @@ class _BandLabelEditor extends StatelessWidget {
     ),
     child: Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      child: _InlineEditor(
+      child: CruxCalloutInlineEditor(
         initialText: initialText,
         hint: hint,
         color: Theme.of(context).colorScheme.onSurface,
         onCommit: onCommit,
+        maxLength: kAnnotationTextMaxLength,
       ),
     ),
   );
@@ -1258,7 +849,7 @@ class _BandMarker extends StatefulWidget {
   /// Commits edited text.
   final void Function(String text) onCommit;
 
-  /// Opens this band's editor from the canvas. See [_Balloon.onBeginEdit] for
+  /// Opens this band's editor from the canvas. See [CruxCalloutBalloon.onBeginEdit] for
   /// why it is a double-tap, why only the label chip carries it, and why it is
   /// nullable.
   final VoidCallback? onBeginEdit;
@@ -1350,7 +941,7 @@ class _BandMarkerState extends State<_BandMarker> {
           left: kBandHandleWidth + 2,
           top: 2,
           child: IgnorePointer(
-            child: _NumberDot(
+            child: CruxCalloutNumberDot(
               number: widget.number,
               color: color,
               onColor: Theme.of(context).colorScheme.surface,
@@ -1374,7 +965,7 @@ class _BandMarkerState extends State<_BandMarker> {
                   surface: Theme.of(context).colorScheme.surface,
                   onCommit: widget.onCommit,
                 )
-              : _DoubleTapRegion(
+              : CruxCalloutDoubleTapRegion(
                   // Double-tap to edit, matching the balloon and the panel's
                   // rows. The same arena-free recognizer the balloon uses:
                   // there is no pan to lose here, but a band spans lanes the
@@ -1621,93 +1212,4 @@ class _BandLaneToggle extends StatelessWidget {
       ),
     ),
   );
-}
-
-/// Draws the leader line from an anchor to its label.
-/// One leader, in overlay coordinates.
-@immutable
-class Leader {
-  const Leader({
-    required this.from,
-    required this.to,
-    required this.color,
-    required this.dashed,
-  });
-
-  final Offset from;
-  final Offset to;
-  final Color color;
-  final bool dashed;
-
-  // Value equality so `_LeadersPainter.shouldRepaint` can ask whether the
-  // geometry actually moved. Leaders are rebuilt from scratch on every layout
-  // pass, so identity comparison would always say "different" and the painter
-  // would repaint on every scroll and zoom frame — which is exactly what it
-  // used to do.
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is Leader &&
-          other.from == from &&
-          other.to == to &&
-          other.color == color &&
-          other.dashed == dashed;
-
-  @override
-  int get hashCode => Object.hash(from, to, color, dashed);
-}
-
-/// Paints every leader in a single full-canvas layer beneath the labels.
-///
-/// One painter rather than one per annotation, because a leader spans the gap
-/// between an anchor and a label that may sit anywhere on the canvas — so a
-/// per-annotation layer would have to be canvas-sized, and N canvas-sized
-/// layers stacked on top of each other shadow one another during hit testing.
-/// Leaders are decoration, never affordances, so they belong at the bottom in
-/// one non-interactive layer.
-class _LeadersPainter extends CustomPainter {
-  const _LeadersPainter(this.leaders);
-
-  final List<Leader> leaders;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    for (final leader in leaders) {
-      final paint = Paint()
-        ..color = leader.color
-        ..strokeWidth = 1.2
-        ..style = PaintingStyle.stroke;
-
-      if (!leader.dashed) {
-        canvas.drawLine(leader.from, leader.to, paint);
-        continue;
-      }
-
-      // A dashed leader marks a drifted annotation — the visual cue that the
-      // claim was true of a different run of this design.
-      const dash = 4.0;
-      const gap = 3.0;
-      final delta = leader.to - leader.from;
-      final length = delta.distance;
-      if (length <= 0) continue;
-      final step = delta / length;
-      var travelled = 0.0;
-      while (travelled < length) {
-        final segment = math.min(dash, length - travelled);
-        canvas.drawLine(
-          leader.from + step * travelled,
-          leader.from + step * (travelled + segment),
-          paint,
-        );
-        travelled += dash + gap;
-      }
-    }
-  }
-
-  @override
-  // The painter's whole output is a function of [leaders], so comparing them
-  // is the complete answer. This returned an unconditional `true` for a long
-  // time — on the one canvas that relayouts on every scroll and zoom frame,
-  // where a leader set that has not moved is the overwhelmingly common case.
-  bool shouldRepaint(_LeadersPainter old) => !listEquals(old.leaders, leaders);
 }

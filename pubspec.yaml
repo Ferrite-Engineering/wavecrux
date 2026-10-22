@@ -29,6 +29,11 @@ dependencies:
   # (branding, build info, edition) onto this shared surface.
   crux_about_dialog:
     path: ./crux-shared/packages/crux_about_dialog
+  # The on-canvas annotation layer WaveCrux and NetCrux share: the anchor
+  # contract, the drift status table, callout geometry and the balloon, dot,
+  # leader and draggable widgets the annotation overlay draws with.
+  crux_annotations:
+    path: ./crux-shared/packages/crux_annotations
   # About-box extension-point data shapes (ApplicationBranding,
   # ApplicationBuildInfo, ApplicationEdition) consumed by crux_about_dialog.
   crux_app_info:

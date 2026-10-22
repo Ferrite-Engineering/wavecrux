@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_annotations/crux_annotations_core.dart';
 import 'package:meta/meta.dart';
 
 /// Hard upper bound on an annotation's body text, enforced at the model
@@ -31,7 +32,10 @@ enum AnnotationShape {
 /// get hidden. The vertical identity is a signal's stable scope path, exactly
 /// as [CollabPointer.rowId] uses it (`SignalEntry.signalPath`), so the same
 /// resolution logic serves both.
-sealed class AnnotationAnchor {
+///
+/// This is WaveCrux's [CruxAnnotationAnchor]: the element it names is the
+/// signal row, so a full-height band names none.
+sealed class AnnotationAnchor implements CruxAnnotationAnchor {
   const AnnotationAnchor();
 
   /// Decodes an anchor, or returns `null` when the payload is unusable.
@@ -62,6 +66,7 @@ sealed class AnnotationAnchor {
     }
   }
 
+  @override
   Map<String, Object?> toJson();
 }
 
@@ -77,6 +82,9 @@ final class PointAnchor extends AnnotationAnchor {
 
   /// Stable identity of the signal row: `SignalEntry.signalPath`.
   final String rowId;
+
+  @override
+  String get elementId => rowId;
 
   @override
   Map<String, Object?> toJson() => {
@@ -111,6 +119,9 @@ final class RangeAnchor extends AnnotationAnchor {
   /// The lane this band is confined to, or `null` for a full-height band
   /// across every row — the common "this whole transaction is wrong" case.
   final String? rowId;
+
+  @override
+  String? get elementId => rowId;
 
   /// Span in ticks, always non-negative regardless of which end was authored
   /// first.
@@ -152,8 +163,11 @@ final class RangeAnchor extends AnnotationAnchor {
 /// renders **drifted** rather than silently continuing to assert something the
 /// design no longer does. Re-simulate, reopen the session, and the notes that
 /// no longer hold flag themselves.
+///
+/// WaveCrux's [CruxAnnotationWitness], stored under the record's `witness`
+/// key.
 @immutable
-final class AnnotationWitness {
+final class AnnotationWitness implements CruxAnnotationWitness {
   const AnnotationWitness({required this.bits, this.edgeOrdinal});
 
   /// Reconstructs a witness, or `null` when the payload is unusable.
@@ -195,6 +209,7 @@ final class AnnotationWitness {
   /// cannot be recovered retroactively once the original dump is gone.
   final int? edgeOrdinal;
 
+  @override
   Map<String, Object?> toJson() => {
     'bits': bits,
     if (edgeOrdinal != null) 'edgeOrdinal': edgeOrdinal,

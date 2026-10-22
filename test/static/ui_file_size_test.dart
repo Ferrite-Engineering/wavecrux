@@ -30,7 +30,7 @@ import 'package:path/path.dart' as p;
 ///
 /// Lower it when the tree allows. Do not raise it.
 ///
-/// ## The allowance list is eleven files, and each is a named piece of work
+/// ## The allowance list is ten files, and each is a named piece of work
 ///
 /// These are not exemptions in the "we gave up" sense — each is a specific
 /// deferred decomposition with a reason it was not folded into the
@@ -38,10 +38,11 @@ import 'package:path/path.dart' as p;
 /// beside it below. A file may only be added here by deciding to, in a commit
 /// that says why.
 ///
-/// Eleven is a lot, and saying so is the point: it is the honest size of the
+/// Ten is a lot, and saying so is the point: it is the true size of the
 /// backlog this finding sits on top of, rather than one file that happened to
-/// get audited. Three are the paint path and stay. The clearest next one is
-/// `annotations_panel.dart` — eleven widget classes in a single file.
+/// get audited. Three are the paint path and stay. `annotations_panel.dart`
+/// left the list when its group header and status grouping moved to the
+/// shared annotation package.
 void main() {
   test('no UI file exceeds the house limit', () {
     final offenders = <String>[];
@@ -142,11 +143,6 @@ const _allowance = <String, String>{
       'The bridge between collaboration events and viewer state. One class '
       'with a long method-per-event surface; it splits along the event taxonomy '
       'or not at all, which is a design decision rather than a file split.',
-  'lib/features/annotations/widgets/annotations_panel.dart':
-      'The annotations panel — eleven widget classes in one file, so this is '
-      'the clearest remaining split in the tree and the natural next one after '
-      'the viewer screen. Not folded into that split because it is a different '
-      'surface with its own regression tests.',
   'lib/services/decoders/ffi/ffi_decoder_loader_io.dart':
       'The FFI decoder loader: six classes wrapping the native boundary, '
       'including the struct layouts. Splitting the layouts from the calls that '

@@ -207,6 +207,13 @@ packages:
       relative: true
     source: path
     version: "0.1.0"
+  crux_annotations:
+    dependency: "direct main"
+    description:
+      path: "crux-shared/packages/crux_annotations"
+      relative: true
+    source: path
+    version: "0.1.0"
   crux_app_info:
     dependency: "direct main"
     description:

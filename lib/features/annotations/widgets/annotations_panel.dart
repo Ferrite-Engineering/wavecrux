@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:crux_annotations/crux_annotations.dart';
 import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:crux_settings_ui/crux_settings_ui.dart';
 import 'package:flutter/material.dart';
@@ -111,19 +112,15 @@ class _AnnotationsPanelState extends ConsumerState<AnnotationsPanel> {
           (a.rowId ?? '').toLowerCase().contains(query);
     }
 
-    final visible = <Annotation>[];
-    final orphaned = <Annotation>[];
-    final unresolved = <Annotation>[];
-    for (final a in annotations.where(matches)) {
-      switch (statuses[a.id]) {
-        case AnnotationStatus.orphaned:
-          orphaned.add(a);
-        case AnnotationStatus.unresolved:
-          unresolved.add(a);
-        case _:
-          visible.add(a);
-      }
-    }
+    // The suite's shared grouping: drawable notes, then "Not displayed", then
+    // "Not in this file", each in time order.
+    final groups = cruxGroupByStatus(
+      annotations.where(matches),
+      (a) => statuses[a.id],
+    );
+    final visible = groups.displayed;
+    final orphaned = groups.orphaned;
+    final unresolved = groups.unresolved;
 
     switch (_sort) {
       case AnnotationSort.time:
@@ -173,16 +170,13 @@ class _AnnotationsPanelState extends ConsumerState<AnnotationsPanel> {
                       ),
                     for (final layer in layers)
                       if (visible.any((a) => a.layerId == layer.id))
-                        _Group(
+                        CruxAnnotationGroup(
                           label: layer.label,
                           trailing: _LayerControls(
                             layer: layer,
                             onToggle: () => ref
                                 .read(annotationLayersProvider.notifier)
-                                .setVisible(
-                                  layer.id,
-                                  visible: !layer.visible,
-                                ),
+                                .setVisible(layer.id, visible: !layer.visible),
                             onDelete: () => _deleteLayer(layer.id, l10n),
                             hideTooltip: l10n.annotationLayerHideTooltip,
                             showTooltip: l10n.annotationLayerShowTooltip,
@@ -204,7 +198,7 @@ class _AnnotationsPanelState extends ConsumerState<AnnotationsPanel> {
                           ],
                         ),
                     if (orphaned.isNotEmpty)
-                      _Group(
+                      CruxAnnotationGroup(
                         label: l10n.annotationsPanelNotDisplayed(
                           orphaned.length,
                         ),
@@ -227,7 +221,7 @@ class _AnnotationsPanelState extends ConsumerState<AnnotationsPanel> {
                         ],
                       ),
                     if (unresolved.isNotEmpty)
-                      _Group(
+                      CruxAnnotationGroup(
                         label: l10n.annotationsPanelNotInFile(
                           unresolved.length,
                         ),
@@ -455,10 +449,7 @@ class _AnnotationsPanelState extends ConsumerState<AnnotationsPanel> {
     // trace silently becomes 1000, and the only evidence is a row that moved
     // somewhere the user did not ask for.
     if (landed != tick && mounted) {
-      showCruxInfoSnack(
-        context,
-        l10n.annotationsPanelSetTimeClamped(landed),
-      );
+      showCruxInfoSnack(context, l10n.annotationsPanelSetTimeClamped(landed));
     }
   }
 
@@ -638,44 +629,6 @@ class _WalkthroughControls extends ConsumerWidget {
   }
 }
 
-class _Group extends StatelessWidget {
-  const _Group({required this.label, required this.children, this.trailing});
-
-  final String label;
-  final List<Widget> children;
-
-  /// Controls that act on the group as a unit — present for an adopted layer,
-  /// absent for the orphan/unresolved groups, which are classifications rather
-  /// than things a user can hide or delete wholesale.
-  final Widget? trailing;
-
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(10, 10, 10, 2),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            ?trailing,
-          ],
-        ),
-      ),
-      ...children,
-    ],
-  );
-}
-
 /// Hide / show and delete, acting on a whole adopted layer.
 ///
 /// Both are what a *named* group buys over loose notes: one control takes a
@@ -707,9 +660,7 @@ class _LayerControls extends StatelessWidget {
         iconSize: 15,
         visualDensity: VisualDensity.compact,
         tooltip: layer.visible ? hideTooltip : showTooltip,
-        icon: Icon(
-          layer.visible ? Icons.visibility : Icons.visibility_off,
-        ),
+        icon: Icon(layer.visible ? Icons.visibility : Icons.visibility_off),
         onPressed: onToggle,
       ),
       IconButton(
@@ -816,9 +767,7 @@ class _Row extends StatelessWidget {
     final menuEntries = <CruxMenuEntry>[
       for (final action in menu)
         CruxMenuItem(
-          key: ValueKey(
-            'annotation-row-action-${action.key}-${annotation.id}',
-          ),
+          key: ValueKey('annotation-row-action-${action.key}-${annotation.id}'),
           label: action.label,
           destructive: action.destructive,
           onSelected: action.onSelected,
@@ -958,10 +907,7 @@ class _Row extends StatelessWidget {
           if (actionLabel != null)
             TextButton(
               onPressed: onAction,
-              child: Text(
-                actionLabel!,
-                style: const TextStyle(fontSize: 11),
-              ),
+              child: Text(actionLabel!, style: const TextStyle(fontSize: 11)),
             ),
           if (menu.isNotEmpty)
             CruxOverflowMenu(

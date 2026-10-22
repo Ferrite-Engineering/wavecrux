@@ -9739,6 +9739,14 @@ unreachable.
     the note's `text` is the exact string typed, with its Markdown marks.
     A note written before 1.2 that contains no Markdown syntax reads the same
     in the panel.
+38. **The shared layer changed nothing (from 1.2).** The balloon, numbered
+    dot, leaders, label drag and fold now come from the suite's shared
+    annotation layer, the one NetCrux draws on its schematic. Open a session
+    and a `.wavecruxpack` saved by 1.1 that hold a callout, an arrow, a
+    collapsed note, a drifted note and a hidden-signal note. Each draws, drags,
+    folds, edits and lists exactly as in steps 1 to 37; the drifted note keeps
+    its dashed amber leader and italic text; saving again writes the same
+    `labelDx`, `labelDy`, `collapsed` and `witness` values it read.
 
 ### 22.28.1 Automation Assessment
 

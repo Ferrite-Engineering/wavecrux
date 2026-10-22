@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_annotations/crux_annotations_core.dart';
 import 'package:wavecrux/domain/enums/display_format.dart';
 import 'package:wavecrux/domain/interfaces/waveform_data_source.dart';
 import 'package:wavecrux/domain/models/annotation.dart';
@@ -8,34 +9,23 @@ import 'package:wavecrux/services/value_format/value_format_service.dart';
 
 /// How an [Annotation] relates to the waveform currently loaded.
 ///
+/// The suite's shared status vocabulary, under the name WaveCrux has always
+/// used for it. In WaveCrux terms:
+///
+/// * `resolved` — the annotated row is displayed and the signal still reads
+///   what it read when the note was written.
+/// * `drifted` — the row is displayed, but the signal's value at the anchored
+///   tick no longer matches the witness. **Not an error**: drift is the
+///   feature working, the signal that a claim needs re-checking.
+/// * `orphaned` — the signal exists in this waveform but is not on screen, so
+///   there is no lane to draw against.
+/// * `unresolved` — no such signal in this waveform at all.
+/// * `unanchoredToRow` — a full-height band, which belongs to no single row
+///   and therefore cannot drift or orphan.
+///
 /// Computed fresh on every load rather than stored: the whole point is that
 /// the answer can change when the design does.
-enum AnnotationStatus {
-  /// The annotated row is displayed and the signal still reads what it read
-  /// when the note was written.
-  resolved,
-
-  /// The annotated row is displayed, but the signal's value at the anchored
-  /// tick no longer matches the witness.
-  ///
-  /// **Not an error.** The note is intact and the user's claim may still be
-  /// worth reading — what changed is the design underneath it. Drift is the
-  /// feature working: it is the signal that a claim needs re-checking, which
-  /// a callout drawn on a screenshot can never give.
-  drifted,
-
-  /// The signal exists in this waveform but is not currently on screen, so
-  /// there is no lane to draw against.
-  orphaned,
-
-  /// No such signal in this waveform at all — a note written against a
-  /// different design, or a signal that has since been renamed or removed.
-  unresolved,
-
-  /// A full-height band, which belongs to no single row and therefore cannot
-  /// drift or orphan.
-  unanchoredToRow,
-}
+typedef AnnotationStatus = CruxAnnotationStatus;
 
 /// Captures and evaluates [AnnotationWitness] values.
 ///
@@ -111,27 +101,27 @@ class AnnotationWitnessService {
   ///
   /// Pure, and separated from the provider wiring on purpose: this is the
   /// decision table the whole feature rests on, and it should be testable
-  /// without a widget tree.
+  /// without a widget tree. The table itself is the suite's shared one
+  /// ([cruxAnnotationStatusOf]); what is WaveCrux's is the comparison fed
+  /// into it, canonical bits against canonical bits.
   static AnnotationStatus statusOf(
     Annotation annotation, {
     required bool isDisplayed,
     required bool existsInFile,
     String? currentBits,
   }) {
-    if (annotation.rowId == null) return AnnotationStatus.unanchoredToRow;
-    if (!existsInFile) return AnnotationStatus.unresolved;
-    if (!isDisplayed) return AnnotationStatus.orphaned;
-
     final witness = annotation.witness;
-    // No witness (or nothing readable now) means there is nothing to compare.
-    // Reporting drift here would flag every annotation made before its
-    // signal's first transition, which is noise, not information.
-    if (witness == null || currentBits == null) {
-      return AnnotationStatus.resolved;
-    }
-    return witness.bits == currentBits
-        ? AnnotationStatus.resolved
-        : AnnotationStatus.drifted;
+    return cruxAnnotationStatusOf(
+      anchoredToElement: annotation.rowId != null,
+      existsInFile: existsInFile,
+      isDisplayed: isDisplayed,
+      // No witness (or nothing readable now) means there is nothing to
+      // compare. Reporting drift here would flag every annotation made before
+      // its signal's first transition, which is noise, not information.
+      witnessMatches: witness == null || currentBits == null
+          ? null
+          : witness.bits == currentBits,
+    );
   }
 
   /// Index of the transition at or immediately before [time], or `null` when
