@@ -221,7 +221,7 @@ The same menu has **Export** *decoder* **as JSON…** for every decoder, not onl
 
 ## PCIe link analysis <span class="tier tier-pro">Pro</span> { #pcie-link-analysis }
 
-From 1.2, WaveCrux Pro analyzes a PCIe link on top of the open-source PCIe decoders in [wavecrux-decoders](https://github.com/Ferrite-Engineering/wavecrux-decoders): the PIPE, Data Link Layer and serial line decoders. Decoding stays free on every tier. The analysis reads what those decoders report, decodes nothing itself, and adds the link's training states and its Ack/Nak timing. It covers x1 links at 2.5 and 5.0 GT/s.
+From 1.2, WaveCrux Pro analyzes a PCIe link on top of the open-source PCIe decoders in [wavecrux-decoders](https://github.com/Ferrite-Engineering/wavecrux-decoders): the PIPE, Data Link Layer and serial line decoders. Decoding stays free on every tier. The analysis reads what those decoders report, decodes nothing itself, and adds the link's training states, its Ack/Nak timing and its Flow Control credits. It covers x1 links at 2.5 and 5.0 GT/s.
 
 ### Setting it up { #pcie-link-setup }
 
@@ -247,6 +247,18 @@ With a Data Link Layer decoder on both sides, the **Ack/Nak** table pairs each T
 Each latency is compared with the Ack Transmission Latency Limit in section 3.5.3.1 of the PCI Express Base Specification for an x1 link, the line rate, and **Max payload**. Max payload defaults to 128 bytes, the Device Control default; at 128 bytes the limit is 237 symbol times at 2.5 GT/s and 288 at 5.0 GT/s. The table marks an Ack above the limit, a TLP that a Nak asked to be replayed, a replay, and a TLP with no Ack. A TLP with a bad LCRC or a sequence error is left out, because the receiver does not acknowledge it. The summary counts TLPs, Acks above the limit, Naks and replays, with the shortest, mean and longest latency.
 
 **Rate** is **Detect** by default: the serial decoders' symbol lock gives it, and so does a speed change. A PIPE interface carries no rate, so choose 2.5 or 5.0 GT/s for a PIPE trace.
+
+### Flow control { #pcie-link-flow-control }
+
+From WaveCrux 1.2, the **Flow control** table counts the credits each side's TLPs consume against the credits the other side advertised, per virtual channel and credit type (P for posted, NP for non-posted, Cpl for completions), following sections 2.6.1 and 3.3 of the PCI Express Base Specification.
+
+- A TLP takes one header credit. A TLP with a payload also takes one data credit for every 4 DW (16 bytes) of its Length field, rounded up. A replay does not take credits again.
+- The limit is the receiver's first InitFC1 and then each UpdateFC. A value of zero means infinite credits. InitFC2 values are ignored, as the receiver ignores them, and so is a DLLP with a bad CRC.
+- A TLP that goes beyond the limit is flagged, with the header and data counters compared as the specification does: 8 bits for headers and 12 bits for data, so a limit that wraps still works. Only the first overrun of a stretch is listed.
+- Credits that run out and get no UpdateFC within 30 microseconds, the specification's UpdateFC interval, are flagged as starvation. This needs the trace's timescale. It marks a stall, not necessarily a violation, because a receiver that has freed nothing has nothing to send.
+- Each side's InitFC1 and InitFC2 DLLPs must go P, NP, Cpl and round again for every virtual channel. The table flags an out-of-order DLLP, a first InitFC1 that is not P in a trace that shows the link coming up, and an InitFC1 that follows InitFC2 without the link going down between.
+
+The table has a row per direction, virtual channel and credit type with the credits advertised, the credits consumed and the number of UpdateFC DLLPs, followed by a row for each finding. A trace that starts after the link came up has no InitFC1 to count from, so its credits are not checked. A TLP whose type the decoder could not name is left out. When a trace has several virtual channels, only traffic class 0, which is always on VC0, is placed on a channel, because the traffic class to channel map is configuration the trace does not carry.
 
 ## Enterprise decoders <span class="tier tier-enterprise">Enterprise</span> { #enterprise-decoders }
 
