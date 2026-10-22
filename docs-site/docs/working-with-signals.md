@@ -26,6 +26,8 @@ Every step below is covered in full further down the page; this is the path most
 
 The left panel presents the design as a tree of scopes and variables. Each entry carries a type icon and its bit width, so you can tell a single-bit net from a wide bus at a glance and see where one scope ends and the next begins. **Expand All** and **Collapse All** keep the tree focused on the part of the hierarchy you are working in.
 
+From WaveCrux 1.2, a variable that the file declares before its first scope, such as the `smt_step` and `smt_clock` counters in a formal witness trace, appears in one unnamed root scope above the named scopes. See [Formal traces from SimCrux](automation-and-collaboration.md#cxp-formal).
+
 To bring a signal onto the canvas, click it, press ++enter++ on it, or right-click it and choose **Add to Viewer**; **Add All in Scope** adds a whole scope, and **Remove All in Scope**, right beside it, takes that scope's signals off the canvas again (see [Removing signals](#removing)). Clicking a signal that is already on the canvas adds it again, so to *select* an existing signal, click its name in the signal list instead. You can also drag a signal from the tree onto a Stage widget to bind it.
 
 To add many signals at once, ++shift++ + click to select a range of rows (or ++cmd++ / ++ctrl++ + click to pick individual ones), then right-click and choose **Add N Selected to Viewer** — the signals land on the canvas in tree order. The same context menu can **Apply Decoder to Selection…** in one step. Leaves declared as HDL parameters show their constant value inline in the row, so module generics are readable without adding them to the trace.

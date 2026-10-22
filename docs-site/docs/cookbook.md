@@ -19,4 +19,4 @@ Every recipe opens with a short summary box — the goal, a rough time, the tier
 
 !!! note "More on the way"
 
-    This is the opening set of recipes. If there is a workflow you keep repeating and would like written up — a migration from another viewer, a verification sign-off pass, a bring-up checklist — that is exactly the kind of thing the Cookbook is meant to grow into.
+    This is the opening set of recipes. If there is a workflow you keep repeating and would like written up — a migration from another viewer, a final verification pass, a bring-up checklist — that is exactly the kind of thing the Cookbook is meant to grow into.

@@ -103,7 +103,7 @@ Grounding is the whole point. The assistant is instructed to back every claim wi
 
 !!! note "Why this matters"
 
-    An assistant you can't check is an assistant you can't trust with a tape-out. Because every WaveCrux answer lands you on the exact cycle it is talking about, you stay in control: the AI does the looking, you do the deciding.
+    An assistant you can't check is an assistant you can't trust with a design review. Because every WaveCrux answer lands you on the exact cycle it is talking about, you stay in control: the AI does the looking, you do the deciding.
 
 ## Your key, your data { #privacy }
 
