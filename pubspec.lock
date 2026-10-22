@@ -389,6 +389,13 @@ packages:
       relative: true
     source: path
     version: "0.1.0"
+  crux_single_instance:
+    dependency: "direct main"
+    description:
+      path: "crux-shared/packages/crux_single_instance"
+      relative: true
+    source: path
+    version: "0.1.0"
   crux_stats_strip:
     dependency: "direct main"
     description:

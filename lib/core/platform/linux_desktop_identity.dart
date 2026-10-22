@@ -107,10 +107,15 @@ final List<LinuxMimeType> kWaveCruxLinuxFileTypes = <LinuxMimeType>[
 /// whose `StartupWMClass` differs is not matched to the window. `bootstrap`
 /// takes the identity as a parameter so the Pro overlay passes its own, with
 /// the same [kWaveCruxLinuxFileTypes]: both tiers open the same files.
+///
+/// [LinuxDesktopApp.urlSchemes] is `wavecrux`, written out because `core/`
+/// may not import `services/`, where `kWaveCruxLinkScheme` lives;
+/// `test/static/url_scheme_registration_test.dart` holds the two equal.
 final LinuxDesktopApp kWaveCruxLinuxDesktopApp = LinuxDesktopApp(
   appId: 'com.ferriteengineering.wavecrux',
   name: 'WaveCrux',
   comment: 'Waveform viewer for HDL simulation traces (VCD, FST, GHW)',
   execName: 'wavecrux',
   fileTypes: kWaveCruxLinuxFileTypes,
+  urlSchemes: const ['wavecrux'],
 );

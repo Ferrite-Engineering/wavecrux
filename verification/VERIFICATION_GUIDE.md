@@ -3138,13 +3138,19 @@ A link can come from anywhere, so it is handled as hostile input:
   so. A time with a unit in a file with no timescale leaves the cursor where it
   was and a toast says so.
 
-Delivery: macOS sends the link to the running instance. Windows and Linux have
-no single-instance mechanism, so each link starts a new WaveCrux window, which
-restores the workspace and then applies the link; that is the accepted 1.2
-behaviour. The scheme is registered by the macOS bundle itself, by the Windows
-installer and MSI, and by the Linux `.deb` and `.rpm` packages; the AppImage
-does not register it yet. The browser build, iOS and Android do not register
-it.
+Delivery: macOS sends the link to the running instance. On Windows and Linux
+the system starts a new process with the link as its argument; the new process
+hands the link to the running WaveCrux over `crux_single_instance` (a Unix
+socket on Linux, loopback TCP with a per-user token on Windows) and exits, and
+the running window comes to the front. With no WaveCrux running, the launch
+becomes the running instance and opens the link itself. If the running
+instance does not take the link within three seconds the new process opens it
+in a second window, so a link is never lost. A launch with no link never waits.
+The scheme is registered by the macOS bundle itself, by the Windows installer
+and MSI, by the Linux `.deb` and `.rpm` packages, and, from 1.2, by the
+AppImage, which installs a hidden URL-handler `.desktop` entry beside its file
+types the first time it runs. The browser build, iOS and Android do not
+register it.
 
 #### 8.9.2 Setup
 
@@ -3202,13 +3208,26 @@ it.
      value and `shell\open\command` pointing at the installed `.exe` with
      `"%1"`; after the `.msi`, the same under `HKLM\Software\Classes`. Send
      the link from a browser address bar as well as `start`: the browser asks
-     to open WaveCrux, and a new WaveCrux window opens the file. Uninstall and
-     confirm the key is gone.
+     to open WaveCrux, and the running WaveCrux window comes to the front and
+     opens the file (no second window, no second taskbar button). With no
+     WaveCrux running, the link starts one. Uninstall and confirm the key is
+     gone.
    - **Linux** (`.deb` or `.rpm`): `xdg-mime query default
      x-scheme-handler/wavecrux` names the WaveCrux URL-handler entry; the
-     entry is hidden from the application menu; the link opens a new
-     WaveCrux window. On the AppImage, `xdg-open` reports no handler (not yet
-     supported).
+     entry is hidden from the application menu; with WaveCrux running the link
+     opens in the running window, not a new one. **AppImage**: after the first
+     run the same query names the AppImage's URL-handler entry and `xdg-open`
+     reaches the running window as above.
+   - **Windows and Linux, both**: send two different links in quick succession
+     to a running WaveCrux; both open in the one window. Quit WaveCrux and
+     send a link: one window starts and opens it, and a link sent after that
+     goes to it.
+   - These per-OS link checks are **MANUAL** and are Martin's, at a Windows
+     machine and a Linux machine (the hand-off crosses real processes and the
+     desktop's URL handler, which an automated test does not exercise). The
+     automated coverage is the hand-off and bootstrap tests
+     (`test/services/platform/single_instance_handoff_test.dart`) and the
+     package's own multi-process tests.
 
 #### 8.9.4 Diagnostics-assisted verification
 

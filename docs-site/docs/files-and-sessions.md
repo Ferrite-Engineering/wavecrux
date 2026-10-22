@@ -86,10 +86,10 @@ To try one from a terminal, run `open 'wavecrux://open?file=...'` on macOS, `xdg
 | Platform | Registered by | A link while WaveCrux is running |
 |---|---|---|
 | macOS | The app itself, the first time it runs | Opens in the running WaveCrux. |
-| Windows | The installer (`.exe`) or the `.msi` package | Starts a new WaveCrux window. |
-| Linux | The `.deb` and `.rpm` packages | Starts a new WaveCrux window. |
+| Windows | The installer (`.exe`) or the `.msi` package | Opens in the running WaveCrux window. |
+| Linux | The `.deb` and `.rpm` packages, and the AppImage the first time it runs | Opens in the running WaveCrux window. |
 
-The AppImage does not register the scheme yet. The browser build, iOS and Android do not open links.
+From WaveCrux 1.2 a link reuses the running window on Windows and Linux as it does on macOS: the second WaveCrux process hands the link to the first and exits, and the window comes to the front. If WaveCrux is busy and does not take the link within a few seconds, the link opens in a second window instead, so it is never lost. The AppImage registers the scheme itself from 1.2, the same way it registers its file types. The browser build, iOS and Android do not open links.
 
 ## Opening a design with `<design>.crux-project` { #crux-project }
 

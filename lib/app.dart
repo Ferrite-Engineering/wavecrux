@@ -14,6 +14,8 @@ import 'package:crux_policy/crux_policy.dart'
     show PolicyDocument, PolicyLoadResult;
 import 'package:crux_settings_ui/crux_settings_ui.dart'
     show CruxPolicyLockScope;
+import 'package:crux_single_instance/crux_single_instance.dart'
+    show SingleInstance, SingleInstanceDelivered, SingleInstancePrimary;
 import 'package:crux_telemetry/crux_telemetry.dart';
 import 'package:crux_theme/crux_theme.dart';
 import 'package:crux_updates/crux_updates.dart';
@@ -109,8 +111,10 @@ import 'package:wavecrux/services/links/wavecrux_link.dart';
 import 'package:wavecrux/services/links/wavecrux_link_handler.dart';
 import 'package:wavecrux/services/logging/severe_log_stderr_sink.dart';
 import 'package:wavecrux/services/panes/pane_container_manager.dart';
+import 'package:wavecrux/services/platform/bring_window_forward.dart';
 import 'package:wavecrux/services/platform/incoming_file_service.dart';
 import 'package:wavecrux/services/platform/incoming_link_service.dart';
+import 'package:wavecrux/services/platform/single_instance_handoff.dart';
 import 'package:wavecrux/services/policy/org_theme_application.dart';
 import 'package:wavecrux/services/remote/cxp/cxp_active_document.dart';
 import 'package:wavecrux/services/remote/cxp/cxp_selection_emitter_provider.dart';
@@ -161,7 +165,8 @@ const Set<PointerDeviceKind> kAppScrollDragDevices = <PointerDeviceKind>{
 };
 
 /// Runs [bootstrap] and ends the process when it handled a headless
-/// invocation — the entry point both `lib/main.dart` files call.
+/// invocation, or handed its `wavecrux://` link to the running instance — the
+/// entry point both `lib/main.dart` files call.
 ///
 /// A Flutter desktop runner creates its window at launch and keeps its event
 /// loop alive after Dart's `main` returns, so `wavecrux --help` used to print
@@ -173,6 +178,7 @@ Future<void> runWaveCrux({
   List<Override> extraOverrides = const [],
   List<Override> extraTabOverrides = const [],
   LinuxDesktopApp? linuxDesktopApp,
+  SingleInstance? singleInstance,
   Future<void> Function(int code)? exitProcess,
 }) async {
   final headless = await bootstrap(
@@ -180,6 +186,7 @@ Future<void> runWaveCrux({
     extraOverrides: extraOverrides,
     extraTabOverrides: extraTabOverrides,
     linuxDesktopApp: linuxDesktopApp,
+    singleInstance: singleInstance,
   );
   if (!headless || kIsWeb) return;
   await (exitProcess ?? _flushAndExit)(0);
@@ -242,7 +249,11 @@ ProviderContainer? _lastBootstrapRootContainer;
 ///
 /// [linuxDesktopApp] is the freedesktop identity installed when the app runs
 /// from an AppImage: open core passes nothing and gets
-/// [kWaveCruxLinuxDesktopApp]; the Pro overlay passes its own.
+/// [kWaveCruxLinuxDesktopApp]; the Pro overlay passes its own. Its app id also
+/// names the single-instance rendezvous on Windows and Linux.
+///
+/// [singleInstance] replaces the platform's single-instance claim and switches
+/// it on for any host; tests only.
 ///
 /// Parses CLI args so `wavecrux dump.fst` and
 /// `wavecrux dump.fst --session debug.wavecrux` open directly into the viewer.
@@ -255,6 +266,7 @@ Future<bool> bootstrap({
   List<Override> extraOverrides = const [],
   List<Override> extraTabOverrides = const [],
   LinuxDesktopApp? linuxDesktopApp,
+  SingleInstance? singleInstance,
 }) async {
   // Windows and Linux open a `wavecrux://` link by starting the app with the
   // link as an argument. Such a launch is the link and nothing else: every
@@ -271,6 +283,30 @@ Future<bool> bootstrap({
   if (argv.contains('--help') || argv.contains('-h')) {
     stdout.writeln(cliHelpText());
     return true;
+  }
+
+  // Windows and Linux start a new process for every link. When another
+  // instance is running, this launch hands its link over and ends (the exit is
+  // [runWaveCrux]'s, as for `--help`), before a window is shown; the running
+  // instance opens the link and comes forward. macOS delivers the link to the
+  // running application itself, and the web and mobile have no scheme, so
+  // there the claim is skipped. [singleInstance] replaces the platform's claim
+  // in tests.
+  final claim = await claimSingleInstance(
+    desktopApp: linuxDesktopApp ?? kWaveCruxLinuxDesktopApp,
+    launchLinks: launch.links,
+    singleInstance: singleInstance,
+  );
+  if (claim is SingleInstanceDelivered) return true;
+  if (claim is SingleInstancePrimary) {
+    // Each link a later launch forwards brings the window in front as it
+    // arrives, whenever the app first listens to the stream.
+    IncomingLinkService.attachForwardedLinks(
+      claim.links.map((link) {
+        unawaited(bringWindowForward());
+        return link;
+      }),
+    );
   }
 
   // Required before any platform-channel calls or await in main.
@@ -360,11 +396,8 @@ Future<bool> bootstrap({
   );
   DecoderRegistry.instance.register(
     RiscvDecoder.decoderDefinition,
-    (config) => RiscvDecoder(
-      config,
-      riscvAssets,
-      renderer: isaDisassemblyRenderer,
-    ),
+    (config) =>
+        RiscvDecoder(config, riscvAssets, renderer: isaDisassemblyRenderer),
   );
 
   registerBuiltinStageWidgets();
@@ -1092,9 +1125,7 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
   /// Awaits [appSettingsProvider.future] so the post-frame callback
   /// does not race the settings load. The workspace itself has already been
   /// hydrated in `bootstrap()` so this is a synchronous read.
-  Future<void> _reconcileWorkspace({
-    required Set<String> cliFilePaths,
-  }) async {
+  Future<void> _reconcileWorkspace({required Set<String> cliFilePaths}) async {
     if (kIsWeb) return;
     final AppSettings settings;
     try {
@@ -1237,29 +1268,29 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
         _beginGuardedRestore(activeTabPerPane, restoredPaths);
       }
       _deferredLoadSub?.close();
-      _deferredLoadSub = ref.listenManual<TabId>(
-        activeTabIdProvider,
-        (_, next) {
-          // This listener owns ONLY the deferred *restored* tabs (those in
-          // [restoredPaths]). Tabs opened during the session — File→Open, CLI
-          // open, recent files, drag-drop — are loaded by their own open path,
-          // which calls `waveformSourceProvider.notifier.openFile` immediately
-          // after `wavecruxWorkspace.openFile` creates AND activates the tab.
-          //
-          // Without this guard, that activation re-enters [_ensureTabLoaded]
-          // *before* the open path's `openFile` has run its synchronous
-          // `state = AsyncLoading()` — so the `source.isLoading` check below
-          // still sees `AsyncData(null)` and kicks off a SECOND concurrent load
-          // on the same per-tab notifier. The two loads share the notifier's
-          // `_loadToken` / `_pendingSource` / `_activeSource` and tear down each
-          // other's in-flight wellen isolate, which can strand the surviving
-          // load in `AsyncLoading` forever (the canvas spinner never clears).
-          // Restricting the listener to restored tabs removes the trigger; new
-          // tabs are loaded exactly once, by their opener.
-          if (!restoredPaths.containsKey(next)) return;
-          _ensureTabLoaded(next, restoredPaths[next]);
-        },
-      );
+      _deferredLoadSub = ref.listenManual<TabId>(activeTabIdProvider, (
+        _,
+        next,
+      ) {
+        // This listener owns ONLY the deferred *restored* tabs (those in
+        // [restoredPaths]). Tabs opened during the session — File→Open, CLI
+        // open, recent files, drag-drop — are loaded by their own open path,
+        // which calls `waveformSourceProvider.notifier.openFile` immediately
+        // after `wavecruxWorkspace.openFile` creates AND activates the tab.
+        //
+        // Without this guard, that activation re-enters [_ensureTabLoaded]
+        // *before* the open path's `openFile` has run its synchronous
+        // `state = AsyncLoading()` — so the `source.isLoading` check below
+        // still sees `AsyncData(null)` and kicks off a SECOND concurrent load
+        // on the same per-tab notifier. The two loads share the notifier's
+        // `_loadToken` / `_pendingSource` / `_activeSource` and tear down each
+        // other's in-flight wellen isolate, which can strand the surviving
+        // load in `AsyncLoading` forever (the canvas spinner never clears).
+        // Restricting the listener to restored tabs removes the trigger; new
+        // tabs are loaded exactly once, by their opener.
+        if (!restoredPaths.containsKey(next)) return;
+        _ensureTabLoaded(next, restoredPaths[next]);
+      });
     }
 
     if (dropped.isNotEmpty && mounted) {
@@ -1694,9 +1725,9 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
                     // [kAppScrollDragDevices] for the full rationale. Placed
                     // above the Navigator so dropdown overlays inherit it too.
                     child: ScrollConfiguration(
-                      behavior: ScrollConfiguration.of(context).copyWith(
-                        dragDevices: kAppScrollDragDevices,
-                      ),
+                      behavior: ScrollConfiguration.of(
+                        context,
+                      ).copyWith(dragDevices: kAppScrollDragDevices),
                       child: RepaintBoundary(
                         // Capture target for the Beta Issue Reporter's Flutter-layer
                         // screenshot. Wraps the routed app
@@ -1793,10 +1824,7 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
                                           if (ctx == null) return;
                                           Actions.maybeInvoke<
                                             ShortcutActionIntent
-                                          >(
-                                            ctx,
-                                            ShortcutActionIntent(action),
-                                          );
+                                          >(ctx, ShortcutActionIntent(action));
                                         });
                                   },
                                 ),

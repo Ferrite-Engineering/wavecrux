@@ -8,8 +8,9 @@
 // failure is indistinguishable from the app hanging. The same reasoning is why
 // the iOS and Android builds, which have no handler, must not declare it.
 //
-// The Linux and Windows registrations live with the release packaging and are
-// guarded there.
+// The Windows registration lives with the release packaging and is guarded
+// there. The Linux one is the AppImage's installed `.desktop` entry, built from
+// the identity checked here; a .deb or .rpm declares it in its own packaging.
 
 @TestOn('vm')
 library;
@@ -17,6 +18,8 @@ library;
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wavecrux/core/platform/linux_desktop_identity.dart';
+import 'package:wavecrux/services/links/wavecrux_link.dart';
 
 /// The `CFBundleURLSchemes` strings declared in [plist].
 List<String> declaredSchemes(File plist) {
@@ -52,6 +55,25 @@ void main() {
     const channel = 'com.wavecrux/incoming_link';
     expect(delegate, contains('"$channel"'));
     expect(dart, contains("EventChannel('$channel')"));
+  });
+
+  test('the AppImage identity declares the scheme it hands to the app', () {
+    expect(kWaveCruxLinuxDesktopApp.urlSchemes, [kWaveCruxLinkScheme]);
+    expect(kWaveCruxLinkScheme, 'wavecrux');
+    final identity = _read('lib/core/platform/linux_desktop_identity.dart');
+    expect(identity, contains("urlSchemes: const ['wavecrux']"));
+  });
+
+  test('Windows and Linux hand a link to the running instance', () {
+    final app = _read('lib/app.dart');
+    expect(app, contains('claimSingleInstance('));
+    expect(app, contains('is SingleInstanceDelivered'));
+    expect(app, contains('IncomingLinkService.attachForwardedLinks('));
+    expect(app, contains('bringWindowForward()'));
+    final handoff = _read('lib/services/platform/single_instance_handoff.dart');
+    expect(handoff, contains('schemes: const [kWaveCruxLinkScheme]'));
+    expect(handoff, contains('maxLinkBytes: kWaveCruxLinkMaxLength'));
+    expect(handoff, contains('desktopApp.appId'));
   });
 
   test('iOS and Android declare no scheme they do not handle', () {

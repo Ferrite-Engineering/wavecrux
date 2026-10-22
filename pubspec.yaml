@@ -166,6 +166,10 @@ dependencies:
   # filters stay in WaveCrux because they're L10N- / dispatch-coupled.
   crux_shortcut_action:
     path: ./crux-shared/packages/crux_shortcut_action
+  # Hands a `wavecrux://` link to the running instance on Windows and Linux,
+  # which start a new process per link, so the link reuses the open window.
+  crux_single_instance:
+    path: ./crux-shared/packages/crux_single_instance
   # Cross-suite live statistics strip. The package was extracted from
   # WaveCrux's own statistics strip when SimCrux and NetCrux became consumers;
   # WaveCrux now reads from the extraction instead of its ancestor copy, so
