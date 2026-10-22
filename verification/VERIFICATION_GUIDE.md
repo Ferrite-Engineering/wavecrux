@@ -8225,7 +8225,8 @@ From the test peer:
    per §22.12.3 — the primary cursor jumps to the marker's tick time
    and the ack returns `honored: true`.
 5. Send `RequestHighlight(element: signal:nosuchpath)` — ack returns
-   `honored: false, reason: "element not found: nosuchpath"`.
+   `honored: false, reason: "element not found"`; the reason never repeats
+   the path.
 
 Cross-probe panel's **Recent Events** section shows each request with
 an `←` prefix and the requested path in the summary line.
@@ -8252,7 +8253,7 @@ panel surfaces an offline banner when the server is stopped.
 | Configured port already in use | `startServer` returns the error string; status row shows `lastError`; toggle stays off |
 | Peer disconnects mid-message | Presence event flushes; cross-probe panel's peer row disappears; in-flight ack is dropped silently |
 | Malformed inbound envelope | Sender receives `ErrorResponse(code: malformed_envelope)`; CXP server stays up |
-| Unknown element kind in `request_highlight` | Ack returns `honored: false, reason: "wavecrux does not handle <kind> elements"`. This now covers **two** cases identically: a kind WaveCrux knows but does not author (`rule`/`test`/`breakpoint`), **and** a kind this build has never heard of at all. `ElementKind` became an **open** wire type in the 2026-07 crux-shared round, so a peer built against a later protocol revision can send a kind not in this build's vocabulary; the ruling is to **ignore it gracefully** (no-op, honored=false, no throw, no crash) rather than guess it is signal-like. The name resolver likewise returns `null` for an unknown kind in both directions. |
+| Unknown element kind in `request_highlight` | Ack returns `honored: false, reason: "wavecrux does not handle that kind of element"` (the kind is not repeated). This now covers **two** cases identically: a kind WaveCrux knows but does not author (`rule`/`test`/`breakpoint`), **and** a kind this build has never heard of at all. `ElementKind` became an **open** wire type in the 2026-07 crux-shared round, so a peer built against a later protocol revision can send a kind not in this build's vocabulary; the ruling is to **ignore it gracefully** (no-op, honored=false, no throw, no crash) rather than guess it is signal-like. The name resolver likewise returns `null` for an unknown kind in both directions. |
 | Editor command is just whitespace | Treated as empty; `request_open_source` replies `honored: false` |
 | Empty signal path in name resolver | Returns `null`; outbound `notify_selection` is skipped |
 

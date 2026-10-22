@@ -186,7 +186,8 @@ void main() {
       coordinate: formalStep(6),
     );
     expect(harness.result.honored, isFalse);
-    expect(harness.result.reason, contains('property'));
+    expect(harness.result.reason, contains('does not handle'));
+    expect(harness.result.reason, isNot(contains('handshake_imm')));
   });
 }
 

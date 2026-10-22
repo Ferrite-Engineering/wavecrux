@@ -800,7 +800,8 @@ void main() {
       );
 
       expect(result.honored, isFalse);
-      expect(result.reason, contains('quantum_gate'));
+      expect(result.reason, contains('does not handle'));
+      expect(result.reason, isNot(contains('quantum_gate')));
     });
   });
 
@@ -1256,7 +1257,7 @@ void main() {
       );
       expect(spawns, 0);
       expect(result.honored, isFalse);
-      expect(result.reason, 'editor not found: not found on PATH');
+      expect(result.reason, 'editor not found');
     });
   });
 

@@ -359,8 +359,7 @@ void main() {
         expect(result.honored, isFalse);
         expect(
           result.reason,
-          'no waveform artifact recorded for design '
-          '"d-padded"',
+          'no waveform artifact recorded for that design',
         );
         expect(opened(env.root), isEmpty);
       });
@@ -494,7 +493,7 @@ void main() {
         expect(ack.honored, isFalse);
         expect(
           ack.reason,
-          'no waveform artifact recorded for design "unrecorded"',
+          'no waveform artifact recorded for that design',
         );
         expect(opened(env.root), isEmpty);
       });

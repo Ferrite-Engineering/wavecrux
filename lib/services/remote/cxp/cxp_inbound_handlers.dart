@@ -483,10 +483,10 @@ Future<_ElementOutcome> _dispatchCxpHighlight(
       // `null` = a kind this build has never heard of. Ignored gracefully,
       // with the same honored=false reply the known-but-unhandled kinds
       // get: the requester learns WaveCrux did nothing, and nothing throws.
-      return _ElementOutcome(
+      return const _ElementOutcome(
         CruxCxpHandlerResult(
           honored: false,
-          reason: 'wavecrux does not handle ${element.kind.name} elements',
+          reason: 'wavecrux does not handle that kind of element',
         ),
       );
   }
@@ -614,9 +614,9 @@ Future<CruxCxpHandlerResult> _highlightSignalLike(
   final allVars = source.findVariables(const SignalFilter());
   final match = _resolveSignalLike(path, allVars);
   if (match == null) {
-    return CruxCxpHandlerResult(
+    return const CruxCxpHandlerResult(
       honored: false,
-      reason: 'element not found: $path',
+      reason: 'element not found',
     );
   }
   // Add the signal if it's not already in the viewer; focus it either way.
@@ -816,9 +816,9 @@ Future<CruxCxpHandlerResult> _highlightScope(
       .where((v) => v.fullPath.startsWith('$path.'))
       .toList(growable: false);
   if (scopeVars.isEmpty) {
-    return CruxCxpHandlerResult(
+    return const CruxCxpHandlerResult(
       honored: false,
-      reason: 'scope not found: $path',
+      reason: 'scope not found',
     );
   }
   // Reuse the same addSignals path WCP's recursive add_items uses;
@@ -844,16 +844,16 @@ Future<CruxCxpHandlerResult> _highlightMarker(
   if (path.length != 1 ||
       path.codeUnitAt(0) < 0x61 ||
       path.codeUnitAt(0) > 0x7A) {
-    return CruxCxpHandlerResult(
+    return const CruxCxpHandlerResult(
       honored: false,
-      reason: 'invalid marker name: $path',
+      reason: 'invalid marker name',
     );
   }
   final markerTime = readActive(ref, markerStateProvider).getMarker(path);
   if (markerTime == null) {
-    return CruxCxpHandlerResult(
+    return const CruxCxpHandlerResult(
       honored: false,
-      reason: 'marker not set: $path',
+      reason: 'marker not set',
     );
   }
   readActive(ref, cursorStateProvider.notifier).placePrimary(markerTime);
@@ -916,7 +916,7 @@ const CxpPathContainment _kSourceHandoffFloor = CxpPathContainment();
 ///   nothing is opened. See [_kSourceHandoffFloor] for why this door gets the
 ///   floor and not the open-directory roots.
 /// * Missing / unreadable / unparseable waveform → `honored: false`,
-///   `reason: "failed to open waveform: …"` (the notifier lands in
+///   `reason: "failed to open the waveform"` (the notifier lands in
 ///   [AsyncError]).
 ///
 /// [metadata] is the request's. When it names an equivalence trace's two
@@ -954,10 +954,12 @@ Future<_ElementOutcome> _highlightSource(
   await container.read(waveformSourceProvider.notifier).openFile(path);
   final loaded = container.read(waveformSourceProvider);
   if (loaded is AsyncError) {
-    return _ElementOutcome(
+    return const _ElementOutcome(
+      // The error text carries the path it failed on, so a fixed phrase goes
+      // on the wire (CXP §9.11).
       CruxCxpHandlerResult(
         honored: false,
-        reason: 'failed to open waveform: ${loaded.error}',
+        reason: 'failed to open the waveform',
       ),
       // The tab exists — it just holds an error. Nothing may be mounted into
       // it: there is no trace to bind against.
@@ -1281,16 +1283,16 @@ Future<CruxCxpHandlerResult> dispatchCxpOpenArtifact(
   String? hintPath,
 ) async {
   if (artifactKind != kCxpWaveformArtifactKind) {
-    return CruxCxpHandlerResult(
+    return const CruxCxpHandlerResult(
       honored: false,
-      reason: 'wavecrux opens only waveform artifacts, not "$artifactKind"',
+      reason: 'wavecrux opens only waveform artifacts',
     );
   }
   final path = await resolveOpenArtifactWaveformPath(ref, designId) ?? hintPath;
   if (path == null) {
-    return CruxCxpHandlerResult(
+    return const CruxCxpHandlerResult(
       honored: false,
-      reason: 'no waveform artifact recorded for design "$designId"',
+      reason: 'no waveform artifact recorded for that design',
     );
   }
   // CXP §11: the same scrutiny the wire's `file_path` gets, applied to the
@@ -1434,13 +1436,18 @@ Future<CruxCxpHandlerResult> runEditorCommand(
       honored: false,
       reason: 'editor exited with ${result.exitCode}',
     );
-  } on ProcessException catch (e) {
-    return CruxCxpHandlerResult(
+  } on ProcessException {
+    // The exception names the executable and the arguments, the target path
+    // among them, so a fixed phrase goes on the wire (CXP §9.11).
+    return const CruxCxpHandlerResult(
       honored: false,
-      reason: 'editor not found: ${e.message}',
+      reason: 'editor not found',
     );
-  } on Object catch (e) {
-    return CruxCxpHandlerResult(honored: false, reason: e.toString());
+  } on Object {
+    return const CruxCxpHandlerResult(
+      honored: false,
+      reason: 'editor could not be launched',
+    );
   }
 }
 
