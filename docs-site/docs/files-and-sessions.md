@@ -138,6 +138,8 @@ A loaded waveform is raw signal data; a *session* is the arrangement you built a
 
 Save a session with **File → Save Session** (++cmd+s++ / ++ctrl+s++), and **Save Session As** with ++cmd+shift+s++ / ++ctrl+shift+s++.
 
+When the waveform is in the session file's folder or below it, the session stores the waveform's path relative to that folder (from 1.1.1), so a session committed next to its dump opens from any checkout and stays that way when you save it again. A waveform anywhere else is stored by its full path.
+
 A session can name a decoder the build you open it in cannot load: a Pro decoder opened in the Open Core viewer, or a decoder from a plugin that is missing or failed to load. WaveCrux keeps it in the session and writes it back unchanged when you save. From 1.1 it also appears in the signal list, below the other decoders, under its id with **Not available in this build**; its lane stays empty. Remove it there (the close button, or the right-click or long-press menu) if you no longer want it in the session.
 
 !!! note "In the browser"

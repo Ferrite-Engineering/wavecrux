@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -120,6 +121,125 @@ void main() {
         await _service.saveSession(s, path);
         final raw = await File(path).readAsString();
         expect(raw, contains('\n  "signals"'));
+      });
+    });
+  });
+
+  group('SessionService — relative sourceFilePath stays relative (#31)', () {
+    Future<String> rawSource(String path) async {
+      final doc =
+          jsonDecode(await File(path).readAsString()) as Map<String, dynamic>;
+      return doc['sourceFilePath'] as String;
+    }
+
+    test('a relative path survives load and re-save', () async {
+      await _withTempFile((path) async {
+        await File(path).writeAsString(
+          '{"version": 4, "sourceFilePath": "sim/dump.vcd"}',
+        );
+        final loaded = await _service.loadSession(path);
+        // In memory it is absolute so the viewer can open it...
+        expect(p.isAbsolute(loaded.sourceFilePath!), isTrue);
+
+        await _service.saveSession(loaded, path);
+        // ...and on disk it is relative again.
+        expect(await rawSource(path), 'sim/dump.vcd');
+        final reloaded = await _service.loadSession(path);
+        expect(reloaded.sourceFilePath, loaded.sourceFilePath);
+      });
+    });
+
+    test('a waveform next to the session is written by bare name', () async {
+      await _withTempFile((path) async {
+        final s = SessionState(
+          sourceFilePath: p.join(p.dirname(path), 'dump.vcd'),
+        );
+        await _service.saveSession(s, path);
+        expect(await rawSource(path), 'dump.vcd');
+      });
+    });
+
+    test('a waveform outside the session folder stays absolute', () async {
+      await _withTempFile((path) async {
+        final outside = p.join(
+          p.dirname(p.dirname(path)),
+          'elsewhere',
+          'dump.vcd',
+        );
+        await _service.saveSession(SessionState(sourceFilePath: outside), path);
+        final loaded = await _service.loadSession(path);
+        expect(loaded.sourceFilePath, outside);
+        expect(p.isAbsolute(loaded.sourceFilePath!), isTrue);
+      });
+    });
+
+    test('the in-memory state passed to saveSession is not changed', () async {
+      await _withTempFile((path) async {
+        final abs = p.join(p.dirname(path), 'dump.vcd');
+        final s = SessionState(sourceFilePath: abs);
+        await _service.saveSession(s, path);
+        expect(s.sourceFilePath, abs);
+      });
+    });
+
+    group('portableSourcePath', () {
+      test('posix: under the session directory becomes relative', () {
+        expect(
+          SessionService.portableSourcePath(
+            '/work/proj/sim/out/dump.fst',
+            '/work/proj/sim/run.wavecrux',
+          ),
+          'out/dump.fst',
+        );
+      }, testOn: 'posix');
+
+      test('posix: a sibling directory stays absolute', () {
+        expect(
+          SessionService.portableSourcePath(
+            '/work/proj/other/dump.fst',
+            '/work/proj/sim/run.wavecrux',
+          ),
+          '/work/proj/other/dump.fst',
+        );
+      }, testOn: 'posix');
+
+      test('posix: a directory with the same prefix is not "under"', () {
+        expect(
+          SessionService.portableSourcePath(
+            '/work/proj/sim2/dump.fst',
+            '/work/proj/sim/run.wavecrux',
+          ),
+          '/work/proj/sim2/dump.fst',
+        );
+      }, testOn: 'posix');
+
+      test('windows: relative form uses forward slashes', () {
+        expect(
+          SessionService.portableSourcePath(
+            r'C:\work\proj\sim\out\dump.fst',
+            r'C:\work\proj\sim\run.wavecrux',
+          ),
+          'out/dump.fst',
+        );
+      }, testOn: 'windows');
+
+      test('windows: another drive stays absolute', () {
+        expect(
+          SessionService.portableSourcePath(
+            r'D:\dumps\dump.fst',
+            r'C:\work\proj\sim\run.wavecrux',
+          ),
+          r'D:\dumps\dump.fst',
+        );
+      }, testOn: 'windows');
+
+      test('null, empty and already-relative pass through', () {
+        expect(SessionService.portableSourcePath(null, 'a/s.wavecrux'), isNull);
+        expect(SessionService.portableSourcePath('', 'a/s.wavecrux'), '');
+        expect(
+          SessionService.portableSourcePath('dump.vcd', 'a/s.wavecrux'),
+          'dump.vcd',
+        );
       });
     });
   });
