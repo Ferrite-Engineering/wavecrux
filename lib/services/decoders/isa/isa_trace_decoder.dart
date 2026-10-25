@@ -106,6 +106,18 @@ abstract class IsaTraceDecoder implements ProtocolDecoder {
 
     final transactions = <DecodedTransaction>[];
 
+    // Each instruction spans from its fetch edge to the next instruction's
+    // fetch edge, so the lane has room for the disassembly. An instruction is
+    // held back until its successor is known; the last one in the window is
+    // closed at the window end (see [_closeLastInstruction]).
+    DecodedTransaction? pending;
+    void emit(DecodedTransaction next) {
+      if (pending != null) {
+        transactions.add(pending!.copyWith(endTime: next.startTime));
+      }
+      pending = next;
+    }
+
     for (final (edgeTime, edgeVal) in clkChanges) {
       if (!isHigh(edgeVal)) continue;
       if (hasValid && !isHigh(query('valid', edgeTime))) continue;
@@ -127,7 +139,7 @@ abstract class IsaTraceDecoder implements ProtocolDecoder {
         final label = pcStr != null
             ? '[$pcStr] UNKNOWN INSN ($rawStr)'
             : 'UNKNOWN INSN ($rawStr)';
-        transactions.add(
+        emit(
           DecodedTransaction(
             startTime: edgeTime,
             endTime: edgeTime,
@@ -141,7 +153,7 @@ abstract class IsaTraceDecoder implements ProtocolDecoder {
       }
 
       final label = pcStr != null ? '[$pcStr] ${disasm.text}' : disasm.text;
-      transactions.add(
+      emit(
         DecodedTransaction(
           startTime: edgeTime,
           endTime: edgeTime,
@@ -156,7 +168,27 @@ abstract class IsaTraceDecoder implements ProtocolDecoder {
         ),
       );
     }
+    if (pending case final last?) {
+      transactions.add(_closeLastInstruction(last, endTime));
+    }
     return transactions;
+  }
+
+  /// Closes the last instruction of a decode window, which has no successor
+  /// to end at.
+  ///
+  /// It runs to the window's last tick: [windowEnd] is exclusive and a
+  /// transaction's end is inclusive, hence the `- 1`. Decoding the whole
+  /// trace, that is the end of the trace. Decoding in adjacent windows, the
+  /// last instruction of one window stops short of the next window's first
+  /// tick, so no span overlaps or repeats across the seam. An edge on the
+  /// window's last tick has nowhere to grow and stays zero-width.
+  static DecodedTransaction _closeLastInstruction(
+    DecodedTransaction last,
+    int windowEnd,
+  ) {
+    final end = windowEnd - 1;
+    return end > last.startTime ? last.copyWith(endTime: end) : last;
   }
 
   // ── parameter and value helpers, shared by every ISA ─────────────────────
