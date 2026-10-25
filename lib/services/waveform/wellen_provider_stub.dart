@@ -65,6 +65,9 @@ class WellenProvider implements WaveformDataSource {
   @override
   void close() {}
 
+  /// Mirrors the io implementation; nothing to release on web.
+  Future<void> closeAndRelease() async {}
+
   @override
   List<Scope> get rootScopes => const [];
 
