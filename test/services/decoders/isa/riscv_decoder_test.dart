@@ -361,4 +361,140 @@ void main() {
       expect(txs[0].fields['raw'], '0xFFFFFFFE');
     });
   });
+
+  // Issue #45: every instruction used to end where it started, so the lane
+  // drew only ticks and had no room for the disassembly.
+  group('RiscvDecoder.decode — instruction spans', () {
+    RiscvDecoder build({bool withValid = false}) => RiscvDecoder(
+      DecoderConfig(
+        signalBindings: {
+          'clk': 'tb.clk',
+          'instruction': 'tb.instruction',
+          if (withValid) 'valid': 'tb.valid',
+        },
+        parameters: const {'xlen': '32'},
+      ),
+      _testAssets(),
+    );
+
+    final basic = _buildChanges(
+      cycles: const [
+        (0x00c58533, null), // add a0, a1, a2
+        (0x00a30293, null), // addi t0, t1, 10
+        (0x00612423, null), // sw t1, 8(sp)
+      ],
+    );
+
+    test('each instruction spans to the next one and has width', () {
+      final txs = build().decode(
+        0,
+        100,
+        _makeQuery(basic),
+        _makeChangesQuery(basic),
+      );
+      expect(txs.map((t) => t.startTime), [5, 15, 25]);
+      expect(txs[0].endTime, 15);
+      expect(txs[1].endTime, 25);
+      for (final t in txs) {
+        expect(t.endTime, greaterThan(t.startTime), reason: t.label);
+      }
+    });
+
+    test('the last instruction runs to the last tick of the window', () {
+      final txs = build().decode(
+        0,
+        100,
+        _makeQuery(basic),
+        _makeChangesQuery(basic),
+      );
+      expect(txs.last.startTime, 25);
+      expect(txs.last.endTime, 99);
+    });
+
+    test('an instruction spans the stalled cycles up to the next fetch', () {
+      final changes = _buildChanges(
+        cycles: const [
+          (0x00a30293, null), // valid=1 → emit
+          (0x00c58533, null), // valid=0 → skipped, previous one holds
+          (0x00000073, null), // valid=1 → emit
+        ],
+      );
+      changes['valid'] = [(0, '0'), (4, '1'), (14, '0'), (24, '1')];
+      final txs = build(withValid: true).decode(
+        0,
+        40,
+        _makeQuery(changes),
+        _makeChangesQuery(changes),
+      );
+      expect(txs.map((t) => (t.startTime, t.endTime)), [(5, 25), (25, 39)]);
+    });
+
+    test('an unknown instruction spans like any other', () {
+      final changes = _buildChanges(
+        cycles: const [
+          (0xfffffffe, null), // UNKNOWN INSN
+          (0x00000073, null), // ecall
+        ],
+      );
+      final txs = build().decode(
+        0,
+        50,
+        _makeQuery(changes),
+        _makeChangesQuery(changes),
+      );
+      expect(txs[0].isError, isTrue);
+      expect((txs[0].startTime, txs[0].endTime), (5, 15));
+      expect((txs[1].startTime, txs[1].endTime), (15, 49));
+    });
+
+    test('adjacent windows tile without overlap or duplication', () {
+      final whole = build().decode(
+        0,
+        100,
+        _makeQuery(basic),
+        _makeChangesQuery(basic),
+      );
+      // Split between the second and third fetch edges (15 and 25).
+      final first = build().decode(
+        0,
+        20,
+        _makeQuery(basic),
+        _makeChangesQuery(basic),
+      );
+      final second = build().decode(
+        20,
+        100,
+        _makeQuery(basic),
+        _makeChangesQuery(basic),
+      );
+      final joined = [...first, ...second];
+
+      expect(joined.map((t) => t.label), whole.map((t) => t.label));
+      expect(joined.map((t) => t.startTime), whole.map((t) => t.startTime));
+      // The instruction before the seam stops at the window's last tick.
+      expect((first.last.startTime, first.last.endTime), (15, 19));
+      for (var i = 1; i < joined.length; i++) {
+        expect(
+          joined[i].startTime,
+          greaterThanOrEqualTo(joined[i - 1].endTime),
+          reason: 'tx[$i] overlaps tx[${i - 1}]',
+        );
+      }
+    });
+
+    test('a fetch on the last tick of the window stays zero-width', () {
+      final changes = <String, List<(int, String)>>{
+        'clk': [(9, '1')],
+        'instruction': [(0, _bin(0x00000073, 32))], // ecall
+      };
+      final txs = build().decode(
+        0,
+        10,
+        _makeQuery(changes),
+        _makeChangesQuery(changes),
+      );
+      expect(txs, hasLength(1));
+      expect((txs[0].startTime, txs[0].endTime), (9, 9));
+    });
+  });
 }
