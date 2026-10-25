@@ -147,14 +147,23 @@ class WellenProvider implements WaveformDataSource, CompactChangesSource {
   }
 
   @override
-  void close() {
+  void close() => unawaited(closeAndRelease());
+
+  /// [close], returning a future that completes once the worker has
+  /// released the native file handle (or was killed after
+  /// [WellenIsolateOrchestrator.defaultShutdownTimeout] without answering).
+  ///
+  /// The provider is detached from its worker synchronously: cached state is
+  /// cleared at once and a following [openFile] spawns a fresh worker, so
+  /// callers that do not await this (the [WaveformDataSource.close] path)
+  /// behave exactly as before. Only the kill is deferred until the worker
+  /// has run `wellen_close`; killing first left the file open until exit.
+  Future<void> closeAndRelease() {
     final orch = _orchestrator;
-    if (orch != null && orch.isRunning) {
-      // Best-effort: ask the worker to release the native handle before we
-      // kill the isolate. In most cases the message will be processed in time.
-      orch.sendOneWay({'op': 'close'});
-    }
-    _teardown();
+    _orchestrator = null;
+    _resetCachedState();
+    if (orch == null) return Future<void>.value();
+    return orch.disposeAfter(const {'op': 'close'});
   }
 
   // ── Hierarchy ───────────────────────────────────────────────────────────────
@@ -403,12 +412,6 @@ class WellenProvider implements WaveformDataSource, CompactChangesSource {
     _date = null;
     _version = null;
     _fileFormatCache = 'Unknown';
-  }
-
-  void _teardown() {
-    _orchestrator?.dispose();
-    _orchestrator = null;
-    _resetCachedState();
   }
 }
 

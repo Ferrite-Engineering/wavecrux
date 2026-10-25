@@ -470,6 +470,93 @@ void main() {
     });
   });
 
+  group('WellenIsolateOrchestrator — disposeAfter (#53)', () {
+    test(
+      'the worker processes the cleanup request before it is killed',
+      () async {
+        final fake = _FakeWorker();
+        final killCountWhenProcessed = <int>[];
+        fake.handler = (msg) {
+          killCountWhenProcessed.add(fake.killCount);
+          return {'id': msg['id'], 'ok': true};
+        };
+        final orch = WellenIsolateOrchestrator(spawner: fake.spawner);
+        await orch.start();
+
+        await orch.disposeAfter({'op': 'close'});
+
+        expect(fake.received.map((m) => m['op']), ['close']);
+        expect(killCountWhenProcessed, [0]);
+        expect(fake.killCount, 1);
+        expect(orch.isDisposed, isTrue);
+        expect(orch.debugPendingIds, isEmpty);
+      },
+    );
+
+    test('a worker that never answers is killed after the timeout', () async {
+      final fake = _FakeWorker()..handler = (_) => null;
+      final orch = WellenIsolateOrchestrator(spawner: fake.spawner);
+      await orch.start();
+
+      await orch.disposeAfter(
+        {'op': 'close'},
+        timeout: const Duration(milliseconds: 30),
+      );
+
+      expect(fake.received.map((m) => m['op']), ['close']);
+      expect(fake.killCount, greaterThanOrEqualTo(1));
+      expect(orch.isDisposed, isTrue);
+    });
+
+    test('an error reply still disposes', () async {
+      final fake = _FakeWorker()
+        ..handler = (msg) => {'id': msg['id'], 'ok': false, 'error': 'boom'};
+      final orch = WellenIsolateOrchestrator(spawner: fake.spawner);
+      await orch.start();
+
+      await orch.disposeAfter({'op': 'close'});
+
+      expect(fake.killCount, 1);
+      expect(orch.isDisposed, isTrue);
+    });
+
+    test('dispose() while waiting ends the wait without throwing', () async {
+      final fake = _FakeWorker()..handler = (_) => null;
+      final orch = WellenIsolateOrchestrator(spawner: fake.spawner);
+      await orch.start();
+
+      final done = orch.disposeAfter({'op': 'close'});
+      await Future<void>.delayed(Duration.zero);
+      orch.dispose();
+
+      await expectLater(done, completes);
+      expect(orch.isDisposed, isTrue);
+    });
+
+    test('not started: disposes without sending anything', () async {
+      final fake = _FakeWorker();
+      final orch = WellenIsolateOrchestrator(spawner: fake.spawner);
+
+      await orch.disposeAfter({'op': 'close'});
+
+      expect(fake.received, isEmpty);
+      expect(fake.killCount, 0);
+      expect(orch.isDisposed, isTrue);
+    });
+
+    test('already disposed: a no-op', () async {
+      final fake = _FakeWorker();
+      final orch = WellenIsolateOrchestrator(spawner: fake.spawner);
+      await orch.start();
+      orch.dispose();
+
+      await orch.disposeAfter({'op': 'close'});
+
+      expect(fake.received, isEmpty);
+      expect(fake.killCount, 1);
+    });
+  });
+
   group('WellenIsolateOrchestrator — response routing edge cases', () {
     test('non-map response is ignored', () async {
       final fake = _FakeWorker()..handler = (msg) => null;

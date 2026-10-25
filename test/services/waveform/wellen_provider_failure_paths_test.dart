@@ -23,6 +23,9 @@ class _FakeWorker {
   Map<String, dynamic>? Function(Map<String, dynamic>)? handler;
   final List<Map<String, dynamic>> received = [];
   int killCount = 0;
+
+  /// Every message op and every kill, in the order the fake saw them.
+  final List<String> events = [];
   SendPort? _mainPort;
   ReceivePort? _myPort;
 
@@ -38,6 +41,7 @@ class _FakeWorker {
   void _onMessage(dynamic raw) {
     final msg = (raw as Map).cast<String, dynamic>();
     received.add(msg);
+    events.add('op:${msg['op']}');
     final h = handler;
     if (h == null) return;
     final reply = h(msg);
@@ -46,6 +50,7 @@ class _FakeWorker {
 
   void _onKill() {
     killCount++;
+    events.add('kill');
     _myPort?.close();
     _myPort = null;
   }
@@ -210,43 +215,104 @@ void main() {
     });
   });
 
-  group('WellenProvider — close best-effort cleanup', () {
-    test('close after openFile sends a close op to the worker', () async {
+  group('WellenProvider — close releases the native handle', () {
+    Map<String, dynamic> openReply(Map<String, dynamic> msg) => {
+      'id': msg['id'],
+      'ok': true,
+      'rootScopes': <Object?>[],
+      'endTime': 0,
+      'timescale': null,
+      'date': null,
+      'version': null,
+      'fileFormat': 'VCD',
+      'totalTransitions': 0,
+    };
+
+    test('close waits for the worker to process close before killing it '
+        '(#53)', () async {
+      final fake = _FakeWorker()
+        ..handler = (msg) => msg['op'] == 'open'
+            ? openReply(msg)
+            : {'id': msg['id'], 'ok': true};
+
+      final provider = WellenProvider(spawner: fake.spawner);
+      await provider.openFile('/tmp/x.vcd');
+      final released = provider.closeAndRelease();
+
+      // Detached synchronously: cached state is gone before the worker
+      // has answered, and nothing has been killed yet.
+      expect(provider.rootScopes, isEmpty);
+      expect(provider.fileFormat, 'Unknown');
+      expect(fake.killCount, 0);
+
+      await released;
+      // The worker saw close while it was still alive, then was killed.
+      expect(fake.events, ['op:open', 'op:close', 'kill']);
+    });
+
+    test('close() (the WaveformDataSource path) also delivers close before '
+        'the kill', () async {
       final fake = _FakeWorker()
         ..handler = (msg) {
           final op = msg['op'] as String;
-          if (op == 'open') {
-            return {
-              'id': msg['id'],
-              'ok': true,
-              'rootScopes': <Object?>[],
-              'endTime': 0,
-              'timescale': null,
-              'date': null,
-              'version': null,
-              'fileFormat': 'VCD',
-              'totalTransitions': 0,
-            };
-          }
+          if (op == 'open') return openReply(msg);
           return {'id': msg['id'], 'ok': true};
         };
 
       final provider = WellenProvider(spawner: fake.spawner);
       await provider.openFile('/tmp/x.vcd');
       provider.close();
+      expect(fake.killCount, 0);
 
-      // The orchestrator was killed (this is the load-bearing assertion —
-      // the close op is best-effort and races against the kill, mirroring
-      // production behavior with a real isolate).
-      expect(fake.killCount, 1);
-      // open was definitely processed before close.
-      final ops = fake.received.map((m) => m['op']).toList();
-      expect(ops, contains('open'));
-      // Subsequent provider methods that touch the orchestrator must not
-      // throw — the provider's local state is cleared and the orchestrator
-      // is gone.
-      expect(provider.rootScopes, isEmpty);
-      expect(provider.fileFormat, 'Unknown');
+      // Let the round trip complete.
+      for (var i = 0; i < 20 && fake.killCount == 0; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
+      expect(fake.events, ['op:open', 'op:close', 'kill']);
+    });
+
+    test('a worker that never acknowledges close is killed anyway', () async {
+      final fake = _FakeWorker()
+        ..handler = (msg) =>
+            msg['op'] == 'open' ? openReply(msg) : null; // close hangs
+      final provider = WellenProvider(spawner: fake.spawner);
+      await provider.openFile('/tmp/x.vcd');
+
+      final sw = Stopwatch()..start();
+      await provider.closeAndRelease();
+      sw.stop();
+
+      expect(fake.events, ['op:open', 'op:close', 'kill']);
+      expect(
+        sw.elapsed,
+        greaterThanOrEqualTo(
+          WellenIsolateOrchestrator.defaultShutdownTimeout -
+              const Duration(milliseconds: 50),
+        ),
+      );
+    });
+
+    test('reopening after close spawns a fresh worker', () async {
+      var spawns = 0;
+      final fake = _FakeWorker()
+        ..handler = (msg) => msg['op'] == 'open'
+            ? openReply(msg)
+            : {'id': msg['id'], 'ok': true};
+      Future<IsolateHandle> countingSpawner(
+        SendPort mp, {
+        String? debugName,
+      }) {
+        spawns++;
+        return fake.spawner(mp, debugName: debugName);
+      }
+
+      final provider = WellenProvider(spawner: countingSpawner);
+      await provider.openFile('/tmp/x.vcd');
+      provider.close();
+      await provider.openFile('/tmp/y.vcd');
+      expect(spawns, 2);
+      expect(provider.fileFormat, 'VCD');
+      await provider.closeAndRelease();
     });
 
     test('close before openFile is a no-op', () {

@@ -20,7 +20,8 @@
 //   * how to honor a cancel token so superseded in-flight responses are
 //     silently dropped,
 //   * how to dispose: kill the isolate, close the receive port, error
-//     every still-pending completer.
+//     every still-pending completer — optionally after the worker has
+//     acknowledged a final cleanup request ([disposeAfter]).
 //
 // Tests pass a fake [IsolateSpawner] that talks to a controlled
 // [ReceivePort]; production passes [defaultIsolateSpawner], which wraps
@@ -302,6 +303,38 @@ class WellenIsolateOrchestrator {
         p.completer.completeError(error);
       }
     }
+  }
+
+  /// How long [disposeAfter] waits for the worker to acknowledge its
+  /// cleanup request before killing it anyway.
+  static const defaultShutdownTimeout = Duration(seconds: 2);
+
+  /// Send [request] (the worker's cleanup op), wait for its reply, then
+  /// [dispose].
+  ///
+  /// [dispose] kills the isolate at once, so a cleanup message sent just
+  /// before it is usually never processed: the worker dies with its native
+  /// resources (an open waveform file handle) still held until the process
+  /// exits. Waiting for the reply guarantees the worker ran the cleanup
+  /// first. A worker that does not reply within [timeout], or replies with
+  /// an error, is killed anyway so a hung worker cannot block teardown.
+  ///
+  /// Returns immediately (after disposing) when the worker is not running.
+  /// Idempotent with [dispose].
+  Future<void> disposeAfter(
+    Map<String, dynamic> request, {
+    Duration timeout = defaultShutdownTimeout,
+  }) async {
+    if (_disposed) return;
+    if (isRunning) {
+      try {
+        await send(request, timeout: timeout);
+      } on Object {
+        // Timed out (the worker is already killed) or disposed while
+        // waiting: either way the dispose below finishes the job.
+      }
+    }
+    dispose();
   }
 
   /// Permanently dispose this orchestrator. After [dispose], [send] and
