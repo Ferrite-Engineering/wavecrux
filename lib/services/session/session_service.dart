@@ -143,13 +143,20 @@ class SessionService {
   /// object-graph copy into the isolate instead of the full serialization.
   /// [SessionState] is plain immutable data, so it is isolate-sendable.
   ///
+  /// `sourceFilePath` is written relative to the session file's directory
+  /// when the waveform lives under it (see [portableSourcePath]), so a
+  /// session committed next to its dump stays portable across checkouts.
+  ///
   /// Creates parent directories and overwrites any existing file.
   /// Throws [SessionSaveException] on I/O failure.
   Future<void> saveSession(SessionState state, String filePath) async {
     final isLarge = state.signalGroup.signalCount >= largeSessionEntryThreshold;
+    final portable = state.copyWith(
+      sourceFilePath: portableSourcePath(state.sourceFilePath, filePath),
+    );
     final encoded = isLarge
-        ? await Isolate.run(() => jsonEncode(_toJson(state)))
-        : encodeDocument(state);
+        ? await Isolate.run(() => jsonEncode(_toJson(portable)))
+        : encodeDocument(portable);
     try {
       final file = File(filePath);
       await file.parent.create(recursive: true);
@@ -233,8 +240,9 @@ class SessionService {
     // Resolve a relative `sourceFilePath` against the session file's own
     // directory, so a `.wavecrux` committed or shared next to its waveform
     // (a demo pack, an EDU reference session, a session emailed alongside its
-    // dump) opens regardless of the process working directory. A
-    // normally-saved session stores the absolute path it was opened from,
+    // dump) opens regardless of the process working directory. [saveSession]
+    // writes the relative form back whenever the waveform is under the
+    // session's directory; a waveform elsewhere is stored absolute,
     // which `p.isRelative` leaves untouched.
     final source = state.sourceFilePath;
     if (source != null && source.isNotEmpty && p.isRelative(source)) {
@@ -243,6 +251,28 @@ class SessionService {
       );
     }
     return state;
+  }
+
+  /// The `sourceFilePath` to write into a session saved at [sessionFilePath].
+  ///
+  /// [loadSession] resolves a relative `sourceFilePath` against the session
+  /// file's directory, so the in-memory value is always absolute; writing it
+  /// back verbatim turned a portable relative path into a machine-specific one
+  /// on the first save. When [sourcePath] is inside the session's directory
+  /// (at any depth) the relative form is returned, with `/` separators on
+  /// every platform so a session saved on Windows opens on macOS or Linux.
+  /// Anything else (outside the directory, already relative, null or empty)
+  /// is returned unchanged.
+  static String? portableSourcePath(
+    String? sourcePath,
+    String sessionFilePath,
+  ) {
+    if (sourcePath == null || sourcePath.isEmpty) return sourcePath;
+    if (p.isRelative(sourcePath)) return sourcePath;
+    final sessionDir = p.normalize(p.absolute(p.dirname(sessionFilePath)));
+    final source = p.normalize(sourcePath);
+    if (!p.isWithin(sessionDir, source)) return sourcePath;
+    return p.posix.joinAll(p.split(p.relative(source, from: sessionDir)));
   }
 
   // ── serialization ────────────────────────────────────────────────────────────
