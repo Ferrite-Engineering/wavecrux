@@ -135,8 +135,9 @@ abstract final class VectorSignalPainter {
         _paintZSegment(canvas, x0, x1, yTop, yBot, yMid, slant, zColor);
       } else {
         // Try translate filter before falling back to numeric format.
+        final filtered = translateFilter?.translate(normalised);
         final label =
-            translateFilter?.translate(normalised) ??
+            filtered ??
             (bitWidth > 0
                 ? activeTranslator
                       .translate(
@@ -160,6 +161,7 @@ abstract final class VectorSignalPainter {
           signalColor,
           label,
           valueStyle,
+          stripLeadingZeros: filtered == null && isRadixNumeral(label, format),
         );
       }
     }
@@ -262,8 +264,9 @@ abstract final class VectorSignalPainter {
     double slant,
     Color color,
     String label,
-    TextStyle valueStyle,
-  ) {
+    TextStyle valueStyle, {
+    required bool stripLeadingZeros,
+  }) {
     final path = _parallelogramPath(x0, x1, yTop, yBot, slant);
 
     _normalFillPaint.color = color.withValues(alpha: 0.18);
@@ -275,7 +278,17 @@ abstract final class VectorSignalPainter {
 
     final innerWidth = x1 - x0 - slant * 2 - 4;
     if (innerWidth > _minLabelWidth && label.isNotEmpty) {
-      _paintLabel(canvas, label, x0, x1, yMid, innerWidth, valueStyle, color);
+      _paintLabel(
+        canvas,
+        label,
+        x0,
+        x1,
+        yMid,
+        innerWidth,
+        valueStyle,
+        color,
+        stripLeadingZeros: stripLeadingZeros,
+      );
     }
   }
 
@@ -397,6 +410,12 @@ abstract final class VectorSignalPainter {
     }
   }
 
+  /// Shared label painter, re-laid out per candidate rather than allocated
+  /// per segment. Painting is single-threaded, so one instance is enough.
+  static final TextPainter _labelPainter = TextPainter(
+    textDirection: TextDirection.ltr,
+  );
+
   static void _paintLabel(
     Canvas canvas,
     String label,
@@ -405,24 +424,143 @@ abstract final class VectorSignalPainter {
     double yMid,
     double maxWidth,
     TextStyle style,
-    Color color,
-  ) {
-    final tp = TextPainter(
-      text: TextSpan(
-        text: label,
-        style: style.copyWith(color: color),
-      ),
-      textDirection: TextDirection.ltr,
-      maxLines: 1,
-    )..layout(maxWidth: maxWidth);
+    Color color, {
+    required bool stripLeadingZeros,
+  }) {
+    final textStyle = style.copyWith(color: color);
+    final tp = _labelPainter;
+    String? laidOut;
+    double measure(String text) {
+      tp
+        ..text = TextSpan(text: text, style: textStyle)
+        ..layout();
+      laidOut = text;
+      return tp.width;
+    }
 
-    if (tp.width > maxWidth) return;
+    // Measured unconstrained: a `maxWidth` layout clips the text to fit and
+    // reports the clipped width, which is how an overflowing label used to
+    // draw its leading digits with nothing to say that any were missing.
+    final fitted = fitBusLabel(
+      label,
+      maxWidth: maxWidth,
+      measure: measure,
+      stripLeadingZeros: stripLeadingZeros,
+    );
+    if (fitted == null) return;
+    if (laidOut != fitted) measure(fitted);
 
     final textX = (x0 + x1) / 2.0 - tp.width / 2.0;
     final textY = yMid - tp.height / 2.0;
     tp.paint(canvas, Offset(textX, textY));
   }
+
+  /// Whether [label] is a bare numeral in [format]'s radix — the only kind of
+  /// label whose leading zeros [fitBusLabel] may drop.
+  ///
+  /// The built-in formatter renders binary, octal and hex without a radix
+  /// prefix (`00000200`, not `0x00000200`). A label carrying a prefix, a sign,
+  /// or anything else outside the radix's digits is left whole, so a
+  /// translator that renders `0x…` never loses the `0` of its prefix.
+  @visibleForTesting
+  static bool isRadixNumeral(String label, DisplayFormat format) {
+    if (label.isEmpty) return false;
+    final isDigit = switch (format) {
+      DisplayFormat.binary => _isBinaryDigit,
+      DisplayFormat.octal => _isOctalDigit,
+      DisplayFormat.hexadecimal => _isHexDigit,
+      DisplayFormat.unsignedDecimal ||
+      DisplayFormat.signedDecimal ||
+      DisplayFormat.ascii ||
+      DisplayFormat.ieee754Single ||
+      DisplayFormat.ieee754Double ||
+      DisplayFormat.fixedPointQ ||
+      DisplayFormat.signedMagnitude ||
+      DisplayFormat.grayCode ||
+      DisplayFormat.namedEnum => null,
+    };
+    if (isDigit == null) return false;
+    for (var i = 0; i < label.length; i++) {
+      if (!isDigit(label.codeUnitAt(i))) return false;
+    }
+    return true;
+  }
+
+  static bool _isBinaryDigit(int c) => c == 0x30 || c == 0x31;
+
+  static bool _isOctalDigit(int c) => c >= 0x30 && c <= 0x37;
+
+  static bool _isHexDigit(int c) =>
+      (c >= 0x30 && c <= 0x39) ||
+      (c >= 0x61 && c <= 0x66) ||
+      (c >= 0x41 && c <= 0x46);
 }
+
+/// The label text to draw for a bus segment whose label area is [maxWidth]
+/// wide, or `null` when no truthful label fits.
+///
+/// A bus value that does not fit must never be drawn as a different number,
+/// so this never drops a digit silently. In order, it tries:
+///
+/// 1. [label] as is.
+/// 2. With [stripLeadingZeros] (set only for a bare binary, octal or hex
+///    numeral), [label] without its leading zeros, keeping at least one
+///    digit: `00000200` → `200`, `0000000000000000` → `0`.
+/// 3. The least significant characters behind a leading `…`, as many as fit:
+///    `12345678` → `…5678`. The trailing digits are the ones that change
+///    from one value to the next, so they are the ones worth keeping.
+/// 4. Nothing, when not even `…` and one character fit.
+///
+/// [measure] returns the rendered width of a string. The painter passes a
+/// [TextPainter] layout; it is a parameter so this stays a pure function.
+/// The `…` search starts from a per-character estimate and steps from there,
+/// so a monospace label costs two or three measurements, not one per digit.
+String? fitBusLabel(
+  String label, {
+  required double maxWidth,
+  required double Function(String text) measure,
+  bool stripLeadingZeros = false,
+}) {
+  if (label.isEmpty) return null;
+  var width = measure(label);
+  if (width <= maxWidth) return label;
+
+  var text = label;
+  if (stripLeadingZeros) {
+    var i = 0;
+    while (i < text.length - 1 && text.codeUnitAt(i) == 0x30) {
+      i++;
+    }
+    if (i > 0) {
+      text = text.substring(i);
+      width = measure(text);
+      if (width <= maxWidth) return text;
+    }
+  }
+
+  // `…` plus every character is wider than [text], which did not fit, so at
+  // most `length - 1` characters can follow the ellipsis.
+  final maxKeep = text.length - 1;
+  if (maxKeep < 1) return null;
+  String truncated(int keep) =>
+      '$_kEllipsis${text.substring(text.length - keep)}';
+
+  // Estimate, treating the ellipsis as one character wide, then correct.
+  final perChar = width / text.length;
+  var keep = (maxWidth / perChar).floor() - 1;
+  if (keep > maxKeep) keep = maxKeep;
+  if (keep < 1) keep = 1;
+  while (keep >= 1 && measure(truncated(keep)) > maxWidth) {
+    keep--;
+  }
+  if (keep < 1) return null;
+  while (keep < maxKeep && measure(truncated(keep + 1)) <= maxWidth) {
+    keep++;
+  }
+  return truncated(keep);
+}
+
+const String _kEllipsis = '\u2026';
 
 /// A constant-value time segment with pixel x-coordinates.
 final class _Segment {
