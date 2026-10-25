@@ -8,8 +8,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:wavecrux/domain/enums/display_format.dart';
 import 'package:wavecrux/domain/models/cursor_state.dart';
+import 'package:wavecrux/domain/models/decoder_config.dart';
 import 'package:wavecrux/domain/models/fsm_annotation.dart';
 import 'package:wavecrux/domain/models/marker_state.dart';
+import 'package:wavecrux/domain/models/persisted_decoder.dart';
 import 'package:wavecrux/domain/models/session_state.dart';
 import 'package:wavecrux/domain/models/signal_group.dart';
 import 'package:wavecrux/domain/models/stage_instance.dart';
@@ -1236,6 +1238,111 @@ void main() {
   });
 
   // ── error handling ────────────────────────────────────────────────────────────
+
+  group('SessionService — binding paths (#54)', () {
+    StageWorkspaceState stage(StageSignalBinding binding) =>
+        StageWorkspaceState(
+          panels: [
+            StagePanelConfig(
+              id: 'p',
+              name: 'P',
+              instances: [
+                StageInstance(
+                  id: 'i',
+                  widgetId: 'rvfi_inspector',
+                  signalBindings: {'valid': binding},
+                ),
+              ],
+            ),
+          ],
+        );
+
+    test('a Stage binding writes its path beside the ref and reads it '
+        'back', () async {
+      await _withTempFile((path) async {
+        final s = SessionState(
+          stageWorkspace: stage(
+            const StageSignalBinding(
+              signalRef: '7',
+              bitIndex: 1,
+              signalPath: 'top.cpu.rvfi_valid',
+            ),
+          ),
+        );
+        await _service.saveSession(s, path);
+
+        final doc =
+            jsonDecode(await File(path).readAsString()) as Map<String, dynamic>;
+        final binding =
+            (((doc['stage'] as Map)['panels'] as List).single
+                    as Map)['instances']
+                as List;
+        expect((binding.single as Map)['bindings'], {
+          'valid': {'ref': '7', 'path': 'top.cpu.rvfi_valid', 'bit': 1},
+        });
+
+        final loaded = await _service.loadSession(path);
+        expect(loaded.stageWorkspace, s.stageWorkspace);
+      });
+    });
+
+    test('a pre-1.1.1 Stage binding (ref only) loads with no path', () async {
+      await _withTempFile((path) async {
+        await File(path).writeAsString(
+          jsonEncode({
+            'version': 4,
+            'stage': {
+              'panels': [
+                {
+                  'id': 'p',
+                  'name': 'P',
+                  'instances': [
+                    {
+                      'id': 'i',
+                      'widgetId': 'rvfi_inspector',
+                      'bindings': {
+                        'valid': {'ref': '7'},
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          }),
+        );
+        final loaded = await _service.loadSession(path);
+        final binding = loaded
+            .stageWorkspace
+            .panels
+            .single
+            .instances
+            .single
+            .signalBindings['valid']!;
+        expect(binding.signalRef, '7');
+        expect(binding.signalPath, isNull);
+      });
+    });
+
+    test('decoder binding paths round-trip through the file', () async {
+      await _withTempFile((path) async {
+        const s = SessionState(
+          decoders: [
+            PersistedDecoder(
+              decoderId: 'spi',
+              instanceNumber: 2,
+              config: DecoderConfig(
+                signalBindings: {'clk': '28'},
+                signalPaths: {'clk': 'top.spi.clk'},
+              ),
+            ),
+          ],
+        );
+        await _service.saveSession(s, path);
+        final loaded = await _service.loadSession(path);
+        expect(loaded.decoders, s.decoders);
+      });
+    });
+  });
 
   group('SessionService — error handling', () {
     test('invalid JSON throws SessionLoadException', () async {

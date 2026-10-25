@@ -12,8 +12,11 @@ import 'package:logging/logging.dart';
 import 'package:path/path.dart' as p;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:wavecrux/core/policy/wavecrux_policy_keys.dart';
+import 'package:wavecrux/domain/interfaces/waveform_data_source.dart';
+import 'package:wavecrux/domain/models/persisted_decoder.dart';
 import 'package:wavecrux/domain/models/session_state.dart';
 import 'package:wavecrux/domain/models/signal_group.dart';
+import 'package:wavecrux/domain/models/stage_workspace_state.dart';
 import 'package:wavecrux/features/annotations/providers/annotation_layers_provider.dart';
 import 'package:wavecrux/features/annotations/providers/annotation_providers.dart';
 import 'package:wavecrux/features/cocotb/providers/cocotb_log_provider.dart';
@@ -27,10 +30,12 @@ import 'package:wavecrux/features/viewer/providers/fsm_provider.dart';
 import 'package:wavecrux/features/viewer/providers/panel_layout_provider.dart';
 import 'package:wavecrux/features/viewer/providers/time_providers.dart';
 import 'package:wavecrux/features/viewer/providers/translate_filter_provider.dart';
+import 'package:wavecrux/features/viewer/providers/unresolved_bindings_provider.dart';
 import 'package:wavecrux/features/viewer/providers/value_column_provider.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
 import 'package:wavecrux/features/workspace/providers/recent_files_provider.dart';
 import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
+import 'package:wavecrux/services/session/binding_paths.dart';
 import 'package:wavecrux/services/session/session_extension_codec.dart';
 import 'package:wavecrux/services/session/session_service.dart';
 
@@ -175,6 +180,13 @@ class SessionNotifier extends _$SessionNotifier {
           panOffsetTicks: snapshot.panOffsetTicks,
         );
 
+    // The decoders survive the reopen in place (below), so stamp each of their
+    // bindings with its hierarchical path while the OLD file is still the
+    // source: the refs are about to stop meaning anything. The Stage
+    // workspace needs no stamp; `snapshot` recorded its paths already.
+    final previousSource = ref.read(waveformSourceProvider).value;
+    if (previousSource != null) _recordLiveDecoderPaths(previousSource);
+
     // Reopen the file — this triggers TimeMapper.initialize via the canvas.
     // Same `preserveDecoders: true` seam as _restore so the
     // user's active decoders survive an auto-reload of the same file
@@ -236,9 +248,21 @@ class SessionNotifier extends _$SessionNotifier {
           .restoreDockPlacements(snapshot.dockPlacements);
     }
 
+    // Re-point decoder and Stage bindings at the new file by their saved
+    // paths: a regenerated dump renumbers its refs.
+    final unresolved = <UnresolvedBinding>[];
+    var stageWorkspace = snapshot.stageWorkspace;
+    if (reloadedSource != null) {
+      stageWorkspace = _resolveLiveDecoderAndStagePaths(
+        reloadedSource,
+        stageWorkspace,
+        unresolved,
+      );
+    }
     ref
         .read(stageWorkspaceProvider.notifier)
-        .restoreFromSession(snapshot.stageWorkspace);
+        .restoreFromSession(stageWorkspace);
+    _reportUnresolved(unresolved);
 
     await ref
         .read(translateFilterProvider.notifier)
@@ -298,6 +322,9 @@ class SessionNotifier extends _$SessionNotifier {
     // codecs (empty registry → empty map → `extensions` omitted from JSON);
     // the Pro overlay contributes `pro.sva` and friends.
     final extensions = SessionExtensions.capture(ref, _lastLoadedExtensions);
+    // Save each decoder and Stage binding's hierarchical path beside its ref,
+    // so the next load can re-resolve it after the dump changes.
+    final recorded = _recordBindingPaths(decoders, stageWorkspace);
 
     return SessionState(
       sourceFilePath: sourceFilePath,
@@ -329,8 +356,8 @@ class SessionNotifier extends _$SessionNotifier {
       signalTreeScrollOffset: treeScroll,
       translateFilterPaths: filterPaths,
       fsmAnnotations: fsmAnnotations,
-      stageWorkspace: stageWorkspace,
-      decoders: decoders,
+      stageWorkspace: recorded.stage,
+      decoders: recorded.decoders,
       annotations: annotations,
       annotationLayers: annotationLayers,
       annotationsVisible: annotationsVisible,
@@ -393,6 +420,23 @@ class SessionNotifier extends _$SessionNotifier {
     final source = ref.read(waveformSourceProvider).value;
     if (source != null) {
       ref.read(signalGroupsProvider.notifier).reresolveSignalRefs(source);
+    }
+
+    // 3a, continued. The same for decoder and Stage bindings: re-resolve
+    // each one's ref from its saved hierarchical path. Applied in steps 7 and
+    // 10; whatever matches nothing is reported once the restore is done.
+    final unresolved = <UnresolvedBinding>[];
+    var decoders = session.decoders;
+    var stageWorkspace = session.stageWorkspace;
+    if (source != null) {
+      final resolved = _resolveBindingPaths(
+        source,
+        decoders,
+        stageWorkspace,
+        unresolved,
+      );
+      decoders = resolved.decoders;
+      stageWorkspace = resolved.stage;
     }
 
     // 3b. Eagerly load each restored signal so the value column has data the
@@ -523,7 +567,7 @@ class SessionNotifier extends _$SessionNotifier {
     // 7. Restore Stage workspace.
     ref
         .read(stageWorkspaceProvider.notifier)
-        .restoreFromSession(session.stageWorkspace);
+        .restoreFromSession(stageWorkspace);
 
     // 8. Restore translate filter assignments.
     await ref
@@ -545,10 +589,8 @@ class SessionNotifier extends _$SessionNotifier {
     // valid signal data to consume. Unknown-decoderId entries (Pro
     // decoder on Open Core, uninstalled plugin) are skipped silently
     // inside restoreDecoders; the cross-tier-open case must not throw.
-    if (session.decoders.isNotEmpty) {
-      ref
-          .read(activeDecodersProvider.notifier)
-          .restoreDecoders(session.decoders);
+    if (decoders.isNotEmpty) {
+      ref.read(activeDecodersProvider.notifier).restoreDecoders(decoders);
       if (source != null) {
         // Eager re-decode: matches user expectation that the
         // transaction table is populated the moment the tab finishes
@@ -567,6 +609,138 @@ class SessionNotifier extends _$SessionNotifier {
     // snapshot. The open-core registry is empty, so this is a no-op without a
     // Pro overlay.
     SessionExtensions.restore(ref, session.extensions);
+
+    // 12. Say which saved bindings found no signal (replacing any earlier
+    // notice for this tab).
+    _reportUnresolved(unresolved);
+  }
+
+  // ── binding paths ────────────────────────────────────────────────────────────
+
+  /// [decoders] and [stage] with every binding's hierarchical path recorded
+  /// against the open waveform ([BindingPaths.recordDecoder] /
+  /// [BindingPaths.recordStage]). With no waveform open, paths already
+  /// recorded are kept as they are.
+  ({List<PersistedDecoder> decoders, StageWorkspaceState stage})
+  _recordBindingPaths(
+    List<PersistedDecoder> decoders,
+    StageWorkspaceState stage,
+  ) {
+    final source = ref.read(waveformSourceProvider).value;
+    final refs = <String>{
+      for (final d in decoders) ...BindingPaths.decoderRefs(d.config),
+      ...BindingPaths.stageRefs(stage),
+    };
+    final pathByRef = source == null
+        ? const <String, String>{}
+        : BindingPaths.pathsForRefs(source, refs);
+    return (
+      decoders: [
+        for (final d in decoders)
+          d.copyWith(
+            config: BindingPaths.recordDecoder(d.config, pathByRef),
+          ),
+      ],
+      stage: BindingPaths.recordStage(stage, pathByRef),
+    );
+  }
+
+  /// [decoders] and [stage] with every binding that has a saved path
+  /// re-pointed at [source]'s ref for it. Each path that matches nothing is
+  /// added to [unresolved].
+  ({List<PersistedDecoder> decoders, StageWorkspaceState stage})
+  _resolveBindingPaths(
+    WaveformDataSource source,
+    List<PersistedDecoder> decoders,
+    StageWorkspaceState stage,
+    List<UnresolvedBinding> unresolved,
+  ) {
+    final refByPath = BindingPaths.refsForPaths(source, {
+      for (final d in decoders) ...BindingPaths.decoderPaths(d.config),
+      ...BindingPaths.stagePaths(stage),
+    });
+    return (
+      decoders: [
+        for (final d in decoders)
+          d.copyWith(
+            config: BindingPaths.resolveDecoder(
+              d.config,
+              refByPath,
+              onUnresolved: (slot, path) => unresolved.add(
+                UnresolvedBinding(
+                  owner: '${d.decoderId} #${d.instanceNumber}',
+                  slot: slot,
+                  path: path,
+                ),
+              ),
+            ),
+          ),
+      ],
+      stage: _resolveStage(stage, refByPath, unresolved),
+    );
+  }
+
+  /// Reload, before the reopen: stamps the live decoders' bindings with their
+  /// paths in [source], the file about to be replaced.
+  void _recordLiveDecoderPaths(WaveformDataSource source) {
+    final notifier = ref.read(activeDecodersProvider.notifier);
+    final pathByRef = BindingPaths.pathsForRefs(source, {
+      for (final p in notifier.snapshot())
+        ...BindingPaths.decoderRefs(p.config),
+    });
+    notifier.mapConfigs(
+      (_, config) => BindingPaths.recordDecoder(config, pathByRef),
+    );
+  }
+
+  /// Reload, after the reopen: re-points the live decoders' bindings and
+  /// [stage]'s at [source], returning the resolved workspace. Each path that
+  /// matches nothing is added to [unresolved].
+  StageWorkspaceState _resolveLiveDecoderAndStagePaths(
+    WaveformDataSource source,
+    StageWorkspaceState stage,
+    List<UnresolvedBinding> unresolved,
+  ) {
+    final notifier = ref.read(activeDecodersProvider.notifier);
+    final refByPath = BindingPaths.refsForPaths(source, {
+      for (final p in notifier.snapshot())
+        ...BindingPaths.decoderPaths(p.config),
+      ...BindingPaths.stagePaths(stage),
+    });
+    notifier.mapConfigs(
+      (owner, config) => BindingPaths.resolveDecoder(
+        config,
+        refByPath,
+        onUnresolved: (slot, path) => unresolved.add(
+          UnresolvedBinding(owner: owner, slot: slot, path: path),
+        ),
+      ),
+    );
+    return _resolveStage(stage, refByPath, unresolved);
+  }
+
+  static StageWorkspaceState _resolveStage(
+    StageWorkspaceState stage,
+    Map<String, String> refByPath,
+    List<UnresolvedBinding> unresolved,
+  ) => BindingPaths.resolveStage(
+    stage,
+    refByPath,
+    onUnresolved: (owner, pin, path) => unresolved.add(
+      UnresolvedBinding(owner: owner, slot: pin, path: path),
+    ),
+  );
+
+  /// Publishes [unresolved] to this tab's banner (an empty list clears it)
+  /// and logs it for bug reports.
+  void _reportUnresolved(List<UnresolvedBinding> unresolved) {
+    if (unresolved.isNotEmpty) {
+      _log.warning(
+        '${unresolved.length} saved binding(s) not found in the waveform: '
+        '${unresolved.join(', ')}',
+      );
+    }
+    ref.read(unresolvedBindingsProvider.notifier).report(unresolved);
   }
 
   /// Flattens nested groups into a list of signal refs for eager loading.

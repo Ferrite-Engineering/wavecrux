@@ -33,11 +33,23 @@ class StageSignalBinding {
     required this.signalRef,
     this.bitIndex,
     this.bitWidth,
+    this.signalPath,
   });
 
-  /// The hierarchical signal reference, identical to the path used by
-  /// [WaveformDataSource].
+  /// The backend-local signal reference the active [WaveformDataSource]
+  /// queries with. Only meaningful against the file it came from; see
+  /// [signalPath]. Empty when the binding's saved path matched nothing in
+  /// the opened waveform.
   final String signalRef;
+
+  /// The canonical hierarchical path of the bound signal (e.g.
+  /// `"top.cpu.rvfi_valid"`), recorded when a session is saved.
+  ///
+  /// Session load and reload re-resolve [signalRef] from it, because refs are
+  /// renumbered whenever the dump changes. `null` for bindings made in the UI
+  /// since the last save and for sessions written before 1.1.1, which fall
+  /// back to [signalRef].
+  final String? signalPath;
 
   /// Optional bit index into the bound signal. `null` means "use the
   /// whole signal value at this slot"; a non-null value means "start
@@ -59,12 +71,15 @@ class StageSignalBinding {
     String? signalRef,
     int? bitIndex,
     int? bitWidth,
+    String? signalPath,
     bool clearBitIndex = false,
     bool clearBitWidth = false,
+    bool clearSignalPath = false,
   }) => StageSignalBinding(
     signalRef: signalRef ?? this.signalRef,
     bitIndex: clearBitIndex ? null : (bitIndex ?? this.bitIndex),
     bitWidth: clearBitWidth ? null : (bitWidth ?? this.bitWidth),
+    signalPath: clearSignalPath ? null : (signalPath ?? this.signalPath),
   );
 
   @override
@@ -73,11 +88,12 @@ class StageSignalBinding {
     return other is StageSignalBinding &&
         signalRef == other.signalRef &&
         bitIndex == other.bitIndex &&
-        bitWidth == other.bitWidth;
+        bitWidth == other.bitWidth &&
+        signalPath == other.signalPath;
   }
 
   @override
-  int get hashCode => Object.hash(signalRef, bitIndex, bitWidth);
+  int get hashCode => Object.hash(signalRef, bitIndex, bitWidth, signalPath);
 
   @override
   String toString() {

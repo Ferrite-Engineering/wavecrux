@@ -45,6 +45,7 @@ import 'package:wavecrux/features/viewer/providers/streaming_source_provider.dar
 import 'package:wavecrux/features/viewer/providers/switching_activity_provider.dart';
 import 'package:wavecrux/features/viewer/providers/time_providers.dart';
 import 'package:wavecrux/features/viewer/providers/translate_filter_provider.dart';
+import 'package:wavecrux/features/viewer/providers/unresolved_bindings_provider.dart';
 import 'package:wavecrux/features/viewer/providers/value_column_provider.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_data_revision_provider.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_identity_provider.dart';
@@ -277,6 +278,9 @@ List<Override> wavecruxTabOverrides(crux.TabId tabId) {
     traceAnnotationPersistenceProvider.overrideWith(
       TraceAnnotationPersistence.new,
     ),
+    // The decoder / Stage bindings this tab's last session restore could not
+    // find. Root-scoped, every tab would show (and dismiss) one tab's notice.
+    unresolvedBindingsProvider.overrideWith(UnresolvedBindingsNotifier.new),
 
     // Protocol decoders and transaction view.
     activeDecodersProvider.overrideWith(ActiveDecodersNotifier.new),

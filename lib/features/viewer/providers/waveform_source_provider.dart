@@ -23,6 +23,7 @@ import 'package:wavecrux/features/viewer/providers/process_filter_provider.dart'
 import 'package:wavecrux/features/viewer/providers/signal_group_providers.dart';
 import 'package:wavecrux/features/viewer/providers/switching_activity_provider.dart';
 import 'package:wavecrux/features/viewer/providers/translate_filter_provider.dart';
+import 'package:wavecrux/features/viewer/providers/unresolved_bindings_provider.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_identity_provider.dart';
 import 'package:wavecrux/features/viewer/providers/x_trace_provider.dart';
 import 'package:wavecrux/services/collaboration/waveform_content_hash.dart';
@@ -211,6 +212,8 @@ class WaveformSourceNotifier extends _$WaveformSourceNotifier {
     // previous file's namespace and become invalid the moment a new
     // file is loaded. Reset alongside the other viewer state.
     ref.read(stageWorkspaceProvider.notifier).clear();
+    // A binding notice describes the file being replaced.
+    ref.read(unresolvedBindingsProvider.notifier).clear();
 
     _activeSource?.close();
     _activeSource = null;
@@ -395,6 +398,8 @@ class WaveformSourceNotifier extends _$WaveformSourceNotifier {
     ref.read(fsmProvider.notifier).clearFsm();
     ref.read(fsmAnnotationProvider.notifier).clearAll();
     ref.read(stageWorkspaceProvider.notifier).clear();
+    // A binding notice describes the file being replaced.
+    ref.read(unresolvedBindingsProvider.notifier).clear();
 
     _activeSource?.close();
     _activeSource = null;
@@ -600,6 +605,8 @@ class WaveformSourceNotifier extends _$WaveformSourceNotifier {
     ref.read(fsmProvider.notifier).clearFsm();
     ref.read(fsmAnnotationProvider.notifier).clearAll();
     ref.read(stageWorkspaceProvider.notifier).clear();
+    // A binding notice describes the file being replaced.
+    ref.read(unresolvedBindingsProvider.notifier).clear();
 
     _activeSource?.close();
     if (_accessingPath != null) {
@@ -645,6 +652,8 @@ class WaveformSourceNotifier extends _$WaveformSourceNotifier {
     ref.read(fsmProvider.notifier).clearFsm();
     ref.read(fsmAnnotationProvider.notifier).clearAll();
     ref.read(stageWorkspaceProvider.notifier).clear();
+    // A binding notice describes the file being replaced.
+    ref.read(unresolvedBindingsProvider.notifier).clear();
 
     _activeSource?.close();
     _activeSource = null;

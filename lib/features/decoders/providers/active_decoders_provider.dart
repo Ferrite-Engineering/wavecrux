@@ -380,6 +380,33 @@ class ActiveDecodersNotifier extends _$ActiveDecodersNotifier {
     );
   }
 
+  /// Replaces every decoder's config, held decoders included, with
+  /// [transform]'s result in one state assignment. Ids, instance numbers and
+  /// order are unchanged and transactions are kept; the caller re-runs
+  /// [decodeAll] if the bindings moved.
+  ///
+  /// The reload seam for binding paths: `SessionNotifier.reloadCurrentFile`
+  /// records each binding's hierarchical path against the old file, reopens,
+  /// then re-points the refs at the new file. Calls [transform] once per
+  /// active decoder, in [state] order, then once per held decoder.
+  void mapConfigs(
+    DecoderConfig Function(String owner, DecoderConfig config) transform,
+  ) {
+    final next = [
+      for (final d in state)
+        d.copyWith(
+          config: transform('${d.decoderId} #${d.instanceNumber}', d.config),
+        ),
+    ];
+    _unavailable = List.unmodifiable([
+      for (final p in _unavailable)
+        p.copyWith(
+          config: transform('${p.decoderId} #${p.instanceNumber}', p.config),
+        ),
+    ]);
+    state = next;
+  }
+
   /// Replaces the [DecoderConfig] for the decoder instance identified by [id]
   /// without changing its [ActiveDecoder.instanceNumber] or position.
   void updateConfig(String id, DecoderConfig config) {

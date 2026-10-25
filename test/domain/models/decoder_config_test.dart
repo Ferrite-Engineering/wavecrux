@@ -155,4 +155,73 @@ void main() {
       expect(decoded.parameters['mode'], 'mode0');
     });
   });
+
+  group('DecoderConfig signalPaths (#54)', () {
+    const config = DecoderConfig(
+      signalBindings: {'clk': '28', 'tlp_data': '1404'},
+      signalPaths: {'clk': 'top.clk', 'tlp_data': 'top.pcie.tlp_data'},
+    );
+
+    test('defaults to empty', () {
+      expect(const DecoderConfig(signalBindings: {}).signalPaths, isEmpty);
+    });
+
+    test('toJson writes bindingPaths beside the plain bindings map', () {
+      final json = config.toJson();
+      // The ref map keeps its old shape, so a build that predates paths still
+      // reads the bindings.
+      expect(json['bindings'], {'clk': '28', 'tlp_data': '1404'});
+      expect(json['bindingPaths'], {
+        'clk': 'top.clk',
+        'tlp_data': 'top.pcie.tlp_data',
+      });
+    });
+
+    test('toJson omits bindingPaths when empty', () {
+      const plain = DecoderConfig(signalBindings: {'clk': '28'});
+      expect(plain.toJson().containsKey('bindingPaths'), isFalse);
+    });
+
+    test('JSON round-trip preserves the paths', () {
+      expect(DecoderConfig.fromJson(config.toJson()), config);
+    });
+
+    test('a pre-1.1.1 config (no bindingPaths) reads with empty paths', () {
+      final decoded = DecoderConfig.fromJson(const <String, Object?>{
+        'bindings': <String, Object?>{'clk': '28'},
+      });
+      expect(decoded.signalBindings, {'clk': '28'});
+      expect(decoded.signalPaths, isEmpty);
+    });
+
+    test('non-string path values are dropped', () {
+      final decoded = DecoderConfig.fromJson(const <String, Object?>{
+        'bindings': <String, Object?>{'clk': '28'},
+        'bindingPaths': <String, Object?>{'clk': 5},
+      });
+      expect(decoded.signalPaths, isEmpty);
+    });
+
+    test('paths take part in equality and hashCode', () {
+      const other = DecoderConfig(
+        signalBindings: {'clk': '28', 'tlp_data': '1404'},
+      );
+      expect(config == other, isFalse);
+      expect(
+        config.copyWith(signalPaths: const {}),
+        other,
+      );
+      expect(
+        config.copyWith(signalPaths: const {}).hashCode,
+        other.hashCode,
+      );
+    });
+
+    test('copyWith keeps paths unless replaced', () {
+      expect(
+        config.copyWith(parameters: const {'x': 1}).signalPaths,
+        config.signalPaths,
+      );
+    });
+  });
 }
