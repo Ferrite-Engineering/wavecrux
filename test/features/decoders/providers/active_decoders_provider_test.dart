@@ -9,6 +9,7 @@ import 'package:wavecrux/domain/interfaces/waveform_data_source.dart';
 import 'package:wavecrux/domain/models/decoded_transaction.dart';
 import 'package:wavecrux/domain/models/decoder_config.dart';
 import 'package:wavecrux/domain/models/decoder_definition.dart';
+import 'package:wavecrux/domain/models/persisted_decoder.dart';
 import 'package:wavecrux/domain/models/signal_binding.dart';
 import 'package:wavecrux/domain/models/signal_change.dart';
 import 'package:wavecrux/domain/models/timescale.dart';
@@ -61,6 +62,46 @@ const _spiConfig = DecoderConfig(
 void main() {
   setUp(DecoderRegistry.instance.clear);
   tearDown(DecoderRegistry.instance.clear);
+
+  group('ActiveDecodersNotifier — mapConfigs (#54)', () {
+    test('rewrites every config in place, held decoders included', () {
+      DecoderRegistry.instance.register(
+        SpiDecoder.decoderDefinition,
+        SpiDecoder.new,
+      );
+      final c = _makeContainer();
+      final notifier = c.read(activeDecodersProvider.notifier)
+        ..restoreDecoders(const [
+          PersistedDecoder(
+            decoderId: 'spi',
+            instanceNumber: 2,
+            config: _spiConfig,
+          ),
+          PersistedDecoder(
+            decoderId: 'not_in_this_build',
+            instanceNumber: 1,
+            config: _spiConfig,
+          ),
+        ]);
+      final before = c.read(activeDecodersProvider).single;
+
+      final owners = <String>[];
+      notifier.mapConfigs((owner, config) {
+        owners.add(owner);
+        return config.copyWith(signalPaths: const {'sclk': 'top.sclk'});
+      });
+
+      final after = c.read(activeDecodersProvider).single;
+      expect(after.id, before.id);
+      expect(after.instanceNumber, 2);
+      expect(after.config.signalPaths, {'sclk': 'top.sclk'});
+      expect(
+        notifier.heldDecoders.single.config.signalPaths,
+        {'sclk': 'top.sclk'},
+      );
+      expect(owners, ['spi #2', 'not_in_this_build #1']);
+    });
+  });
 
   group('ActiveDecodersNotifier — initial state', () {
     test('starts empty', () {

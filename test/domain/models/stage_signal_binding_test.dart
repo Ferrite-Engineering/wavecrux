@@ -136,4 +136,34 @@ void main() {
       });
     });
   });
+
+  group('signalPath (#54)', () {
+    const bound = StageSignalBinding(
+      signalRef: '7',
+      bitIndex: 2,
+      signalPath: 'top.cpu.rvfi_valid',
+    );
+
+    test('defaults to null', () {
+      expect(const StageSignalBinding(signalRef: '7').signalPath, isNull);
+    });
+
+    test('takes part in equality and hashCode', () {
+      const same = StageSignalBinding(
+        signalRef: '7',
+        bitIndex: 2,
+        signalPath: 'top.cpu.rvfi_valid',
+      );
+      const noPath = StageSignalBinding(signalRef: '7', bitIndex: 2);
+      expect(bound, same);
+      expect(bound.hashCode, same.hashCode);
+      expect(bound == noPath, isFalse);
+    });
+
+    test('copyWith keeps, replaces or clears the path', () {
+      expect(bound.copyWith(signalRef: '9').signalPath, 'top.cpu.rvfi_valid');
+      expect(bound.copyWith(signalPath: 'top.x').signalPath, 'top.x');
+      expect(bound.copyWith(clearSignalPath: true).signalPath, isNull);
+    });
+  });
 }

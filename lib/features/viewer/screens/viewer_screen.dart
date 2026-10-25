@@ -122,6 +122,7 @@ import 'package:wavecrux/features/viewer/widgets/phone_signal_tree_drawer.dart';
 import 'package:wavecrux/features/viewer/widgets/side_docks.dart';
 import 'package:wavecrux/features/viewer/widgets/signal_removal_feedback.dart';
 import 'package:wavecrux/features/viewer/widgets/status_bar.dart';
+import 'package:wavecrux/features/viewer/widgets/unresolved_bindings_banner.dart';
 import 'package:wavecrux/features/viewer/widgets/viewer_toolbar.dart';
 import 'package:wavecrux/features/viewer/widgets/waveform_view_center.dart';
 import 'package:wavecrux/features/workspace/commands/export_tab_command.dart';
@@ -981,6 +982,10 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
             // no fresh-conversion event is pending, so it costs nothing on
             // native-format opens.
             const LegacyFormatBanner(),
+            // Saved decoder / Stage bindings the last session restore or
+            // reload of this tab could not find in the waveform. Same
+            // self-shrinking contract: nothing is drawn unless one was missing.
+            const UnresolvedBindingsBanner(),
             // The one unsolicited capability notice a
             // session is allowed, raised on a MEASURED slow parse. Same
             // in-flow, self-shrinking contract as the banner above it — it

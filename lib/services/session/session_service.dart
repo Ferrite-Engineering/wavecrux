@@ -68,7 +68,7 @@ const _kCurrentVersion = 4;
 ///   "stage":   { "activePanelId": "stagePanel_0", "panels": [ ... ] },
 ///   "activeTheme": "wavecrux-dark",
 ///   "decoders": [
-///     { "decoderId": "spi", "instanceNumber": 1, "config": { "bindings": { ... }, "parameters": { ... } } }
+///     { "decoderId": "spi", "instanceNumber": 1, "config": { "bindings": { ... }, "bindingPaths": { ... }, "parameters": { ... } } }
 ///   ],
 ///   "extensions": { "pro.sva": { "logPath": "/abs/run.log" }, "pro.debug_advisor": [ ... ] }
 /// }
@@ -397,6 +397,10 @@ class SessionService {
       for (final e in instance.signalBindings.entries)
         e.key: {
           'ref': e.value.signalRef,
+          // Hierarchical path: what load and reload re-resolve `ref` from,
+          // since refs change whenever the dump does. Omitted when unknown
+          // so a binding with no recorded path round-trips byte-stable.
+          if (e.value.signalPath != null) 'path': e.value.signalPath,
           if (e.value.bitIndex != null) 'bit': e.value.bitIndex,
           // Slice width — only emitted for multi-bit slice bindings
           // (e.g. DE10-Nano `adc_ch[95:0]` 96-bit bus → 8 ADC slots
@@ -679,6 +683,10 @@ class SessionService {
                 // Older sessions omit the field entirely; that's the
                 // single-bit / whole-signal case.
                 bitWidth: (e.value as Map<String, dynamic>)['bitWidth'] as int?,
+                // Absent in sessions written before 1.1.1; restore then
+                // falls back to `ref`.
+                signalPath:
+                    (e.value as Map<String, dynamic>)['path'] as String?,
               ),
       },
       configuration: Map<String, Object?>.from(configRaw),

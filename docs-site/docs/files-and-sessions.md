@@ -142,6 +142,8 @@ When the waveform is in the session file's folder or below it, the session store
 
 A session can name a decoder the build you open it in cannot load: a Pro decoder opened in the Open Core viewer, or a decoder from a plugin that is missing or failed to load. WaveCrux keeps it in the session and writes it back unchanged when you save. From 1.1 it also appears in the signal list, below the other decoders, under its id with **Not available in this build**; its lane stays empty. Remove it there (the close button, or the right-click or long-press menu) if you no longer want it in the session.
 
+Decoder and Stage bindings are saved with the hierarchical path of each bound signal (from 1.1.1). When the dump is regenerated, opening the session or reloading the waveform binds each one to the signal at that path again, even if the signal moved within the file. A binding whose signal is no longer in the waveform is left empty and a banner above the waveform lists the missing paths; the binding stays in the session and binds again once the signal is back. Sessions saved by earlier versions still open, and their bindings gain paths the next time you save.
+
 !!! note "In the browser"
 
     A browser cannot hand WaveCrux back a path to a file it saved, so the browser build leaves out the commands that work with one: **Save Session**, **Save Session As**, the workspace commands (**New Workspace**, **Save Workspace As**, **Export Tab as Session…**) and **Generate Test VCD**. Use a desktop build for those. **Export Waveform…**, **Share Annotated Waveform…** and the other exports still work there — the file downloads under a default name (for example `export.vcd` or `waveform.png`) instead of opening a save dialog.

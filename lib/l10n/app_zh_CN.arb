@@ -2487,6 +2487,32 @@
       }
     }
   },
+  "unresolvedBindingsBannerMessage": "{count, plural, =1{此波形中找不到 1 个已保存的解码器或 Stage 绑定：{paths}} other{此波形中找不到 {count} 个已保存的解码器或 Stage 绑定：{paths}}}",
+  "@unresolvedBindingsBannerMessage": {
+    "description": "Banner above the waveform after a session is opened or the waveform is reloaded, when decoder or Stage panel signal bindings saved in the session name hierarchical signal paths that the waveform no longer contains. count is how many bindings; paths is a comma-separated list of the missing paths, possibly ending with the unresolvedBindingsBannerMore text.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "paths": {
+        "type": "String",
+        "example": "top.cpu.rvfi_valid, top.pcie.tlp_data"
+      }
+    }
+  },
+  "unresolvedBindingsBannerMore": "{count, plural, =1{另有 1 个} other{另有 {count} 个}}",
+  "@unresolvedBindingsBannerMore": {
+    "description": "Ends the list of missing signal paths in the unresolved-bindings banner when it is too long to show in full. count is how many paths were left out.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "unresolvedBindingsBannerDismiss": "忽略",
+  "@unresolvedBindingsBannerDismiss": {
+    "description": "Button on the unresolved-bindings banner that hides it for this tab"
+  },
   "decoderLaneConfigure": "配置…",
   "@decoderLaneConfigure": {
     "description": "Context menu item on a transaction overlay lane label that opens the config dialog for that decoder instance"
