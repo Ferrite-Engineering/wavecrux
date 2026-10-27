@@ -323,11 +323,15 @@ jobs:
       # carried 61 tests that only asserted `isNotNull` on an enum constant,
       # which cannot fail. They were deleted; each file keeps its real
       # assertions (value count, distinctness, equality). 11153 is the floor.
+      #
+      # Re-measured 2026-10-27 on this runner (run 40528411758, commit
+      # d1c836aa31d1e9574de47bd517f9b9e0e707e235): 11884 ran, 8 skipped. The
+      # floor is that less 0.5%.
       - name: Test count did not shrink
         if: runner.os == 'Linux'
         env:
           TEST_REPORT: build/test-results.json
-          MIN_TESTS: '11153'
+          MIN_TESTS: '11824'
           MAX_SKIPPED: '20'
         run: |
           python3 - "$TEST_REPORT" <<'PY'

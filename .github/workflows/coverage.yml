@@ -58,7 +58,10 @@ jobs:
       # 44574de39653681c4b931bd726c129100742de00, dispatched fresh since the
       # daily schedule's last run was 43 commits stale). Floor set a couple
       # of points below to absorb platform/measurement variance.
-      MIN_COVERAGE: '84'
+      #
+      # Re-measured 87.0% on this runner 2026-10-27 (run 40545145854, commit
+      # d1c836aa31d1e9574de47bd517f9b9e0e707e235): floor 85.
+      MIN_COVERAGE: '85'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
