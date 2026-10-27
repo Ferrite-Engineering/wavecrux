@@ -63,7 +63,8 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.ferriteengineering.wavecrux"
-    compileSdk = flutter.compileSdkVersion
+    // flutter_secure_storage 11 (through crux_secrets) needs compileSdk 37.
+    compileSdk = 37
 
     // NDK r28c — matches Flutter's default and the version used by scripts/build_android.sh
     // to cross-compile the wellen_ffi Rust library for Android targets.
