@@ -16,7 +16,6 @@
 /// ```text
 /// manifest.yaml          // required, root, parsed by parseStageWidgetManifest
 /// runtime/<asset>.riv    // required for runtime: rive (path declared in manifest)
-/// runtime/<source>       // required for runtime: painter (path declared in manifest)
 /// assets/icon.png        // optional, referenced by manifest.iconAssetPath
 /// LICENSE                // optional, not surfaced by the loader
 /// README.md              // optional, not surfaced by the loader
@@ -37,8 +36,8 @@ class WidgetBundleSpec {
   /// elsewhere are rejected.
   static const String manifestEntryName = 'manifest.yaml';
 
-  /// Directory inside the archive that holds runtime assets (the `.riv`
-  /// file for Rive bundles, or painter source files for painter bundles).
+  /// Directory inside the archive that holds runtime assets: the `.riv`
+  /// file. `rive` is the only runtime a manifest may declare.
   ///
   /// Manifests must declare `runtime_asset_path` as a path relative to
   /// the archive root; the loader enforces that the declared path lies

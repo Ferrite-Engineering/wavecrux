@@ -1,3 +1,6 @@
+# A manifest the parser must refuse: `runtime: painter` has no renderer, and
+# the authoring guide documents `rive` only. See
+# test/features/stage/runtime/sample_widget_acceptance_test.dart.
 id: com.wavecrux.test.sample_painter
 version: 1.0.0
 display_name: Sample Painter

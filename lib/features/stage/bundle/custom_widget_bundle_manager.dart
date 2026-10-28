@@ -520,9 +520,8 @@ class CustomWidgetBundleManager extends ChangeNotifier {
   /// `.riv` bytes are present. The closure captures the parsed manifest and
   /// the extracted bytes; the [CommunityRiveStageRenderer] decodes them,
   /// resolves the default state machine, and drives its inputs from the
-  /// manifest bindings. Painter-runtime bundles register no renderer (the
-  /// SDK has no community painter runtime); their tile falls back to the
-  /// description text via the registered definition.
+  /// manifest bindings. The manifest parser refuses any other runtime (no
+  /// renderer exists for `painter`), so the guard below is defensive.
   void _registerRendererForBundle(LoadedWidgetBundle bundle) {
     final manifest = bundle.manifest;
     if (manifest.runtime != ManifestRuntime.rive) return;

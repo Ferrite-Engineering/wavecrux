@@ -94,7 +94,7 @@ The fields:
 | `version` | A semantic version string. |
 | `display_name` | Localized labels. `en` is required; `zh`, `zh_CN`, `ja`, and `ko` are optional. |
 | `category` | One of `primitive`, `peripheral`, `instrument`, `board`, `protocol`, or `custom`. |
-| `runtime` | `rive` for an animated widget. |
+| `runtime` | `rive`, the only runtime. Any other value is a validation error. |
 | `runtime_asset_path` | Bundle-relative path to the `.riv`; must be under `runtime/`. |
 | `required_api_version` | The SDK version the widget targets; currently `1`. A bundle outside the supported range is refused. |
 | `icon_asset_path` | Optional bundle-relative path to an icon. |
@@ -111,7 +111,7 @@ Each `signal_bindings` entry has:
 | `bit_width` | Optional `{min, max}` for vectors. |
 | `value_range` | Optional `{min, max}`. |
 | `required` | Boolean. While a required binding is unconnected, the widget shows a "Bind … to render this widget" placeholder instead of the artboard. |
-| `direction` | `input`. |
+| `direction` | `input`, the only direction: Stage widgets display signals and never drive them. Any other value is a validation error. |
 | `default_policy` | Behavior when unbound: `hold_last` (default), `treat_as_zero`, or `treat_as_x`. |
 
 ## What your Rive file must contain { #rive-file }

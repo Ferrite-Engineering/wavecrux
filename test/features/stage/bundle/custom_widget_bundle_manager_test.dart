@@ -96,7 +96,7 @@ void main() {
     });
 
     test(
-      'painter-runtime bundle registers a definition but no renderer',
+      'a painter-runtime bundle is refused: no renderer exists for it',
       () async {
         final bundlePath = p.join(_tempDir.path, 'painter.wcrux-widget');
         await writeSampleBundle(
@@ -120,9 +120,14 @@ void main() {
         );
         addTearDown(manager.dispose);
 
-        await manager.loadBundle(bundlePath);
-        expect(definitions, contains('com.acme.painter'));
-        // No community painter runtime — tile falls back to description text.
+        final error = await manager.loadBundle(bundlePath);
+        // It used to register a definition whose tile drew nothing. A
+        // runtime nothing renders is now a manifest error at load, naming
+        // the field, rather than a widget that silently does not work.
+        expect(error?.kind, WidgetBundleFailureKind.manifestInvalid);
+        expect(error?.diagnostic, contains('/runtime'));
+        expect(error?.diagnostic, contains('expected one of: rive'));
+        expect(definitions, isEmpty);
         expect(renderers, isEmpty);
       },
     );

@@ -137,8 +137,8 @@ id: com.acme.fsm
 version: "1.0.0"
 display_name: "FSM"
 category: instrument
-runtime: painter
-runtime_asset_path: code/painter.dart
+runtime: rive
+runtime_asset_path: runtime/fsm.riv
 required_api_version: 1
 signal_bindings:
   - name: state
@@ -732,6 +732,57 @@ $base    bit_width:
   });
 
   // ── manifest enum wireName / fromWire coverage ────────────────────────────
+
+  group('values the guide does not document are rejected', () {
+    // The authoring guide documents `direction: input` and `runtime: rive`
+    // only. The parser used to accept `direction: output` (nothing writes a
+    // value back to a signal) and `runtime: painter` (no renderer is
+    // registered for it), so a bundle could declare either, get no error,
+    // and get a widget that silently did not behave as written.
+    String manifest({String runtime = 'rive', String? direction}) =>
+        """
+id: com.acme.probe
+version: "1.0.0"
+display_name: "Probe"
+category: instrument
+runtime: $runtime
+runtime_asset_path: runtime/probe.riv
+required_api_version: 1
+signal_bindings:
+  - name: value
+    description: The bound value
+    signal_type: scalar
+${direction == null ? '' : '    direction: $direction'}
+""";
+
+    List<(String, String)> errorsOf(String yaml) {
+      try {
+        parseStageWidgetManifest(yaml);
+      } on ManifestValidationException catch (e) {
+        return [for (final x in e.errors) (x.path, x.message)];
+      }
+      return const [];
+    }
+
+    test('runtime: painter names the field and the allowed values', () {
+      expect(errorsOf(manifest(runtime: 'painter')), [
+        ('/runtime', 'Invalid value "painter"; expected one of: rive'),
+      ]);
+    });
+
+    test('direction: output names the field and the allowed values', () {
+      expect(errorsOf(manifest(direction: 'output')), [
+        (
+          '/signal_bindings/0/direction',
+          'Invalid value "output"; expected one of: input',
+        ),
+      ]);
+    });
+
+    test('direction: input and runtime: rive still parse', () {
+      expect(errorsOf(manifest(direction: 'input')), isEmpty);
+    });
+  });
 
   group('BindingDirection', () {
     test('output wireName is "output"', () {

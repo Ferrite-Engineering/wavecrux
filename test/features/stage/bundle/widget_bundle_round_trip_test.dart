@@ -66,8 +66,8 @@ StageWidgetManifest _localeManifest() => StageWidgetManifest(
     'ko': '게이지 클러스터',
   }),
   category: StageWidgetCategory.instrument,
-  runtime: ManifestRuntime.painter,
-  runtimeAssetPath: 'runtime/gauge_painter',
+  runtime: ManifestRuntime.rive,
+  runtimeAssetPath: 'runtime/gauge_cluster.riv',
   requiredApiVersion: 1,
 );
 

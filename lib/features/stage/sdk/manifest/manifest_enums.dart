@@ -10,10 +10,14 @@
 /// parser uses when validating manifest input.
 library;
 
-/// Direction of a manifest signal binding. Almost always [input] for
-/// rendering widgets; [output] is reserved for future bidirectional
-/// widgets (e.g. a touch overlay that injects events back into a
-/// streaming VCD).
+/// Direction of a manifest signal binding.
+///
+/// Stage widgets are display-only, so [input] is the only direction a
+/// manifest may declare: the parser accepts exactly
+/// [kBindingDirectionsAccepted] and rejects `direction: output` like any
+/// other unknown value. [output] is kept in the model for a future
+/// bidirectional widget (e.g. a touch overlay that injects events back into
+/// a streaming VCD); nothing in the runtime writes a value back yet.
 enum BindingDirection {
   input,
   output;
@@ -101,11 +105,17 @@ enum DefaultPolicy {
 
 /// Animation runtime declared by a manifest. Picked at load time to
 /// route into the matching renderer adapter.
+///
+/// The parser accepts exactly [kManifestRuntimesAccepted], which is [rive]
+/// alone: no renderer is registered for [painter], so a bundle declaring it
+/// would load and draw nothing. [painter] is kept in the model for a future
+/// painter runtime and is rejected by the parser until one exists.
 enum ManifestRuntime {
   /// Rive (.riv) animation bundle.
   rive,
 
-  /// Custom Flutter `CustomPainter` registered by the bundle code.
+  /// Custom Flutter `CustomPainter` registered by the bundle code. Not
+  /// accepted from a manifest yet; see [kManifestRuntimesAccepted].
   painter;
 
   String get wireName => name;
@@ -117,3 +127,13 @@ enum ManifestRuntime {
     return null;
   }
 }
+
+/// The binding directions a manifest may declare. Stage widgets are
+/// display-only; see [BindingDirection].
+const List<BindingDirection> kBindingDirectionsAccepted = [
+  BindingDirection.input,
+];
+
+/// The runtimes a manifest may declare: those a renderer is registered for.
+/// See [ManifestRuntime].
+const List<ManifestRuntime> kManifestRuntimesAccepted = [ManifestRuntime.rive];

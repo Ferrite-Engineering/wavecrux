@@ -139,7 +139,7 @@ class _ManifestParser {
     final runtime = _parseEnum<ManifestRuntime>(
       root.nodes['runtime'],
       '/runtime',
-      ManifestRuntime.values,
+      kManifestRuntimesAccepted,
       (v) => v.wireName,
       required: true,
     );
@@ -420,7 +420,7 @@ class _ManifestParser {
         _parseEnum<BindingDirection>(
           map.nodes['direction'],
           '$path/direction',
-          BindingDirection.values,
+          kBindingDirectionsAccepted,
           (v) => v.wireName,
           required: false,
         ) ??

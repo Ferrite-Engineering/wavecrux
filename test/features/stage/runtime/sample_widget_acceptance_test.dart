@@ -12,6 +12,7 @@ import 'package:wavecrux/domain/models/signal_binding.dart';
 import 'package:wavecrux/features/stage/runtime/rive_state_machine_host.dart';
 import 'package:wavecrux/features/stage/runtime/stage_widget_animation_controller.dart';
 import 'package:wavecrux/features/stage/sdk/manifest/manifest_enums.dart';
+import 'package:wavecrux/features/stage/sdk/manifest/manifest_validation_error.dart';
 import 'package:wavecrux/features/stage/sdk/manifest/manifest_yaml_parser.dart';
 import 'package:wavecrux/features/stage/sdk/normalization/normalized_value.dart';
 
@@ -123,12 +124,24 @@ void main() {
       },
     );
 
-    test('sample_painter manifest parses with runtime: painter', () async {
+    test('sample_painter manifest is rejected: runtime: painter has no '
+        'renderer', () async {
+      // The authoring guide documents `rive` as the only runtime, and no
+      // renderer is registered for `painter`: a bundle declaring it used to
+      // load and draw nothing, with no error. It is now a validation error
+      // naming the field and the allowed values, as any unknown value is.
       const yamlPath = 'test/fixtures/stage/sample_painter/manifest.yaml';
       final source = await File(yamlPath).readAsString();
-      final manifest = parseStageWidgetManifest(source);
-      expect(manifest.runtime, ManifestRuntime.painter);
-      expect(manifest.id, 'com.wavecrux.test.sample_painter');
+      expect(
+        () => parseStageWidgetManifest(source),
+        throwsA(
+          isA<ManifestValidationException>().having(
+            (e) => e.errors.map((x) => (x.path, x.message)),
+            'errors',
+            [('/runtime', 'Invalid value "painter"; expected one of: rive')],
+          ),
+        ),
+      );
     });
 
     test('sample_widget controller routes synthetic cursor motion through '
