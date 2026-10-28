@@ -41,11 +41,18 @@ class IncomingLinkService {
   /// Takes the links other launches forward to this running instance
   /// (Windows and Linux). Call once, from `bootstrap`, with the stream the
   /// single-instance claim provides; a second call replaces the first.
-  // A method, not a setter: nothing reads the stream back, so a write-only
-  // setter would trip `avoid_setters_without_getters` instead.
-  // ignore: use_setters_to_change_properties
+  ///
+  /// The claim's stream is single-subscription, but [incomingLinks] can be
+  /// listened to more than once in one process: the app's state listens in
+  /// `initState`, and that state is built again when the app is mounted
+  /// again (a second `bootstrap` in the same process, which every
+  /// integration-test file with more than one test does, finds the
+  /// single-instance lock already held here and so attaches nothing new).
+  /// The stream is shared so each of those listens succeeds. The source is
+  /// not listened to until the first listen, so a link that arrives before
+  /// it is still held, not lost.
   static void attachForwardedLinks(Stream<String> links) {
-    _forwarded = links;
+    _forwarded = links.isBroadcast ? links : links.asBroadcastStream();
   }
 
   /// Drops what [attachForwardedLinks] took. For tests.

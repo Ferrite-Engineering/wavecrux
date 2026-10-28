@@ -30,6 +30,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:crux_eula/crux_eula.dart';
+import 'package:crux_ide_layout/crux_ide_layout.dart' show CruxDialog;
 import 'package:crux_telemetry/crux_telemetry.dart'
     show TelemetryConsentState, kTelemetryConsentKey;
 import 'package:crux_workspace/crux_workspace.dart' show WorkspaceService;
@@ -438,15 +439,20 @@ Future<void> loadFixtureVcdAbsolute(
 /// Opens the decoder picker and activates the decoder named [decoderDisplayName].
 ///
 /// The flow handled by this helper:
-/// 1. Tap the "Add Protocol Decoder" toolbar button to open [DecoderPickerDialog].
+/// 1. Tap the "Add Protocol Decoder" toolbar button to open [DecoderPickerDialog]
+///    (a [CruxDialog]).
 /// 2. Expand all collapsed [ExpansionTile] category sections so every decoder
 ///    name is visible.
-/// 3. Tap the decoder's list tile.
-/// 4. (When [runAutoBind] is true, which is the default) In the config dialog,
+/// 3. Tap the decoder's list tile. The picker closes and the tab's Inspector
+///    opens on a new decoder of that type, held as a draft until its Add.
+/// 4. Run [configure], when given, against the Inspector draft (for example to
+///    set a parameter before binding).
+/// 5. (When [runAutoBind] is true, which is the default) In the Inspector,
 ///    tap "Auto-bind signals" to open the auto-bind preview, then tap
 ///    "Apply all" to apply the best-guess signal bindings.
-/// 5. Tap "Add Decoder" to commit the decoder and trigger the decode pass.
-/// 6. Poll (up to 10 s, returning early) until the newly-added decoder's
+/// 6. Tap the Inspector's "Add Decoder" to commit the decoder and trigger the
+///    decode pass.
+/// 7. Poll (up to 60 s, returning early) until the newly-added decoder's
 ///    transactions have populated — `decodeAll()` runs unawaited off the
 ///    "Add Decoder" tap and awaits FFI signal loads, so the transactions
 ///    appear only after the background isolate returns. Keying the wait on the
@@ -467,7 +473,45 @@ Future<void> activateDecoder(
   WidgetTester tester,
   String decoderDisplayName, {
   bool runAutoBind = true,
+  Future<void> Function(WidgetTester tester)? configure,
 }) async {
+  await pickDecoder(tester, decoderDisplayName);
+
+  if (configure != null) await configure(tester);
+
+  if (runAutoBind) {
+    // The Inspector now shows the new decoder's draft. Trigger auto-bind.
+    await tapInInspector(tester, find.text('Auto-bind signals'));
+
+    // DecoderAutoBindPreviewDialog is now open. Apply all suggested bindings.
+    await tester.tap(find.text('Apply all'));
+    await tester.pumpAndSettle();
+  }
+
+  // Confirm: the Inspector's Add Decoder adds it and runs the decode pass.
+  await tapInInspector(tester, find.text('Add Decoder'), settle: false);
+  final container = activeTabContainer(tester);
+  await pumpUntil(
+    tester,
+    () {
+      final decoders = container.read(activeDecodersProvider);
+      return decoders.isNotEmpty && decoders.last.transactions.isNotEmpty;
+    },
+    // decodeAll() awaits FFI signal loads off the "Add Decoder" tap; the
+    // heavier captured fixtures can exceed the 10s default on slow CI.
+    timeout: const Duration(seconds: 60),
+  );
+  await tester.pumpAndSettle();
+}
+
+/// Opens the decoder picker and taps the decoder named [decoderDisplayName],
+/// which closes the picker and opens the tab's Inspector on a new decoder
+/// draft. Steps 1-3 of [activateDecoder], for tests that drive the Inspector
+/// themselves.
+Future<void> pickDecoder(
+  WidgetTester tester,
+  String decoderDisplayName,
+) async {
   // Tap the "Add Protocol Decoder" toolbar button. It is always present once
   // a file is loaded, regardless of whether signals have been added to the
   // viewer — this avoids any dependency on WaveformCanvas.waveformCanvasKey
@@ -476,11 +520,18 @@ Future<void> activateDecoder(
   await tester.pumpAndSettle();
 
   // Expand all collapsed category sections so the decoder tile is visible.
-  // Scope to the AlertDialog so that ExpansionTiles in the signal tree (which
-  // is alive in the widget tree behind the dialog overlay) are not counted or
-  // tapped. ensureVisible handles the case where expanded content scrolls a
-  // later tile just below the 520 dp SizedBox clip boundary.
-  final dialogFinder = find.byType(AlertDialog);
+  // Scope to the picker's CruxDialog so that ExpansionTiles in the signal
+  // tree (which is alive in the widget tree behind the dialog overlay) are
+  // not counted or tapped. ensureVisible handles the case where expanded
+  // content scrolls a later tile just below the 520 dp SizedBox clip
+  // boundary. The picker opens through showCruxDialog, which builds a
+  // CruxDialog (a Material Dialog), never an AlertDialog.
+  final dialogFinder = decoderPickerFinder();
+  expect(
+    dialogFinder,
+    findsOneWidget,
+    reason: 'the Add Protocol Decoder button must open the decoder picker',
+  );
   final tileCount = tester
       .widgetList(
         find.descendant(of: dialogFinder, matching: find.byType(ExpansionTile)),
@@ -513,31 +564,34 @@ Future<void> activateDecoder(
   await tester.pumpAndSettle();
   await tester.tap(decoderFinder);
   await tester.pumpAndSettle();
+}
 
-  if (runAutoBind) {
-    // The Inspector now shows the new decoder. Trigger auto-bind.
-    await tester.tap(find.text('Auto-bind signals'));
-    await tester.pumpAndSettle();
+/// The open decoder picker. It opens through `showCruxDialog`, so it is a
+/// [CruxDialog]; nothing else is open while a test picks a decoder.
+Finder decoderPickerFinder() => find.byType(CruxDialog);
 
-    // DecoderAutoBindPreviewDialog is now open. Apply all suggested bindings.
-    await tester.tap(find.text('Apply all'));
-    await tester.pumpAndSettle();
-  }
-
-  // Confirm: the Inspector's Add Decoder adds it and runs the decode pass.
-  await tester.tap(find.text('Add Decoder'));
-  final container = activeTabContainer(tester);
-  await pumpUntil(
-    tester,
-    () {
-      final decoders = container.read(activeDecodersProvider);
-      return decoders.isNotEmpty && decoders.last.transactions.isNotEmpty;
-    },
-    // decodeAll() awaits FFI signal loads off the "Add Decoder" tap; the
-    // heavier captured fixtures can exceed the 10s default on slow CI.
-    timeout: const Duration(seconds: 60),
+/// Scrolls [finder] into view in the Inspector and taps it. The Inspector's
+/// list can hold the Add bar below its fold on a short window. With [settle]
+/// false the tap is followed by a single pump, for a tap that starts work the
+/// caller polls for.
+Future<void> tapInInspector(
+  WidgetTester tester,
+  Finder finder, {
+  bool settle = true,
+}) async {
+  expect(
+    finder,
+    findsOneWidget,
+    reason: 'the Inspector must show the new decoder draft',
   );
+  await tester.ensureVisible(finder);
   await tester.pumpAndSettle();
+  await tester.tap(finder);
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+  }
 }
 
 /// Loads [fstRelativePath] and activates its decoder using the EXPLICIT signal

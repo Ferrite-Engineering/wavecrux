@@ -143,13 +143,14 @@ void main() {
             'sidecar still resolves',
       );
 
-      // ----- Localized missing-file snackbar -----
+      // ----- Localized missing-file toast -----
       //
       // The single-missing-file case uses the `workspaceRestoreDroppedSingle`
       // l10n key (per `_restoreFromWorkspace`). Pump until the MaterialApp's
       // `Localizations` delegate completes its async load (`L10N.delegate`
       // is a Future that resolves over one or more frames), then locate the
-      // SnackBar by the expected localized message text.
+      // toast (the shared Crux toast, keyed `cruxToast`, which replaced the
+      // SnackBar) by the expected localized message text.
       //
       // CRITICAL: `Localizations.of(context, T)` walks UP the widget tree
       // from `context` looking for a Localizations inherited widget. The
@@ -165,10 +166,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 50));
         final scaffolds = find.byType(Scaffold);
         if (scaffolds.evaluate().isEmpty) continue;
-        l10n = Localizations.of<L10N>(
-          tester.element(scaffolds.first),
-          L10N,
-        );
+        l10n = Localizations.of<L10N>(tester.element(scaffolds.first), L10N);
         if (l10n != null) break;
       }
       expect(
@@ -179,7 +177,7 @@ void main() {
       final expectedMessage = l10n!.workspaceRestoreDroppedSingle(missing);
       expect(
         find.descendant(
-          of: find.byType(SnackBar),
+          of: find.byKey(const ValueKey('cruxToast')),
           matching: find.text(expectedMessage),
         ),
         findsOneWidget,

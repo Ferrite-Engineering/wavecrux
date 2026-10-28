@@ -182,6 +182,31 @@ void main() {
     );
   });
 
+  test('incomingLinks can be listened to again after the first listener '
+      'goes, as a second mount of the app does', () async {
+    final primary = await _instance(dir).claim() as SingleInstancePrimary;
+    addTearDown(primary.close);
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+    IncomingLinkService.attachForwardedLinks(primary.links);
+
+    // The first app's state listens and is disposed.
+    final first = IncomingLinkService.incomingLinks.listen((_) {});
+    await first.cancel();
+
+    // The next app's state listens to the same stream: this threw "Stream
+    // has already been listened to" while the claim's single-subscription
+    // stream was handed out as it was.
+    final arrived = IncomingLinkService.incomingLinks.first;
+    final delivered = await claimSingleInstance(
+      desktopApp: kWaveCruxLinuxDesktopApp,
+      launchLinks: const [_link],
+      singleInstance: _instance(dir),
+    );
+
+    expect(delivered, isA<SingleInstanceDelivered>());
+    expect(await arrived.timeout(const Duration(seconds: 5)), _link);
+  });
+
   for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
     test('incomingLinks stays empty on $platform', () async {
       debugDefaultTargetPlatformOverride = platform;
