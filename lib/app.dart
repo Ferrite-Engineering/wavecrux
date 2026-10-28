@@ -4,6 +4,7 @@
 import 'dart:async' show StreamSubscription, unawaited;
 import 'dart:io' show File, Platform, stderr, stdout;
 
+import 'package:crux_a11y/crux_a11y.dart' show CruxRoutedContent;
 import 'package:crux_cxp_ui/crux_cxp_ui.dart' show cruxCxpRuntimeProvider;
 import 'package:crux_eula/crux_eula.dart';
 import 'package:crux_ide_layout/crux_ide_layout.dart' show CruxToasts;
@@ -2012,9 +2013,13 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
                                             // Settings.
                                             child: CruxPolicyLockScope(
                                               message: l10n.policyLockedNote,
-                                              child:
-                                                  child ??
-                                                  const SizedBox.shrink(),
+                                              // Its own semantics container,
+                                              // so a route's modal barrier
+                                              // does not hide the strips
+                                              // above from a screen reader.
+                                              child: CruxRoutedContent(
+                                                child: child,
+                                              ),
                                             ),
                                           ),
                                         ),
