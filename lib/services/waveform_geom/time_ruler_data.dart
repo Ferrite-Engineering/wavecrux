@@ -100,7 +100,9 @@ class TimeRulerData {
             x: x,
             time: t,
             isMajor: true,
-            label: formatter.format(t),
+            // Digits from the tick spacing, so zoomed-in labels never
+            // repeat (issue #32).
+            label: formatter.formatTick(t, interval: majorInterval),
           ),
         );
       }

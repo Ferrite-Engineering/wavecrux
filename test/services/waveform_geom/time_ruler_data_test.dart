@@ -40,6 +40,45 @@ void main() {
 
     // ── major ticks ───────────────────────────────────────────────────────────
 
+    // ── label digits follow the tick spacing (issue #32) ────────────────────
+
+    group('compute — zoomed-in labels never repeat', () {
+      const ps = Timescale(factor: 1, unit: TimescaleUnit.picoSeconds);
+
+      List<String> labels(int start, int end, double width) =>
+          TimeRulerData.compute(
+            TimeMapper.fitAll(
+              startTime: start,
+              endTime: end,
+              viewportWidth: width,
+            ),
+            width,
+            timescale: ps,
+          ).ticks.where((t) => t.isMajor).map((t) => t.label!).toList();
+
+      for (final (start, end, width) in const [
+        // The reported windows: 74.592 to 74.692 us, 225.315 to 225.605 us
+        // and 75.27 to 75.58 us, in ps ticks.
+        (74592000, 74692000, 1200.0),
+        (225315000, 225605000, 1200.0),
+        (75270000, 75580000, 700.0),
+        (75270000, 75580000, 1600.0),
+        // Deeper: a 30 ns window at 1.2 ms.
+        (1200000000, 1200030000, 1000.0),
+      ]) {
+        test('$start..$end ps over ${width.round()} px', () {
+          final got = labels(start, end, width);
+          expect(got.length, greaterThan(2));
+          expect(got.toSet().length, got.length, reason: '$got');
+        });
+      }
+
+      test('the labels carry the spacing digits', () {
+        final got = labels(74592000, 74692000, 1200);
+        expect(got, containsAll(<String>['74.60 µs', '74.62 µs']));
+      });
+    });
+
     group('compute — major ticks', () {
       test('produces roughly targetMajorTicks major ticks', () {
         final mapper = TimeMapper.fitAll(

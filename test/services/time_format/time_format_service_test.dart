@@ -286,4 +286,32 @@ void main() {
       });
     });
   });
+
+  group('formatTick', () {
+    const ns = TimeFormatService(
+      timescale: Timescale(factor: 1, unit: TimescaleUnit.nanoSeconds),
+    );
+
+    test('takes its decimals from the interval, trailing zeros kept', () {
+      expect(ns.formatTick(74600, interval: 20), '74.60 µs');
+      expect(ns.formatTick(74620, interval: 20), '74.62 µs');
+      expect(ns.formatTick(74600, interval: 100), '74.6 µs');
+      expect(ns.formatTick(74600, interval: 5), '74.600 µs');
+    });
+
+    test('an interval of a whole unit or more keeps the usual rule', () {
+      expect(ns.formatTick(1500, interval: 500), '1.5 µs');
+      expect(ns.formatTick(2000, interval: 1000), '2 µs');
+      expect(ns.formatTick(225000, interval: 5000), '225 µs');
+    });
+
+    test('zero, negatives and no timescale', () {
+      expect(ns.formatTick(0, interval: 20), '0 ns');
+      expect(ns.formatTick(-74620, interval: 20), '-74.62 µs');
+      expect(
+        const TimeFormatService().formatTick(42, interval: 2),
+        '42 ticks',
+      );
+    });
+  });
 }

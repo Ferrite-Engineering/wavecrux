@@ -6128,6 +6128,7 @@ Markers use two-key chords (GTKWave-style), advertised in the command palette as
 3. Verify ruler ticks align with the canvas's painted transitions (no visual drift).
 4. Tap the ruler at a point → primary cursor places there (same as canvas tap).
 5. On touch devices, verify the cursor triangles and marker flags meet the `MobileMetrics` size requirements (§22.4).
+6. **Zoomed-in labels never repeat (issue #32, from 1.2).** On a ps-timescale trace, zoom to a 100 ns window around 74.6 µs (by hand, or with WCP's `set_viewport_range`). Neighbouring major ticks read 74.60 µs, 74.62 µs, 74.64 µs and so on: the labels take their decimals from the tick spacing, every label of the ruler has the same number of decimals, and no two neighbours read the same. Repeat in a 700 px window at 75.27 to 75.58 µs.
 
 ### 18.4a Steps — the zoom limits (use a SHORT trace)
 
@@ -6198,6 +6199,7 @@ Transition navigation now requires a primary cursor (strict-cursor gate — it s
 | Marker actions gate on cursor (set) / markers (jump, remove) | **UNIT** (`test/core/shortcuts/action_descriptors_test.dart` — "context gating") |
 | Transition nav gates on a cursor (no t=0 fallback) | **WIDGET** (`test/features/viewer/widgets/viewer_toolbar_test.dart` — "transition buttons disabled with a file but no cursor") + **UNIT** (`action_descriptors_test.dart`) |
 | Remove marker via time-ruler right-click | **WIDGET** (`test/features/viewer/widgets/time_ruler_widget_test.dart`) |
+| Ruler labels take their decimals from the tick spacing; zoomed-in neighbours never repeat | **UNIT** (`test/services/waveform_geom/time_ruler_data_test.dart` — "compute — zoomed-in labels never repeat", the reported windows; `test/services/time_format/time_format_service_test.dart` — "formatTick") |
 | Time-ruler tick auto-scale across zoom | **WIDGET** (`test/features/viewer/widgets/time_ruler_widget_test.dart` + `test/services/time_format/`) |
 | Q/E next-prev transition | **UNIT** (the live `viewer_screen.dart` path calls `WaveformDataSource.nextTransition`/`prevTransition` directly — query covered by `wellen_provider_test.dart`; key binding by `test/core/shortcuts/shortcut_bindings_test.dart`) |
 | Jump-to-marker shortcuts | **WIDGET** (`cursor_providers_test.dart` + shortcut binding test) |
