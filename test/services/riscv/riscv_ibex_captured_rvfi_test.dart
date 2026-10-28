@@ -123,7 +123,7 @@ void main() {
       expect(detection.report.missing, isEmpty);
       expect(
         detection.bindings.foundChannels.length,
-        RvfiChannel.values.length,
+        RvfiChannel.standard.length,
       );
     });
 
@@ -135,8 +135,10 @@ void main() {
 
     test('detection is not fooled by the rvfi_ext_* siblings', () {
       // ibex_top also exposes rvfi_ext_mcycle, rvfi_ext_pre_mip, and friends.
-      // None of them are RVFI channels, and none must be bound to one.
-      for (final channel in RvfiChannel.values) {
+      // None of them are RVFI channels, and none must be bound to one. Ibex
+      // has no rvfi_dbg extension, so only the riscv-formal set binds.
+      expect(detection.bindings.ref(RvfiChannel.dbg), isNull);
+      for (final channel in RvfiChannel.standard) {
         final ref = detection.bindings.ref(channel);
         expect(ref, isNotNull, reason: '${channel.signalName} unbound');
       }
