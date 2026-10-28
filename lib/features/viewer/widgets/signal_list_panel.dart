@@ -39,11 +39,13 @@ import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.da
 import 'package:wavecrux/features/viewer/inspector_openers.dart';
 import 'package:wavecrux/features/viewer/providers/export_providers.dart';
 import 'package:wavecrux/features/viewer/providers/fsm_provider.dart';
+import 'package:wavecrux/features/viewer/providers/inspector_providers.dart';
 import 'package:wavecrux/features/viewer/providers/process_filter_provider.dart';
 import 'package:wavecrux/features/viewer/providers/translate_filter_provider.dart';
 import 'package:wavecrux/features/viewer/providers/translator_expansion_provider.dart';
 import 'package:wavecrux/features/viewer/providers/value_column_provider.dart';
 import 'package:wavecrux/features/viewer/providers/x_trace_provider.dart';
+import 'package:wavecrux/features/viewer/widgets/display_format_menu.dart';
 import 'package:wavecrux/features/viewer/widgets/fsm_panel.dart';
 import 'package:wavecrux/features/viewer/widgets/signal_color_picker_dialog.dart';
 import 'package:wavecrux/features/viewer/widgets/signal_group_header.dart';
@@ -742,6 +744,8 @@ sealed class _SignalMenuResult {
 enum _RegularAction {
   changeColor,
   toggleRenderAsAnalog,
+  displayFormat,
+  properties,
   copyValue,
   copyPath,
   assignFilter,
@@ -986,6 +990,27 @@ class _SignalRowState extends ConsumerState<_SignalRow> {
           ],
         ),
       ),
+      // ── Display format and Properties ──
+      // The same entries as the value column's menu: the radix is what a
+      // user arriving from GTKWave looks for on the signal name, and
+      // Properties opens this row in the Inspector.
+      if (widget.entry.signalRef != null) ...[
+        // 32 dp, as in the value column: the menu does not scroll, and it
+        // must still fit a minimum-height window.
+        PopupMenuItem<_SignalMenuResult>(
+          value: const _SignalMenuAction(_RegularAction.displayFormat),
+          height: 32,
+          child: displayFormatMenuEntryLabel(context, widget.entry.format),
+        ),
+        PopupMenuItem<_SignalMenuResult>(
+          value: const _SignalMenuAction(_RegularAction.properties),
+          height: 32,
+          child: Text(
+            l10n.valueColumnProperties,
+            style: const TextStyle(fontSize: 13),
+          ),
+        ),
+      ],
       // ── Inline group targets ──────────────────────────────────────────────
       if (widget.availableGroups.isNotEmpty) ...[
         const PopupMenuDivider(),
@@ -1162,12 +1187,13 @@ class _SignalRowState extends ConsumerState<_SignalRow> {
       ],
     ];
 
+    final menuPosition = RelativeRect.fromRect(
+      Rect.fromLTWH(position.dx, position.dy, 0, 0),
+      Offset.zero & overlay.size,
+    );
     final result = await showMenu<_SignalMenuResult>(
       context: context,
-      position: RelativeRect.fromRect(
-        Rect.fromLTWH(position.dx, position.dy, 0, 0),
-        Offset.zero & overlay.size,
-      ),
+      position: menuPosition,
       items: items,
     );
     if (!context.mounted) return;
@@ -1175,6 +1201,25 @@ class _SignalRowState extends ConsumerState<_SignalRow> {
     switch (result) {
       case _SignalMenuAction(:final action):
         switch (action) {
+          case _RegularAction.displayFormat:
+            // First in the switch: no earlier case's await stands between the
+            // menu's mounted check and these reads of `ref`. The product
+            // menu has closed; the format menu opens where it did.
+            await showDisplayFormatMenu(
+              context,
+              ref,
+              entryId: widget.entry.id,
+              current: widget.entry.format,
+              position: menuPosition,
+            );
+          case _RegularAction.properties:
+            // The row's properties, on THIS row: the format lives on the
+            // row, and one path can be on several.
+            openWaveCruxInspector(
+              context,
+              ProviderScope.containerOf(context, listen: false),
+              InspectedSignal(widget.entry.id),
+            );
           case _RegularAction.changeColor:
             final picked = await SignalColorPickerDialog.show(
               context,

@@ -4,7 +4,6 @@
 import 'dart:async';
 
 import 'package:crux_ide_layout/crux_ide_layout.dart' show showCruxInfoSnack;
-import 'package:crux_telemetry/crux_telemetry.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -24,6 +23,7 @@ import 'package:wavecrux/features/viewer/providers/translate_filter_provider.dar
 import 'package:wavecrux/features/viewer/providers/translator_expansion_provider.dart';
 import 'package:wavecrux/features/viewer/providers/value_column_provider.dart';
 import 'package:wavecrux/features/viewer/widgets/bind_custom_translator_dialog.dart';
+import 'package:wavecrux/features/viewer/widgets/display_format_menu.dart';
 import 'package:wavecrux/features/viewer/widgets/translator_child_row.dart';
 import 'package:wavecrux/features/viewer/widgets/value_color_swatch.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
@@ -46,26 +46,6 @@ const _kBindCustomTranslator = 'bind_custom_translator';
 const _kClearCustomTranslator = 'clear_custom_translator';
 const _kSelectSignal = 'select_signal';
 const _kProperties = 'properties';
-
-// Basic formats shown above the "Advanced" divider.
-const List<DisplayFormat> _kBasicFormats = [
-  DisplayFormat.binary,
-  DisplayFormat.hexadecimal,
-  DisplayFormat.octal,
-  DisplayFormat.unsignedDecimal,
-  DisplayFormat.signedDecimal,
-  DisplayFormat.ascii,
-];
-
-// Advanced formats shown below the "Advanced" divider.
-const List<DisplayFormat> _kAdvancedFormats = [
-  DisplayFormat.ieee754Single,
-  DisplayFormat.ieee754Double,
-  DisplayFormat.fixedPointQ,
-  DisplayFormat.signedMagnitude,
-  DisplayFormat.grayCode,
-  DisplayFormat.namedEnum,
-];
 
 /// A single row in the [ValueColumnPanel].
 ///
@@ -402,29 +382,7 @@ class ValueColumnRow extends ConsumerWidget {
       PopupMenuItem<Object?>(
         value: _kOpenFormatMenu,
         height: 32,
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                l10n.valueColumnFormatHeader,
-                style: const TextStyle(fontSize: 13),
-              ),
-            ),
-            Text(
-              _formatLabel(l10n, entry.format),
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Icon(
-              Icons.chevron_right,
-              size: 18,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ],
-        ),
+        child: displayFormatMenuEntryLabel(context, entry.format),
       ),
       const PopupMenuDivider(),
       PopupMenuItem<Object?>(
@@ -539,7 +497,13 @@ class ValueColumnRow extends ConsumerWidget {
     if (selected == _kSelectSignal && entry.signalPath != null) {
       ref.read(selectedVariablesProvider.notifier).toggle(entry.signalPath!);
     } else if (selected == _kOpenFormatMenu) {
-      await _showFormatMenu(context, ref, l10n, rect);
+      await showDisplayFormatMenu(
+        context,
+        ref,
+        entryId: entry.id,
+        current: entry.format,
+        position: rect,
+      );
       // Each awaiting branch returns, so a later branch's `ref` never reads
       // as used after an await (crux_guards' ref-after-await scan).
       return;
@@ -670,107 +634,6 @@ class ValueColumnRow extends ConsumerWidget {
       ),
     );
   }
-
-  /// Opens the nested display-format picker as a second [showMenu] at [rect]
-  /// (the original right-click position). Split out of the main context menu so
-  /// the top-level menu stays short enough to fit the window without scrolling
-  /// (issue #40); this format-only menu fits within the 500 dp minimum window
-  /// height. Applies the chosen format per-row via [setSignalFormatById].
-  Future<void> _showFormatMenu(
-    BuildContext context,
-    WidgetRef ref,
-    L10N l10n,
-    RelativeRect rect,
-  ) async {
-    final items = <PopupMenuEntry<Object?>>[
-      PopupMenuItem<Object?>(
-        enabled: false,
-        height: 28,
-        child: Text(
-          l10n.valueColumnFormatHeader,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ),
-      ..._kBasicFormats.map((fmt) => _formatMenuItem(context, l10n, fmt)),
-      PopupMenuItem<Object?>(
-        enabled: false,
-        height: 24,
-        child: Text(
-          l10n.settingsAdvancedSection,
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ),
-      ..._kAdvancedFormats.map((fmt) => _formatMenuItem(context, l10n, fmt)),
-    ];
-
-    final selected = await showMenu<Object?>(
-      context: context,
-      position: rect,
-      items: items,
-    );
-    if (!context.mounted) return;
-    if (selected is DisplayFormat) {
-      ref
-          .read(signalGroupsProvider.notifier)
-          .setSignalFormatById(entry.id, selected);
-      // Recorded here rather than in the notifier because the notifier's two
-      // setters are also the bulk path, which would emit one event per selected
-      // signal for one keypress. A dismissed menu (`selected == null`) is an
-      // attempt and stays uncounted.
-      ref
-          .read(telemetryServiceProvider)
-          .record(
-            TelemetryEvent(
-              'format.set',
-              properties: <String, Object?>{
-                'format': telemetryEnumToken(selected),
-              },
-            ),
-          );
-    }
-  }
-
-  PopupMenuItem<Object?> _formatMenuItem(
-    BuildContext context,
-    L10N l10n,
-    DisplayFormat fmt,
-  ) => PopupMenuItem<Object?>(
-    value: fmt,
-    height: 32,
-    child: Row(
-      children: [
-        SizedBox(
-          width: 18,
-          child: fmt == entry.format ? const Icon(Icons.check, size: 14) : null,
-        ),
-        const SizedBox(width: 4),
-        Text(_formatLabel(l10n, fmt), style: const TextStyle(fontSize: 13)),
-      ],
-    ),
-  );
-
-  String _formatLabel(L10N l10n, DisplayFormat fmt) => switch (fmt) {
-    DisplayFormat.binary => l10n.displayFormatBinary,
-    DisplayFormat.hexadecimal => l10n.displayFormatHexadecimal,
-    DisplayFormat.octal => l10n.displayFormatOctal,
-    DisplayFormat.unsignedDecimal => l10n.displayFormatUnsignedDecimal,
-    DisplayFormat.signedDecimal => l10n.displayFormatSignedDecimal,
-    DisplayFormat.ascii => l10n.displayFormatAscii,
-    DisplayFormat.ieee754Single => l10n.displayFormatIeee754Single,
-    DisplayFormat.ieee754Double => l10n.displayFormatIeee754Double,
-    DisplayFormat.fixedPointQ => l10n.displayFormatFixedPointQ,
-    DisplayFormat.signedMagnitude => l10n.displayFormatSignedMagnitude,
-    DisplayFormat.grayCode => l10n.displayFormatGrayCode,
-    DisplayFormat.namedEnum => l10n.displayFormatNamedEnum,
-  };
 }
 
 /// The expand/collapse chevron for a translator-bound value row.

@@ -75,6 +75,8 @@ A cleared canvas is a real state of the session. Saving after **Clear Canvas** s
 
 The value column shows each signal's current value in its selected display format; on phones, where the value column gives way to space, the value appears inline at the cursor instead. Display formats are set per signal and saved with the session, so a bus you read in hex and a status register you read as a named enum keep those settings as you move around the trace. New signals start in **Settings → Waveform Defaults → Default Display Format** (Hexadecimal unless you change it).
 
+To change a signal's format, right-click its value in the value column and choose **Display Format**. From WaveCrux 1.2 the signal list's menu (right-click the signal's name) has the same **Display Format** entry, and a **Properties** entry that opens the signal in the Inspector.
+
 WaveCrux provides twelve formats:
 
 | Format | What it shows |

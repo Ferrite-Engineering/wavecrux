@@ -114,6 +114,30 @@ void main() {
     );
   });
 
+  test("a signal name's Properties inspects that row, and its Display "
+      'Format opens the shared format menu', () {
+    final panel = _read('lib/features/viewer/widgets/signal_list_panel.dart');
+    final properties = _span(
+      panel,
+      'case _RegularAction.properties:',
+      'case _RegularAction.',
+    );
+    expect(properties, contains('openWaveCruxInspector('));
+    expect(properties, contains('InspectedSignal(widget.entry.id)'));
+    expect(
+      _span(
+        panel,
+        'case _RegularAction.displayFormat:',
+        'case _RegularAction.',
+      ),
+      contains('showDisplayFormatMenu('),
+    );
+    expect(
+      _read('lib/features/viewer/widgets/value_column_row.dart'),
+      contains('showDisplayFormatMenu('),
+    );
+  });
+
   test('the Inspector state is per-tab', () {
     final overrides = _read('lib/services/tabs/wavecrux_tab_overrides.dart');
     for (final provider in const <String>[

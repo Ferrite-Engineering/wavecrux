@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/legacy.dart' show StateProvider;
 import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wavecrux/domain/enums/device_class.dart';
+import 'package:wavecrux/domain/enums/display_format.dart';
 import 'package:wavecrux/domain/enums/scope_type.dart';
 import 'package:wavecrux/domain/enums/var_direction.dart';
 import 'package:wavecrux/domain/enums/var_type.dart';
@@ -27,12 +28,15 @@ import 'package:wavecrux/features/decoders/widgets/decoder_list_entry.dart';
 import 'package:wavecrux/features/settings/providers/settings_providers.dart';
 import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.dart';
 import 'package:wavecrux/features/signal_tree/widgets/scope_tree_node.dart';
+import 'package:wavecrux/features/viewer/inspector_openers.dart';
+import 'package:wavecrux/features/viewer/providers/inspector_providers.dart';
 import 'package:wavecrux/features/viewer/widgets/signal_list_panel.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/plugins/decoder_registry.dart';
 import 'package:wavecrux/services/remote/remote_control_notifier.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
 import '../../../helpers/cxp_test_overrides.dart';
+import '../../../helpers/product_telemetry_config.dart';
 
 // ── Diff status color constants (mirror of the private consts in signal_list_panel.dart) ──
 const _kDiffIdenticalColor = Color(0xFF43A047);
@@ -383,6 +387,72 @@ void main() {
         expect(
           container.read(signalGroupsProvider).entries.first.renderAsAnalog,
           isFalse,
+        );
+      },
+    );
+
+    testWidgets(
+      'the display format and Properties are reachable from the signal-name '
+      'row menu',
+      (tester) async {
+        // Issue #50: the radix was only on the value column's menu, and a user
+        // right-clicks the signal name first (GTKWave puts Data Format there).
+        await tester.binding.setSurfaceSize(const Size(900, 700));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        final container = ProviderContainer(
+          overrides: [
+            ...cxpTestOverrides,
+            deviceClassProvider.overrideWithValue(DeviceClass.tablet),
+            inspectorInBottomSheetProvider.overrideWithValue(false),
+            // The format change records `format.set`.
+            productTelemetryConfig,
+          ],
+        );
+        addTearDown(container.dispose);
+        container.read(signalGroupsProvider.notifier).addSignal(_v('data'));
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: ThemeData(platform: TargetPlatform.iOS),
+              localizationsDelegates: L10N.localizationsDelegates,
+              supportedLocales: L10N.supportedLocales,
+              home: Scaffold(
+                body: SignalListPanel(scrollController: ScrollController()),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final l10n = await L10N.delegate.load(const Locale('en'));
+        SignalEntry row() => container.read(signalGroupsProvider).entries.first;
+
+        await tester.longPress(
+          find.byKey(const ValueKey('_signalRow_colorSwatch')),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text(l10n.valueColumnFormatHeader), findsOneWidget);
+        expect(find.text(l10n.valueColumnProperties), findsOneWidget);
+
+        // Display Format opens the format menu where the row menu was.
+        await tester.tap(find.text(l10n.valueColumnFormatHeader));
+        await tester.pumpAndSettle();
+        expect(find.text(l10n.displayFormatGrayCode), findsOneWidget);
+        await tester.tap(find.text(l10n.displayFormatGrayCode));
+        await tester.pumpAndSettle();
+        expect(row().format, DisplayFormat.grayCode);
+
+        // Properties shows this row in the Inspector.
+        await tester.longPress(
+          find.byKey(const ValueKey('_signalRow_colorSwatch')),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.valueColumnProperties));
+        await tester.pumpAndSettle();
+        expect(
+          container.read(inspectedObjectProvider),
+          InspectedSignal(row().id),
         );
       },
     );
