@@ -22,8 +22,13 @@ import 'package:wavecrux/services/riscv/rvfi_channel.dart';
 /// The second rule is what makes back-to-back retirement work: a core that
 /// retires on consecutive cycles holds `rvfi_valid` high across them, and an
 /// edge-only reader would silently collapse the run into one instruction.
-/// Where the trace omits `rvfi_order`, only rule 1 applies and that
-/// limitation is visible in the reconstructed stream rather than hidden.
+///
+/// Where the trace omits `rvfi_order`, rule 2 falls back to a **change of
+/// `rvfi_pc_rdata` or `rvfi_insn`** while `rvfi_valid` is high: consecutive
+/// retirements fetch from different addresses, so the PC moves with each one.
+/// The fallback cannot see a run of one instruction retiring at the same PC
+/// (a `j .` spin loop), which `rvfi_order` would count; binding it remains
+/// the exact answer, and the reduced-binding notice says so.
 ///
 /// **Sampling.** Every other bound channel is sampled with `valueAt` at the
 /// retirement tick. `valueAt` returns null for an unloaded signal, which is
@@ -109,10 +114,17 @@ class RiscvRetireStreamService {
     }
 
     // Rule 2 — an `rvfi_order` change while valid is high is a further
-    // retirement that the valid edge alone cannot see.
-    if (orderRef != null) {
+    // retirement that the valid edge alone cannot see. Without `rvfi_order`,
+    // a change of the retired PC or instruction word marks it instead.
+    final heldHighMarkers = orderRef != null
+        ? <String>[orderRef]
+        : <String>[
+            ?bindings.ref(RvfiChannel.pcRdata, index: channelIndex),
+            ?bindings.ref(RvfiChannel.insn, index: channelIndex),
+          ];
+    for (final markerRef in heldHighMarkers) {
       for (final change in source.changesInRange(
-        orderRef,
+        markerRef,
         startTime,
         endTime + 1,
       )) {

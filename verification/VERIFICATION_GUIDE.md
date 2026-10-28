@@ -4008,10 +4008,13 @@ unaligned, or trust the unit coverage.
    bound"* and a banner names every missing channel by its Verilog port name
    (`rvfi_mem_addr, rvfi_mem_rmask, …`) — port names are deliberately **not**
    translated, so the banner works as a checklist against your RTL.
-3. **Commits** still lists retirements with disassembly and register writes.
-   Fewer rows than before: without `rvfi_order`, back-to-back retirements
-   held under one `valid` pulse collapse — that is the honest consequence,
-   not a bug.
+3. **Commits** still lists retirements with disassembly and register writes,
+   the **same rows as before**: without `rvfi_order`, back-to-back
+   retirements held under one `valid` pulse are told apart by the retired PC
+   (or instruction word) changing. The order column shows `—`; nothing is
+   numbered that the trace does not number. (Only a run of one instruction
+   retiring at the same PC, a `j .` spin loop, still collapses without
+   `rvfi_order`.)
 4. **Registers** still reconstructs. **Memory** and **Traps** say which
    channels to bind rather than showing an empty list.
 5. **Checks** says *"Not checked, because the channels they need are

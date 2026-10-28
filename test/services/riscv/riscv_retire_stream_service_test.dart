@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wavecrux/domain/models/signal_change.dart';
 import 'package:wavecrux/services/decoders/isa/instruction_disassembler.dart';
 import 'package:wavecrux/services/decoders/isa/instruction_set.dart';
 import 'package:wavecrux/services/decoders/isa/instruction_set_toml_loader.dart';
@@ -14,6 +15,7 @@ import 'package:wavecrux/services/riscv/rvfi_binding_set.dart';
 import 'package:wavecrux/services/riscv/rvfi_channel.dart';
 import 'package:wavecrux/services/riscv/rvfi_detection_service.dart';
 
+import '../../helpers/fake_waveform_data_source.dart';
 import '../../helpers/generated_vcd_fixture.dart';
 
 const _fixturePath =
@@ -223,15 +225,83 @@ void main() {
         startTime: 0,
         endTime: fixture.source.endTime,
       );
-      // Without rvfi_order, only the valid edges are visible — the
-      // back-to-back runs collapse, and that is reported by the stream
-      // being shorter rather than by a guess.
-      expect(actual.length, lessThan(8));
+      // Without rvfi_order, the back-to-back runs held under one valid
+      // pulse are still found, from the retired PC changing; the order
+      // itself is not invented.
+      expect(
+        actual.map((r) => r.time),
+        buildAll().map((r) => r.time),
+        reason:
+            'a core that holds rvfi_valid high across retirements must not '
+            'collapse to one row per valid pulse when rvfi_order is unbound',
+      );
+      expect(actual.every((r) => r.order == null), isTrue);
       expect(actual.first.order, isNull);
       expect(actual.first.memory, isNull);
       expect(actual.first.rs1Addr, isNull);
       expect(actual.first.pc, isNotNull);
       expect(actual.first.disassembly, isNotNull);
+    });
+  });
+
+  group('rvfi_valid held high with rvfi_order unbound', () {
+    // A core that keeps rvfi_valid asserted for a whole run of retirements,
+    // one per 10-tick cycle, and binds only the reduced set: no rvfi_order.
+    // The PC moves on each retirement.
+    final source = FakeWaveformDataSource(
+      endTime: 100,
+      signals: {
+        'v': const [
+          SignalChange(time: 0, value: '0'),
+          SignalChange(time: 10, value: '1'),
+          SignalChange(time: 70, value: '0'),
+        ],
+        'pc': const [
+          SignalChange(time: 0, value: 'b0'),
+          SignalChange(time: 10, value: 'b100000000'),
+          SignalChange(time: 20, value: 'b100000100'),
+          SignalChange(time: 30, value: 'b100001000'),
+          SignalChange(time: 40, value: 'b100001100'),
+        ],
+        'insn': const [
+          SignalChange(time: 0, value: 'b0'),
+          SignalChange(time: 10, value: 'b10011'),
+          SignalChange(time: 30, value: 'b110011'),
+          SignalChange(time: 40, value: 'b1101111'),
+        ],
+      },
+    );
+    const reduced = RvfiBindingSet(
+      refs: {
+        RvfiChannel.valid: {0: 'v'},
+        RvfiChannel.pcRdata: {0: 'pc'},
+        RvfiChannel.insn: {0: 'insn'},
+      },
+      channelCount: 1,
+    );
+
+    test('a retirement is counted each time the retired PC changes', () {
+      final actual = const RiscvRetireStreamService(null).build(
+        source: source,
+        bindings: reduced,
+        startTime: 0,
+        endTime: 100,
+      );
+      // One rising edge at 10, then the PC moves at 20, 30 and 40. The old
+      // reader found only the edge and listed a single commit.
+      expect(actual.map((r) => r.time), [10, 20, 30, 40]);
+      expect(actual.map((r) => r.pc), [0x100, 0x104, 0x108, 0x10c]);
+      expect(actual.every((r) => r.order == null), isTrue);
+    });
+
+    test('changes while rvfi_valid is low are not retirements', () {
+      final actual = const RiscvRetireStreamService(null).build(
+        source: source,
+        bindings: reduced,
+        startTime: 0,
+        endTime: 100,
+      );
+      expect(actual.map((r) => r.time), isNot(contains(0)));
     });
   });
 }
