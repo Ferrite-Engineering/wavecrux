@@ -38,6 +38,8 @@ In the browser, drop a file onto the empty canvas's drop zone instead; dropping 
 
 WaveCrux watches the loaded file and reacts when it changes on disk. **Settings → File Handling → Auto-Reload on File Change** picks what happens — **Prompt**, **Auto** or **Off**: ask before reloading (a banner across the top with **Ignore** and **Reload**, which stays until you choose), reload automatically, or ignore the change. This is built for the iterative simulate-then-debug loop: re-run the simulation and the new trace replaces the old one in place.
 
+The file itself is not kept open while you look at it, so your simulator can delete and recreate it under the same name. VCD and GHW files are read in full when they open. From WaveCrux 1.2 an FST file of up to 256 MB is read into memory too, so it is released as soon as it has loaded (this matters on Windows, where a file that is open cannot be recreated under the same name). A larger FST is still read from disk as you add signals, and stays open until you close its tab or reload it.
+
 ### Loading on mobile { #mobile }
 
 On iOS, iPadOS and Android the usual path is **Open with WaveCrux** — from Files, Mail, a chat app, a cloud drive, or AirDrop. The in-app file picker, with iCloud Drive, Google Drive and other document providers, is the other path. File-type associations are registered for `.vcd`, `.fst`, `.ghw`, `.lxt`, `.lxt2` and `.wavecrux` (and, on Android, `.wavecruxpack`), so those open in WaveCrux directly from other apps. A received file is copied into WaveCrux's own storage first.

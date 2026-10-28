@@ -47,10 +47,13 @@ pub struct WellenHandle {
     file_format: i32,
     total_transitions: u64,
     loaded_refs: HashSet<u32>,
+    /// Bytes of the file held in memory instead of open on disk (an FST read
+    /// whole; see `read_waveform`), 0 when the file is read from disk.
+    in_memory_bytes: u64,
 }
 
 impl WellenHandle {
-    fn new(waveform: simple::Waveform, file_format: i32) -> Box<Self> {
+    fn new(waveform: simple::Waveform, file_format: i32, in_memory_bytes: u64) -> Box<Self> {
         let h = waveform.hierarchy();
         let date = CString::new(h.date()).unwrap_or_default();
         let version = CString::new(h.version()).unwrap_or_default();
@@ -86,6 +89,7 @@ impl WellenHandle {
             file_format,
             total_transitions: 0,
             loaded_refs: HashSet::new(),
+            in_memory_bytes,
         })
     }
 
@@ -292,6 +296,37 @@ fn set_last_open_error(msg: String) {
     });
 }
 
+/// FST files up to this size are read into memory whole, so the file is not
+/// held open while the waveform is displayed. FST is the one format wellen
+/// reads lazily (signals load from the file on demand); VCD and GHW are read
+/// in full at open and the file is closed. On Windows an open handle makes a
+/// deleted file linger as delete-pending, so a simulator that deletes and
+/// recreates its dump cannot write it while WaveCrux shows it. Larger files
+/// keep the lazy read: holding them in memory would cost more than the lock.
+/// Not on iOS and Android, where memory is tighter and no simulator rewrites
+/// the file.
+const FST_IN_MEMORY_MAX_BYTES: u64 = 256 * 1024 * 1024;
+
+/// Reads the waveform at `path`, returning it with the number of file bytes
+/// held in memory (see [`FST_IN_MEMORY_MAX_BYTES`]).
+fn read_waveform(path: &str, fmt: i32) -> wellen::Result<(simple::Waveform, u64)> {
+    if fmt == FORMAT_FST && cfg!(not(any(target_os = "ios", target_os = "android"))) {
+        let small = std::fs::metadata(path)
+            .map(|m| m.len() <= FST_IN_MEMORY_MAX_BYTES)
+            .unwrap_or(false);
+        // An interrupted FST needs its external `.fst.hier` file, which only
+        // the path-based read below finds; any failure here falls through to
+        // it.
+        if small && let Ok(bytes) = std::fs::read(path) {
+            let len = bytes.len() as u64;
+            if let Ok(w) = simple::read_from_reader(std::io::Cursor::new(bytes)) {
+                return Ok((w, len));
+            }
+        }
+    }
+    simple::read(path).map(|w| (w, 0))
+}
+
 /// Open a waveform file (VCD, FST, or GHW). Returns an opaque handle on
 /// success, or null on failure. After a null return, call
 /// `wellen_last_open_error` (no handle required) to retrieve wellen's
@@ -312,8 +347,8 @@ pub extern "C" fn wellen_open(path: *const c_char) -> *mut WellenHandle {
             }
         };
         let fmt = detect_format(path_str);
-        match simple::read(path_str) {
-            Ok(w) => Some(WellenHandle::new(w, fmt)),
+        match read_waveform(path_str, fmt) {
+            Ok((w, in_memory)) => Some(WellenHandle::new(w, fmt, in_memory)),
             Err(e) => {
                 set_last_open_error(format!("{e}"));
                 None
@@ -894,6 +929,7 @@ pub extern "C" fn wellen_signal_transition_count(
 ///   + scope metadata × 200 bytes
 ///   + variable metadata × 100 bytes
 ///   + loaded signal changes × 16 bytes (estimated storage per change)
+///   + the file's bytes, when an FST is held in memory
 #[unsafe(no_mangle)]
 pub extern "C" fn wellen_memory_usage_bytes(handle: *const WellenHandle) -> u64 {
     ffi_guard!(handle, 0, {
@@ -901,7 +937,7 @@ pub extern "C" fn wellen_memory_usage_bytes(handle: *const WellenHandle) -> u64 
         let time_bytes = h.waveform.time_table().len() as u64 * 8;
         let hier_bytes = h.scope_names.len() as u64 * 200 + h.var_names.len() as u64 * 100;
         let signal_bytes = h.total_transitions * 16;
-        time_bytes + hier_bytes + signal_bytes
+        time_bytes + hier_bytes + signal_bytes + h.in_memory_bytes
     })
 }
 
@@ -1569,5 +1605,77 @@ mod captured_riscv_repro {
         for h in handles {
             h.join().expect("a stress thread panicked or crashed");
         }
+    }
+}
+
+/// An FST small enough to be held in memory is not read from disk after it
+/// opens, so the file can be deleted and recreated while it is displayed.
+#[cfg(test)]
+mod fst_in_memory {
+    use super::*;
+    use std::ffi::CString;
+
+    const FIXTURE: &str = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../test/fixtures/fst/scalar_basics.fst"
+    );
+
+    /// Every signal ref, walked from the root scopes and root vars.
+    fn signal_refs(h: *const WellenHandle) -> Vec<u32> {
+        let num_scopes = wellen_num_scopes(h);
+        let num_vars = wellen_num_vars(h);
+        let mut refs = Vec::new();
+        let mut vars = vec![0u64; num_vars.max(1) as usize];
+        let n = wellen_root_vars(h, vars.as_mut_ptr(), num_vars);
+        for &v in vars.iter().take(n.max(0) as usize) {
+            refs.push(wellen_var_signal_ref(h, v));
+        }
+        let mut stack = vec![0u64; num_scopes.max(1) as usize];
+        let n = wellen_root_scopes(h, stack.as_mut_ptr(), num_scopes);
+        stack.truncate(n.max(0) as usize);
+        while let Some(scope) = stack.pop() {
+            let mut children = vec![0u64; num_scopes.max(1) as usize];
+            let c = wellen_scope_child_scopes(h, scope, children.as_mut_ptr(), num_scopes);
+            stack.extend(children.iter().take(c.max(0) as usize));
+            let mut vars = vec![0u64; num_vars.max(1) as usize];
+            let c = wellen_scope_child_vars(h, scope, vars.as_mut_ptr(), num_vars);
+            for &v in vars.iter().take(c.max(0) as usize) {
+                refs.push(wellen_var_signal_ref(h, v));
+            }
+        }
+        refs
+    }
+
+    #[test]
+    fn signals_load_after_the_file_is_deleted() {
+        let tid = std::thread::current().id();
+        let dst = std::env::temp_dir()
+            .join(format!("wellen_ffi_in_memory_{tid:?}.fst").replace(['(', ')'], "_"));
+        std::fs::copy(FIXTURE, &dst).expect("copy the FST fixture");
+        let cpath = CString::new(dst.to_str().unwrap()).unwrap();
+        let h = wellen_open(cpath.as_ptr());
+        assert!(!h.is_null(), "wellen_open returned null for {dst:?}");
+
+        // Overwritten in place, the file no longer holds the waveform, so a
+        // signal that loads afterwards cannot have come from disk.
+        std::fs::write(&dst, b"not an fst").expect("overwrite the displayed FST");
+        let refs = signal_refs(h);
+        assert!(!refs.is_empty(), "the fixture has signals");
+        for r in refs {
+            assert_eq!(wellen_load_signal(h, r), 0, "signal {r} loads from memory");
+        }
+        // Delete and recreate, as a simulator does: on Windows a handle still
+        // open would leave the file delete-pending and the recreate would
+        // fail.
+        std::fs::remove_file(&dst).expect("delete the displayed FST");
+        std::fs::write(&dst, b"a new dump").expect("recreate the file");
+        let held = std::fs::metadata(FIXTURE).unwrap().len();
+        assert!(
+            wellen_memory_usage_bytes(h) >= held,
+            "the memory estimate counts the file held in memory"
+        );
+
+        wellen_close(h);
+        let _ = std::fs::remove_file(&dst);
     }
 }

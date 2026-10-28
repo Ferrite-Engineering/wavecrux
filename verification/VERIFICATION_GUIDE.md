@@ -5774,6 +5774,16 @@ Web does not support file watching (no `dart:io`); the feature should silently n
 1. While a file is loaded, delete the source file from disk.
 2. Verify a clear notification appears that the file is no longer available; in-memory data remains usable until you close the file.
 
+#### 16.3.6a Steps — a displayed FST is not held open (issue #69, from 1.2)
+
+FST is the one format wellen reads lazily, so before 1.2 a displayed FST stayed open, and on Windows a simulator that deletes and recreates its dump (`vcd2fst` does) could not write it until the tab closed. From 1.2 an FST of up to 256 MB is read into memory at open and the file is closed; a larger FST keeps the lazy read.
+
+1. On Windows, open an FST of a few MB (the openPCIE `tb.fst` is one) and add a few signals.
+2. From another process, delete the file and write a new one under the same name (`vcd2fst` again, or `del` then `copy`). Verify both succeed while WaveCrux shows the waveform.
+3. Add more signals before reloading: they load, from memory, with the old data.
+4. Repeat with an FST over 256 MB: deleting it while it is displayed still leaves it delete-pending until the tab closes (the documented limit).
+
+
 > **Multi-tab scoping note.** The file watcher (`fileWatcherProvider`) is overridden per tab — it watches the *active tab's* loaded file. The notification listener that drives the prompt banner / Auto-reload / deletion snackbar lives in the per-tab Consumer in `ViewerScreen._buildTabContent` (gated to the active tab), NOT at the screen-level root scope. A root-scope listener never fires because the root `waveformSourceProvider` has no file. Regression check: open file A in tab 1, file B in tab 2, focus tab 2, then modify B on disk — only tab 2 (active) prompts/reloads; modifying A while tab 2 is focused does not drive a reload of B.
 
 #### 16.3.7 Steps — Web fallback
@@ -5788,6 +5798,8 @@ Web does not support file watching (no `dart:io`); the feature should silently n
 | Auto mode silently reloads | **WIDGET** (`test/features/viewer/providers/file_watcher_provider_test.dart`); real-FS reload **INTEGRATION_TEST** (`integration_test/auto_reload/auto_reload_auto_mode_test.dart`) |
 | Off mode is silent | **WIDGET** (`test/features/viewer/providers/file_watcher_provider_test.dart`) |
 | File deletion notification | **WIDGET** (`test/features/viewer/providers/file_watcher_provider_test.dart`); real-FS deletion **INTEGRATION_TEST** (`integration_test/auto_reload/file_deletion_test.dart`) |
+| A displayed FST up to 256 MB is read from memory, not from the file | **UNIT** (`native/wellen_ffi/src/lib.rs` — `fst_in_memory::signals_load_after_the_file_is_deleted`: the file is overwritten, then deleted and recreated, while every signal still loads) |
+| Windows delete-and-recreate while displayed | **MANUAL** (§16.3.6a) |
 | Web fallback hides/disables control | **WIDGET — pending** (the file-watcher provider at `lib/features/viewer/providers/file_watcher_provider.dart` is `kIsWeb`-gated in source — behaviour disabled — but the Settings → Auto-reload UI section is not currently hidden on web. Closing requires either wrapping the section in a `kIsWeb` check or running the SettingsScreen test under `flutter test --platform chrome`. Tracked in `integration_test/PENDING.md`.) |
 
 ---
