@@ -120,8 +120,9 @@ void main() {
   testWidgets('dismiss button carries an accessible name from the ARB', (
     tester,
   ) async {
-    // The Semantics wrapper is the only accessible name this control has —
-    // a Tooltip is impossible here. Assert the WaveCrux ARB reaches it.
+    // The close glyph's semantic label is the only accessible name this
+    // control has; a Tooltip is impossible here. Assert the WaveCrux ARB
+    // reaches it.
     final handle = tester.ensureSemantics();
     await tester.pumpWidget(_wrap(days: 5));
     await tester.pumpAndSettle();
