@@ -4077,6 +4077,14 @@ unaligned, or trust the unit coverage.
   channels; it does not spin on a loading state and does not throw.
 - **A trace with `rvfi_*` names but no retirement** (`rvfi_valid` never
   asserts) → *"No retirement observed in this trace."*
+- **Several memory accesses on one retirement** (CV32E40X sizes its
+  `rvfi_mem_*` ports by `NMEM`, one 32-bit slot per access; a Zcmp
+  `cm.push {ra, s0}, -16` stores two words). The commit row and the
+  **Memory** view list one access per active slot, each with its own address,
+  mask and data, never one merged value; the memory-access check does not
+  judge such a retirement against a single decoded access —
+  `[Coverage: UNIT]` (`test/services/riscv/riscv_retire_stream_service_test.dart`
+  — "multi-slot" group).
 - **Debug-mode entry on a core that reports it on `rvfi_dbg`** (CV32E40X does
   not assert `rvfi_intr` on debug entry). With `rvfi_dbg` bound, the first
   debug-handler retirement is a handler entry: no control-flow discontinuity,

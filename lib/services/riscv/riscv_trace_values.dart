@@ -91,3 +91,25 @@ RiscvDecodedUint riscvDecodeUint(String? raw) {
     return const RiscvDecodedUint(null, hasUnknown: true);
   }
 }
+
+/// Decodes a bit-string as an arbitrary-width unsigned integer, for a port
+/// wider than [riscvDecodeUint] can hold without masking: a core that packs
+/// several memory accesses per retirement into one `rvfi_mem_*` port
+/// (CV32E40X sizes them by `NMEM`, 128 slots of 32 bits). Null when the value
+/// is absent, unknown (`x` / `z`) or not a bit vector.
+BigInt? riscvDecodeBigUint(String? raw) {
+  if (raw == null || raw.isEmpty) return null;
+  var s = raw.toLowerCase();
+  if (s.startsWith('b')) s = s.substring(1);
+  if (s.isEmpty || s.contains(RegExp('[^01]'))) return null;
+  return BigInt.parse(s, radix: 2);
+}
+
+/// [value] as a Dart integer, masked into the 62-bit range exactly as
+/// [riscvDecodeUint] masks a wide value.
+int riscvBigToUint(BigInt value) {
+  if (value.bitLength > 62) {
+    return (value & ((BigInt.one << 62) - BigInt.one)).toInt();
+  }
+  return value.toInt();
+}

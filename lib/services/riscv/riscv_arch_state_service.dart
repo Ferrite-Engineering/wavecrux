@@ -91,8 +91,7 @@ class RiscvArchStateService {
         );
       }
 
-      final effect = r.memory;
-      if (effect != null) {
+      for (final effect in r.memoryEffects) {
         memory.add(effect);
         if (memory.length > config.memoryEffectDepth) {
           memory.removeAt(0);

@@ -347,6 +347,39 @@ void main() {
             ),
     );
 
+    test('a retirement reporting several accesses is not judged', () {
+      // A core with multi-slot rvfi_mem_* ports (CV32E40X) can report two
+      // 4-byte stores on one retirement. RVFI defines one access per
+      // retirement, so the rule cannot judge either slot against a single
+      // decoded access, and must not judge a merged value.
+      const slot0 = RiscvMemoryEffect(
+        time: 10,
+        order: 0,
+        address: 0x37c,
+        rmask: 0,
+        wmask: 0xf,
+      );
+      const slot1 = RiscvMemoryEffect(
+        time: 10,
+        order: 0,
+        address: 0x378,
+        rmask: 0,
+        wmask: 0xf,
+      );
+      const r = RiscvRetiredInstruction(
+        time: 10,
+        channelIndex: 0,
+        order: 0,
+        insnWord: _swT2Sp,
+        mnemonic: 'sw',
+        trap: false,
+        memory: slot0,
+        additionalMemory: [slot1],
+      );
+      expect(r.memoryEffects, [slot0, slot1]);
+      expect(riscvCheckMemoryAccess([r]), isEmpty);
+    });
+
     test('fires when the masks cover the wrong number of bytes', () {
       final v = riscvCheckMemoryAccess([
         memRetire(insn: _swT2Sp, address: 0x1000, wmask: 0x3, mnemonic: 'sw'),

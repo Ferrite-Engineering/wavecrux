@@ -519,8 +519,7 @@ String _effectText(
   if (rd != null && rd != 0 && value != null) {
     parts.add('${data.registerLabel(rd)} = ${riscvHexWord(value)}');
   }
-  final memory = r.memory;
-  if (memory != null) {
+  for (final memory in r.memoryEffects) {
     final address = riscvHexWord(memory.address);
     if (memory.isWrite && memory.wdata != null) {
       parts.add('[$address] ← ${riscvHexWord(memory.wdata!)}');

@@ -491,6 +491,11 @@ List<RiscvConsistencyViolation> riscvCheckMemoryAccess(
     final access = riscvDecodedAccess(insn);
     if (access == null) continue;
 
+    // RVFI defines one access per retirement. A core that reports several on
+    // multi-slot ports (CV32E40X: Zcmp push / pop) is outside what this rule
+    // can judge against a single decoded access, so it is not judged at all
+    // rather than against one slot or a merged value.
+    if (r.additionalMemory.isNotEmpty) continue;
     final effect = r.memory;
     final what = r.mnemonic ?? _hex(insn);
 

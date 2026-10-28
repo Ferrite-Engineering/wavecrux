@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'package:wavecrux/domain/interfaces/waveform_data_source.dart';
+import 'package:wavecrux/domain/models/signal_filter.dart';
 import 'package:wavecrux/services/decoders/isa/instruction_disassembler.dart';
 import 'package:wavecrux/services/riscv/riscv_retired_instruction.dart';
 import 'package:wavecrux/services/riscv/riscv_trace_values.dart';
@@ -62,6 +63,7 @@ class RiscvRetireStreamService {
   }) {
     if (endTime < startTime) return const [];
     final out = <RiscvRetiredInstruction>[];
+    final xlen = _XlenResolver(source, bindings);
     for (var channel = 0; channel < bindings.channelCount; channel++) {
       out.addAll(
         _buildChannel(
@@ -70,6 +72,7 @@ class RiscvRetireStreamService {
           channelIndex: channel,
           startTime: startTime,
           endTime: endTime,
+          xlen: xlen,
         ),
       );
     }
@@ -91,6 +94,7 @@ class RiscvRetireStreamService {
     required int channelIndex,
     required int startTime,
     required int endTime,
+    required _XlenResolver xlen,
   }) {
     final validRef = bindings.ref(RvfiChannel.valid, index: channelIndex);
     if (validRef == null) return const [];
@@ -145,6 +149,7 @@ class RiscvRetireStreamService {
             bindings: bindings,
             channelIndex: channelIndex,
             time: t,
+            xlen: xlen,
           ),
     ];
   }
@@ -154,6 +159,7 @@ class RiscvRetireStreamService {
     required RvfiBindingSet bindings,
     required int channelIndex,
     required int time,
+    required _XlenResolver xlen,
   }) {
     var unknown = false;
 
@@ -181,21 +187,26 @@ class RiscvRetireStreamService {
         ? null
         : _disassembler?.decode(insnWord, kRiscvInstructionBitWidth);
 
-    final memAddr = uint(RvfiChannel.memAddr);
-    final rmask = uint(RvfiChannel.memRmask) ?? 0;
-    final wmask = uint(RvfiChannel.memWmask) ?? 0;
+    BigInt? wide(RvfiChannel channel) {
+      final ref = bindings.ref(channel, index: channelIndex);
+      if (ref == null) return null;
+      final decoded = riscvDecodeBigUint(source.valueAt(ref, time));
+      if (decoded == null) unknown = true;
+      return decoded;
+    }
+
     final order = uint(RvfiChannel.order);
-    final memory = (memAddr != null && (rmask != 0 || wmask != 0))
-        ? RiscvMemoryEffect(
-            time: time,
-            order: order,
-            address: memAddr,
-            rmask: rmask,
-            wmask: wmask,
-            rdata: rmask == 0 ? null : uint(RvfiChannel.memRdata),
-            wdata: wmask == 0 ? null : uint(RvfiChannel.memWdata),
-          )
-        : null;
+    final ixl = uint(RvfiChannel.ixl);
+    final memory = _memoryEffects(
+      time: time,
+      order: order,
+      address: wide(RvfiChannel.memAddr),
+      rmask: wide(RvfiChannel.memRmask) ?? BigInt.zero,
+      wmask: wide(RvfiChannel.memWmask) ?? BigInt.zero,
+      rdata: () => wide(RvfiChannel.memRdata),
+      wdata: () => wide(RvfiChannel.memWdata),
+      xlen: () => xlen.at(ixl),
+    );
 
     return RiscvRetiredInstruction(
       time: time,
@@ -213,14 +224,133 @@ class RiscvRetireStreamService {
       rs2Value: uint(RvfiChannel.rs2Rdata),
       rdAddr: uint(RvfiChannel.rdAddr),
       rdValue: uint(RvfiChannel.rdWdata),
-      memory: memory,
+      memory: memory.firstOrNull,
+      additionalMemory: memory.length > 1 ? memory.sublist(1) : const [],
       trap: flag(RvfiChannel.trap),
       halt: flag(RvfiChannel.halt),
       intr: flag(RvfiChannel.intr),
       debugEntryCause: uint(RvfiChannel.dbg),
       mode: uint(RvfiChannel.mode),
-      ixl: uint(RvfiChannel.ixl),
+      ixl: ixl,
       hasUnknownBits: unknown,
     );
+  }
+
+  /// The memory accesses one retirement reports, one per active slot.
+  ///
+  /// RVFI defines one access per retirement, and a standard core's ports are
+  /// one access wide. CV32E40X widens them to `NMEM` slots (`rvfi_mem_addr`
+  /// is 4096 bits, the masks 512) and uses several in one retirement, for
+  /// example a Zcmp `cm.push` storing two registers. Read whole, those slots
+  /// fold into one wrong address, mask and data word, so a port wider than
+  /// one access is split into `XLEN`-bit slots (masks into `XLEN / 8`-bit
+  /// slots) and a slot whose masks are both zero is omitted.
+  ///
+  /// A single-access port is never split: only a mask wider than one RV32
+  /// access, or an address wider than 32 bits, asks for [xlen], and when
+  /// `XLEN` cannot be established the port is read whole, as before.
+  static List<RiscvMemoryEffect> _memoryEffects({
+    required int time,
+    required int? order,
+    required BigInt? address,
+    required BigInt rmask,
+    required BigInt wmask,
+    required BigInt? Function() rdata,
+    required BigInt? Function() wdata,
+    required int? Function() xlen,
+  }) {
+    if (address == null) return const [];
+    final union = rmask | wmask;
+    if (union == BigInt.zero) return const [];
+
+    final slotBits = (union.bitLength > 4 || address.bitLength > 32)
+        ? xlen()
+        : null;
+    final read = rmask == BigInt.zero ? null : rdata();
+    final written = wmask == BigInt.zero ? null : wdata();
+    if (slotBits == null) {
+      return [
+        RiscvMemoryEffect(
+          time: time,
+          order: order,
+          address: riscvBigToUint(address),
+          rmask: riscvBigToUint(rmask),
+          wmask: riscvBigToUint(wmask),
+          rdata: read == null ? null : riscvBigToUint(read),
+          wdata: written == null ? null : riscvBigToUint(written),
+        ),
+      ];
+    }
+
+    final maskBits = slotBits ~/ 8;
+    final dataMask = (BigInt.one << slotBits) - BigInt.one;
+    final byteMask = (BigInt.one << maskBits) - BigInt.one;
+    BigInt slice(BigInt value, int slot, int bits, BigInt mask) =>
+        (value >> (slot * bits)) & mask;
+
+    final slots = (union.bitLength + maskBits - 1) ~/ maskBits;
+    return [
+      for (var slot = 0; slot < slots; slot++)
+        if (slice(union, slot, maskBits, byteMask) != BigInt.zero)
+          RiscvMemoryEffect(
+            time: time,
+            order: order,
+            address: riscvBigToUint(slice(address, slot, slotBits, dataMask)),
+            rmask: slice(rmask, slot, maskBits, byteMask).toInt(),
+            wmask: slice(wmask, slot, maskBits, byteMask).toInt(),
+            rdata:
+                slice(rmask, slot, maskBits, byteMask) == BigInt.zero ||
+                    read == null
+                ? null
+                : riscvBigToUint(slice(read, slot, slotBits, dataMask)),
+            wdata:
+                slice(wmask, slot, maskBits, byteMask) == BigInt.zero ||
+                    written == null
+                ? null
+                : riscvBigToUint(slice(written, slot, slotBits, dataMask)),
+          ),
+    ];
+  }
+}
+
+/// Establishes `XLEN` for splitting a multi-slot memory port, and only when
+/// one is met: from `rvfi_ixl` at the retirement where the trace binds it,
+/// otherwise from the declared width of the bound `rvfi_pc_rdata`, looked up
+/// once per build. Null when neither says, which keeps the port whole.
+class _XlenResolver {
+  _XlenResolver(this._source, this._bindings);
+
+  final WaveformDataSource _source;
+  final RvfiBindingSet _bindings;
+  int? _declared;
+  bool _looked = false;
+
+  int? at(int? ixl) {
+    switch (ixl) {
+      case 1:
+        return 32;
+      case 2:
+        return 64;
+      case 3:
+        return 128;
+    }
+    if (!_looked) {
+      _looked = true;
+      _declared = _declaredPcWidth();
+    }
+    return _declared;
+  }
+
+  int? _declaredPcWidth() {
+    final pcRef = _bindings.ref(RvfiChannel.pcRdata);
+    if (pcRef == null) return null;
+    for (final v in _source.findVariables(
+      const SignalFilter(namePattern: 'pc_rdata'),
+    )) {
+      if (v.signalRef != pcRef) continue;
+      final width = v.bitWidth;
+      return (width == 32 || width == 64 || width == 128) ? width : null;
+    }
+    return null;
   }
 }

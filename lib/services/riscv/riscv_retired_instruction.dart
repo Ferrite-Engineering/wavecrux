@@ -109,6 +109,7 @@ class RiscvRetiredInstruction {
     this.rdAddr,
     this.rdValue,
     this.memory,
+    this.additionalMemory = const [],
     this.trap,
     this.halt,
     this.intr,
@@ -163,8 +164,20 @@ class RiscvRetiredInstruction {
   final int? rdValue;
 
   /// The memory access, or null when the instruction touched no memory (or
-  /// the trace does not expose the memory channels).
+  /// the trace does not expose the memory channels). For a core that reports
+  /// several accesses per retirement on wide `rvfi_mem_*` ports, this is the
+  /// lowest active slot and the rest are in [additionalMemory].
   final RiscvMemoryEffect? memory;
+
+  /// The accesses after [memory] when the core reports more than one per
+  /// retirement: one per further active slot of a multi-slot `rvfi_mem_*`
+  /// port (CV32E40X, whose Zcmp `cm.push` / `cm.pop` store or load several
+  /// registers in one retirement). Empty for a standard RVFI core, which
+  /// reports one access per retirement.
+  final List<RiscvMemoryEffect> additionalMemory;
+
+  /// Every memory access of this retirement, in slot order.
+  List<RiscvMemoryEffect> get memoryEffects => [?memory, ...additionalMemory];
 
   /// `rvfi_trap` — the instruction raised a trap.
   final bool? trap;
@@ -230,6 +243,7 @@ class RiscvRetiredInstruction {
           rdAddr == other.rdAddr &&
           rdValue == other.rdValue &&
           memory == other.memory &&
+          _listEquals(additionalMemory, other.additionalMemory) &&
           trap == other.trap &&
           halt == other.halt &&
           intr == other.intr &&
@@ -259,4 +273,13 @@ class RiscvRetiredInstruction {
       'RiscvRetiredInstruction(order: $order, t: $time, '
       'pc: ${pc == null ? 'null' : '0x${pc!.toRadixString(16)}'}, '
       '${disassembly ?? '?'})';
+}
+
+bool _listEquals(List<RiscvMemoryEffect> a, List<RiscvMemoryEffect> b) {
+  if (identical(a, b)) return true;
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
 }

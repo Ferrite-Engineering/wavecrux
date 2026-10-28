@@ -5,7 +5,12 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wavecrux/domain/enums/scope_type.dart';
+import 'package:wavecrux/domain/enums/var_direction.dart';
+import 'package:wavecrux/domain/enums/var_type.dart';
+import 'package:wavecrux/domain/models/scope.dart';
 import 'package:wavecrux/domain/models/signal_change.dart';
+import 'package:wavecrux/domain/models/variable.dart';
 import 'package:wavecrux/services/decoders/isa/instruction_disassembler.dart';
 import 'package:wavecrux/services/decoders/isa/instruction_set.dart';
 import 'package:wavecrux/services/decoders/isa/instruction_set_toml_loader.dart';
@@ -302,6 +307,152 @@ void main() {
         endTime: 100,
       );
       expect(actual.map((r) => r.time), isNot(contains(0)));
+    });
+  });
+
+  group('multi-slot rvfi_mem_* ports (CV32E40X NMEM)', () {
+    // Zcmp `cm.push {ra, s0}, -16` with sp = 0x380 retires once and stores
+    // two words, in two 32-bit slots of the wide memory ports:
+    //   slot 0: addr 0x37c, wmask 0xf, wdata 0x5a  (s0)
+    //   slot 1: addr 0x378, wmask 0xf, wdata 0x123 (ra)
+    String bits(BigInt v) => 'b${v.toRadixString(2)}';
+    final addr = (BigInt.from(0x378) << 32) | BigInt.from(0x37c);
+    final wdata = (BigInt.from(0x123) << 32) | BigInt.from(0x5a);
+
+    FakeWaveformDataSource source({
+      bool withIxl = true,
+      int pcWidth = 32,
+      String wmask = 'b11111111',
+      String? addrBits,
+      String? wdataBits,
+    }) {
+      Variable v(String name, int width) => Variable(
+        name: name,
+        varType: VarType.wire,
+        direction: VarDirection.unknown,
+        signalRef: name,
+        scopePath: 'tb',
+        bitWidth: width,
+      );
+      return FakeWaveformDataSource(
+        endTime: 100,
+        scopes: [
+          Scope(
+            name: 'tb',
+            type: ScopeType.module,
+            path: 'tb',
+            variables: [
+              v('rvfi_valid', 1),
+              v('rvfi_pc_rdata', pcWidth),
+              v('rvfi_mem_addr', 4096),
+            ],
+          ),
+        ],
+        signals: {
+          'rvfi_valid': const [
+            SignalChange(time: 0, value: '0'),
+            SignalChange(time: 10, value: '1'),
+            SignalChange(time: 20, value: '0'),
+          ],
+          'rvfi_pc_rdata': const [SignalChange(time: 0, value: 'b11101100')],
+          'rvfi_insn': const [
+            SignalChange(time: 0, value: 'b1011100001010010'),
+          ],
+          'rvfi_ixl': ?(withIxl
+              ? const [SignalChange(time: 0, value: 'b01')]
+              : null),
+          'rvfi_mem_addr': [
+            SignalChange(time: 0, value: addrBits ?? bits(addr)),
+          ],
+          'rvfi_mem_rmask': const [SignalChange(time: 0, value: 'b0')],
+          'rvfi_mem_wmask': [SignalChange(time: 0, value: wmask)],
+          'rvfi_mem_wdata': [
+            SignalChange(time: 0, value: wdataBits ?? bits(wdata)),
+          ],
+        },
+      );
+    }
+
+    RvfiBindingSet bindingsFor(FakeWaveformDataSource src, {bool ixl = true}) =>
+        RvfiBindingSet(
+          refs: {
+            RvfiChannel.valid: const {0: 'rvfi_valid'},
+            RvfiChannel.pcRdata: const {0: 'rvfi_pc_rdata'},
+            RvfiChannel.insn: const {0: 'rvfi_insn'},
+            if (ixl) RvfiChannel.ixl: const {0: 'rvfi_ixl'},
+            RvfiChannel.memAddr: const {0: 'rvfi_mem_addr'},
+            RvfiChannel.memRmask: const {0: 'rvfi_mem_rmask'},
+            RvfiChannel.memWmask: const {0: 'rvfi_mem_wmask'},
+            RvfiChannel.memWdata: const {0: 'rvfi_mem_wdata'},
+          },
+          channelCount: 1,
+        );
+
+    RiscvRetiredInstruction only(
+      FakeWaveformDataSource src, {
+      bool ixl = true,
+    }) => const RiscvRetireStreamService(null)
+        .build(
+          source: src,
+          bindings: bindingsFor(src, ixl: ixl),
+          startTime: 0,
+          endTime: 100,
+        )
+        .single;
+
+    test('splits the ports into one access per active slot', () {
+      final r = only(source());
+      expect(r.memoryEffects, hasLength(2));
+      final [s0, s1] = r.memoryEffects;
+      expect((s0.address, s0.wmask, s0.wdata), (0x37c, 0xf, 0x5a));
+      expect((s1.address, s1.wmask, s1.wdata), (0x378, 0xf, 0x123));
+      expect(r.memory, s0);
+      expect(r.additionalMemory, [s1]);
+    });
+
+    test('takes XLEN from the declared rvfi_pc_rdata width without ixl', () {
+      final r = only(source(withIxl: false), ixl: false);
+      expect(r.memoryEffects.map((e) => e.address), [0x37c, 0x378]);
+    });
+
+    test('omits a slot whose masks are both zero', () {
+      // Slots 0 and 1 idle, slot 2 active: one effect, at slot 2's address.
+      final r = only(
+        source(
+          wmask: 'b111100000000',
+          addrBits: bits(BigInt.from(0x400) << 64 | BigInt.from(0x37c)),
+          wdataBits: bits(BigInt.from(7) << 64),
+        ),
+      );
+      expect(r.memoryEffects, hasLength(1));
+      expect(r.memory!.address, 0x400);
+      expect(r.memory!.wdata, 7);
+    });
+
+    test('a single RV64 access is not split', () {
+      // An 8-byte store on a 64-bit core: wmask 0xff is one access at XLEN 64.
+      final src = FakeWaveformDataSource(
+        endTime: 100,
+        signals: {
+          'rvfi_valid': const [
+            SignalChange(time: 0, value: '0'),
+            SignalChange(time: 10, value: '1'),
+          ],
+          'rvfi_pc_rdata': const [SignalChange(time: 0, value: 'b100')],
+          'rvfi_insn': const [SignalChange(time: 0, value: 'b10011')],
+          'rvfi_ixl': const [SignalChange(time: 0, value: 'b10')],
+          'rvfi_mem_addr': [
+            SignalChange(time: 0, value: bits(BigInt.from(0x100000008))),
+          ],
+          'rvfi_mem_rmask': const [SignalChange(time: 0, value: 'b0')],
+          'rvfi_mem_wmask': const [SignalChange(time: 0, value: 'b11111111')],
+          'rvfi_mem_wdata': const [SignalChange(time: 0, value: 'b101')],
+        },
+      );
+      final r = only(src);
+      expect(r.memoryEffects, hasLength(1));
+      expect(r.memory!.address, 0x100000008);
+      expect(r.memory!.wmask, 0xff);
     });
   });
 }
