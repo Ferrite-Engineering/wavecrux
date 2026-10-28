@@ -6947,6 +6947,8 @@
   "dockCollapseTooltip": "패널 숨기기",
   "dockMaximizeTooltip": "패널 최대화",
   "dockRestoreTooltip": "패널 크기 복원",
+  "dockSplitTooltip": "분할: 이 탭을 오른쪽에 계속 표시",
+  "dockUnsplitTooltip": "분할 닫기",
   "accessibilityBottomDockRegion": "패널 독",
   "stageTabRenameTooltip": "Stage 패널 이름 바꾸기",
   "dockTabValues": "값",

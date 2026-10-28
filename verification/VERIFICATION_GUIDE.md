@@ -719,6 +719,26 @@ Decoder parameter labels, descriptions, and enum-value labels are localized thro
 | Manifest `auto_bind` loads onto the binding | **UNIT, needs a C toolchain** (`test/services/decoders/ffi/ffi_decoder_loader_test.dart` — "width_param / width_scale" fixture) | Built test plugin. |
 | Against a real plugin and trace | **MANUAL** (steps 1 to 4) | Needs the plugin build. |
 
+#### 5.1.7 Transactions beside a Stage panel: the split bottom dock (from 1.2, issue #48)
+
+**What it does.** The bottom dock can show two tabs side by side. **Split: Keep This Tab on the Right** in the strip's action cluster moves the active tab into a second pane on the right and opens the next tab on the left, with a divider between them. Both tabs read as selected in the strip. Choosing another tab changes the left pane; choosing the right pane's tab swaps the two; **Close Split** returns to one tab. Below 640 dp of dock width the dock shows plain tabs and the split returns when it widens. The split is part of the tab's saved arrangement.
+
+**Steps.**
+
+1. Load `verification/fixtures/protocol/riscv/generated/riscv_rvfi_retire.vcd`, add a decoder so the transaction table has rows, and add an **RVFI Commit Inspector** Stage panel.
+2. Select the **Transactions** tab and choose **Split: Keep This Tab on the Right**. The Stage panel opens on the left, the transaction table stays on the right, and both follow the cursor.
+3. Drag the divider both ways: neither pane goes below a fifth of the dock. Double-click it: it centres.
+4. Narrow the window until the dock is under 640 dp: one tab shows. Widen it: both panes return.
+5. Save the session, close the tab and reopen it: the split comes back.
+6. Choose **Close Split**: one tab shows.
+
+| Check | Automatable? | How |
+|---|---|---|
+| Split, swap, narrow fallback, divider bounds, both tabs selected for a screen reader | **WIDGET** (`crux-shared/packages/crux_dock/test/crux_dock_test.dart`, "CruxDock split" group) | The shared dock. |
+| Transactions beside a Stage panel, toolbar glyphs, narrow window | **WIDGET** (`test/features/viewer/widgets/bottom_dock_test.dart`, "split (issue #48)" group) | |
+| The split round-trips through the session file | **UNIT** (`test/services/session/session_service_test.dart`, "the bottom dock split round-trips") | |
+| Real RVFI trace, divider feel | **MANUAL** (steps 1 to 6) | |
+
 ---
 
 ### 5.2 SPI decoder

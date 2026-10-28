@@ -83,6 +83,13 @@ class WaveCruxBottomDock extends ConsumerWidget {
       collapseTooltip: l10n.dockCollapseTooltip,
       onMaximize: notifier.toggleBottomDockMaximized,
       isMaximized: panelState.bottomDockMaximized,
+      // Two tabs side by side (Transactions beside a Stage panel); plain
+      // tabs again when the window is narrow. Desktop region only: the
+      // phone sheet has no room for two panes.
+      splitId: panelState.bottomDockSplit,
+      onSplitChanged: notifier.setBottomDockSplit,
+      splitTooltip: l10n.dockSplitTooltip,
+      unsplitTooltip: l10n.dockUnsplitTooltip,
       maximizeTooltip: l10n.dockMaximizeTooltip,
       restoreTooltip: l10n.dockRestoreTooltip,
       semanticsLabel: l10n.accessibilityBottomDockRegion,

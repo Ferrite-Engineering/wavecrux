@@ -401,6 +401,29 @@ void main() {
       });
     });
 
+    test(
+      'the bottom dock split round-trips, and is absent when unsplit',
+      () async {
+        await _withTempFile((path) async {
+          const s = SessionState(
+            bottomDockTab: 'stage:stagePanel_0',
+            bottomDockSplit: 'transactions',
+          );
+          await _service.saveSession(s, path);
+          final loaded = await _service.loadSession(path);
+          expect(loaded.bottomDockTab, 'stage:stagePanel_0');
+          expect(loaded.bottomDockSplit, 'transactions');
+
+          await _service.saveSession(const SessionState(), path);
+          expect(
+            await File(path).readAsString(),
+            isNot(contains('bottomDockSplit')),
+          );
+          expect((await _service.loadSession(path)).bottomDockSplit, isNull);
+        });
+      },
+    );
+
     test('statisticsStripVisible preserved when true', () async {
       await _withTempFile((path) async {
         const s = SessionState(statisticsStripVisible: true);

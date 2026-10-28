@@ -6947,6 +6947,8 @@
   "dockCollapseTooltip": "パネルを隠す",
   "dockMaximizeTooltip": "パネルを最大化",
   "dockRestoreTooltip": "パネルサイズを元に戻す",
+  "dockSplitTooltip": "分割: このタブを右側に表示したままにする",
+  "dockUnsplitTooltip": "分割を閉じる",
   "accessibilityBottomDockRegion": "パネルドック",
   "stageTabRenameTooltip": "Stage パネルの名前を変更",
   "dockTabValues": "値",

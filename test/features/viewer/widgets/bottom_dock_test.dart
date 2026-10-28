@@ -94,6 +94,60 @@ void main() {
       expect(find.byType(TransactionTablePanel), findsOneWidget);
     });
 
+    group('split (issue #48)', () {
+      testWidgets('Transactions stays on the right beside a Stage panel, '
+          'and the split is kept in the layout state', (tester) async {
+        final container = await _pump(tester);
+        container.read(panelLayoutProvider.notifier)
+          ..setStageViewVisible(visible: true)
+          ..setTransactionViewVisible(visible: true);
+        container.read(stageWorkspaceProvider.notifier).addPanel('Commit');
+        await tester.pumpAndSettle();
+        // The new Stage tab revealed itself; go back to Transactions.
+        container
+            .read(panelLayoutProvider.notifier)
+            .setBottomDockTab(kBottomDockTabTransactions);
+        await tester.pumpAndSettle();
+        expect(find.byType(TransactionTablePanel), findsOneWidget);
+        expect(find.byType(StagePanel), findsNothing);
+
+        await tester.tap(find.byKey(const ValueKey('cruxDockSplit')));
+        await tester.pumpAndSettle();
+        final panels = container.read(panelLayoutProvider);
+        expect(panels.bottomDockSplit, kBottomDockTabTransactions);
+        expect(panels.effectiveBottomDockTab, startsWith('stage:'));
+        // Both are on screen, so both toolbar glyphs light.
+        expect(panels.bottomDockShowsTransactions, isTrue);
+        expect(panels.bottomDockShowsStage, isTrue);
+        expect(find.byType(TransactionTablePanel), findsOneWidget);
+        expect(find.byType(StagePanel), findsOneWidget);
+        expect(
+          tester.getCenter(find.byType(StagePanel)).dx,
+          lessThan(tester.getCenter(find.byType(TransactionTablePanel)).dx),
+        );
+
+        await tester.tap(find.byKey(const ValueKey('cruxDockSplit')));
+        await tester.pumpAndSettle();
+        expect(container.read(panelLayoutProvider).bottomDockSplit, isNull);
+        expect(find.byType(TransactionTablePanel), findsNothing);
+        expect(find.byType(StagePanel), findsOneWidget);
+      });
+
+      testWidgets('a narrow window shows plain tabs', (tester) async {
+        await tester.binding.setSurfaceSize(const Size(500, 600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        final container = await _pump(tester);
+        container.read(panelLayoutProvider.notifier)
+          ..setStageViewVisible(visible: true)
+          ..setBottomDockSplit(kBottomDockTabTransactions)
+          ..revealBottomDockTab(kBottomDockStagePrefix);
+        container.read(stageWorkspaceProvider.notifier).addPanel('Commit');
+        await tester.pumpAndSettle();
+        expect(find.byType(TransactionTablePanel), findsNothing);
+        expect(find.byType(StagePanel), findsOneWidget);
+      });
+    });
+
     group('Stage — dynamic per-panel tabs', () {
       testWidgets('one dock tab per Stage panel, labeled with its name', (
         tester,

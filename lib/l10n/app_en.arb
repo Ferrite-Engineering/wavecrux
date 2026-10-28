@@ -7177,6 +7177,14 @@
   "@dockRestoreTooltip": {
     "description": "Tooltip on the dock strip button that restores the bottom panel from maximized to its previous size."
   },
+  "dockSplitTooltip": "Split: Keep This Tab on the Right",
+  "@dockSplitTooltip": {
+    "description": "Tooltip of the bottom dock's split button: the active tab stays open in a second pane on the right while another tab is shown beside it."
+  },
+  "dockUnsplitTooltip": "Close Split",
+  "@dockUnsplitTooltip": {
+    "description": "Tooltip of the bottom dock's split button while the dock is split: shows one tab again."
+  },
   "accessibilityBottomDockRegion": "Panel dock",
   "@accessibilityBottomDockRegion": {
     "description": "Accessibility label announced for the bottom dock region."

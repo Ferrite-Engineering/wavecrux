@@ -6947,6 +6947,8 @@
   "dockCollapseTooltip": "隐藏面板",
   "dockMaximizeTooltip": "最大化面板",
   "dockRestoreTooltip": "恢复面板大小",
+  "dockSplitTooltip": "拆分：将此标签页保留在右侧",
+  "dockUnsplitTooltip": "关闭拆分",
   "accessibilityBottomDockRegion": "面板停靠区",
   "stageTabRenameTooltip": "重命名 Stage 面板",
   "dockTabValues": "值",

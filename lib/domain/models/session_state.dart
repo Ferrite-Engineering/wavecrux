@@ -39,6 +39,7 @@ class SessionState {
     this.annotationsPanelVisible,
     this.rtlSourceVisible = false,
     this.bottomDockTab,
+    this.bottomDockSplit,
     this.rightDockTab,
     this.dockPlacements = const <String, String>{},
     this.cocotbLogPath,
@@ -119,6 +120,10 @@ class SessionState {
   /// dock existed (restores via the legacy priority-chain derivation in
   /// `PanelLayoutState.effectiveBottomDockTab`).
   final String? bottomDockTab;
+
+  /// The bottom-dock tab shown beside the active one in a split dock, or
+  /// null when the dock is not split.
+  final String? bottomDockSplit;
 
   /// The right dock's active tab id — same null contract as [bottomDockTab].
   final String? rightDockTab;
@@ -242,6 +247,7 @@ class SessionState {
     bool clearAnnotationsPanelVisible = false,
     bool? rtlSourceVisible,
     String? bottomDockTab,
+    String? bottomDockSplit,
     String? rightDockTab,
     Map<String, String>? dockPlacements,
     Object? cocotbLogPath = _unset,
@@ -285,6 +291,7 @@ class SessionState {
         : (annotationsPanelVisible ?? this.annotationsPanelVisible),
     rtlSourceVisible: rtlSourceVisible ?? this.rtlSourceVisible,
     bottomDockTab: bottomDockTab ?? this.bottomDockTab,
+    bottomDockSplit: bottomDockSplit ?? this.bottomDockSplit,
     rightDockTab: rightDockTab ?? this.rightDockTab,
     dockPlacements: dockPlacements ?? this.dockPlacements,
     cocotbLogPath: cocotbLogPath == _unset

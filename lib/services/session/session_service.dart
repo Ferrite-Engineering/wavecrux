@@ -309,6 +309,8 @@ class SessionService {
       if (!state.annotationsVisible) 'annotationsVisible': false,
       // Omitted when null so pre-dock sessions round-trip byte-stable.
       if (state.bottomDockTab != null) 'bottomDockTab': state.bottomDockTab,
+      if (state.bottomDockSplit != null)
+        'bottomDockSplit': state.bottomDockSplit,
       if (state.rightDockTab != null) 'rightDockTab': state.rightDockTab,
       if (state.dockPlacements.isNotEmpty)
         'dockPlacements': state.dockPlacements,
@@ -518,6 +520,7 @@ class SessionService {
       annotationsPanelVisible: panelsJson['annotationsPanel'] as bool?,
       rtlSourceVisible: (panelsJson['rtlSource'] as bool?) ?? false,
       bottomDockTab: panelsJson['bottomDockTab'] as String?,
+      bottomDockSplit: panelsJson['bottomDockSplit'] as String?,
       rightDockTab: panelsJson['rightDockTab'] as String?,
       dockPlacements: {
         for (final e

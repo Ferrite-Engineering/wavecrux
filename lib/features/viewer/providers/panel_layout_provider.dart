@@ -97,6 +97,7 @@ class PanelLayoutState {
     this.annotationsPanelVisible,
     this.bottomDockTab,
     this.bottomDockMaximized = false,
+    this.bottomDockSplit,
     this.rightDockTab,
     this.leftDockTab,
     this.dockPlacements = const <String, String>{},
@@ -190,6 +191,12 @@ class PanelLayoutState {
   /// drag-resize clears it.
   final bool bottomDockMaximized;
 
+  /// The bottom-dock tab kept open in a second pane on the right, beside
+  /// the active tab (the dock's split), or null when the dock is not split.
+  /// Persisted in the session sidecar with the active tab. A split tab that
+  /// is absent, or the active tab, shows the dock unsplit.
+  final String? bottomDockSplit;
+
   /// The bottom-dock tab that is (or would be, when the dock is hidden)
   /// active.
   ///
@@ -215,18 +222,21 @@ class PanelLayoutState {
     return kBottomDockTabTransactions;
   }
 
-  /// Whether a Stage tab is on screen — the gate for Stage Playback (the
-  /// transport lives inside the Stage panel) and the toolbar's Stage glyph.
+  /// Whether a Stage tab is on screen, active or in the split's right pane:
+  /// the gate for Stage Playback (the transport lives inside the Stage
+  /// panel) and the toolbar's Stage glyph.
   bool get bottomDockShowsStage =>
       transactionViewVisible &&
       stageViewVisible &&
-      effectiveBottomDockTab.startsWith(kBottomDockStagePrefix);
+      (effectiveBottomDockTab.startsWith(kBottomDockStagePrefix) ||
+          (bottomDockSplit?.startsWith(kBottomDockStagePrefix) ?? false));
 
-  /// Whether the transaction table is on screen — the toolbar's
-  /// transaction-table glyph.
+  /// Whether the transaction table is on screen, active or in the split's
+  /// right pane: the toolbar's transaction-table glyph.
   bool get bottomDockShowsTransactions =>
       transactionViewVisible &&
-      effectiveBottomDockTab == kBottomDockTabTransactions;
+      (effectiveBottomDockTab == kBottomDockTabTransactions ||
+          bottomDockSplit == kBottomDockTabTransactions);
 
   /// The right dock's active tab id, or null for a session that never picked
   /// one.
@@ -300,6 +310,8 @@ class PanelLayoutState {
     bool clearAnnotationsPanelVisible = false,
     String? bottomDockTab,
     bool? bottomDockMaximized,
+    String? bottomDockSplit,
+    bool clearBottomDockSplit = false,
     String? rightDockTab,
     String? leftDockTab,
     Map<String, String>? dockPlacements,
@@ -325,6 +337,9 @@ class PanelLayoutState {
           : (annotationsPanelVisible ?? this.annotationsPanelVisible),
       bottomDockTab: bottomDockTab ?? this.bottomDockTab,
       bottomDockMaximized: bottomDockMaximized ?? this.bottomDockMaximized,
+      bottomDockSplit: clearBottomDockSplit
+          ? null
+          : (bottomDockSplit ?? this.bottomDockSplit),
       rightDockTab: rightDockTab ?? this.rightDockTab,
       leftDockTab: leftDockTab ?? this.leftDockTab,
       dockPlacements: dockPlacements ?? this.dockPlacements,
@@ -350,6 +365,7 @@ class PanelLayoutState {
         other.annotationsPanelVisible == annotationsPanelVisible &&
         other.bottomDockTab == bottomDockTab &&
         other.bottomDockMaximized == bottomDockMaximized &&
+        other.bottomDockSplit == bottomDockSplit &&
         other.rightDockTab == rightDockTab &&
         other.leftDockTab == leftDockTab &&
         _placementsEqual(other.dockPlacements, dockPlacements) &&
@@ -372,6 +388,7 @@ class PanelLayoutState {
     annotationsPanelVisible,
     bottomDockTab,
     bottomDockMaximized,
+    bottomDockSplit,
     rightDockTab,
     leftDockTab,
     Object.hashAllUnordered(
@@ -510,6 +527,12 @@ class PanelLayoutNotifier extends _$PanelLayoutNotifier {
     bottomDockTab: id,
     transactionViewVisible: true,
   );
+
+  /// Splits the bottom dock with [id] in the right pane, or unsplits it
+  /// when [id] is null.
+  void setBottomDockSplit(String? id) => state = id == null
+      ? state.copyWith(clearBottomDockSplit: true)
+      : state.copyWith(bottomDockSplit: id);
 
   /// Toggles the bottom dock between maximized and the user's stored size.
   /// Maximize never overwrites [PanelLayoutState.bottomPaneSize] — restoring

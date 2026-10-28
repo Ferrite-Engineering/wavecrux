@@ -238,6 +238,9 @@ class SessionNotifier extends _$SessionNotifier {
     if (snapshotDockTab != null) {
       ref.read(panelLayoutProvider.notifier).setBottomDockTab(snapshotDockTab);
     }
+    ref
+        .read(panelLayoutProvider.notifier)
+        .setBottomDockSplit(snapshot.bottomDockSplit);
     final snapshotRightTab = snapshot.rightDockTab;
     if (snapshotRightTab != null) {
       ref.read(panelLayoutProvider.notifier).setRightDockTab(snapshotRightTab);
@@ -339,6 +342,7 @@ class SessionNotifier extends _$SessionNotifier {
       transactionViewVisible: panels.transactionViewVisible,
       stageViewVisible: panels.stageViewVisible,
       bottomDockTab: panels.bottomDockTab,
+      bottomDockSplit: panels.bottomDockSplit,
       rightDockTab: panels.rightDockTab,
       dockPlacements: panels.dockPlacements,
       statisticsStripVisible: panels.statisticsStripVisible,
@@ -515,6 +519,7 @@ class SessionNotifier extends _$SessionNotifier {
     if (sessionDockTab != null) {
       panelNotifier.setBottomDockTab(sessionDockTab);
     }
+    panelNotifier.setBottomDockSplit(session.bottomDockSplit);
     final sessionRightTab = session.rightDockTab;
     if (sessionRightTab != null) {
       panelNotifier.setRightDockTab(sessionRightTab);
