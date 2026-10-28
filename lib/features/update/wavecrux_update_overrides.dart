@@ -65,8 +65,9 @@ final List<Override> wavecruxUpdateOverrides = <Override>[
   // gets (the manifest's `open_core_version`), so a release that touched only
   // Pro features puts no banner in front of free users. The Pro overlay's
   // licence binding drives `licenseTierProvider`; this follows it, and a key
-  // entered mid-session re-presents the last check's result at once. Mobile
-  // store builds never fetch, so this matters on desktop only.
+  // entered mid-session re-presents the last check's result at once. Store
+  // builds fetch too (`checkOnMobile`), and this applies to the store release
+  // they compare with.
   updateEditionProvider.overrideWith(
     (ref) => UpdateEdition.of(
       paidFeaturesUnlocked:
