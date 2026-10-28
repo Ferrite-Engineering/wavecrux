@@ -243,6 +243,39 @@ void main() {
       expect(packedWidth(const {}), 'bits=72');
     });
 
+    test('a short_label field becomes the transaction short label and '
+        'leaves the other fields alone', () async {
+      if (_skipIfToolchainAbsent(toolchainAvailable)) return;
+
+      final dir = await _stageDirectory(
+        sources: {'width': pluginRoot},
+        ext: fixtureExtension,
+      );
+      final registry = DecoderRegistry.forTesting();
+      final loader = FfiDecoderLoader(
+        resolver: _resolverFor(dir),
+        registry: registry,
+      );
+      addTearDown(loader.dispose);
+      await loader.scan();
+
+      final tx = registry
+          .getFactory('test_width_param')!(
+            const DecoderConfig(
+              signalBindings: {'data': 'top.d', 'datak': 'top.k'},
+            ),
+          )
+          .decode(
+            0,
+            100,
+            (name, time) => '0',
+            (name, start, end) => const <(int, String)>[(0, '0')],
+          )
+          .single;
+      expect(tx.shortLabel, 'w');
+      expect(tx.fields, {'note': 'kept'});
+    });
+
     test('reports abiMismatch and does not register the decoder', () async {
       if (_skipIfToolchainAbsent(toolchainAvailable)) return;
 

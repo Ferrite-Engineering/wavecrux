@@ -2036,7 +2036,32 @@ overprinted ones.
 5. With three or more transactions in flight at once, verify no label is drawn
    over another label's text.
 
-#### 5.11.6 Automation Assessment
+#### 5.11.6 Short labels and the hover tooltip (from 1.2)
+
+A decoder can give each transaction a short form of its label (a plugin sets
+`short_label` in its transaction's `fields_json`). The lane draws the full
+label when it fits, the short label when it does not (down to a 12 px block),
+and otherwise truncates the full label with an ellipsis. Resting the mouse on
+any transaction shows its full label beside the pointer, with the error
+message on a second line for an error transaction.
+
+1. Load a plugin decoder that emits short labels (the PCIe PIPE or Data Link
+   Layer decoders from the public decoder plugins, in a release that lists
+   short labels in its changelog) on a trace with DLLPs.
+2. Zoom until a DLLP block is about 30 to 60 px wide. Verify it shows the
+   short form (`UFC-NP`, `Ack 12`) rather than a truncated full label.
+3. Zoom in until the full label fits. Verify the full label replaces the
+   short one.
+4. Rest the mouse on a block for about half a second. Verify a tooltip shows
+   the full label beside the pointer; move to the next block and verify the
+   tooltip follows at once; move to an empty part of the lane and verify it
+   disappears. Press, scroll or zoom and verify it disappears.
+5. Hover an error transaction. Verify the tooltip's second line is the error
+   message.
+6. Open the transaction table. Verify the Label column shows the full label
+   and no `short_label` field is listed.
+
+#### 5.11.7 Automation Assessment
 
 | Test | Coverage |
 |---|---|
@@ -2048,6 +2073,9 @@ overprinted ones.
 | Multi-decoder lanes coexist without collision | **WIDGET** (`waveform_canvas_transaction_test.dart` — "renders multiple decoder lanes without exception") |
 | Overlapping transactions: sub-rows, stable across pan, back-to-back stays one row, collisions past the lane's depth are backed | **UNIT** (`transaction_painter_test.dart` — "overlapping transactions" group) |
 | Click on an overlapping transaction selects the one in that sub-row | **WIDGET** (`waveform_canvas_transaction_test.dart` — "tap on an overlapping transaction selects the one in that sub-row") |
+| Full label when it fits, short label when not, truncated full label without one, short label in 12 to 24 px blocks | **UNIT** (`transaction_painter_test.dart` — "short labels" group) |
+| Hover shows the full label after a rest and hides off the block | **WIDGET** (`waveform_canvas_transaction_test.dart` — "resting the mouse on a transaction shows its full label") |
+| A plugin's `short_label` field becomes the short label and leaves the fields | **UNIT, needs a C toolchain** (`test/services/decoders/ffi/ffi_decoder_loader_test.dart` — "a short_label field becomes the transaction short label") |
 | Error styling | **WIDGET — pending** (canvas-side error-block painter coverage; queued — needs golden-image or color-assertion infra) |
 | Tap-to-jump cursor behavior | **INTEGRATION_TEST — pending** (canvas tap → cursor + viewport pan; gesture-arena interaction; queued in `integration_test/PENDING.md`) |
 | Label truncation | **MANUAL** — visual judgement |

@@ -56,6 +56,7 @@ import 'package:wavecrux/features/viewer/widgets/cursor_overlay.dart';
 import 'package:wavecrux/features/viewer/widgets/inline_cursor_value_overlay.dart';
 import 'package:wavecrux/features/viewer/widgets/shared_marker_overlay.dart';
 import 'package:wavecrux/features/viewer/widgets/shared_pointer_overlay.dart';
+import 'package:wavecrux/features/viewer/widgets/transaction_hover_tooltip.dart';
 import 'package:wavecrux/features/viewer/widgets/waveform_gesture_handler.dart';
 import 'package:wavecrux/features/viewer/widgets/waveform_scroll_modifier_interceptor.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
@@ -197,6 +198,11 @@ class _WaveformCanvasState extends ConsumerState<WaveformCanvas> {
   /// finishes inside this never shows the indicator, so fast ones do not flash.
   static const Duration _kProgressDelay = Duration(milliseconds: 200);
 
+  /// How long the mouse rests on a decoder transaction before its full
+  /// label shows. Long enough that sweeping across a lane does not flash
+  /// tooltips, short enough to read a truncated label without waiting.
+  static const Duration _kTransactionHoverDelay = Duration(milliseconds: 350);
+
   /// Floor on how many loaded signals are retained before LRU eviction kicks
   /// in; below this the unload churn isn't worth it.
   static const int _kMinLoadedBudget = 256;
@@ -331,6 +337,17 @@ class _WaveformCanvasState extends ConsumerState<WaveformCanvas> {
 
   List<WaveformLaneData> _lastLanes = const [];
 
+  // ── transaction hover tooltip ───────────────────────────────────────────────
+
+  /// The transaction under a resting mouse pointer, shown with its full
+  /// label by [TransactionHoverTooltip].
+  final ValueNotifier<TransactionHover?> _transactionHover =
+      ValueNotifier<TransactionHover?>(null);
+
+  /// The hover waiting out [_kTransactionHoverDelay] before it shows.
+  TransactionHover? _pendingTransactionHover;
+  Timer? _transactionHoverTimer;
+
   /// Compact geometry of ALL lanes — the coordinate system for the load
   /// planner, the scroll extent, and the materialization window.
   LaneGeometryIndex _lastGeometry = LaneGeometryIndex.empty;
@@ -406,6 +423,8 @@ class _WaveformCanvasState extends ConsumerState<WaveformCanvas> {
 
   @override
   void dispose() {
+    _transactionHoverTimer?.cancel();
+    _transactionHover.dispose();
     _slowLoadTimer?.cancel();
     _scrollLoadSettle.dispose();
     _verticalScroll.removeListener(_onScroll);
@@ -1269,6 +1288,54 @@ class _WaveformCanvasState extends ConsumerState<WaveformCanvas> {
     );
   }
 
+  /// Tracks the mouse over transaction lanes for [TransactionHoverTooltip].
+  /// [viewportPosition] is null when the pointer left the canvas or pressed.
+  ///
+  /// The tooltip appears once the pointer rests on a transaction for
+  /// [_kTransactionHoverDelay], then follows it from block to block without
+  /// waiting again, and hides over a gap.
+  void _onCanvasHover(Offset? viewportPosition) {
+    final tx = viewportPosition == null
+        ? null
+        : _transactionUnder(viewportPosition);
+    if (tx == null) {
+      _transactionHoverTimer?.cancel();
+      _transactionHoverTimer = null;
+      _pendingTransactionHover = null;
+      _transactionHover.value = null;
+      return;
+    }
+    final hover = TransactionHover(tx, viewportPosition!);
+    if (_transactionHover.value != null) {
+      _transactionHover.value = hover;
+      return;
+    }
+    final waitingOnSame = _pendingTransactionHover?.transaction == tx;
+    _pendingTransactionHover = hover;
+    if (waitingOnSame && _transactionHoverTimer != null) return;
+    _transactionHoverTimer?.cancel();
+    _transactionHoverTimer = Timer(_kTransactionHoverDelay, () {
+      _transactionHoverTimer = null;
+      if (!mounted) return;
+      _transactionHover.value = _pendingTransactionHover;
+    });
+  }
+
+  /// The transaction drawn under [viewportPosition], in whichever
+  /// transaction lane it falls in, or null.
+  DecodedTransaction? _transactionUnder(Offset viewportPosition) {
+    final scrollOffset = _verticalScroll.hasClients
+        ? _verticalScroll.offset
+        : 0.0;
+    final canvasY = viewportPosition.dy + scrollOffset;
+    for (final lane in _lastLanes) {
+      if (lane.kind != WaveformLaneKind.transaction) continue;
+      if (canvasY < lane.y || canvasY > lane.y + lane.height) continue;
+      return _transactionAt(lane, viewportPosition.dx, canvasY);
+    }
+    return null;
+  }
+
   // ── long-press context menu ─────────────────────────────────────────────────
 
   /// Fired by [WaveformGestureHandler] when a touch pointer is held stationary
@@ -1861,6 +1928,7 @@ class _WaveformCanvasState extends ConsumerState<WaveformCanvas> {
             onAltDragUpdate: _extendArrow,
             onAltDragEnd: _endArrow,
             onVerticalScroll: _onTrackpadVerticalScroll,
+            onHover: _onCanvasHover,
             // Stack the cursor overlay above the scrolling canvas so cursor
             // moves only invalidate the overlay's RepaintBoundary, not the
             // lane painter. The overlay is wrapped in IgnorePointer so it
@@ -2027,6 +2095,11 @@ class _WaveformCanvasState extends ConsumerState<WaveformCanvas> {
                         scrollOffset: _viewportTop ?? 0,
                       ),
                     ),
+                  // Full label of the decoder transaction under the mouse.
+                  // Topmost so no overlay hides it; never takes a pointer.
+                  Positioned.fill(
+                    child: TransactionHoverTooltip(hover: _transactionHover),
+                  ),
                 ],
               ),
             ),

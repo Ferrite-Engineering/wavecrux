@@ -1346,11 +1346,17 @@ class _PluginProtocolDecoder implements ProtocolDecoder {
       final label = tx.label.cast<Utf8>().toDartString();
       final fieldsJson = tx.fields_json.cast<Utf8>().toDartString();
       final fields = _parseFieldsJson(fieldsJson);
+      // ABI 1.3: a `short_label` field is the lane's abbreviated label, not
+      // a decoded field. An older host shows it as an ordinary field.
+      final shortLabel = fields.remove(DecodedTransaction.shortLabelField);
       out.add(
         DecodedTransaction(
           startTime: _fsToTicksFloor(tx.start_fs, fsPerTick),
           endTime: _fsToTicksCeil(tx.end_fs, fsPerTick),
           label: label,
+          shortLabel: (shortLabel == null || shortLabel.isEmpty)
+              ? null
+              : shortLabel,
           fields: fields,
           isError: tx.is_error != 0,
         ),
@@ -1358,11 +1364,13 @@ class _PluginProtocolDecoder implements ProtocolDecoder {
     }
   }
 
+  /// The plugin's `fields_json` as a modifiable map (the caller removes
+  /// `short_label` from it).
   Map<String, String> _parseFieldsJson(String raw) {
-    if (raw.isEmpty) return const <String, String>{};
+    if (raw.isEmpty) return <String, String>{};
     try {
       final decoded = jsonDecode(raw);
-      if (decoded is! Map) return const <String, String>{};
+      if (decoded is! Map) return <String, String>{};
       final out = <String, String>{};
       decoded.forEach((key, value) {
         if (key is String) {
@@ -1371,7 +1379,7 @@ class _PluginProtocolDecoder implements ProtocolDecoder {
       });
       return out;
     } on FormatException {
-      return const <String, String>{};
+      return <String, String>{};
     }
   }
 }

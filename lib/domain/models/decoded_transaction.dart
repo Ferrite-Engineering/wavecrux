@@ -14,6 +14,7 @@ class DecodedTransaction {
     required this.startTime,
     required this.endTime,
     required this.label,
+    this.shortLabel,
     this.fields = const {},
     this.isError = false,
     this.errorMessage,
@@ -28,6 +29,20 @@ class DecodedTransaction {
   /// Short human-readable summary shown in the waveform lane
   /// (e.g. `"Write 0xFF"`, `"Read 0x50"`).
   final String label;
+
+  /// Optional abbreviated form of [label] (e.g. `"UFC-NP"` for
+  /// `"UpdateFC-NP VC0 H=0x01 D=0x040"`), drawn in the waveform lane when the
+  /// block is too narrow for [label]. The full [label] is always shown in the
+  /// lane's hover tooltip and in the transaction table. Null means the lane
+  /// truncates [label] instead.
+  ///
+  /// A plugin decoder sets it with a `short_label` key in its transaction's
+  /// `fields_json` ([shortLabelField]); the loader moves it here, so it is
+  /// not listed among [fields].
+  final String? shortLabel;
+
+  /// The `fields_json` key a plugin decoder uses to carry [shortLabel].
+  static const String shortLabelField = 'short_label';
 
   /// Decoded field name → formatted value pairs shown in the detail view.
   ///
@@ -49,6 +64,7 @@ class DecodedTransaction {
     int? startTime,
     int? endTime,
     String? label,
+    String? shortLabel,
     Map<String, String>? fields,
     bool? isError,
     String? errorMessage,
@@ -57,6 +73,7 @@ class DecodedTransaction {
     startTime: startTime ?? this.startTime,
     endTime: endTime ?? this.endTime,
     label: label ?? this.label,
+    shortLabel: shortLabel ?? this.shortLabel,
     fields: fields ?? this.fields,
     isError: isError ?? this.isError,
     errorMessage: clearErrorMessage
@@ -73,6 +90,7 @@ class DecodedTransaction {
     if (startTime != other.startTime) return false;
     if (endTime != other.endTime) return false;
     if (label != other.label) return false;
+    if (shortLabel != other.shortLabel) return false;
     if (isError != other.isError) return false;
     if (errorMessage != other.errorMessage) return false;
     return _fieldsEqual(fields, other.fields);
@@ -83,6 +101,7 @@ class DecodedTransaction {
     startTime,
     endTime,
     label,
+    shortLabel,
     isError,
     errorMessage,
     fields.entries.fold<int>(0, (h, e) => h ^ Object.hash(e.key, e.value)),

@@ -31,6 +31,7 @@ class TransactionBlock {
     required this.coalescedCount,
     this.occludes = false,
     this.label,
+    this.shortLabel,
   });
 
   /// Left edge in canvas coordinates, clamped to the lane.
@@ -73,6 +74,12 @@ class TransactionBlock {
   /// Label to draw centred in the block, or null when the block is too
   /// narrow for text.
   final String? label;
+
+  /// The transaction's [DecodedTransaction.shortLabel], drawn instead of
+  /// [label] when [label] does not fit, or alone when the block is too
+  /// narrow for [label] but wide enough for a short form. Null when the
+  /// decoder gave none or the block is too narrow even for it.
+  final String? shortLabel;
 }
 
 /// Paints decoded protocol-decoder transactions onto a dedicated lane.
@@ -120,6 +127,13 @@ abstract final class TransactionPainter {
 
   /// Minimum block width (px) at which the label text is drawn.
   static const double _minWidthForLabel = 24;
+
+  /// Minimum block width (px) at which a short label is drawn.
+  static const double _minWidthForShortLabel = 12;
+
+  /// Horizontal padding for a short label in a block too narrow for the
+  /// usual [_labelPadding].
+  static const double _shortLabelPadding = 2;
 
   /// Minimum block width (px) at which the block is drawn as a filled rect
   /// rather than a single vertical line.
@@ -267,6 +281,9 @@ abstract final class TransactionPainter {
           isDensityBar: false,
           coalescedCount: 1,
           label: (xEnd - xStart) >= _minWidthForLabel ? tx.label : null,
+          shortLabel: (xEnd - xStart) >= _minWidthForShortLabel
+              ? tx.shortLabel
+              : null,
         ),
       );
       blockRows.add(row);
@@ -307,6 +324,7 @@ abstract final class TransactionPainter {
         coalescedCount: 1,
         occludes: occludes,
         label: block.label,
+        shortLabel: block.shortLabel,
       );
     }
 
@@ -460,8 +478,7 @@ abstract final class TransactionPainter {
         ..strokeWidth = block.isSelected ? 2.0 : 1.0;
       canvas.drawRRect(rrect, strokePaint);
 
-      final label = block.label;
-      if (label != null) {
+      if (block.label != null || block.shortLabel != null) {
         final isSubRow = blockRect.height < blockBottom - blockTop - 0.5;
         final fontSize = isSubRow
             ? math.min(baseFontSize, blockRect.height - 1.5)
@@ -474,13 +491,11 @@ abstract final class TransactionPainter {
           }
           _paintLabel(
             canvas,
-            label,
+            block,
             blockRect,
             fontSize == baseFontSize
                 ? labelStyle
                 : labelStyle.copyWith(fontSize: fontSize),
-            isSelected: block.isSelected,
-            isError: block.isError,
           );
           if (isSubRow) canvas.restore();
         }
@@ -489,6 +504,17 @@ abstract final class TransactionPainter {
 
     canvas.restore();
   }
+
+  /// The text [paint] draws in [block] with [style]: the full label when it
+  /// fits, else the decoder's short label when it has one, else the full
+  /// label truncated with an ellipsis. Null when nothing is drawn.
+  @visibleForTesting
+  static String? debugDrawnLabel(TransactionBlock block, TextStyle style) =>
+      _layoutLabel(
+        block,
+        Rect.fromLTRB(block.xStart, block.top, block.xEnd, block.bottom),
+        style,
+      )?.text;
 
   /// Releases every cached label paragraph, so a test can measure cache
   /// behaviour from a known-empty state. Production code relies on the
@@ -628,40 +654,80 @@ abstract final class TransactionPainter {
     canvas.restore();
   }
 
-  /// Paints [text] centred within [blockRect], truncating with '…' when
-  /// the available width is too narrow.
+  /// Paints the block's label centred within [blockRect]: the full label
+  /// when it fits, else the short label when the decoder gave one, else the
+  /// full label truncated with '…'.
   static void _paintLabel(
     Canvas canvas,
-    String text,
+    TransactionBlock block,
     Rect blockRect,
-    TextStyle style, {
-    required bool isSelected,
-    required bool isError,
-  }) {
-    final availableWidth = blockRect.width - _labelPadding * 2;
-    if (availableWidth < 6) return;
+    TextStyle style,
+  ) {
+    final layout = _layoutLabel(block, blockRect, style);
+    if (layout == null) return;
+    final (:paragraph, :padding, :constraint, text: _) = layout;
 
-    // Bucketed to whole pixels so panning by a fraction of a pixel does not
-    // miss the cache; the sub-pixel difference only shifts the ellipsis point.
-    final constraint = availableWidth.floorToDouble();
-    final paragraph = _labelParagraph(
-      text: text,
-      constraint: constraint,
-      style: style,
-      isSelected: isSelected,
-      isError: isError,
-    );
-
-    final textX =
-        blockRect.left + _labelPadding + (constraint - paragraph.width) / 2;
+    final textX = blockRect.left + padding + (constraint - paragraph.width) / 2;
     final textY = blockRect.top + (blockRect.height - paragraph.height) / 2;
 
     canvas.drawParagraph(
       paragraph,
-      Offset(
-        textX.clamp(blockRect.left + _labelPadding, blockRect.right),
-        textY,
+      Offset(textX.clamp(blockRect.left + padding, blockRect.right), textY),
+    );
+  }
+
+  /// Lays out the label [_paintLabel] draws in [block], or null when the
+  /// block has no room for any.
+  static ({
+    String text,
+    ui.Paragraph paragraph,
+    double padding,
+    double constraint,
+  })?
+  _layoutLabel(TransactionBlock block, Rect blockRect, TextStyle style) {
+    // Bucketed to whole pixels so panning by a fraction of a pixel does not
+    // miss the cache; the sub-pixel difference only shifts the ellipsis point.
+    double? constraintFor(double padding) {
+      final available = blockRect.width - padding * 2;
+      return available < 6 ? null : available.floorToDouble();
+    }
+
+    final full = block.label;
+    final short = block.shortLabel;
+    if (full != null) {
+      final constraint = constraintFor(_labelPadding);
+      if (constraint != null) {
+        final paragraph = _labelParagraph(
+          text: full,
+          constraint: constraint,
+          style: style,
+          isSelected: block.isSelected,
+          isError: block.isError,
+        );
+        if (!paragraph.didExceedMaxLines || short == null) {
+          return (
+            text: full,
+            paragraph: paragraph,
+            padding: _labelPadding,
+            constraint: constraint,
+          );
+        }
+      }
+    }
+    if (short == null) return null;
+    final constraint = constraintFor(_shortLabelPadding);
+    if (constraint == null) return null;
+    return (
+      text: short,
+      paragraph: _labelParagraph(
+        text: short,
+        constraint: constraint,
+        style: style,
+        isSelected: block.isSelected,
+        isError: block.isError,
       ),
+      padding: _shortLabelPadding,
+      constraint: constraint,
     );
   }
 

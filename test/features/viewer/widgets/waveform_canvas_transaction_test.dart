@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -519,6 +520,58 @@ void main() {
         await tester.tapAt(const Offset(160, 7));
         await tester.pump();
         expect(container.read(selectedTransactionProvider)?.$1, notice);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'resting the mouse on a transaction shows its full label, and moving '
+      'off it hides the label',
+      (tester) async {
+        // 40 ticks = 32 px at 1.25 ticks/px: the lane draws the short label.
+        const tx = DecodedTransaction(
+          startTime: 100,
+          endTime: 140,
+          label: 'UpdateFC-NP VC0 H=0x01 D=0x040',
+          shortLabel: 'UFC-NP',
+        );
+        await tester.pumpWidget(
+          _buildApp(
+            withSource: true,
+            overrides: [
+              activeDecodersProvider.overrideWith(
+                () => _FixedActiveDecodersNotifier([
+                  _makeDecoder(transactions: const [tx]),
+                ]),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final tooltip = find.byKey(const ValueKey('transaction-hover-tooltip'));
+        final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+        addTearDown(mouse.removePointer);
+        await mouse.addPointer(location: const Offset(400, 300));
+        await tester.pump();
+        expect(tooltip, findsNothing);
+
+        // x=96 -> tick 120, inside the transaction; y=14 is the lane middle.
+        await mouse.moveTo(const Offset(96, 14));
+        await tester.pump();
+        expect(tooltip, findsNothing, reason: 'waits for the pointer to rest');
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(tooltip, findsOneWidget);
+        expect(
+          find.descendant(of: tooltip, matching: find.text(tx.label)),
+          findsOneWidget,
+        );
+
+        // Off the block, into the empty part of the lane.
+        await mouse.moveTo(const Offset(600, 14));
+        await tester.pump();
+        expect(tooltip, findsNothing);
         expect(tester.takeException(), isNull);
       },
     );

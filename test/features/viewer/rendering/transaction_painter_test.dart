@@ -564,6 +564,62 @@ void main() {
     });
   });
 
+  group('TransactionPainter — short labels', () {
+    const full = 'UpdateFC-NP VC0 H=0x01 D=0x040';
+    TransactionBlock block(int width, {String? shortLabel = 'UFC-NP'}) =>
+        _blocks(
+          transactions: [
+            DecodedTransaction(
+              startTime: 100,
+              endTime: 100 + width,
+              label: full,
+              shortLabel: shortLabel,
+            ),
+          ],
+        ).single;
+
+    test('the full label is drawn when it fits', () {
+      expect(TransactionPainter.debugDrawnLabel(block(400), _labelStyle), full);
+    });
+
+    test('the short label replaces a full label that does not fit', () {
+      expect(
+        TransactionPainter.debugDrawnLabel(block(60), _labelStyle),
+        'UFC-NP',
+      );
+    });
+
+    test('without a short label the full label is truncated as before', () {
+      expect(
+        TransactionPainter.debugDrawnLabel(
+          block(60, shortLabel: null),
+          _labelStyle,
+        ),
+        full,
+      );
+    });
+
+    test('a short label is drawn in a block too narrow for any full label', () {
+      final narrow = block(16);
+      expect(narrow.label, isNull);
+      expect(narrow.shortLabel, 'UFC-NP');
+      expect(TransactionPainter.debugDrawnLabel(narrow, _labelStyle), 'UFC-NP');
+      expect(
+        TransactionPainter.debugDrawnLabel(
+          block(16, shortLabel: null),
+          _labelStyle,
+        ),
+        isNull,
+      );
+    });
+
+    test('below the short-label threshold nothing is drawn', () {
+      final tiny = block(8);
+      expect(tiny.shortLabel, isNull);
+      expect(TransactionPainter.debugDrawnLabel(tiny, _labelStyle), isNull);
+    });
+  });
+
   group('TransactionPainter — label paragraph cache', () {
     setUp(TransactionPainter.clearParagraphCache);
 

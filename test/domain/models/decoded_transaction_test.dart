@@ -189,6 +189,20 @@ void main() {
       expect(txMinimal.errorMessage, isNull);
     });
 
+    // ── shortLabel ────────────────────────────────────────────────────────────
+
+    test('default shortLabel is null', () {
+      expect(txMinimal.shortLabel, isNull);
+    });
+
+    test('shortLabel takes part in equality and hashCode', () {
+      final short = txMinimal.copyWith(shortLabel: 'W');
+      expect(short.shortLabel, 'W');
+      expect(short, isNot(txMinimal));
+      expect(short, txMinimal.copyWith(shortLabel: 'W'));
+      expect(short.hashCode, txMinimal.copyWith(shortLabel: 'W').hashCode);
+    });
+
     // ── toString ──────────────────────────────────────────────────────────────
 
     test('toString contains start, end, label, and isError', () {

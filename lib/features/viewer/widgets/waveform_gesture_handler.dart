@@ -56,6 +56,7 @@ class WaveformGestureHandler extends ConsumerStatefulWidget {
     this.onAltDragUpdate,
     this.onAltDragEnd,
     this.onVerticalScroll,
+    this.onHover,
     super.key,
   });
 
@@ -116,6 +117,12 @@ class WaveformGestureHandler extends ConsumerStatefulWidget {
   /// pointer-signal handling already deals with mouse wheels correctly.
   final void Function(double delta)? onVerticalScroll;
 
+  /// Called with the viewport-local position of a hovering mouse or stylus,
+  /// and with null when the pointer leaves the canvas or a button goes down.
+  /// The canvas uses it to show the full label of the transaction under the
+  /// pointer.
+  final void Function(Offset? localPosition)? onHover;
+
   @override
   ConsumerState<WaveformGestureHandler> createState() =>
       _WaveformGestureHandlerState();
@@ -151,6 +158,7 @@ class _WaveformGestureHandlerState
   bool _hoveringCursor = false;
 
   void _onHover(PointerHoverEvent event) {
+    widget.onHover?.call(event.localPosition);
     final timeMapper = ref.read(timeMapperProvider);
     final cursorState = ref.read(cursorStateProvider);
     final x = event.localPosition.dx;
@@ -276,6 +284,8 @@ class _WaveformGestureHandlerState
   // ── pointer down ──────────────────────────────────────────────────────────
 
   void _onPointerDown(PointerDownEvent event) {
+    // A press ends the hover: the tooltip must not ride along a drag.
+    widget.onHover?.call(null);
     // An annotation affordance claimed this sequence. Pointer events dispatch
     // deepest-first, so the balloon's Listener has already run and this handler
     // must stand down for the whole gesture — otherwise dragging a note also
@@ -575,6 +585,9 @@ class _WaveformGestureHandlerState
   // ── trackpad pan-zoom (macOS native gesture events) ──────────────────────
 
   void _onPointerPanZoomStart(PointerPanZoomStartEvent event) {
+    // Zooming or panning moves the transactions out from under the
+    // pointer, so a hover tooltip would describe the wrong one.
+    widget.onHover?.call(null);
     _panZoomScale = 1.0;
   }
 
@@ -617,6 +630,9 @@ class _WaveformGestureHandlerState
   // ── scroll wheel ─────────────────────────────────────────────────────────
 
   void _onPointerSignal(PointerSignalEvent event) {
+    // Zooming or panning moves the transactions out from under the
+    // pointer, so a hover tooltip would describe the wrong one.
+    widget.onHover?.call(null);
     if (event is! PointerScrollEvent) return;
     final notifier = ref.read(timeMapperProvider.notifier);
     final dx = event.scrollDelta.dx;
@@ -666,6 +682,7 @@ class _WaveformGestureHandlerState
         : MouseCursor.defer,
     onHover: _onHover,
     onExit: (_) {
+      widget.onHover?.call(null);
       if (_hoveringCursor) setState(() => _hoveringCursor = false);
     },
     child: Listener(

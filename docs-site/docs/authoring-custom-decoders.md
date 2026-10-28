@@ -32,7 +32,7 @@ int32_t  wavecrux_decoder_register(WcDecoderDef* out_defs,
                                    size_t* inout_count);
 ```
 
-`wavecrux_decoder_abi_version()` returns the macro `WAVECRUX_DECODER_ABI_VERSION` from `wavecrux_decoder.h`, encoded as `(major << 16) | minor`. The current ABI is **1.2** (from WaveCrux 1.1). The loader rejects any plugin whose **major** version differs from the host's; **minor** is backward-compatible, so a 1.0 or 1.1 plugin runs fine in a 1.2 host and trailing struct fields the plugin doesn't set default to zero.
+`wavecrux_decoder_abi_version()` returns the macro `WAVECRUX_DECODER_ABI_VERSION` from `wavecrux_decoder.h`, encoded as `(major << 16) | minor`. The current ABI is **1.3** (from WaveCrux 1.2). The loader rejects any plugin whose **major** version differs from the host's; **minor** is backward-compatible, so a 1.0, 1.1 or 1.2 plugin runs fine in a 1.3 host and trailing struct fields the plugin doesn't set default to zero.
 
 `wavecrux_decoder_register()` uses a **two-call pattern** so the host can size its buffer:
 
@@ -119,6 +119,16 @@ The ABI splits string ownership into two simple rules:
 - **Per-transaction strings are owned until the next call.** The `label` and `fields_json` on each emitted `WcTransaction` must stay valid until the *next* call on the same handle. A small ring of per-instance scratch buffers satisfies this with no dynamic allocation — the reference decoders do exactly that.
 
 Set `is_error` on a `WcTransaction` to flag it as a protocol violation.
+
+### Short labels for narrow transactions { #short-label }
+
+From 1.2 (ABI 1.3), a transaction can carry a short form of its label for the lane to draw when the block is too narrow for the whole `label`. Put it in `fields_json` under the reserved key `short_label`:
+
+```json
+{"short_label": "UFC-NP", "vc": "0", "hdr_fc": "0x01", "data_fc": "0x040"}
+```
+
+with `label` set to `UpdateFC-NP VC0 H=0x01 D=0x040`. The lane draws the full label when it fits, the short label when it does not (down to a 12 px block), and otherwise truncates the full label with an ellipsis as before. Resting the mouse on any transaction shows its full label beside the pointer, and the transaction table always shows the full label. The host takes `short_label` out of the transaction's fields, so it is not listed as a field. A host older than 1.2 ignores the convention and shows `short_label` as an ordinary field, so a plugin can emit it unconditionally.
 
 ## Building and installing { #install }
 

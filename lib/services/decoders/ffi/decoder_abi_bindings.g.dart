@@ -162,9 +162,9 @@ final class WcDecoderDef extends ffi.Struct {
 
 const int WAVECRUX_DECODER_ABI_MAJOR = 1;
 
-const int WAVECRUX_DECODER_ABI_MINOR = 2;
+const int WAVECRUX_DECODER_ABI_MINOR = 3;
 
-const int WAVECRUX_DECODER_ABI_VERSION = 65538;
+const int WAVECRUX_DECODER_ABI_VERSION = 65539;
 
 const int WC_DECODER_OK = 0;
 

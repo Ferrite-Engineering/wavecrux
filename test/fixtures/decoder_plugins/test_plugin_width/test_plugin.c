@@ -2,7 +2,8 @@
 // `width_param` / `width_scale`). The manifest ties `data` to the
 // `data_width` parameter and `datak` to one bit per byte of it, the shape a
 // PIPE decoder with 8- to 64-bit data needs. `flush` reports the
-// `WcSample.bit_width` the host packed, as the label "bits=<n>".
+// `WcSample.bit_width` the host packed, as the label "bits=<n>", with an
+// ABI 1.3 `short_label` field ("w") beside an ordinary field.
 //
 // Build (Linux/macOS):  see ../build_test_plugins.sh
 // Build (Windows):      see ../build_test_plugins.bat
@@ -77,7 +78,8 @@ static int32_t w_flush(WcDecoderHandle handle,
     out_transactions[0].start_fs    = 0;
     out_transactions[0].end_fs      = 0;
     out_transactions[0].label       = st->label;
-    out_transactions[0].fields_json = "{}";
+    out_transactions[0].fields_json =
+        "{\"short_label\":\"w\",\"note\":\"kept\"}";
     out_transactions[0].is_error    = 0;
     *inout_count = 1;
     return WC_DECODER_OK;

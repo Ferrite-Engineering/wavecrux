@@ -16,6 +16,8 @@ Each decoder exposes its own configurable parameters — for example baud rate, 
 
 Decoded transactions render two ways. A **transaction lane** draws the decoded fields directly on the waveform, aligned to the signals they came from. A sortable **transaction table** docks at the bottom of the window — toggle it with ++cmd+shift+t++ / ++ctrl+shift+t++ — with a decoder filter, a search box, and **Export CSV**. Click any transaction in the table to jump the cursor to its time, or move to it with the arrow keys and press ++enter++ — the full key set is in [Keyboard & mouse reference → In the transaction table](keyboard-mouse.md#transaction-table-keys).
 
+In the transaction lane, a label that does not fit its block is cut short with an ellipsis, or replaced by the decoder's short form where it has one (for example `UFC-NP` for `UpdateFC-NP VC0 …`). Rest the mouse on a transaction to read its full label beside the pointer. Transactions that overlap in time, such as AXI bursts still in flight or a decoder notice that spans a packet, are drawn in an upper and a lower sub-row instead of on top of each other, and clicking either one selects it.
+
 Protocol violations and errors are flagged visually where they occur — for example a CRC error, a UART framing error, a USB `NAK`, or an AXI `SLVERR` response — so a bad transaction stands out instead of hiding in the decode.
 
 1. **Open the decoder picker.**
