@@ -310,24 +310,30 @@
   {
     "startTime": 445000,
     "endTime": 455000,
-    "label": "[0x00000000] UNKNOWN INSN (0x34202673)",
+    "label": "[0x00000000] csrrs a2, mcause, zero",
     "fields": {
+      "mnemonic": "csrrs",
+      "disasm": "csrrs a2, mcause, zero",
       "raw": "0x34202673",
+      "isa": "Zicsr",
       "pc": "0x00000000"
     },
-    "isError": true,
-    "errorMessage": "No matching instruction in loaded ISA TOMLs"
+    "isError": false,
+    "errorMessage": null
   },
   {
     "startTime": 455000,
     "endTime": 465000,
-    "label": "[0x00000004] UNKNOWN INSN (0x341026F3)",
+    "label": "[0x00000004] csrrs a3, mepc, zero",
     "fields": {
+      "mnemonic": "csrrs",
+      "disasm": "csrrs a3, mepc, zero",
       "raw": "0x341026F3",
+      "isa": "Zicsr",
       "pc": "0x00000004"
     },
-    "isError": true,
-    "errorMessage": "No matching instruction in loaded ISA TOMLs"
+    "isError": false,
+    "errorMessage": null
   },
   {
     "startTime": 465000,
@@ -346,12 +352,15 @@
   {
     "startTime": 475000,
     "endTime": 3035000,
-    "label": "[0x0000000C] UNKNOWN INSN (0x10500073)",
+    "label": "[0x0000000C] wfi",
     "fields": {
+      "mnemonic": "wfi",
+      "disasm": "wfi",
       "raw": "0x10500073",
+      "isa": "Privileged",
       "pc": "0x0000000C"
     },
-    "isError": true,
-    "errorMessage": "No matching instruction in loaded ISA TOMLs"
+    "isError": false,
+    "errorMessage": null
   }
 ]

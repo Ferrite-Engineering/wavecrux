@@ -104,9 +104,12 @@ void main() {
 
   group('bundled corpus ambiguity', () {
     test('discovery finds the full corpus', () {
-      expect(names, hasLength(10));
+      expect(names, hasLength(14));
       expect(names, contains('RV32I'));
       expect(names, contains('RV64I'));
+      // XLEN-independent system sets, and the RV32 Zc subsets.
+      expect(names, containsAll(['Privileged', 'Zicsr']));
+      expect(names, containsAll(['RV32Zcb-lower', 'RV32Zcmp-lower']));
     });
 
     test(

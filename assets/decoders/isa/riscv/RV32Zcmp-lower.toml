@@ -1,0 +1,243 @@
+# RV32Zcmp — compressed push / pop and register-pair moves, "lower" variant.
+#
+# The 16-bit encodings sit in the low half of a 32-bit instruction word; the
+# high half is don't-care filler, as in RV32C-lower.toml. Schema follows the
+# JKU `instruction-decoder` Rust crate (see NOTICE.md).
+#
+# `cm.push` / `cm.pop` / `cm.popret` / `cm.popretz` carry a 4-bit register
+# list (`rlist`, bits 7:4) and a 2-bit `spimm` (bits 3:2). The stack
+# adjustment is not a field: it is a base that depends on how many registers
+# the list holds, rounded up to 16 bytes, plus `spimm * 16`. The schema has
+# no arithmetic, so the six bits are read as one part and named whole by a
+# table: `{ra, s0}, -16`. The bases here are RV32's (four bytes a register);
+# RV64 rounds eight-byte registers instead, which is why this file is RV32
+# only. A reserved `rlist` (0-3) is not in the table and renders as its raw
+# number.
+#
+# Zcmp reuses the encoding space of `c.fsdsp`, so a core cannot implement
+# both; this corpus has no `c.fsdsp`.
+set = "RV32Zcmp"
+width = 32
+
+[formats]
+names = ["cm_push", "cm_pop", "cm_mv"]
+parts = [
+    ["push_list", 6, "Zcmp_push"],
+    ["pop_list", 6, "Zcmp_pop"],
+    ["r1s", 3, "Register_s"],
+    ["r2s", 3, "Register_s"],
+    ["none", 32, "u32"],
+]
+
+[types]
+names = ["t_cm_push", "t_cm_pop", "t_cm_mv"]
+
+# funct6[15:10] | funct2[9:8] | rlist[7:4] | spimm[3:2] | op[1:0]
+[[types.t_cm_push]]
+name = "none"
+top = 31
+bot = 16
+[[types.t_cm_push]]
+name = "none"
+top = 15
+bot = 8
+[[types.t_cm_push]]
+name = "push_list"
+top = 5
+bot = 0
+[[types.t_cm_push]]
+name = "none"
+top = 1
+bot = 0
+
+[[types.t_cm_pop]]
+name = "none"
+top = 31
+bot = 16
+[[types.t_cm_pop]]
+name = "none"
+top = 15
+bot = 8
+[[types.t_cm_pop]]
+name = "pop_list"
+top = 5
+bot = 0
+[[types.t_cm_pop]]
+name = "none"
+top = 1
+bot = 0
+
+# funct6[15:10] | r1s'[9:7] | funct2[6:5] | r2s'[4:2] | op[1:0]
+[[types.t_cm_mv]]
+name = "none"
+top = 31
+bot = 16
+[[types.t_cm_mv]]
+name = "none"
+top = 15
+bot = 10
+[[types.t_cm_mv]]
+name = "r1s"
+top = 2
+bot = 0
+[[types.t_cm_mv]]
+name = "none"
+top = 6
+bot = 5
+[[types.t_cm_mv]]
+name = "r2s"
+top = 2
+bot = 0
+[[types.t_cm_mv]]
+name = "none"
+top = 1
+bot = 0
+
+[mappings]
+names = ["Register_s", "Zcmp_push", "Zcmp_pop"]
+# The `sreg` encoding: 0 and 1 are s0 and s1 (x8, x9), 2-7 are s2-s7.
+Register_s = ["s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7"]
+
+# Key: rlist * 4 + spimm.
+[mappings.Zcmp_push]
+"16" = "{ra}, -16"
+"17" = "{ra}, -32"
+"18" = "{ra}, -48"
+"19" = "{ra}, -64"
+"20" = "{ra, s0}, -16"
+"21" = "{ra, s0}, -32"
+"22" = "{ra, s0}, -48"
+"23" = "{ra, s0}, -64"
+"24" = "{ra, s0-s1}, -16"
+"25" = "{ra, s0-s1}, -32"
+"26" = "{ra, s0-s1}, -48"
+"27" = "{ra, s0-s1}, -64"
+"28" = "{ra, s0-s2}, -16"
+"29" = "{ra, s0-s2}, -32"
+"30" = "{ra, s0-s2}, -48"
+"31" = "{ra, s0-s2}, -64"
+"32" = "{ra, s0-s3}, -32"
+"33" = "{ra, s0-s3}, -48"
+"34" = "{ra, s0-s3}, -64"
+"35" = "{ra, s0-s3}, -80"
+"36" = "{ra, s0-s4}, -32"
+"37" = "{ra, s0-s4}, -48"
+"38" = "{ra, s0-s4}, -64"
+"39" = "{ra, s0-s4}, -80"
+"40" = "{ra, s0-s5}, -32"
+"41" = "{ra, s0-s5}, -48"
+"42" = "{ra, s0-s5}, -64"
+"43" = "{ra, s0-s5}, -80"
+"44" = "{ra, s0-s6}, -32"
+"45" = "{ra, s0-s6}, -48"
+"46" = "{ra, s0-s6}, -64"
+"47" = "{ra, s0-s6}, -80"
+"48" = "{ra, s0-s7}, -48"
+"49" = "{ra, s0-s7}, -64"
+"50" = "{ra, s0-s7}, -80"
+"51" = "{ra, s0-s7}, -96"
+"52" = "{ra, s0-s8}, -48"
+"53" = "{ra, s0-s8}, -64"
+"54" = "{ra, s0-s8}, -80"
+"55" = "{ra, s0-s8}, -96"
+"56" = "{ra, s0-s9}, -48"
+"57" = "{ra, s0-s9}, -64"
+"58" = "{ra, s0-s9}, -80"
+"59" = "{ra, s0-s9}, -96"
+"60" = "{ra, s0-s11}, -64"
+"61" = "{ra, s0-s11}, -80"
+"62" = "{ra, s0-s11}, -96"
+"63" = "{ra, s0-s11}, -112"
+
+[mappings.Zcmp_pop]
+"16" = "{ra}, 16"
+"17" = "{ra}, 32"
+"18" = "{ra}, 48"
+"19" = "{ra}, 64"
+"20" = "{ra, s0}, 16"
+"21" = "{ra, s0}, 32"
+"22" = "{ra, s0}, 48"
+"23" = "{ra, s0}, 64"
+"24" = "{ra, s0-s1}, 16"
+"25" = "{ra, s0-s1}, 32"
+"26" = "{ra, s0-s1}, 48"
+"27" = "{ra, s0-s1}, 64"
+"28" = "{ra, s0-s2}, 16"
+"29" = "{ra, s0-s2}, 32"
+"30" = "{ra, s0-s2}, 48"
+"31" = "{ra, s0-s2}, 64"
+"32" = "{ra, s0-s3}, 32"
+"33" = "{ra, s0-s3}, 48"
+"34" = "{ra, s0-s3}, 64"
+"35" = "{ra, s0-s3}, 80"
+"36" = "{ra, s0-s4}, 32"
+"37" = "{ra, s0-s4}, 48"
+"38" = "{ra, s0-s4}, 64"
+"39" = "{ra, s0-s4}, 80"
+"40" = "{ra, s0-s5}, 32"
+"41" = "{ra, s0-s5}, 48"
+"42" = "{ra, s0-s5}, 64"
+"43" = "{ra, s0-s5}, 80"
+"44" = "{ra, s0-s6}, 32"
+"45" = "{ra, s0-s6}, 48"
+"46" = "{ra, s0-s6}, 64"
+"47" = "{ra, s0-s6}, 80"
+"48" = "{ra, s0-s7}, 48"
+"49" = "{ra, s0-s7}, 64"
+"50" = "{ra, s0-s7}, 80"
+"51" = "{ra, s0-s7}, 96"
+"52" = "{ra, s0-s8}, 48"
+"53" = "{ra, s0-s8}, 64"
+"54" = "{ra, s0-s8}, 80"
+"55" = "{ra, s0-s8}, 96"
+"56" = "{ra, s0-s9}, 48"
+"57" = "{ra, s0-s9}, 64"
+"58" = "{ra, s0-s9}, 80"
+"59" = "{ra, s0-s9}, 96"
+"60" = "{ra, s0-s11}, 64"
+"61" = "{ra, s0-s11}, 80"
+"62" = "{ra, s0-s11}, 96"
+"63" = "{ra, s0-s11}, 112"
+
+# ── push / pop (quadrant 2, funct3 101) ───────────────────────────────────────
+
+[cm_push]
+type = "t_cm_push"
+
+[cm_push.repr]
+default = "$name$ %push_list%"
+
+[cm_push.instructions."cm.push"]
+mask = 0xff03
+match = 0xb802
+
+[cm_pop]
+type = "t_cm_pop"
+
+[cm_pop.repr]
+default = "$name$ %pop_list%"
+
+[cm_pop.instructions."cm.pop"]
+mask = 0xff03
+match = 0xba02
+[cm_pop.instructions."cm.popretz"]
+mask = 0xff03
+match = 0xbc02
+[cm_pop.instructions."cm.popret"]
+mask = 0xff03
+match = 0xbe02
+
+# ── register-pair moves ───────────────────────────────────────────────────────
+
+[cm_mv]
+type = "t_cm_mv"
+
+[cm_mv.repr]
+default = "$name$ %r1s%, %r2s%"
+
+[cm_mv.instructions."cm.mvsa01"]
+mask = 0xfc63
+match = 0xac22
+[cm_mv.instructions."cm.mva01s"]
+mask = 0xfc63
+match = 0xac62

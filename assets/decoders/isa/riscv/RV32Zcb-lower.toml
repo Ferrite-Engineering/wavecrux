@@ -1,0 +1,291 @@
+# RV32Zcb — compressed byte / halfword loads and stores, extensions and
+# `c.mul`, "lower" variant.
+#
+# The 16-bit encodings sit in the low half of a 32-bit instruction word; the
+# high half is don't-care filler, as in RV32C-lower.toml. Schema follows the
+# JKU `instruction-decoder` Rust crate (see NOTICE.md). `c.zext.w` is RV64
+# only and is not here.
+set = "RV32Zcb"
+width = 32
+
+[formats]
+names = [
+    "cb_load",
+    "cb_half_load",
+    "cb_store",
+    "cb_half_store",
+    "cb_unary",
+    "cb_mul",
+]
+parts = [
+    ["rd_p", 3, "Register_int_c"],
+    ["rs1_p", 3, "Register_int_c"],
+    ["rs2_p", 3, "Register_int_c"],
+    ["uoff", 2, "u8"],
+    ["none", 32, "u32"],
+]
+
+[types]
+names = [
+    "t_cb_byte_load",
+    "t_cb_half_load",
+    "t_cb_byte_store",
+    "t_cb_half_store",
+    "t_cb_unary",
+    "t_cb_mul",
+]
+
+# c.lbu: funct6[15:10] | rs1'[9:7] | uimm[0][6] | uimm[1][5] | rd'[4:2] | op
+[[types.t_cb_byte_load]]
+name = "none"
+top = 31
+bot = 16
+[[types.t_cb_byte_load]]
+name = "none"
+top = 15
+bot = 10
+[[types.t_cb_byte_load]]
+name = "rs1_p"
+top = 2
+bot = 0
+[[types.t_cb_byte_load]]
+name = "uoff"
+top = 0
+bot = 0
+[[types.t_cb_byte_load]]
+name = "uoff"
+top = 1
+bot = 1
+[[types.t_cb_byte_load]]
+name = "rd_p"
+top = 2
+bot = 0
+[[types.t_cb_byte_load]]
+name = "none"
+top = 1
+bot = 0
+
+# c.lhu / c.lh: funct6 | rs1'[9:7] | funct1[6] | uimm[1][5] | rd'[4:2] | op
+[[types.t_cb_half_load]]
+name = "none"
+top = 31
+bot = 16
+[[types.t_cb_half_load]]
+name = "none"
+top = 15
+bot = 10
+[[types.t_cb_half_load]]
+name = "rs1_p"
+top = 2
+bot = 0
+[[types.t_cb_half_load]]
+name = "none"
+top = 6
+bot = 6
+[[types.t_cb_half_load]]
+name = "uoff"
+top = 1
+bot = 1
+[[types.t_cb_half_load]]
+name = "rd_p"
+top = 2
+bot = 0
+[[types.t_cb_half_load]]
+name = "none"
+top = 1
+bot = 0
+
+# c.sb: funct6 | rs1'[9:7] | uimm[0][6] | uimm[1][5] | rs2'[4:2] | op
+[[types.t_cb_byte_store]]
+name = "none"
+top = 31
+bot = 16
+[[types.t_cb_byte_store]]
+name = "none"
+top = 15
+bot = 10
+[[types.t_cb_byte_store]]
+name = "rs1_p"
+top = 2
+bot = 0
+[[types.t_cb_byte_store]]
+name = "uoff"
+top = 0
+bot = 0
+[[types.t_cb_byte_store]]
+name = "uoff"
+top = 1
+bot = 1
+[[types.t_cb_byte_store]]
+name = "rs2_p"
+top = 2
+bot = 0
+[[types.t_cb_byte_store]]
+name = "none"
+top = 1
+bot = 0
+
+# c.sh: funct6 | rs1'[9:7] | funct1[6] | uimm[1][5] | rs2'[4:2] | op
+[[types.t_cb_half_store]]
+name = "none"
+top = 31
+bot = 16
+[[types.t_cb_half_store]]
+name = "none"
+top = 15
+bot = 10
+[[types.t_cb_half_store]]
+name = "rs1_p"
+top = 2
+bot = 0
+[[types.t_cb_half_store]]
+name = "none"
+top = 6
+bot = 6
+[[types.t_cb_half_store]]
+name = "uoff"
+top = 1
+bot = 1
+[[types.t_cb_half_store]]
+name = "rs2_p"
+top = 2
+bot = 0
+[[types.t_cb_half_store]]
+name = "none"
+top = 1
+bot = 0
+
+# c.zext.b / c.sext.b / c.zext.h / c.sext.h / c.not:
+#   funct6[15:10] | rd'/rs1'[9:7] | funct5[6:2] | op[1:0]
+[[types.t_cb_unary]]
+name = "none"
+top = 31
+bot = 16
+[[types.t_cb_unary]]
+name = "none"
+top = 15
+bot = 10
+[[types.t_cb_unary]]
+name = "rd_p"
+top = 2
+bot = 0
+[[types.t_cb_unary]]
+name = "none"
+top = 6
+bot = 0
+
+# c.mul: funct6[15:10] | rd'/rs1'[9:7] | funct2[6:5] | rs2'[4:2] | op[1:0]
+[[types.t_cb_mul]]
+name = "none"
+top = 31
+bot = 16
+[[types.t_cb_mul]]
+name = "none"
+top = 15
+bot = 10
+[[types.t_cb_mul]]
+name = "rd_p"
+top = 2
+bot = 0
+[[types.t_cb_mul]]
+name = "none"
+top = 6
+bot = 5
+[[types.t_cb_mul]]
+name = "rs2_p"
+top = 2
+bot = 0
+[[types.t_cb_mul]]
+name = "none"
+top = 1
+bot = 0
+
+[mappings]
+names = ["Register_int_c"]
+# Compressed register encoding maps 3 bits to x8..x15.
+Register_int_c = [
+    "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5",
+]
+
+# ── loads (quadrant 0, funct3 100) ────────────────────────────────────────────
+
+[cb_load]
+type = "t_cb_byte_load"
+
+[cb_load.repr]
+default = "$name$ %rd_p%, %uoff%(%rs1_p%)"
+
+[cb_load.instructions."c.lbu"]
+mask = 0xfc03
+match = 0x8000
+
+[cb_half_load]
+type = "t_cb_half_load"
+
+[cb_half_load.repr]
+default = "$name$ %rd_p%, %uoff%(%rs1_p%)"
+
+[cb_half_load.instructions."c.lhu"]
+mask = 0xfc43
+match = 0x8400
+[cb_half_load.instructions."c.lh"]
+mask = 0xfc43
+match = 0x8440
+
+# ── stores (quadrant 0, funct3 100) ───────────────────────────────────────────
+
+[cb_store]
+type = "t_cb_byte_store"
+
+[cb_store.repr]
+default = "$name$ %rs2_p%, %uoff%(%rs1_p%)"
+
+[cb_store.instructions."c.sb"]
+mask = 0xfc03
+match = 0x8800
+
+[cb_half_store]
+type = "t_cb_half_store"
+
+[cb_half_store.repr]
+default = "$name$ %rs2_p%, %uoff%(%rs1_p%)"
+
+[cb_half_store.instructions."c.sh"]
+mask = 0xfc43
+match = 0x8c00
+
+# ── unary (quadrant 1, funct6 100111, funct2 11) ──────────────────────────────
+
+[cb_unary]
+type = "t_cb_unary"
+
+[cb_unary.repr]
+default = "$name$ %rd_p%"
+
+[cb_unary.instructions."c.zext.b"]
+mask = 0xfc7f
+match = 0x9c61
+[cb_unary.instructions."c.sext.b"]
+mask = 0xfc7f
+match = 0x9c65
+[cb_unary.instructions."c.zext.h"]
+mask = 0xfc7f
+match = 0x9c69
+[cb_unary.instructions."c.sext.h"]
+mask = 0xfc7f
+match = 0x9c6d
+[cb_unary.instructions."c.not"]
+mask = 0xfc7f
+match = 0x9c75
+
+# ── c.mul (quadrant 1, funct6 100111, funct2 10) ──────────────────────────────
+
+[cb_mul]
+type = "t_cb_mul"
+
+[cb_mul.repr]
+default = "$name$ %rd_p%, %rs2_p%"
+
+[cb_mul.instructions."c.mul"]
+mask = 0xfc63
+match = 0x9c41

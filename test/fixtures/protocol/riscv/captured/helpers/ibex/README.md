@@ -127,10 +127,10 @@ though the samples are.
 
 26 retirements in total. `rvfi_order` runs densely from 1 to 26.
 
-The two `csrrs` and the `wfi` decode as `UNKNOWN INSN` in the committed
-snapshot: `assets/decoders/isa/riscv/` carries RV32I/M/A/F/C and
-RV64I/M/A/D/C, and no Zicsr or privileged-system TOML. That gap is real and
-is recorded rather than designed around.
+The two `csrrs` and the `wfi` decode as `csrrs a2, mcause, zero`,
+`csrrs a3, mepc, zero` and `wfi` in the committed snapshot, from
+`assets/decoders/isa/riscv/Zicsr.toml` and `Privileged.toml`. Before those
+tables existed they read `UNKNOWN INSN`, and the snapshot recorded the gap.
 
 ## Two RVFI deviations this capture found in upstream Ibex
 

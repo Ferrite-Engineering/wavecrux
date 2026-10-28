@@ -226,7 +226,8 @@ every load/store width, taken and not-taken branches, a backward loop, an
 
 ## Gaps found
 
-The debug variant exposed three gaps in WaveCrux, filed upstream:
+The debug variant exposed three gaps in WaveCrux, filed upstream and fixed
+in 1.2 (the descriptions are of the behaviour before the fix):
 
 1. **[#56](https://github.com/Ferrite-Engineering/wavecrux/issues/56)**:
    a false `controlFlow` violation at debug-mode entry. CV32E40X reports
@@ -242,6 +243,13 @@ The debug variant exposed three gaps in WaveCrux, filed upstream:
 3. **[#58](https://github.com/Ferrite-Engineering/wavecrux/issues/58)**:
    Zicsr, privileged (`mret`, `dret`, `wfi`) and Zcmp encodings disassemble
    as unknown. Display only; the checker rules decode raw bits.
+
+Since the fixes, `rvfi_dbg` binds when the untrimmed dump carries it and
+debug entry is a handler entry; the memory ports decode one access per
+slot; and `Zicsr.toml`, `Privileged.toml`, `RV32Zcb-lower.toml` and
+`RV32Zcmp-lower.toml` disassemble every instruction above. `trim.py` keeps
+the 21 riscv-formal channels only, so the trimmed debug capture still lacks
+`rvfi_dbg`; bind it from `raw_debug.vcd`.
 
 ## Running the captures through WaveCrux
 

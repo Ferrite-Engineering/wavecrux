@@ -1720,8 +1720,8 @@ Current captures:
   vendored — `ibex_top` is ~30 RTL files plus lowRISC's prim libraries.
   1841 bytes committed, trimmed from a 42530-byte full-hierarchy dump
   because Verilator ignores `$dumpvars` scope arguments. Its two `csrrs`
-  and its `wfi` decode as `UNKNOWN INSN`, correctly: there is no Zicsr
-  TOML in `assets/decoders/isa/riscv/`. Exercised in depth by §10B.1.10,
+  and its `wfi` decode from `Zicsr.toml` and `Privileged.toml` in
+  `assets/decoders/isa/riscv/`. Exercised in depth by §10B.1.10,
   which is also where the two upstream Ibex RVFI deviations this capture
   found are written up. Helpers under
   [`.../captured/helpers/ibex/`](../test/fixtures/protocol/riscv/captured/helpers/ibex/).
@@ -4238,10 +4238,10 @@ an **RVFI Commit Inspector**, press **Auto-bind**.
    `0x200`, byte (`0x1`) at `0x204`, halfword (`0x3`) at `0x208`, each with
    its read-back.
 5. **Traps** shows the `ecall` at `0x0c8`, privilege M.
-6. Three rows read `UNKNOWN INSN` — the two `csrrs` and the `wfi` in the trap
-   handler. **This is correct**, not a decode regression:
-   `assets/decoders/isa/riscv/` ships RV32I/M/A/F/C and RV64I/M/A/D/C and no
-   Zicsr or privileged-system TOML. The capture records the gap.
+6. The trap handler's three rows read `csrrs a2, mcause, zero`,
+   `csrrs a3, mepc, zero` and `wfi`. An `UNKNOWN INSN` on any of them is a
+   decode regression: `assets/decoders/isa/riscv/` ships `Zicsr.toml` and
+   `Privileged.toml` for exactly these.
 
 **Checks — read this part carefully**
 

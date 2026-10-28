@@ -45,15 +45,15 @@ InstructionSet _loadAsset(String name) => parseInstructionSetToml(
   sourceLabel: '$name.toml',
 );
 
-IsaDecoderAssets _loadRiscvAssets() => IsaDecoderAssets.fromMap({
-  'RV32I': _loadAsset('RV32I'),
-  'RV32M': _loadAsset('RV32M'),
-  'RV32A': _loadAsset('RV32A'),
-  'RV32F': _loadAsset('RV32F'),
-  'RV32C-lower': _loadAsset('RV32C-lower'),
-  'RV64I': _loadAsset('RV64I'),
-  'RV64M': _loadAsset('RV64M'),
-  'RV64A': _loadAsset('RV64A'),
-  'RV64D': _loadAsset('RV64D'),
-  'RV64C-lower': _loadAsset('RV64C-lower'),
-});
+/// Every bundled table, as the app's bundle load discovers them, so a table
+/// added to the corpus is exercised here without editing this list.
+IsaDecoderAssets _loadRiscvAssets() {
+  final names = [
+    for (final f in Directory('assets/decoders/isa/riscv').listSync())
+      if (f is File && f.path.endsWith('.toml'))
+        f.uri.pathSegments.last.replaceFirst(RegExp(r'\.toml$'), ''),
+  ];
+  return IsaDecoderAssets.fromMap({
+    for (final name in names) name: _loadAsset(name),
+  });
+}

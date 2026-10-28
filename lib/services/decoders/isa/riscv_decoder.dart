@@ -175,11 +175,21 @@ class RiscvDecoder extends IsaTraceDecoder {
       if (s != null) out.add(s);
     }
 
+    // Zicsr and the privileged instructions are XLEN-independent and part of
+    // every core that takes a trap, so they are always composed.
+    addIfPresent('Privileged');
+    addIfPresent('Zicsr');
     addIfPresent('RV32I');
     if (extM) addIfPresent('RV32M');
     if (extA) addIfPresent('RV32A');
     if (extF) addIfPresent('RV32F');
-    if (extC) addIfPresent('RV32C-lower');
+    if (extC) {
+      addIfPresent('RV32C-lower');
+      addIfPresent('RV32Zcb-lower');
+      // Zcmp's push / pop stack adjustments are tabulated for RV32's
+      // four-byte registers; see RV32Zcmp-lower.toml.
+      if (xlen == 32) addIfPresent('RV32Zcmp-lower');
+    }
 
     if (xlen == 64) {
       addIfPresent('RV64I');
@@ -213,6 +223,10 @@ class RiscvDecoder extends IsaTraceDecoder {
   /// The set names this decoder composes by rule. Everything else discovered
   /// alongside them is user-supplied.
   static const Set<String> _kCanonicalRiscvSets = <String>{
+    'Privileged',
+    'Zicsr',
+    'RV32Zcb-lower',
+    'RV32Zcmp-lower',
     'RV32I',
     'RV32M',
     'RV32A',

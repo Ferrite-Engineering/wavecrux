@@ -1,0 +1,87 @@
+# Privileged — trap-return, wait-for-interrupt, address-translation fence,
+# and the debug-mode return.
+#
+# `mret`, `sret`, `wfi` and `sfence.vma` are from the RISC-V Privileged
+# Architecture; `dret` is from RISC-V External Debug Support. Schema follows
+# the JKU `instruction-decoder` Rust crate (see NOTICE.md). The encodings are
+# XLEN-independent. `ecall` and `ebreak` stay in RV32I.toml, where the base
+# ISA puts them.
+set = "Privileged"
+width = 32
+
+[formats]
+names = ["priv_fixed", "priv_fence"]
+parts = [
+    ["rs1", 5, "Register_int"],
+    ["rs2", 5, "Register_int"],
+    ["none", 32, "u32"],
+]
+
+[types]
+names = ["t_priv_fixed", "t_priv_fence"]
+
+# A full 32-bit fixed encoding with no operands.
+[[types.t_priv_fixed]]
+name = "none"
+top = 31
+bot = 0
+
+# sfence.vma: funct7[31:25] | rs2[24:20] | rs1[19:15] | funct3 | rd | opcode
+[[types.t_priv_fence]]
+name = "none"
+top = 31
+bot = 25
+[[types.t_priv_fence]]
+name = "rs2"
+top = 4
+bot = 0
+[[types.t_priv_fence]]
+name = "rs1"
+top = 4
+bot = 0
+[[types.t_priv_fence]]
+name = "none"
+top = 14
+bot = 0
+
+[mappings]
+names = ["Register_int"]
+Register_int = [
+    "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
+    "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5",
+    "a6", "a7", "s2", "s3", "s4", "s5", "s6", "s7",
+    "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6",
+]
+
+# ── fixed encodings (opcode 0x73, funct3 000) ─────────────────────────────────
+
+[priv_fixed]
+type = "t_priv_fixed"
+
+[priv_fixed.repr]
+default = "$name$"
+
+[priv_fixed.instructions.sret]
+mask = 0xffffffff
+match = 0x10200073
+[priv_fixed.instructions.wfi]
+mask = 0xffffffff
+match = 0x10500073
+[priv_fixed.instructions.mret]
+mask = 0xffffffff
+match = 0x30200073
+[priv_fixed.instructions.dret]
+mask = 0xffffffff
+match = 0x7b200073
+
+# ── sfence.vma (opcode 0x73, funct7 0001001) ──────────────────────────────────
+
+[priv_fence]
+type = "t_priv_fence"
+
+[priv_fence.repr]
+default = "$name$ %rs1%, %rs2%"
+
+[priv_fence.instructions."sfence.vma"]
+mask = 0xfe007fff
+match = 0x12000073

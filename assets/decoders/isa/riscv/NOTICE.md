@@ -30,7 +30,8 @@ claim above is pinned by a test (`instruction_disassembler_test.dart`,
 "Cross-tool compatibility with the JKU loader") rather than left to review.
 
 The TOML *files* in this directory are hand-authored against that schema for
-the WaveCrux launch coverage (RV32I, RV64I, M, A, F, D, C). They are not
+the WaveCrux launch coverage (RV32I, RV64I, M, A, F, D, C), plus Zicsr, the
+privileged instructions, and the RV32 Zcb and Zcmp subsets. They are not
 verbatim copies of the JKU files.
 
 **You can add your own tables without rebuilding.** On desktop builds,
