@@ -480,13 +480,18 @@ class ImageExportService {
     int bitWidth,
     bool isReal,
   ) {
-    final changes = source.changesInRange(ref, visibleStart, visibleEnd + 1);
-    if (changes.isEmpty) return '';
+    final raw = source.changesInRange(ref, visibleStart, visibleEnd + 1);
+    if (raw.isEmpty) return '';
 
     final startValue = source.valueAt(ref, visibleStart);
 
     double timeToX(int t) =>
         labelWidth + (t - visibleStart).toDouble() / range * waveWidth;
+
+    // One change per pixel column of the export, as the canvas draws them:
+    // a wide window of a fast signal holds many changes per column, and
+    // writing each one made a 400 us export of ten RVFI rows 15 MB.
+    final changes = coalesceSvgChanges(raw, timeToX);
 
     if (bitWidth == 1 && !isReal) {
       return _buildSvgScalarTrace(
@@ -513,7 +518,7 @@ class ImageExportService {
   }
 
   String _buildSvgScalarTrace(
-    List<SignalChange> changes,
+    List<SvgColumnChange> changes,
     String? startValue,
     int visibleStart,
     int visibleEnd,
@@ -546,22 +551,42 @@ class ImageExportService {
     }
 
     final buf = StringBuffer();
-    for (final change in changes) {
+    for (var i = 0; i < changes.length; i++) {
+      final change = changes[i];
+      // A run of adjacent columns that each changed more than once (a clock
+      // far faster than the pixels) reads as a solid band on screen; it is
+      // written as one rect rather than a line per column.
+      var last = i;
+      while (last + 1 < changes.length &&
+          changes[last].burst &&
+          changes[last + 1].burst &&
+          changes[last + 1].column == changes[last].column + 1) {
+        last++;
+      }
       buf.write(segmentSvg(currentTime, change.time, currentValue));
       final x = timeToX(change.time);
-      buf.writeln(
-        '<line x1="$x" y1="$top" x2="$x" y2="$bot"'
-        ' stroke="$color" stroke-width="1"/>',
-      );
-      currentValue = change.value;
-      currentTime = change.time;
+      if (last > i) {
+        final width = changes[last].column + 1 - change.column;
+        buf.writeln(
+          '<rect x="${change.column}" y="$top" width="$width"'
+          ' height="${bot - top}" fill="$color"/>',
+        );
+        i = last;
+      } else {
+        buf.writeln(
+          '<line x1="$x" y1="$top" x2="$x" y2="$bot"'
+          ' stroke="$color" stroke-width="1"/>',
+        );
+      }
+      currentValue = changes[i].value;
+      currentTime = changes[i].time;
     }
     buf.write(segmentSvg(currentTime, visibleEnd, currentValue));
     return buf.toString();
   }
 
   String _buildSvgVectorTrace(
-    List<SignalChange> changes,
+    List<SvgColumnChange> changes,
     String? startValue,
     int visibleStart,
     int visibleEnd,
@@ -982,4 +1007,74 @@ class ImageWriteException implements Exception {
 
   @override
   String toString() => 'ImageWriteException($path): $reason';
+}
+
+/// A change of an SVG export's trace after [coalesceSvgChanges]: the first
+/// change in a pixel [column], carrying the value the column ends on.
+@immutable
+class SvgColumnChange {
+  /// Creates the change for [column].
+  const SvgColumnChange({
+    required this.time,
+    required this.value,
+    required this.column,
+    required this.burst,
+  });
+
+  /// Time of the column's first change.
+  final int time;
+
+  /// The value the column ends on; an X seen in the column wins, so a brief
+  /// X stays visible.
+  final String value;
+
+  /// The integer pixel column, in the export's x units.
+  final int column;
+
+  /// Whether the value changed more than once in the column: a pulse
+  /// narrower than a pixel, drawn as a full-height mark.
+  final bool burst;
+}
+
+/// Coalesces [changes] (in time order) to at most one per integer pixel
+/// column of [timeToX], the way the canvas painters do: an X in a column is
+/// sticky, and a column whose value changed more than once is marked
+/// [SvgColumnChange.burst]. The output is bounded by the export's width, not
+/// by the number of changes.
+List<SvgColumnChange> coalesceSvgChanges(
+  List<SignalChange> changes,
+  double Function(int time) timeToX,
+) {
+  final out = <SvgColumnChange>[];
+  for (final change in changes) {
+    final column = timeToX(change.time).floor();
+    if (out.isNotEmpty && column <= out.last.column) {
+      final last = out.last;
+      final keep = _svgHasX(last.value) && !_svgHasX(change.value);
+      out[out.length - 1] = SvgColumnChange(
+        time: last.time,
+        value: keep ? last.value : change.value,
+        column: last.column,
+        burst: last.burst || change.value != last.value,
+      );
+      continue;
+    }
+    out.add(
+      SvgColumnChange(
+        time: change.time,
+        value: change.value,
+        column: column,
+        burst: false,
+      ),
+    );
+  }
+  return out;
+}
+
+bool _svgHasX(String value) {
+  for (var i = 0; i < value.length; i++) {
+    final c = value.codeUnitAt(i);
+    if (c == 0x78 || c == 0x58) return true;
+  }
+  return false;
 }

@@ -6298,6 +6298,7 @@ WaveCrux exports the visible state in four ways:
 2. Open the SVG in a browser, Inkscape, or any SVG-capable viewer.
 3. Verify text labels are real text (selectable, scalable) — not rasterized.
 4. Verify shapes (signal lanes, transition edges, transaction blocks) are vector primitives.
+5. **A wide window of a fast design stays small (issue #51, from 1.2).** Show ten RVFI rows of a 62.5 MHz design over 0 to 400 µs in a 1200 px window and export SVG. Note the file size: 1.1 wrote 15 MB with about 128,000 `<line>` elements, and 1.2 writes at most one change per pixel column per row, so the size follows the window width rather than the number of changes. It looks like the canvas: changes closer together than a pixel are drawn once per pixel column, a run of columns that each toggled (a fast clock) is one solid band, a pulse narrower than a pixel is still a full-height mark, and an X inside a column stays visible.
 
 ### 20.6 Steps — clipboard
 
@@ -6317,6 +6318,7 @@ WaveCrux exports the visible state in four ways:
 | VCD export round-trip (export → re-parse → values match) | **WIDGET** (`test/services/vcd_writer/vcd_writer_service_test.dart`) |
 | PNG export at known canvas → checksum or pixel-count assertion | **WIDGET** (`test/services/export/image_export_service_test.dart`) |
 | SVG export → text preserved | **WIDGET** (`image_export_service_test.dart`) |
+| SVG export coalesces changes per pixel column: size bounded by width, sub-pixel pulse and X kept | **UNIT** (`test/services/export/image_export_service_test.dart` — "generateSvg — sub-pixel changes") |
 | Clipboard copy of value, full path, and JSON-as-transaction | **WIDGET** (`test/features/viewer/widgets/value_column_row_test.dart` + `signal_list_panel_test.dart` + `transaction_table_panel_test.dart`) |
 | Empty-state export messages | **WIDGET** (`test/features/viewer/widgets/export_dialog_test.dart`) |
 

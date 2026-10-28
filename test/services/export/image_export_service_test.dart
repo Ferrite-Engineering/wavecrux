@@ -653,6 +653,94 @@ void main() {
       expect(svg, contains('second'));
     });
   });
+
+  // ── generateSvg — size of a wide window (issue #51) ─────────────────────────
+
+  group('ImageExportService.generateSvg — sub-pixel changes', () {
+    // A 62.5 MHz clock (8 ns half period) over 400 us: 50,000 edges.
+    final clock = <SignalChange>[
+      for (var t = 8; t < 400000; t += 8)
+        SignalChange(time: t, value: (t ~/ 8).isOdd ? '1' : '0'),
+    ];
+
+    String svgOf(Map<String, List<SignalChange>> changes, {int bitWidth = 1}) {
+      final source = _StubSource(
+        start: 0,
+        end: 400000,
+        loaded: changes.keys.toSet(),
+        values: {for (final k in changes.keys) k: '0'},
+        changes: changes,
+      );
+      return _service.generateSvg(
+        source: source,
+        signalGroup: SignalGroup(
+          entries: [
+            for (final k in changes.keys)
+              SignalEntry.signal(signalRef: k, displayName: k),
+          ],
+        ),
+        signalMap: {
+          for (final k in changes.keys) k: _variable(k, k, bitWidth: bitWidth),
+        },
+        timeMapper: TimeMapper.fitAll(
+          startTime: 0,
+          endTime: 400000,
+          viewportWidth: 1200,
+        ),
+      );
+    }
+
+    int count(String svg, String element) =>
+        RegExp('<$element ').allMatches(svg).length;
+
+    test(
+      'ten rows of a fast clock stay small: a band, not a line per edge',
+      () {
+        final svg = svgOf({for (var i = 0; i < 10; i++) 'clk$i': clock});
+        // Was 15 MB and about 128,000 lines.
+        expect(svg.length, lessThan(100 * 1024));
+        expect(count(svg, 'line'), lessThan(200));
+        expect(count(svg, 'rect'), greaterThanOrEqualTo(10));
+      },
+    );
+
+    test('a pulse narrower than a pixel still draws one full-height mark', () {
+      final svg = svgOf({
+        'p': const [
+          SignalChange(time: 200000, value: '1'),
+          SignalChange(time: 200001, value: '0'),
+        ],
+      });
+      // The trace's vertical edges are its colour at width 1; the level
+      // segments are 1.5.
+      final edges = RegExp(
+        r'stroke="rgb\([\d,]+\)" stroke-width="1"/>',
+      ).allMatches(svg.substring(svg.indexOf('>p</text>')));
+      expect(edges, hasLength(1));
+    });
+
+    test('a column keeps an X it saw, and a bus writes one box per column', () {
+      final changes = coalesceSvgChanges(
+        const [
+          SignalChange(time: 10, value: 'x'),
+          SignalChange(time: 11, value: '1'),
+          SignalChange(time: 500, value: '0'),
+        ],
+        (t) => t / 100,
+      );
+      expect(changes.map((c) => (c.column, c.value, c.burst)), [
+        (0, 'x', true),
+        (5, '0', false),
+      ]);
+
+      final bus = <SignalChange>[
+        for (var t = 4; t < 400000; t += 4)
+          SignalChange(time: t, value: (t % 256).toRadixString(16)),
+      ];
+      final svg = svgOf({'bus': bus}, bitWidth: 8);
+      expect(count(svg, 'path'), lessThanOrEqualTo(1200));
+    });
+  });
 }
 
 // ── stub WaveformDataSource ──────────────────────────────────────────────────
