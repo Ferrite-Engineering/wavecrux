@@ -1150,6 +1150,7 @@ class WaveformCanvasRenderObject extends RenderBox {
       laneColor: lane.transactionColor,
       labelStyle: _valueTextStyle,
       selectedTransaction: _selectedTransaction,
+      backgroundColor: _colorTheme.canvasBackground,
     );
   }
 

@@ -3,8 +3,10 @@
 
 import 'dart:collection';
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:collection/collection.dart' show PriorityQueue;
 import 'package:flutter/painting.dart';
 import 'package:meta/meta.dart';
 import 'package:wavecrux/domain/models/decoded_transaction.dart';
@@ -20,10 +22,14 @@ class TransactionBlock {
   const TransactionBlock({
     required this.xStart,
     required this.xEnd,
+    required this.top,
+    required this.bottom,
+    required this.index,
     required this.isError,
     required this.isSelected,
     required this.isDensityBar,
     required this.coalescedCount,
+    this.occludes = false,
     this.label,
   });
 
@@ -32,6 +38,22 @@ class TransactionBlock {
 
   /// Right edge in canvas coordinates, clamped to the lane.
   final double xEnd;
+
+  /// Top edge in canvas coordinates. Overlapping transactions are packed into
+  /// sub-rows, so this is the top of the block's sub-row, not of the lane.
+  final double top;
+
+  /// Bottom edge in canvas coordinates.
+  final double bottom;
+
+  /// Index into the source transaction list of the transaction this block
+  /// draws (the first one, for a density bar).
+  final int index;
+
+  /// True when this block overlaps a block drawn earlier in the same sub-row,
+  /// so it is painted over an opaque backing that hides the earlier block's
+  /// label instead of mixing the two texts.
+  final bool occludes;
 
   /// True when this block, or any transaction coalesced into it, is an error.
   final bool isError;
@@ -71,11 +93,30 @@ class TransactionBlock {
 /// so a fully zoomed-out million-transaction decode draws at most about one
 /// block per pixel of lane width. Paint objects are hoisted out of the draw
 /// loop and laid-out label paragraphs are cached across frames.
+///
+/// Transactions whose spans overlap are packed into sub-rows (greedy interval
+/// partitioning over the whole list, so a transaction keeps its sub-row while
+/// the view pans). The lane splits into as many sub-rows as the visible
+/// transactions need, up to what its height allows; past that, sub-rows are
+/// reused and a block that still overlaps an earlier one in its sub-row is
+/// painted over an opaque backing, so one label is readable instead of two
+/// overprinted ones.
 abstract final class TransactionPainter {
   // ── layout constants ──────────────────────────────────────────────────────────
 
-  /// Horizontal margin kept between the lane edge and the first/last block.
+  /// Vertical margin kept between the lane edge and the blocks.
   static const double _blockVMargin = 3;
+
+  /// Smallest sub-row height (px) the lane splits into for overlapping
+  /// transactions. A 28 px lane holds two.
+  static const double _minSubRowHeight = 10;
+
+  /// Vertical gap (px) between adjacent sub-rows.
+  static const double _subRowGap = 1;
+
+  /// Smallest label font size (px) drawn in a sub-row; below it the label
+  /// is dropped rather than drawn illegibly.
+  static const double _minSubRowFontSize = 7;
 
   /// Minimum block width (px) at which the label text is drawn.
   static const double _minWidthForLabel = 24;
@@ -148,7 +189,15 @@ abstract final class TransactionPainter {
         selectedTransaction.endTime == tx.endTime &&
         selectedTransaction.label == tx.label;
 
+    final blockTop = laneBounds.top + _blockVMargin;
+    final blockBottom = math.max(blockTop, laneBounds.bottom - _blockVMargin);
+    final packedRows = _packedRows(transactions);
+
+    // First pass: resolve the visible draw units and the deepest sub-row any
+    // visible block needs. Geometry is assigned once that depth is known.
     final blocks = <TransactionBlock>[];
+    final blockRows = <int>[];
+    var visibleDepth = 1;
     var i = lo;
     while (i < hi) {
       final tx = transactions[i];
@@ -190,20 +239,29 @@ abstract final class TransactionPainter {
           TransactionBlock(
             xStart: column,
             xEnd: column,
+            top: blockTop,
+            bottom: blockBottom,
+            index: i,
             isError: anyError,
             isSelected: anySelected,
             isDensityBar: true,
             coalescedCount: count,
           ),
         );
+        blockRows.add(-1);
         i = j;
         continue;
       }
 
+      final row = packedRows[i];
+      if (row + 1 > visibleDepth) visibleDepth = row + 1;
       blocks.add(
         TransactionBlock(
           xStart: xStart,
           xEnd: xEnd,
+          top: blockTop,
+          bottom: blockBottom,
+          index: i,
           isError: tx.isError,
           isSelected: isSelected(tx),
           isDensityBar: false,
@@ -211,10 +269,92 @@ abstract final class TransactionPainter {
           label: (xEnd - xStart) >= _minWidthForLabel ? tx.label : null,
         ),
       );
+      blockRows.add(row);
       i++;
     }
 
+    // Second pass: split the lane into as many sub-rows as the visible
+    // overlap needs and its height allows. Density bars keep the full height.
+    final available = math.max(
+      1,
+      ((blockBottom - blockTop + _subRowGap) / (_minSubRowHeight + _subRowGap))
+          .floor(),
+    );
+    final rowCount = math.min(visibleDepth, available);
+    final rowHeight =
+        (blockBottom - blockTop - _subRowGap * (rowCount - 1)) / rowCount;
+    final rowEnd = List<double>.filled(rowCount, double.negativeInfinity);
+    for (var k = 0; k < blocks.length; k++) {
+      final packed = blockRows[k];
+      if (packed < 0) continue;
+      final block = blocks[k];
+      final row = packed % rowCount;
+      final top = blockTop + row * (rowHeight + _subRowGap);
+      // Blocks arrive in start order, so an overlap with anything earlier in
+      // this sub-row shows up against the furthest right edge drawn so far.
+      // Abutting blocks (one ends where the next starts) do not occlude.
+      final occludes = block.xStart < rowEnd[row] - 0.5;
+      if (block.xEnd > rowEnd[row]) rowEnd[row] = block.xEnd;
+      blocks[k] = TransactionBlock(
+        xStart: block.xStart,
+        xEnd: block.xEnd,
+        top: top,
+        bottom: top + rowHeight,
+        index: block.index,
+        isError: block.isError,
+        isSelected: block.isSelected,
+        isDensityBar: false,
+        coalescedCount: 1,
+        occludes: occludes,
+        label: block.label,
+      );
+    }
+
     return blocks;
+  }
+
+  /// The transaction drawn at [position] in a lane painted into [laneBounds],
+  /// or null when [position] is over no block.
+  ///
+  /// Uses the same layout as [paint], so a click on an overlapping
+  /// transaction's sub-row selects that transaction, and where blocks are
+  /// drawn over each other the topmost (last painted) one wins. A density
+  /// bar is hit within a couple of pixels and yields the first transaction
+  /// it stands for.
+  static DecodedTransaction? hitTest({
+    required Rect laneBounds,
+    required List<DecodedTransaction> transactions,
+    required TimeMapper timeMapper,
+    required Offset position,
+  }) {
+    if (position.dy < laneBounds.top || position.dy > laneBounds.bottom) {
+      return null;
+    }
+    final blocks = buildBlocks(
+      laneBounds: laneBounds,
+      transactions: transactions,
+      timeMapper: timeMapper,
+    );
+    // The lane's top and bottom margins belong to the nearest sub-row.
+    final y = position.dy.clamp(
+      laneBounds.top + _blockVMargin,
+      math.max(
+        laneBounds.top + _blockVMargin,
+        laneBounds.bottom - _blockVMargin,
+      ),
+    );
+    for (var k = blocks.length - 1; k >= 0; k--) {
+      final block = blocks[k];
+      if (y < block.top - _subRowGap || y > block.bottom + _subRowGap) {
+        continue;
+      }
+      final tolerance = block.isDensityBar ? 2.0 : 0.0;
+      if (position.dx >= block.xStart - tolerance &&
+          position.dx <= block.xEnd + tolerance) {
+        return transactions[block.index];
+      }
+    }
+    return null;
   }
 
   /// Paints all transactions in [transactions] that overlap the currently
@@ -222,6 +362,11 @@ abstract final class TransactionPainter {
   ///
   /// Pass [selectedTransaction] to highlight a specific block — typically the
   /// row that is selected in the transaction table.
+  ///
+  /// [backgroundColor] is the colour behind the lane. A block that overlaps
+  /// an earlier one in its sub-row is backed with it, opaque, so the earlier
+  /// block's label does not show through; without it such blocks are drawn
+  /// translucent as before.
   static void paint({
     required Canvas canvas,
     required Rect laneBounds,
@@ -230,6 +375,7 @@ abstract final class TransactionPainter {
     required Color laneColor,
     required TextStyle labelStyle,
     DecodedTransaction? selectedTransaction,
+    Color? backgroundColor,
   }) {
     final blockTop = laneBounds.top + _blockVMargin;
     final blockBottom = laneBounds.bottom - _blockVMargin;
@@ -255,6 +401,17 @@ abstract final class TransactionPainter {
       ..color = _errorColor.withValues(alpha: 0.35)
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
+    // The lane's own tint over the canvas, made opaque: what an occluding
+    // block hides the earlier block behind.
+    final backingColor = backgroundColor == null
+        ? null
+        : Color.alphaBlend(
+            laneColor.withValues(alpha: 0.06),
+            backgroundColor.withValues(alpha: 1),
+          );
+    // Sub-rows shrink the label to fit; a full-height block keeps the
+    // configured size.
+    final baseFontSize = labelStyle.fontSize ?? 10;
 
     for (final block in blocks) {
       final baseColor = block.isError ? _errorColor : laneColor;
@@ -273,14 +430,19 @@ abstract final class TransactionPainter {
 
       final blockRect = Rect.fromLTRB(
         block.xStart,
-        blockTop,
+        block.top,
         block.xEnd,
-        blockBottom,
+        block.bottom,
       );
       final rrect = RRect.fromRectAndRadius(
         blockRect,
         const Radius.circular(_cornerRadius),
       );
+
+      if (block.occludes && backingColor != null) {
+        fillPaint.color = backingColor;
+        canvas.drawRRect(rrect, fillPaint);
+      }
 
       fillPaint.color = baseColor.withValues(
         alpha: block.isSelected ? 0.45 : 0.25,
@@ -300,14 +462,28 @@ abstract final class TransactionPainter {
 
       final label = block.label;
       if (label != null) {
-        _paintLabel(
-          canvas,
-          label,
-          blockRect,
-          labelStyle,
-          isSelected: block.isSelected,
-          isError: block.isError,
-        );
+        final isSubRow = blockRect.height < blockBottom - blockTop - 0.5;
+        final fontSize = isSubRow
+            ? math.min(baseFontSize, blockRect.height - 1.5)
+            : baseFontSize;
+        if (fontSize >= _minSubRowFontSize || !isSubRow) {
+          if (isSubRow) {
+            canvas
+              ..save()
+              ..clipRect(blockRect);
+          }
+          _paintLabel(
+            canvas,
+            label,
+            blockRect,
+            fontSize == baseFontSize
+                ? labelStyle
+                : labelStyle.copyWith(fontSize: fontSize),
+            isSelected: block.isSelected,
+            isError: block.isError,
+          );
+          if (isSubRow) canvas.restore();
+        }
       }
     }
 
@@ -376,6 +552,37 @@ abstract final class TransactionPainter {
     }
     _prefixMaxEndCache[list] = prefix;
     return prefix;
+  }
+
+  /// Cache of each list's sub-row assignment, keyed like [_prefixMaxEndCache].
+  static final Expando<Uint16List> _packedRowCache = Expando<Uint16List>();
+
+  /// Sub-row of every transaction in [list], by greedy interval partitioning:
+  /// each transaction takes the lowest sub-row whose previous occupant has
+  /// ended by the time it starts. A transaction that starts exactly where
+  /// another ends shares its sub-row, so back-to-back traffic stays on one
+  /// row and only genuine overlaps (AXI bursts in flight, a decoder notice
+  /// spanning a packet) move down. O(n log d) for overlap depth d, computed
+  /// once per list.
+  static Uint16List _packedRows(List<DecodedTransaction> list) {
+    final cached = _packedRowCache[list];
+    if (cached != null) return cached;
+    final rows = Uint16List(list.length);
+    // (endTime, row) of every occupied sub-row, earliest end first.
+    final busy = PriorityQueue<(int, int)>((a, b) => a.$1.compareTo(b.$1));
+    final free = PriorityQueue<int>();
+    var nextRow = 0;
+    for (var i = 0; i < list.length; i++) {
+      final tx = list[i];
+      while (busy.isNotEmpty && busy.first.$1 <= tx.startTime) {
+        free.add(busy.removeFirst().$2);
+      }
+      final row = free.isNotEmpty ? free.removeFirst() : nextRow++;
+      rows[i] = math.min(row, 0xFFFF);
+      busy.add((tx.endTime, row));
+    }
+    _packedRowCache[list] = rows;
+    return rows;
   }
 
   /// Index of the first entry whose prefix-max endTime is at or after [time].

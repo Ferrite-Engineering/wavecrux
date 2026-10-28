@@ -2011,7 +2011,32 @@ rather than by the transaction count.
 2. Verify both transaction lanes render side by side without visual collision.
 3. Verify each lane is clearly labeled with its decoder name.
 
-#### 5.11.5 Automation Assessment
+#### 5.11.5 Overlapping transactions (from 1.2)
+
+A decoder can emit transactions whose time spans overlap: AXI-family decoders
+emit bursts that are still in flight when later ones start, and a decoder
+notice (for example a PCIe "Scrambling: off (detected)") can span exactly the
+packet that settled it. Overlapping transactions are packed into sub-rows: the
+lane splits into two half-height rows while overlapping transactions are in
+view, each block keeps its sub-row while you pan, and back-to-back
+transactions (one ends where the next starts) stay on one full-height row.
+Where more transactions overlap than the lane has sub-rows, a later block is
+drawn over an opaque backing, so one label is readable instead of two
+overprinted ones.
+
+1. Activate a decoder that emits overlapping transactions (an AXI4 decoder on
+   a burst trace, or a PCIe Data Link Layer plugin decoder with
+   `scrambling=auto`, whose lock notice spans the first packet).
+2. Zoom to the overlap. Verify the lane shows the two transactions in an upper
+   and a lower sub-row, each with its own readable label, not one row of
+   overprinted text.
+3. Click the upper block, then the lower one. Verify each click selects that
+   transaction in the transaction table and moves the cursor to its start.
+4. Pan away from the overlap. Verify the lane returns to full-height blocks.
+5. With three or more transactions in flight at once, verify no label is drawn
+   over another label's text.
+
+#### 5.11.6 Automation Assessment
 
 | Test | Coverage |
 |---|---|
@@ -2021,6 +2046,8 @@ rather than by the transaction count.
 | Selection identity is startTime/endTime/label, not object identity | **UNIT** (`transaction_painter_test.dart` — "labels and selection" group) |
 | Label paragraphs are cached and the cache stays capacity-bounded | **UNIT** (`transaction_painter_test.dart` — "label paragraph cache" group) |
 | Multi-decoder lanes coexist without collision | **WIDGET** (`waveform_canvas_transaction_test.dart` — "renders multiple decoder lanes without exception") |
+| Overlapping transactions: sub-rows, stable across pan, back-to-back stays one row, collisions past the lane's depth are backed | **UNIT** (`transaction_painter_test.dart` — "overlapping transactions" group) |
+| Click on an overlapping transaction selects the one in that sub-row | **WIDGET** (`waveform_canvas_transaction_test.dart` — "tap on an overlapping transaction selects the one in that sub-row") |
 | Error styling | **WIDGET — pending** (canvas-side error-block painter coverage; queued — needs golden-image or color-assertion infra) |
 | Tap-to-jump cursor behavior | **INTEGRATION_TEST — pending** (canvas tap → cursor + viewport pan; gesture-arena interaction; queued in `integration_test/PENDING.md`) |
 | Label truncation | **MANUAL** — visual judgement |

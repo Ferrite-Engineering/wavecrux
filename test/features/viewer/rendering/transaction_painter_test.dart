@@ -445,6 +445,125 @@ void main() {
     });
   });
 
+  group('TransactionPainter — overlapping transactions', () {
+    // A decoder notice that spans exactly the packet that settled it: the
+    // case that overprinted "Scrambling: off (detected)" and the packet label.
+    const notice = DecodedTransaction(
+      startTime: 100,
+      endTime: 300,
+      label: 'Scrambling: off (detected)',
+    );
+    const packet = DecodedTransaction(
+      startTime: 100,
+      endTime: 300,
+      label: 'InitFC1-P VC0',
+    );
+
+    test('same-span transactions get separate sub-rows and both labels', () {
+      final blocks = _blocks(transactions: const [notice, packet]);
+      expect(blocks, hasLength(2));
+      final [a, b] = blocks;
+      expect(a.label, notice.label);
+      expect(b.label, packet.label);
+      // Stacked, not on top of each other.
+      expect(a.bottom, lessThanOrEqualTo(b.top));
+      expect(a.top, greaterThanOrEqualTo(_laneBounds.top));
+      expect(b.bottom, lessThanOrEqualTo(_laneBounds.bottom));
+      expect(a.occludes, isFalse);
+      expect(b.occludes, isFalse);
+    });
+
+    test('back-to-back transactions stay on one full-height row', () {
+      final blocks = _blocks(
+        transactions: const [
+          DecodedTransaction(startTime: 100, endTime: 200, label: 'A'),
+          DecodedTransaction(startTime: 200, endTime: 300, label: 'B'),
+        ],
+      );
+      expect(blocks, hasLength(2));
+      expect(blocks[0].top, blocks[1].top);
+      expect(blocks[0].bottom, blocks[1].bottom);
+      expect(blocks[0].bottom - blocks[0].top, closeTo(22, 0.01));
+      expect(blocks.any((b) => b.occludes), isFalse);
+    });
+
+    test('overlap deeper than the lane holds marks the collision', () {
+      // Three in flight at once; a 28 px lane holds two sub-rows, so the
+      // third reuses the first sub-row and must cover it, not mix with it.
+      final blocks = _blocks(
+        transactions: const [
+          DecodedTransaction(startTime: 100, endTime: 400, label: 'Burst 0'),
+          DecodedTransaction(startTime: 150, endTime: 450, label: 'Burst 1'),
+          DecodedTransaction(startTime: 200, endTime: 500, label: 'Burst 2'),
+        ],
+      );
+      expect(blocks, hasLength(3));
+      expect(blocks[0].top, blocks[2].top);
+      expect(blocks[1].top, isNot(blocks[0].top));
+      expect(blocks[2].occludes, isTrue);
+      expect(blocks[0].occludes, isFalse);
+      expect(blocks[1].occludes, isFalse);
+    });
+
+    test('a transaction keeps its sub-row while the view pans', () {
+      const txs = [
+        DecodedTransaction(startTime: 100, endTime: 600, label: 'Long'),
+        DecodedTransaction(startTime: 200, endTime: 300, label: 'Short'),
+      ];
+      final before = _blocks(transactions: txs);
+      final panned = _blocks(
+        transactions: txs,
+        mapper: const TimeMapper(
+          startTime: 0,
+          endTime: 1000,
+          viewportWidth: 1000,
+          ticksPerPixel: 1,
+          panOffsetTicks: 150,
+        ),
+      );
+      expect(before.last.label, 'Short');
+      expect(panned.last.label, 'Short');
+      expect(panned.last.top, before.last.top);
+    });
+
+    test('hitTest picks the transaction in the sub-row under the pointer', () {
+      final blocks = _blocks(transactions: const [notice, packet]);
+      DecodedTransaction? at(double y, {double x = 200}) =>
+          TransactionPainter.hitTest(
+            laneBounds: _laneBounds,
+            transactions: const [notice, packet],
+            timeMapper: _mapper,
+            position: Offset(x, y),
+          );
+      expect(at((blocks[0].top + blocks[0].bottom) / 2), notice);
+      expect(at((blocks[1].top + blocks[1].bottom) / 2), packet);
+      // The lane margins belong to the nearest sub-row.
+      expect(at(_laneBounds.top + 1), notice);
+      expect(at(_laneBounds.bottom - 1), packet);
+      // Outside every block, and outside the lane.
+      expect(at(14, x: 600), isNull);
+      expect(at(40), isNull);
+    });
+
+    test('paints overlapping transactions with an opaque backing', () {
+      final recorder = PictureRecorder();
+      TransactionPainter.paint(
+        canvas: Canvas(recorder),
+        laneBounds: _laneBounds,
+        transactions: const [
+          notice,
+          packet,
+          DecodedTransaction(startTime: 150, endTime: 250, label: 'Third'),
+        ],
+        timeMapper: _mapper,
+        laneColor: _laneColor,
+        labelStyle: _labelStyle,
+        backgroundColor: const Color(0xFF101010),
+      );
+      recorder.endRecording().dispose();
+    });
+  });
+
   group('TransactionPainter — label paragraph cache', () {
     setUp(TransactionPainter.clearParagraphCache);
 

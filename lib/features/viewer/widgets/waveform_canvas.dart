@@ -18,6 +18,7 @@ import 'package:wavecrux/domain/enums/device_class.dart';
 import 'package:wavecrux/domain/interfaces/waveform_data_source.dart';
 import 'package:wavecrux/domain/models/active_decoder.dart';
 import 'package:wavecrux/domain/models/annotation.dart';
+import 'package:wavecrux/domain/models/decoded_transaction.dart';
 import 'package:wavecrux/domain/models/signal_change.dart';
 import 'package:wavecrux/domain/models/signal_group.dart';
 import 'package:wavecrux/domain/models/time_range.dart';
@@ -47,6 +48,7 @@ import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart
 import 'package:wavecrux/features/viewer/providers/x_trace_provider.dart';
 import 'package:wavecrux/features/viewer/rendering/lane_geometry_index.dart';
 import 'package:wavecrux/features/viewer/rendering/signal_load_planner.dart';
+import 'package:wavecrux/features/viewer/rendering/transaction_painter.dart';
 import 'package:wavecrux/features/viewer/rendering/waveform_canvas_render_object.dart';
 import 'package:wavecrux/features/viewer/rendering/waveform_lane_data.dart';
 import 'package:wavecrux/features/viewer/widgets/collaborator_cursor_overlay.dart';
@@ -1224,19 +1226,17 @@ class _WaveformCanvasState extends ConsumerState<WaveformCanvas> {
       if (lane.kind != WaveformLaneKind.transaction) continue;
       if (canvasY < lane.y || canvasY > lane.y + lane.height) continue;
 
-      // Tap landed in a transaction lane — search for a hit block.
-      final timeMapper = ref.read(timeMapperProvider);
-      final tappedTime = timeMapper.pixelToTime(viewportPosition.dx);
-
-      for (final tx in lane.transactions) {
-        if (tx.startTime <= tappedTime && tappedTime <= tx.endTime) {
-          ref
-              .read(selectedTransactionProvider.notifier)
-              .select(tx, lane.decoderInstanceId!);
-          // Override the cursor to the transaction's start time.
-          ref.read(cursorStateProvider.notifier).placePrimary(tx.startTime);
-          return;
-        }
+      // Tap landed in a transaction lane — search for a hit block, laid out
+      // exactly as the lane paints it, so a tap on an overlapping
+      // transaction's sub-row selects that transaction.
+      final tx = _transactionAt(lane, viewportPosition.dx, canvasY);
+      if (tx != null) {
+        ref
+            .read(selectedTransactionProvider.notifier)
+            .select(tx, lane.decoderInstanceId!);
+        // Override the cursor to the transaction's start time.
+        ref.read(cursorStateProvider.notifier).placePrimary(tx.startTime);
+        return;
       }
 
       // Tapped in the lane gap between blocks — clear selection.
@@ -1246,6 +1246,27 @@ class _WaveformCanvasState extends ConsumerState<WaveformCanvas> {
 
     // Not in any transaction lane — clear selection.
     ref.read(selectedTransactionProvider.notifier).clearSelection();
+  }
+
+  /// The transaction drawn at viewport x [dx] and canvas y [canvasY] in the
+  /// transaction [lane], or null over a gap.
+  DecodedTransaction? _transactionAt(
+    WaveformLaneData lane,
+    double dx,
+    double canvasY,
+  ) {
+    final timeMapper = ref.read(timeMapperProvider);
+    return TransactionPainter.hitTest(
+      laneBounds: Rect.fromLTWH(
+        0,
+        lane.y,
+        timeMapper.viewportWidth,
+        lane.height,
+      ),
+      transactions: lane.transactions,
+      timeMapper: timeMapper,
+      position: Offset(dx, canvasY),
+    );
   }
 
   // ── long-press context menu ─────────────────────────────────────────────────

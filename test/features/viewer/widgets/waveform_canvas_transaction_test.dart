@@ -461,6 +461,68 @@ void main() {
       },
     );
 
+    testWidgets(
+      'tap on an overlapping transaction selects the one in that sub-row',
+      (tester) async {
+        // Same span: before sub-rows, both were drawn on top of each other
+        // and a tap always selected the first.
+        const notice = DecodedTransaction(
+          startTime: 100,
+          endTime: 300,
+          label: 'Notice',
+        );
+        const packet = DecodedTransaction(
+          startTime: 100,
+          endTime: 300,
+          label: 'Packet',
+        );
+        final decoder = _makeDecoder(transactions: const [notice, packet]);
+
+        late ProviderContainer container;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              waveformSourceProvider.overrideWith(
+                () => _LoadedSourceNotifier(_makeSource()),
+              ),
+              activeDecodersProvider.overrideWith(
+                () => _FixedActiveDecodersNotifier([decoder]),
+              ),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: L10N.localizationsDelegates,
+              supportedLocales: L10N.supportedLocales,
+              home: Consumer(
+                builder: (context, ref, _) {
+                  container = ProviderScope.containerOf(context);
+                  return const Scaffold(
+                    body: SizedBox(
+                      width: 800,
+                      height: 600,
+                      child: WaveformCanvas(),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        // Lane y=0..28: upper sub-row y≈3..13, lower y≈14..25.
+        await tester.tapAt(const Offset(160, 20));
+        await tester.pump();
+        expect(container.read(selectedTransactionProvider)?.$1, packet);
+
+        await tester.tapAt(const Offset(160, 7));
+        await tester.pump();
+        expect(container.read(selectedTransactionProvider)?.$1, notice);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
     testWidgets('tap in gap between transaction blocks clears selection', (
       tester,
     ) async {
