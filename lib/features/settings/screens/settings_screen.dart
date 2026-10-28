@@ -46,13 +46,20 @@ class SettingsScreen extends ConsumerWidget {
 
   /// Opens settings in a dialog on desktop or as a pushed route on mobile,
   /// via the suite-shared shell (`crux_settings_ui`).
-  static Future<void> openAdaptive(BuildContext context) {
+  ///
+  /// [initialCategoryId] opens it at that category instead of the first: the
+  /// licence-expiry strip opens Settings → License this way.
+  static Future<void> openAdaptive(
+    BuildContext context, {
+    String? initialCategoryId,
+  }) {
     final l10n = L10N.of(context);
     return openCruxSettings(
       context,
       title: l10n.settingsTitle,
       closeTooltip: isDesktopPlatform ? l10n.dialogClose : l10n.settingsClose,
       asDialog: isDesktopPlatform,
+      initialCategoryId: initialCategoryId,
       bodyBuilder: (_) => const _SettingsContent(),
     );
   }

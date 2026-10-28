@@ -53,7 +53,10 @@ Widget _wrap({WaveCruxSettingsService? service, Locale? locale}) {
 }
 
 /// Minimal app with a button that calls [SettingsScreen.openAdaptive].
-Widget _wrapWithTrigger({WaveCruxSettingsService? service}) {
+Widget _wrapWithTrigger({
+  WaveCruxSettingsService? service,
+  String? initialCategoryId,
+}) {
   final mock = service ?? _defaultMock();
   return ProviderScope(
     overrides: [
@@ -66,7 +69,10 @@ Widget _wrapWithTrigger({WaveCruxSettingsService? service}) {
       home: Builder(
         builder: (ctx) => Scaffold(
           body: TextButton(
-            onPressed: () => SettingsScreen.openAdaptive(ctx),
+            onPressed: () => SettingsScreen.openAdaptive(
+              ctx,
+              initialCategoryId: initialCategoryId,
+            ),
             child: const Text('open'),
           ),
         ),
@@ -445,6 +451,30 @@ void main() {
   // ── openAdaptive — desktop: shows dialog ─────────────────────────────────────
 
   group('SettingsScreen.openAdaptive — desktop', () {
+    // The licence-expiry strip opens Settings at License this way; the shared
+    // shell turns the id into the selected category (crux_settings_ui's own
+    // tests cover the selection itself).
+    testWidgets(
+      'initialCategoryId reaches the settings body',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrapWithTrigger(initialCategoryId: CruxSettingsCategoryId.shortcuts),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('open'));
+        await tester.pumpAndSettle();
+        expect(
+          tester
+              .widget<CruxSettingsInitialCategory>(
+                find.byType(CruxSettingsInitialCategory),
+              )
+              .id,
+          CruxSettingsCategoryId.shortcuts,
+        );
+      },
+      variant: const TargetPlatformVariant({TargetPlatform.macOS}),
+    );
+
     testWidgets(
       'shows a Dialog widget',
       (tester) async {

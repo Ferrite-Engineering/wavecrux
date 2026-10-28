@@ -64,6 +64,7 @@ import 'package:wavecrux/features/links/widgets/open_link_confirm_dialog.dart';
 import 'package:wavecrux/features/menu_bar/widgets/desktop_menu_bar.dart';
 import 'package:wavecrux/features/settings/providers/orientation_lock_provider.dart';
 import 'package:wavecrux/features/settings/providers/settings_providers.dart';
+import 'package:wavecrux/features/settings/screens/settings_screen.dart';
 import 'package:wavecrux/features/stage/bundle/custom_widget_bundle_provider.dart';
 import 'package:wavecrux/features/stage/providers/stage_startup_render_gate_provider.dart';
 import 'package:wavecrux/features/stage/widgets/primitives/builtin_stage_widgets.dart';
@@ -775,6 +776,21 @@ Future<bool> bootstrap({
     ),
   );
   return false;
+}
+
+/// Opens Settings at the License category, for the licence-expiry strip.
+///
+/// The strip sits above the root navigator, so it opens Settings from that
+/// navigator's context, the same way the menu bar's actions find one.
+void _openLicenseSettings() {
+  final context = rootNavigatorKey.currentContext;
+  if (context == null) return;
+  unawaited(
+    SettingsScreen.openAdaptive(
+      context,
+      initialCategoryId: kCruxLicenseCategoryId,
+    ),
+  );
 }
 
 /// Root application widget.
@@ -1972,16 +1988,34 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
                                           iconSize: bannerMetrics.iconSize,
                                           bodyFontSize: bannerMetrics.bodyText,
                                         ),
-                                        child: _EagerStartupGate(
-                                          // Above the root navigator, so a
-                                          // locked setting in a dialog reads
-                                          // the same sentence as one in
-                                          // Settings.
-                                          child: CruxPolicyLockScope(
-                                            message: l10n.policyLockedNote,
-                                            child:
-                                                child ??
-                                                const SizedBox.shrink(),
+                                        // The licence-expiry strip (crux_license):
+                                        // below the update prompt, and inside the
+                                        // licence agreement and the expiry gate,
+                                        // which both outrank it. Shows nothing in
+                                        // an open-core build, where there is no
+                                        // licence; the Pro overlay supplies the
+                                        // status and the strings.
+                                        child: CruxLicenseExpiryGate(
+                                          onOpenLicenseSettings:
+                                              _openLicenseSettings,
+                                          sizing: CruxBetaExpirySizing(
+                                            iconSize: bannerMetrics.iconSize,
+                                            touchTarget:
+                                                bannerMetrics.touchTarget,
+                                            bodyTextSize:
+                                                bannerMetrics.bodyText,
+                                          ),
+                                          child: _EagerStartupGate(
+                                            // Above the root navigator, so a
+                                            // locked setting in a dialog reads
+                                            // the same sentence as one in
+                                            // Settings.
+                                            child: CruxPolicyLockScope(
+                                              message: l10n.policyLockedNote,
+                                              child:
+                                                  child ??
+                                                  const SizedBox.shrink(),
+                                            ),
                                           ),
                                         ),
                                       ),
