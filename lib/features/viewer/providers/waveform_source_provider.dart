@@ -18,6 +18,7 @@ import 'package:wavecrux/features/cursors/providers/cursor_providers.dart';
 import 'package:wavecrux/features/decoders/providers/active_decoders_provider.dart';
 import 'package:wavecrux/features/stage/providers/stage_workspace_provider.dart';
 import 'package:wavecrux/features/viewer/providers/fsm_provider.dart';
+import 'package:wavecrux/features/viewer/providers/inspector_providers.dart';
 import 'package:wavecrux/features/viewer/providers/pattern_search_provider.dart';
 import 'package:wavecrux/features/viewer/providers/process_filter_provider.dart';
 import 'package:wavecrux/features/viewer/providers/signal_group_providers.dart';
@@ -208,6 +209,8 @@ class WaveformSourceNotifier extends _$WaveformSourceNotifier {
     ref.read(translateFilterProvider.notifier).clearAll();
     ref.read(fsmProvider.notifier).clearFsm();
     ref.read(fsmAnnotationProvider.notifier).clearAll();
+    ref.read(fsmStateNameDraftsProvider.notifier).clear();
+    ref.read(fsmKnownStateIdsProvider.notifier).clear();
     // Stage panels and bindings reference signal refs from the
     // previous file's namespace and become invalid the moment a new
     // file is loaded. Reset alongside the other viewer state.
@@ -397,6 +400,8 @@ class WaveformSourceNotifier extends _$WaveformSourceNotifier {
     ref.read(translateFilterProvider.notifier).clearAll();
     ref.read(fsmProvider.notifier).clearFsm();
     ref.read(fsmAnnotationProvider.notifier).clearAll();
+    ref.read(fsmStateNameDraftsProvider.notifier).clear();
+    ref.read(fsmKnownStateIdsProvider.notifier).clear();
     ref.read(stageWorkspaceProvider.notifier).clear();
     // A binding notice describes the file being replaced.
     ref.read(unresolvedBindingsProvider.notifier).clear();
@@ -604,6 +609,8 @@ class WaveformSourceNotifier extends _$WaveformSourceNotifier {
     ref.read(translateFilterProvider.notifier).clearAll();
     ref.read(fsmProvider.notifier).clearFsm();
     ref.read(fsmAnnotationProvider.notifier).clearAll();
+    ref.read(fsmStateNameDraftsProvider.notifier).clear();
+    ref.read(fsmKnownStateIdsProvider.notifier).clear();
     ref.read(stageWorkspaceProvider.notifier).clear();
     // A binding notice describes the file being replaced.
     ref.read(unresolvedBindingsProvider.notifier).clear();
@@ -651,6 +658,8 @@ class WaveformSourceNotifier extends _$WaveformSourceNotifier {
     ref.read(translateFilterProvider.notifier).clearAll();
     ref.read(fsmProvider.notifier).clearFsm();
     ref.read(fsmAnnotationProvider.notifier).clearAll();
+    ref.read(fsmStateNameDraftsProvider.notifier).clear();
+    ref.read(fsmKnownStateIdsProvider.notifier).clear();
     ref.read(stageWorkspaceProvider.notifier).clear();
     // A binding notice describes the file being replaced.
     ref.read(unresolvedBindingsProvider.notifier).clear();

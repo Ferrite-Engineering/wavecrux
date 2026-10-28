@@ -112,7 +112,7 @@ Point WaveCrux at a state register and it draws a bubble diagram of the state ma
 
 2. **Name the states (optional).**
 
-    Raw encodings like `0`, `1`, `2` are hard to read. If the signal already carries a named-enum format or a GTKWave translate filter, WaveCrux uses those names automatically. Otherwise right-click the signal and choose **Annotate FSM states…** to give each numeric value a readable name; the names are saved with the session. See [Working with signals](working-with-signals.md) for value-display formats and translate filters.
+    Raw encodings like `0`, `1`, `2` are hard to read. If the signal already carries a named-enum format or a GTKWave translate filter, WaveCrux uses those names automatically. Otherwise right-click the signal and choose **Annotate FSM states…** to give each numeric value a readable name. From WaveCrux 1.2 this opens the signal in the **Inspector**, a tab in the right dock (a sheet over the waveform on a phone), at its **FSM state names** section: one field per state value, **Apply** to use the names, **Revert** to put back the ones in use. A blank field shows the raw value. The names are saved with the session. See [Working with signals](working-with-signals.md) for value-display formats and translate filters.
 
 3. **Walk the machine.**
 

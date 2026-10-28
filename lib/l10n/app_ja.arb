@@ -3688,32 +3688,24 @@
   },
   "fsmMenuAnnotateStates": "FSM 状態に注釈を付ける…",
   "@fsmMenuAnnotateStates": {
-    "description": "Right-click context menu entry on an FSM signal that opens the state-name annotation dialog"
+    "description": "Right-click context menu entry on an FSM signal that opens the signal row in the Inspector, at its FSM state names section"
   },
-  "fsmAnnotateDialogTitle": "FSM 状態の注釈",
-  "@fsmAnnotateDialogTitle": {
-    "description": "Title of the dialog where the user enters human-readable names for FSM state values"
+  "inspectorFsmStateNamesSection": "FSM 状態名",
+  "@inspectorFsmStateNamesSection": {
+    "description": "Heading of the Inspector section where the user enters human-readable names for an FSM signal's state values"
   },
-  "fsmAnnotateDialogHint": "各数値状態に名前を入力してください。空欄のままにすると元の数値が使用されます。",
-  "@fsmAnnotateDialogHint": {
-    "description": "Helper text in the FSM annotation dialog explaining how to fill in state-name fields"
+  "inspectorFsmStateNamesHint": "各数値状態に名前を入力してください。空欄のままにすると元の数値が使用されます。",
+  "@inspectorFsmStateNamesHint": {
+    "description": "Helper text at the top of the Inspector's FSM state names section explaining how to fill in the state-name fields"
   },
   "fsmAnnotateStateLabel": "状態 {id}",
   "@fsmAnnotateStateLabel": {
-    "description": "Field label shown alongside the input for state value {id} in the FSM annotation dialog",
+    "description": "Field label shown alongside the input for state value {id} in the Inspector's FSM state names section",
     "placeholders": {
       "id": {
         "type": "String"
       }
     }
-  },
-  "fsmAnnotateSave": "保存",
-  "@fsmAnnotateSave": {
-    "description": "Button that saves entered state-name annotations from the FSM annotation dialog"
-  },
-  "fsmAnnotateCancel": "キャンセル",
-  "@fsmAnnotateCancel": {
-    "description": "Button that dismisses the FSM annotation dialog without saving changes"
   },
   "shortcutActionLoadRtlStemsFile": "RTL Stems ファイルを読み込む…",
   "@shortcutActionLoadRtlStemsFile": {

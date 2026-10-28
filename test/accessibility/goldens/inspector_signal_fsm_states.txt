@@ -1,0 +1,4 @@
+# Tab walk: 3 stops, cycles
+1. Waveform text
+2. [Enter a name for each numeric state value. Leave blank to use the raw number. grouping] State 0 edit
+3. State 1 edit RUN

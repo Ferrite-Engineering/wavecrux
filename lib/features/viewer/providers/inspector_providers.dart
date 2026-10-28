@@ -338,6 +338,110 @@ class SignalFormatDraftsNotifier
   }
 }
 
+// ── FSM state-name drafts ─────────────────────────────────────────────────────
+
+/// An FSM signal's state names being edited in the Inspector, not yet
+/// applied. Keyed by signalRef: the names belong to the signal, so two rows
+/// of one signal edit one set.
+@immutable
+class FsmStateNamesDraft {
+  /// Creates a draft of [labels] (state id to name; a blank name falls back
+  /// to the raw value) over the names in use, [initialLabels].
+  const FsmStateNamesDraft({
+    required this.labels,
+    required this.initialLabels,
+  });
+
+  /// State id to the name typed so far. Every known id has an entry; an
+  /// empty one means "no name".
+  final Map<String, String> labels;
+
+  /// [labels] as seeded from the names in use.
+  final Map<String, String> initialLabels;
+
+  /// Whether Apply would change anything.
+  bool get isDirty => !mapEquals(labels, initialLabels);
+
+  /// A copy with [id] named [label].
+  FsmStateNamesDraft withLabel(String id, String label) => FsmStateNamesDraft(
+    labels: Map<String, String>.unmodifiable(
+      Map<String, String>.of(labels)..[id] = label,
+    ),
+    initialLabels: initialLabels,
+  );
+}
+
+/// The Inspector's unapplied FSM state-name drafts in this tab, keyed by
+/// signalRef. Per-tab, for the same reason as [decoderDraftsProvider].
+final fsmStateNameDraftsProvider =
+    NotifierProvider<
+      FsmStateNameDraftsNotifier,
+      Map<String, FsmStateNamesDraft>
+    >(
+      FsmStateNameDraftsNotifier.new,
+      name: 'fsmStateNameDraftsProvider',
+    );
+
+/// Notifier behind [fsmStateNameDraftsProvider].
+class FsmStateNameDraftsNotifier
+    extends Notifier<Map<String, FsmStateNamesDraft>> {
+  @override
+  Map<String, FsmStateNamesDraft> build() =>
+      const <String, FsmStateNamesDraft>{};
+
+  /// Records [draft] under [signalRef]; a draft equal to its seed is dropped.
+  void put(String signalRef, FsmStateNamesDraft draft) {
+    final next = Map<String, FsmStateNamesDraft>.of(state);
+    if (draft.isDirty) {
+      next[signalRef] = draft;
+    } else {
+      next.remove(signalRef);
+    }
+    state = Map<String, FsmStateNamesDraft>.unmodifiable(next);
+  }
+
+  /// Drops the draft for [signalRef] (applied or reverted).
+  void discard(String signalRef) {
+    if (!state.containsKey(signalRef)) return;
+    state = Map<String, FsmStateNamesDraft>.unmodifiable(
+      Map<String, FsmStateNamesDraft>.of(state)..remove(signalRef),
+    );
+  }
+
+  /// Drops every draft; a new file was loaded.
+  void clear() => state = const <String, FsmStateNamesDraft>{};
+}
+
+/// The state ids found by "Annotate FSM states…" for a signal whose FSM is
+/// not the one on show, keyed by signalRef.
+///
+/// The Inspector's FSM section lists the ids of the FSM on show (when it is
+/// this signal's), the ids already named, and these. Kept apart from
+/// `fsmProvider` so naming a signal's states does not replace the FSM
+/// diagram on show. Per-tab.
+final fsmKnownStateIdsProvider =
+    NotifierProvider<FsmKnownStateIdsNotifier, Map<String, List<String>>>(
+      FsmKnownStateIdsNotifier.new,
+      name: 'fsmKnownStateIdsProvider',
+    );
+
+/// Notifier behind [fsmKnownStateIdsProvider].
+class FsmKnownStateIdsNotifier extends Notifier<Map<String, List<String>>> {
+  @override
+  Map<String, List<String>> build() => const <String, List<String>>{};
+
+  /// Records [ids] as the states of [signalRef].
+  void put(String signalRef, List<String> ids) {
+    state = Map<String, List<String>>.unmodifiable(<String, List<String>>{
+      ...state,
+      signalRef: List<String>.unmodifiable(ids),
+    });
+  }
+
+  /// Forgets every signal's ids; a new file was loaded.
+  void clear() => state = const <String, List<String>>{};
+}
+
 /// The Pro overlay's Inspector sections, after open core's own. Empty in
 /// open core; the overlay overrides it in its override list.
 final proInspectorSectionsProvider =

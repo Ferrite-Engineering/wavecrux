@@ -4469,7 +4469,8 @@ A finite state machine (FSM) is a common HDL design pattern — a register holdi
 | State graph derivation from known fixture | **WIDGET** (`test/services/signal_query/fsm_analysis_service_test.dart` + `fsm_layout_service_test.dart` + `test/features/viewer/widgets/fsm_bubble_painter_test.dart`) |
 | Active-state highlight follows cursor | **WIDGET** (`test/features/viewer/widgets/fsm_panel_test.dart`) |
 | Click-state-to-jump | **WIDGET** (`fsm_panel_test.dart`) |
-| Right-click state register → "Visualize FSM" gesture dispatch | **WIDGET** (`test/features/viewer/widgets/fsm_annotate_dialog_test.dart`); end-to-end dispatch **INTEGRATION_TEST** (`integration_test/gestures/fsm_context_menu_dispatch_test.dart` — right-click the FSM signal row → "Visualize as FSM" menu item → FSM panel opens with a ≥1-node bubble diagram) |
+| Right-click state register → "Visualize FSM" gesture dispatch | **WIDGET** (`test/features/viewer/widgets/fsm_panel_test.dart`); end-to-end dispatch **INTEGRATION_TEST** (`integration_test/gestures/fsm_context_menu_dispatch_test.dart` — right-click the FSM signal row → "Visualize as FSM" menu item → FSM panel opens with a ≥1-node bubble diagram) |
+| "Annotate FSM states…" names the states in the Inspector (from WaveCrux 1.2; the dialog is gone) | **WIDGET** (`test/features/viewer/widgets/fsm_state_names_section_test.dart` — a field per known state, Apply writes the annotation and refreshes the FSM on show, Revert, an unapplied name holds the row, the opener keeps the FSM on show; locale sweep); **STATIC** (`test/static/inspector_reachability_test.dart` — the menu entry routes to `annotateFsmStatesInInspector`, the old dialog's source is absent); focus walk (`test/accessibility/inspector_focus_walk_test.dart`, `test/accessibility/goldens/inspector_signal_fsm_states.txt`) |
 | State cleanup on new file load | **WIDGET** (`test/features/viewer/providers/waveform_source_provider_test.dart` — "openFile clears FsmViewState" + "openFile clears FsmAnnotation map") |
 | Symbolic state names from translate filter / stems file | **WIDGET** (`fsm_analysis_service_test.dart`) |
 | Graph layout for large FSMs | **UNIT** (`test/services/signal_query/fsm_stress_test.dart` — layout stability at N ∈ {50, 256, 4096}: finite, in `[0,1]²`, distinct, deterministic; N=50 pins the circle by property. Promoted from MANUAL by the FSM robustness plan, Layer E.) |
@@ -4481,12 +4482,12 @@ A finite state machine (FSM) is a common HDL design pattern — a register holdi
 
 ### 11.6 User FSM annotations persist across session save / reopen
 
-When a signal has no GTKWave translate filter, the user can mark it as an FSM and supply state-name labels directly (the `Annotate FSM…` dialog). These annotations are per-tab and are **persisted** in the `.wavecrux` session file (the `fsmAnnotations` map), exactly like the translate filters they substitute for. They round-trip through save → close → reopen and through the per-tab session sidecar autosave.
+When a signal has no GTKWave translate filter, the user can mark it as an FSM and supply state-name labels directly (*Annotate FSM states…*, which from WaveCrux 1.2 opens the row's **FSM state names** section in the Inspector). These annotations are per-tab and are **persisted** in the `.wavecrux` session file (the `fsmAnnotations` map), exactly like the translate filters they substitute for. They round-trip through save → close → reopen and through the per-tab session sidecar autosave.
 
 Steps:
 
 1. Load a VCD with an integer-valued state register and add it to the canvas.
-2. Annotate it: open the FSM annotate dialog and assign labels to a couple of state ids (e.g. `0 → IDLE`, `1 → RUN`).
+2. Annotate it: right-click it → *Annotate FSM states…*, type labels for a couple of state ids in the Inspector's **FSM state names** section (e.g. `0 → IDLE`, `1 → RUN`) and choose **Apply**.
 3. Save the session (`File → Save Session`), then close the tab and reopen the saved `.wavecrux` file.
 4. Verify the FSM annotation is restored: the same signal still shows the labels you assigned (and the FSM visualization uses them).
 

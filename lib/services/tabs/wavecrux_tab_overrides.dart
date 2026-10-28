@@ -263,14 +263,17 @@ List<Override> wavecruxTabOverrides(crux.TabId tabId) {
     panelLayoutProvider.overrideWith(PanelLayoutNotifier.new),
     // The Inspector: what it shows, its controller (pending focus request and
     // held draft), the waveform pane focus node Escape returns to, and the
-    // unapplied decoder and display-format drafts. Shared at root, an open
-    // in one tab would move focus in another and a draft would follow the
-    // user across traces.
+    // unapplied decoder, display-format and FSM state-name drafts (with the
+    // state ids "Annotate FSM states…" found). Shared at root, an open in
+    // one tab would move focus in another and a draft would follow the user
+    // across traces.
     inspectedObjectProvider.overrideWith(InspectedObjectNotifier.new),
     inspectorControllerProvider.overrideWith(buildInspectorController),
     waveformPaneFocusNodeProvider.overrideWith(buildWaveformPaneFocusNode),
     decoderDraftsProvider.overrideWith(DecoderDraftsNotifier.new),
     signalFormatDraftsProvider.overrideWith(SignalFormatDraftsNotifier.new),
+    fsmStateNameDraftsProvider.overrideWith(FsmStateNameDraftsNotifier.new),
+    fsmKnownStateIdsProvider.overrideWith(FsmKnownStateIdsNotifier.new),
 
     // Session.
     sessionProvider.overrideWith(SessionNotifier.new),

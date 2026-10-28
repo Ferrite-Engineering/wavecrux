@@ -11,10 +11,13 @@ import 'package:wavecrux/domain/models/decoder_config.dart';
 import 'package:wavecrux/domain/models/decoder_definition.dart';
 import 'package:wavecrux/domain/models/variable.dart';
 import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.dart';
+import 'package:wavecrux/features/viewer/providers/fsm_provider.dart';
 import 'package:wavecrux/features/viewer/providers/inspector_providers.dart';
+import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
 import 'package:wavecrux/features/viewer/widgets/wavecrux_inspector_panel.dart';
 import 'package:wavecrux/services/decoders/decoder_auto_bind_service.dart';
 import 'package:wavecrux/services/policy/org_decoder_settings.dart';
+import 'package:wavecrux/services/signal_query/fsm_analysis_service.dart';
 
 /// Whether the Inspector is hosted in a bottom sheet rather than the right
 /// dock: on iOS and Android, where the right dock is not phone UI.
@@ -64,6 +67,54 @@ Future<void> _showInspectorSheet(BuildContext context, ProviderContainer tab) {
       ),
     ),
   );
+}
+
+/// "Annotate FSM states…" on the viewer row [entryId] (signal [signalRef]):
+/// shows the row in the Inspector of [tab], whose FSM section lists the
+/// signal's states with a name field each.
+///
+/// The states are the ids of the FSM on show when it is this signal's;
+/// otherwise they are found here, from the signal's values over the whole
+/// trace, without replacing the FSM on show.
+Future<void> annotateFsmStatesInInspector(
+  BuildContext context,
+  ProviderContainer tab, {
+  required String entryId,
+  required String signalRef,
+}) async {
+  if (tab.read(fsmProvider).model?.signalRef != signalRef) {
+    final ids = await discoverFsmStateIds(tab, signalRef);
+    tab.read(fsmKnownStateIdsProvider.notifier).put(signalRef, ids);
+  }
+  if (!context.mounted) return;
+  openWaveCruxInspector(context, tab, InspectedSignal(entryId));
+}
+
+/// The state ids of [signalRef] in [tab]'s waveform: its distinct values
+/// over the whole trace, as the FSM analysis names them. Empty with no
+/// waveform, or when the signal cannot be loaded.
+Future<List<String>> discoverFsmStateIds(
+  ProviderContainer tab,
+  String signalRef,
+) async {
+  final source = tab.read(waveformSourceProvider).value;
+  if (source == null) return const <String>[];
+  if (!source.isSignalLoaded(signalRef)) {
+    try {
+      await source.loadSignal(signalRef);
+    } on Object {
+      return const <String>[];
+    }
+  }
+  final variable = tab.read(signalVariablesMapProvider)[signalRef];
+  final model = const FsmAnalysisService().buildModel(
+    signalRef: signalRef,
+    signalPath: variable?.fullPath ?? signalRef,
+    source: source,
+    startTime: source.startTime,
+    endTime: source.endTime,
+  );
+  return <String>[for (final s in model.states) s.id];
 }
 
 /// Starts adding a decoder of [definition] in the Inspector of [tab]: a

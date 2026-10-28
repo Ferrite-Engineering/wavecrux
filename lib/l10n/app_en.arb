@@ -3830,32 +3830,24 @@
   },
   "fsmMenuAnnotateStates": "Annotate FSM states…",
   "@fsmMenuAnnotateStates": {
-    "description": "Right-click context menu entry on an FSM signal that opens the state-name annotation dialog"
+    "description": "Right-click context menu entry on an FSM signal that opens the signal row in the Inspector, at its FSM state names section"
   },
-  "fsmAnnotateDialogTitle": "Annotate FSM states",
-  "@fsmAnnotateDialogTitle": {
-    "description": "Title of the dialog where the user enters human-readable names for FSM state values"
+  "inspectorFsmStateNamesSection": "FSM state names",
+  "@inspectorFsmStateNamesSection": {
+    "description": "Heading of the Inspector section where the user enters human-readable names for an FSM signal's state values"
   },
-  "fsmAnnotateDialogHint": "Enter a name for each numeric state value. Leave blank to use the raw number.",
-  "@fsmAnnotateDialogHint": {
-    "description": "Helper text in the FSM annotation dialog explaining how to fill in state-name fields"
+  "inspectorFsmStateNamesHint": "Enter a name for each numeric state value. Leave blank to use the raw number.",
+  "@inspectorFsmStateNamesHint": {
+    "description": "Helper text at the top of the Inspector's FSM state names section explaining how to fill in the state-name fields"
   },
   "fsmAnnotateStateLabel": "State {id}",
   "@fsmAnnotateStateLabel": {
-    "description": "Field label shown alongside the input for state value {id} in the FSM annotation dialog",
+    "description": "Field label shown alongside the input for state value {id} in the Inspector's FSM state names section",
     "placeholders": {
       "id": {
         "type": "String"
       }
     }
-  },
-  "fsmAnnotateSave": "Save",
-  "@fsmAnnotateSave": {
-    "description": "Button that saves entered state-name annotations from the FSM annotation dialog"
-  },
-  "fsmAnnotateCancel": "Cancel",
-  "@fsmAnnotateCancel": {
-    "description": "Button that dismisses the FSM annotation dialog without saving changes"
   },
   "shortcutActionLoadRtlStemsFile": "Load RTL Stems File…",
   "@shortcutActionLoadRtlStemsFile": {

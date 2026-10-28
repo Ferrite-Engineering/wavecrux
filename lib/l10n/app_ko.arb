@@ -3688,32 +3688,24 @@
   },
   "fsmMenuAnnotateStates": "FSM 상태 주석 달기…",
   "@fsmMenuAnnotateStates": {
-    "description": "Right-click context menu entry on an FSM signal that opens the state-name annotation dialog"
+    "description": "Right-click context menu entry on an FSM signal that opens the signal row in the Inspector, at its FSM state names section"
   },
-  "fsmAnnotateDialogTitle": "FSM 상태 주석",
-  "@fsmAnnotateDialogTitle": {
-    "description": "Title of the dialog where the user enters human-readable names for FSM state values"
+  "inspectorFsmStateNamesSection": "FSM 상태 이름",
+  "@inspectorFsmStateNamesSection": {
+    "description": "Heading of the Inspector section where the user enters human-readable names for an FSM signal's state values"
   },
-  "fsmAnnotateDialogHint": "각 숫자 상태에 이름을 입력하세요. 비워 두면 원래 숫자가 사용됩니다.",
-  "@fsmAnnotateDialogHint": {
-    "description": "Helper text in the FSM annotation dialog explaining how to fill in state-name fields"
+  "inspectorFsmStateNamesHint": "각 숫자 상태에 이름을 입력하세요. 비워 두면 원래 숫자가 사용됩니다.",
+  "@inspectorFsmStateNamesHint": {
+    "description": "Helper text at the top of the Inspector's FSM state names section explaining how to fill in the state-name fields"
   },
   "fsmAnnotateStateLabel": "상태 {id}",
   "@fsmAnnotateStateLabel": {
-    "description": "Field label shown alongside the input for state value {id} in the FSM annotation dialog",
+    "description": "Field label shown alongside the input for state value {id} in the Inspector's FSM state names section",
     "placeholders": {
       "id": {
         "type": "String"
       }
     }
-  },
-  "fsmAnnotateSave": "저장",
-  "@fsmAnnotateSave": {
-    "description": "Button that saves entered state-name annotations from the FSM annotation dialog"
-  },
-  "fsmAnnotateCancel": "취소",
-  "@fsmAnnotateCancel": {
-    "description": "Button that dismisses the FSM annotation dialog without saving changes"
   },
   "shortcutActionLoadRtlStemsFile": "RTL Stems 파일 로드…",
   "@shortcutActionLoadRtlStemsFile": {

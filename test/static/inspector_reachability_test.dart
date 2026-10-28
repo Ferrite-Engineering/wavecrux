@@ -1,10 +1,11 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
-// The Inspector is the one editor for a decoder's configuration and a signal
-// row's display format, and every way in opens it with focus: a decoder
-// row's Configure, the transaction table's Configure, the decoder picker,
-// and a value row's Properties, Configure Format and Edit Enum Labels. Each
+// The Inspector is the one editor for a decoder's configuration, a signal
+// row's display format and an FSM signal's state names, and every way in
+// opens it with focus: a decoder row's Configure, the transaction table's
+// Configure, the decoder picker, a value row's Properties, Configure Format
+// and Edit Enum Labels, and a signal row's Annotate FSM States. Each
 // opener is a line of wiring a green widget suite does not prove is reached,
 // so this pins them against the sources, along with the per-tab bindings the
 // Inspector's state needs and the absence of the dialogs it replaced.
@@ -92,6 +93,27 @@ void main() {
     expect(arm, contains('InspectedSignal(entry.id)'));
   });
 
+  test("a signal row's Annotate FSM States inspects that row", () {
+    final panel = _read('lib/features/viewer/widgets/signal_list_panel.dart');
+    expect(
+      _span(panel, 'Future<void> _annotateFsm(', '\n  }\n'),
+      contains('annotateFsmStatesInInspector('),
+    );
+    expect(panel, contains('_annotateFsm(context, entry.id, signalRef)'));
+    final openers = _read('lib/features/viewer/inspector_openers.dart');
+    expect(
+      _span(openers, 'Future<void> annotateFsmStatesInInspector(', '\n}\n'),
+      allOf(
+        contains('openWaveCruxInspector('),
+        contains('InspectedSignal(entryId)'),
+      ),
+    );
+    expect(
+      _read('lib/features/viewer/widgets/wavecrux_inspector_panel.dart'),
+      contains('fsmStateNamesInspectorSection('),
+    );
+  });
+
   test('the Inspector state is per-tab', () {
     final overrides = _read('lib/services/tabs/wavecrux_tab_overrides.dart');
     for (final provider in const <String>[
@@ -100,6 +122,8 @@ void main() {
       'waveformPaneFocusNodeProvider',
       'decoderDraftsProvider',
       'signalFormatDraftsProvider',
+      'fsmStateNameDraftsProvider',
+      'fsmKnownStateIdsProvider',
     ]) {
       expect(
         overrides,
@@ -116,11 +140,12 @@ void main() {
     expect(editor, contains('NamedEnumTableForm('));
   });
 
-  test('no second path: the three dialogs are gone', () {
+  test('no second path: the four dialogs are gone', () {
     for (final path in const <String>[
       'lib/features/decoders/widgets/decoder_config_dialog.dart',
       'lib/shared/widgets/q_format_config_dialog.dart',
       'lib/shared/widgets/named_enum_editor_dialog.dart',
+      'lib/features/viewer/widgets/fsm_annotate_dialog.dart',
     ]) {
       expect(File(path).existsSync(), isFalse, reason: path);
     }
@@ -129,7 +154,7 @@ void main() {
         if (entity is File &&
             entity.path.endsWith('.dart') &&
             RegExp(
-              r'\b(DecoderConfigDialog|QFormatConfigDialog|NamedEnumEditorDialog)\b',
+              r'\b(DecoderConfigDialog|QFormatConfigDialog|NamedEnumEditorDialog|FsmAnnotateDialog)\b',
             ).hasMatch(entity.readAsStringSync()))
           entity.path,
     ];

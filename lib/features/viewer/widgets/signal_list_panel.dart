@@ -36,6 +36,7 @@ import 'package:wavecrux/features/remote/widgets/cross_probe_panel.dart'
     show waveCruxSignalSelection;
 import 'package:wavecrux/features/settings/providers/settings_providers.dart';
 import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.dart';
+import 'package:wavecrux/features/viewer/inspector_openers.dart';
 import 'package:wavecrux/features/viewer/providers/export_providers.dart';
 import 'package:wavecrux/features/viewer/providers/fsm_provider.dart';
 import 'package:wavecrux/features/viewer/providers/process_filter_provider.dart';
@@ -43,7 +44,6 @@ import 'package:wavecrux/features/viewer/providers/translate_filter_provider.dar
 import 'package:wavecrux/features/viewer/providers/translator_expansion_provider.dart';
 import 'package:wavecrux/features/viewer/providers/value_column_provider.dart';
 import 'package:wavecrux/features/viewer/providers/x_trace_provider.dart';
-import 'package:wavecrux/features/viewer/widgets/fsm_annotate_dialog.dart';
 import 'package:wavecrux/features/viewer/widgets/fsm_panel.dart';
 import 'package:wavecrux/features/viewer/widgets/signal_color_picker_dialog.dart';
 import 'package:wavecrux/features/viewer/widgets/signal_group_header.dart';
@@ -618,7 +618,8 @@ class SignalListPanel extends ConsumerWidget {
                       : null,
                   canVisualizeFsm: _isFsmCandidate(ref, signalRef),
                   onVisualizeFsm: () => _visualizeFsm(context, ref, signalRef),
-                  onAnnotateFsm: () => _annotateFsm(context, ref, signalRef),
+                  onAnnotateFsm: () =>
+                      _annotateFsm(context, entry.id, signalRef),
                 ),
                 // Reserve blank space matching the value column's expanded
                 // translator child rows so the signal-names list stays aligned
@@ -714,21 +715,18 @@ class SignalListPanel extends ConsumerWidget {
     }
   }
 
+  /// "Annotate FSM states…": the row in the Inspector, at its FSM state
+  /// names. The names belong to the signal; the row is the one acted on.
   Future<void> _annotateFsm(
     BuildContext context,
-    WidgetRef ref,
+    String entryId,
     String signalRef,
-  ) async {
-    final activeModel = ref.read(fsmProvider).model;
-    final relevantModel = activeModel?.signalRef == signalRef
-        ? activeModel
-        : null;
-    await FsmAnnotateDialog.show(
-      context,
-      signalRef: signalRef,
-      model: relevantModel,
-    );
-  }
+  ) => annotateFsmStatesInInspector(
+    context,
+    ProviderScope.containerOf(context, listen: false),
+    entryId: entryId,
+    signalRef: signalRef,
+  );
 }
 
 // ── Context menu result type ──────────────────────────────────────────────────
