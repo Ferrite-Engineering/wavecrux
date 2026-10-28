@@ -53,7 +53,7 @@ No separate system install is required, but the Windows release archive ships a 
 
 ## Install { #install }
 
-1. Download the release for your OS and architecture from the [`wavecrux-sigrok-bridge` releases page](https://github.com/Ferrite-Engineering/wavecrux-sigrok-bridge/releases) — Linux x86_64, macOS arm64 or x86_64, or Windows x86_64.
+1. Download the release for your OS and architecture from the [`wavecrux-sigrok-bridge` releases page](https://github.com/Ferrite-Engineering/wavecrux-sigrok-bridge/releases): Linux x86_64, macOS arm64 (Apple Silicon), or Windows x86_64. There is no Intel macOS archive after v0.1.1, because Homebrew has no prebuilt Intel packages for libsigrokdecode and its dependencies; on an Intel Mac, build the bridge from source with `HOW_TO_BUILD.md` in the bridge repository.
 2. Verify the download's SHA-256 against the published `.sha256` file.
 3. Extract the archive.
 4. Copy the shim library into a decoder plugin directory — the platform default, which **Open plugin directory** in **Settings → Extensions → Decoder Plugins** reveals, or any directory you add there (see [Building and installing](authoring-custom-decoders.md#install)). The shim file is `libwavecrux_sigrok_bridge_shim.so` on Linux, `libwavecrux_sigrok_bridge_shim.dylib` on macOS, and `wavecrux_sigrok_bridge_shim.dll` on Windows. WaveCrux discovers plugins by directory, not by file name.
