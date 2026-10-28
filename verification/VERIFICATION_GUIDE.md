@@ -3959,9 +3959,11 @@ render inline and move the cursor when clicked.
 
 1. The preview dialog opens titled **"Auto-bind RVFI channels"** — *not*
    "Auto-bind board signals". A board-flavoured title here is a defect.
-2. All 21 `rvfi_*` pins are listed with a confidence chip; the fixture nests
-   the bundle under `tb.core`, so they resolve as **Alias** (hierarchy-
-   prefixed) rather than Exact.
+2. All 21 riscv-formal `rvfi_*` pins are listed with a confidence chip; the
+   fixture nests the bundle under `tb.core`, so they resolve as **Alias**
+   (hierarchy-prefixed) rather than Exact. A 22nd pin, `rvfi_dbg` (a vendor
+   extension some cores add, such as CV32E40X), shows **No match**: this
+   fixture's core does not carry it, and that is not a missing channel.
 3. Press **Apply all**. The header line reads **"21 of 21 RVFI channels
    bound"** and no reduced-binding banner appears.
 4. Re-run Auto-bind. Already-bound pins come back as `manually bound` and are
@@ -4075,6 +4077,13 @@ unaligned, or trust the unit coverage.
   channels; it does not spin on a loading state and does not throw.
 - **A trace with `rvfi_*` names but no retirement** (`rvfi_valid` never
   asserts) → *"No retirement observed in this trace."*
+- **Debug-mode entry on a core that reports it on `rvfi_dbg`** (CV32E40X does
+  not assert `rvfi_intr` on debug entry). With `rvfi_dbg` bound, the first
+  debug-handler retirement is a handler entry: no control-flow discontinuity,
+  and an `ebreak` taken into debug mode raises no trap finding. Unbind
+  `rvfi_dbg` and the discontinuity is reported again, because the trace then
+  carries no evidence of debug entry — `[Coverage: UNIT]`
+  (`test/services/riscv/riscv_consistency_checker_test.dart`).
 - **Signals never added to the viewer.** Bind the RVFI bundle *without*
   adding any of those signals to the waveform panel. The widget must still
   populate — Stage bindings lazily load their own signal data. An empty

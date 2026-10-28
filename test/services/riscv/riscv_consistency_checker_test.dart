@@ -15,6 +15,8 @@ const int _lwS0Sp = 0x00012403; // lw   s0, 0(sp)     (4-byte load)
 const int _lhS0Sp = 0x00011403; // lh   s0, 0(sp)     (2-byte load)
 const int _nop = 0x00000013; // addi zero, zero, 0
 const int _ecall = 0x00000073;
+const int _ebreak = 0x00100073;
+const int _swS0Sp = 0x0081a023; // sw   s0, 0(gp)     (the CV32E40X capture)
 
 RiscvRetiredInstruction _r({
   required int time,
@@ -28,6 +30,7 @@ RiscvRetiredInstruction _r({
   RiscvMemoryEffect? memory,
   bool? trap,
   bool? intr,
+  int? dbg,
   int? mode,
 }) => RiscvRetiredInstruction(
   time: time,
@@ -42,6 +45,7 @@ RiscvRetiredInstruction _r({
   memory: memory,
   trap: trap,
   intr: intr,
+  debugEntryCause: dbg,
   mode: mode,
 );
 
@@ -193,6 +197,37 @@ void main() {
       final stream = [
         _r(time: 10, order: 0, pc: 0x80000028, pcNext: 0x8000002c, trap: true),
         _r(time: 20, order: 1, pc: 0x00000000, intr: false),
+      ];
+      expect(
+        riscvCheckControlFlow(stream).single.kind,
+        RiscvViolationKind.controlFlowDiscontinuity,
+      );
+    });
+
+    test('debug-mode entry flagged on rvfi_dbg is handler entry', () {
+      // The CV32E40X shape: an external debug request lands between a `sw`
+      // and the next instruction. The core reports the sequential PC on the
+      // `sw`, leaves rvfi_intr low on the first debug-handler instruction
+      // (deliberately, per its manual) and reports the cause on rvfi_dbg.
+      final stream = [
+        _r(
+          time: 10,
+          order: 46,
+          pc: 0x000000f4,
+          pcNext: 0x000000f8,
+          insn: _swS0Sp,
+          intr: false,
+          dbg: 0,
+        ),
+        _r(time: 20, order: 47, pc: 0x00000600, intr: false, dbg: 3),
+      ];
+      expect(riscvCheckControlFlow(stream), isEmpty);
+    });
+
+    test('rvfi_dbg = 0 on the successor does not excuse a discontinuity', () {
+      final stream = [
+        _r(time: 10, order: 0, pc: 0x000000f4, pcNext: 0x000000f8, dbg: 0),
+        _r(time: 20, order: 1, pc: 0x00000600, intr: false, dbg: 0),
       ];
       expect(
         riscvCheckControlFlow(stream).single.kind,
@@ -535,6 +570,51 @@ void main() {
         _r(time: 20, order: 1, pc: 0x80000100, intr: true),
       ];
       expect(riscvCheckTrapConsistency(stream), isEmpty);
+    });
+
+    test('an ebreak taken into debug mode, flagged on rvfi_dbg, is legal', () {
+      // `ebreak` with dcsr.ebreakm = 1 on CV32E40X: it retires with
+      // rvfi_trap = 1 and the sequential PC, and the debug handler's first
+      // instruction has rvfi_intr = 0 with rvfi_dbg = 1 (cause: ebreak).
+      final stream = [
+        _r(
+          time: 10,
+          order: 0,
+          pc: 0x00000100,
+          pcNext: 0x00000104,
+          insn: _ebreak,
+          trap: true,
+          intr: false,
+          dbg: 0,
+          mode: 3,
+        ),
+        _r(time: 20, order: 1, pc: 0x00000600, intr: false, dbg: 1, mode: 3),
+      ];
+      expect(riscvCheckTrapConsistency(stream), isEmpty);
+      expect(riscvCheckControlFlow(stream), isEmpty);
+    });
+
+    test('the same ebreak without rvfi_dbg bound still fires', () {
+      final stream = [
+        _r(
+          time: 10,
+          order: 0,
+          pc: 0x00000100,
+          pcNext: 0x00000104,
+          insn: _ebreak,
+          trap: true,
+          intr: false,
+          mode: 3,
+        ),
+        _r(time: 20, order: 1, pc: 0x00000600, intr: false, mode: 3),
+      ];
+      expect(
+        riscvCheckTrapConsistency(stream).map((v) => v.kind),
+        containsAll(const [
+          RiscvViolationKind.trapNoRedirect,
+          RiscvViolationKind.trapNoHandlerEntry,
+        ]),
+      );
     });
 
     test('fires when the trap lands at a lower privilege', () {

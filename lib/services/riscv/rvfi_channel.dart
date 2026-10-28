@@ -9,7 +9,8 @@
 /// core does not otherwise tell you, and it is what the whole RISC-V trace
 /// substrate is built on.
 ///
-/// The channel list here matches the riscv-formal `rvfi_*` port list. It is treated as the
+/// The channel list here matches the riscv-formal `rvfi_*` port list, plus
+/// the vendor extensions marked [RvfiChannel.isExtension]. It is treated as the
 /// *intended* set rather than gospel: [RvfiChannel] is an enum so an unknown
 /// `rvfi_`-prefixed signal in a trace is simply not bound, never guessed at.
 ///
@@ -88,9 +89,34 @@ enum RvfiChannel {
   memRdata('rvfi_mem_rdata', nominalBitWidth: 32),
 
   /// Data written by the access (bytes outside [memWmask] are don't-care).
-  memWdata('rvfi_mem_wdata', nominalBitWidth: 32);
+  memWdata('rvfi_mem_wdata', nominalBitWidth: 32),
 
-  const RvfiChannel(this.signalName, {required this.nominalBitWidth});
+  /// Debug-mode entry cause. **Not** a riscv-formal channel: OpenHW's
+  /// CV32E40X (and its relatives) add it because they deliberately do not
+  /// assert `rvfi_intr` on entry into debug mode, which RVFI sees as
+  /// happening between instructions. It is non-zero (the `dcsr.cause` code)
+  /// on the first retirement in debug mode and 0 elsewhere. Bound when a
+  /// trace carries it and ignored otherwise; see [isExtension].
+  dbg('rvfi_dbg', nominalBitWidth: 3, isExtension: true);
+
+  const RvfiChannel(
+    this.signalName, {
+    required this.nominalBitWidth,
+    this.isExtension = false,
+  });
+
+  /// The riscv-formal channels: every channel except the vendor extensions.
+  /// A trace that binds all of these is complete; an extension channel is
+  /// never reported missing.
+  static final List<RvfiChannel> standard = List.unmodifiable([
+    for (final c in values)
+      if (!c.isExtension) c,
+  ]);
+
+  /// Whether this channel is a vendor extension to the riscv-formal port
+  /// list rather than part of it. Extensions are bound when present, never
+  /// required, and never counted as missing.
+  final bool isExtension;
 
   /// Canonical riscv-formal port name.
   final String signalName;

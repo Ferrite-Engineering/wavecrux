@@ -142,7 +142,7 @@ class RvfiCompletenessReport {
   /// here rather than being duplicated at every call site.
   factory RvfiCompletenessReport.forBindings(RvfiBindingSet bindings) {
     final found = bindings.foundChannels;
-    final missing = RvfiChannel.values.toSet().difference(found);
+    final missing = RvfiChannel.standard.toSet().difference(found);
     final RvfiBindingCompleteness completeness;
     if (RvfiChannel.values.any((c) => c.isRequired && !found.contains(c))) {
       completeness = RvfiBindingCompleteness.unusable;
@@ -162,7 +162,8 @@ class RvfiCompletenessReport {
   /// Channels bound in the trace.
   final Set<RvfiChannel> found;
 
-  /// Channels the trace does not expose.
+  /// riscv-formal channels the trace does not expose. A vendor extension
+  /// channel ([RvfiChannel.isExtension]) is never listed here.
   final Set<RvfiChannel> missing;
 
   /// Overall verdict.
@@ -212,7 +213,7 @@ class RvfiDetectionResult {
     bindings: RvfiBindingSet.empty,
     report: RvfiCompletenessReport(
       found: const {},
-      missing: RvfiChannel.values.toSet(),
+      missing: RvfiChannel.standard.toSet(),
       completeness: RvfiBindingCompleteness.unusable,
       channelCount: 0,
     ),

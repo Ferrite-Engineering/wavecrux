@@ -112,6 +112,7 @@ class RiscvRetiredInstruction {
     this.trap,
     this.halt,
     this.intr,
+    this.debugEntryCause,
     this.mode,
     this.ixl,
     this.hasUnknownBits = false,
@@ -174,6 +175,22 @@ class RiscvRetiredInstruction {
   /// `rvfi_intr` — the first retirement of a trap handler.
   final bool? intr;
 
+  /// `rvfi_dbg` — a vendor extension (CV32E40X): the debug-entry cause on
+  /// the first retirement in debug mode, 0 elsewhere. Null when the trace
+  /// does not carry the channel.
+  final int? debugEntryCause;
+
+  /// Whether this retirement is the first one in debug mode, by `rvfi_dbg`.
+  /// False when `rvfi_dbg` is unbound: the trace then carries no evidence of
+  /// debug entry.
+  bool get entersDebugMode => (debugEntryCause ?? 0) != 0;
+
+  /// Whether this retirement is a sanctioned entry into a handler: the first
+  /// of a trap handler (`rvfi_intr`), or the first in debug mode
+  /// (`rvfi_dbg`, where bound). Either licenses a PC discontinuity from the
+  /// previous retirement.
+  bool get entersHandler => (intr ?? false) || entersDebugMode;
+
   /// `rvfi_mode` — privilege level (0=U, 1=S, 3=M).
   final int? mode;
 
@@ -216,6 +233,7 @@ class RiscvRetiredInstruction {
           trap == other.trap &&
           halt == other.halt &&
           intr == other.intr &&
+          debugEntryCause == other.debugEntryCause &&
           mode == other.mode &&
           ixl == other.ixl &&
           hasUnknownBits == other.hasUnknownBits;

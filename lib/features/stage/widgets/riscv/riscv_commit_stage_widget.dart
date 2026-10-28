@@ -49,16 +49,17 @@ enum RiscvCommitRegisterNaming {
 ///
 /// **Pins.** All 21 riscv-formal `rvfi_*` channels are declared, named
 /// exactly as the ports are, so [RvfiDetectionService] can map a whole
-/// bundle onto them by name in one action. Three are required — without
+/// bundle onto them by name in one action, plus the `rvfi_dbg` extension
+/// some cores add. Three are required — without
 /// `rvfi_valid` there is no retirement strobe, without `rvfi_insn` nothing
 /// to disassemble, without `rvfi_pc_rdata` nothing to locate in the program.
-/// The other eighteen are optional and their absence **degrades a view
+/// The other nineteen are optional and their absence **degrades a view
 /// rather than blocking the widget**: a core instrumented with only the
 /// reduced set (valid + pc + insn + rd) still gets a commit log, a register
 /// file and two of the six checks, and the UI says exactly which channels
 /// are missing and which checks did not run.
 ///
-/// Twenty-one pins is more than anyone will bind by hand, which is why the
+/// Twenty-two pins is more than anyone will bind by hand, which is why the
 /// widget declares an [autoBindService]; see `StageWidget.supportsAutoBind`.
 ///
 /// **Single-issue.** The declared pins cover retirement channel 0. A
@@ -139,8 +140,8 @@ class RiscvCommitStageWidget extends StageWidget {
       name: 'rvfi_order',
       description:
           'Monotonic retirement counter. Without it, back-to-back '
-          'retirements held under one valid pulse collapse into one, and the '
-          'retirement-order check cannot run.',
+          'retirements held under one valid pulse are told apart by the '
+          'retired PC changing, and the retirement-order check cannot run.',
     ),
     SignalBinding(
       name: 'rvfi_pc_wdata',
@@ -218,6 +219,13 @@ class RiscvCommitStageWidget extends StageWidget {
     SignalBinding(
       name: 'rvfi_mem_wdata',
       description: 'Data written by the access.',
+    ),
+    SignalBinding(
+      name: 'rvfi_dbg',
+      description:
+          'Debug-entry cause, an extension some cores add (CV32E40X): '
+          'non-zero on the first retirement in debug mode. When bound, debug '
+          'entry is not reported as a control-flow break.',
     ),
   ];
 

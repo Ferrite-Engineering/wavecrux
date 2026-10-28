@@ -181,7 +181,7 @@ class RvfiDetectionService implements StageAutoBindService {
     final best = ordered.first;
 
     final found = best.refs.keys.toSet();
-    final missing = RvfiChannel.values.toSet().difference(found);
+    final missing = RvfiChannel.standard.toSet().difference(found);
     final RvfiBindingCompleteness completeness;
     if (RvfiChannel.values.any((c) => c.isRequired && !found.contains(c))) {
       completeness = RvfiBindingCompleteness.unusable;

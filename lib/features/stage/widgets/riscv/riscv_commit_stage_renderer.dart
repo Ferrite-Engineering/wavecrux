@@ -314,8 +314,8 @@ class _Frame extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
           child: Text(
             l10n.riscvCommitBoundChannels(
-              report.found.length,
-              RvfiChannel.values.length,
+              report.found.where((c) => !c.isExtension).length,
+              RvfiChannel.standard.length,
             ),
             style: theme.textTheme.labelSmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,

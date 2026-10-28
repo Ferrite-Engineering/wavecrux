@@ -331,6 +331,14 @@ class RiscvConsistencyChecker {
 /// instruction provided it flags the handler entry. This rule used to fire
 /// there, and against a real Ibex trace those were false positives.
 ///
+/// **So does debug-mode entry, where the trace says so.** CV32E40X does not
+/// assert `rvfi_intr` on entry into debug mode (its manual: debug entry "is
+/// seen by RVFI as happening between instructions") and reports the cause on
+/// the nonstandard `rvfi_dbg` channel instead. When `rvfi_dbg` is bound, a
+/// successor with a non-zero `rvfi_dbg` is a handler entry exactly as
+/// `rvfi_intr` is. Stock riscv-formal has no notion of debug mode, so
+/// without `rvfi_dbg` the discontinuity is reported as before.
+///
 /// When `rvfi_intr` is unbound the discontinuity is unverifiable either way
 /// and is still reported — the trace carries no evidence of handler entry,
 /// and silently passing an unrunnable check is the one outcome this file
@@ -346,8 +354,10 @@ List<RiscvConsistencyViolation> riscvCheckControlFlow(
     final actual = current.pc;
     if (expected == null || actual == null) continue;
     if (expected == actual) continue;
-    // Handler entry: RVFI sanctions the discontinuity that `rvfi_intr` marks.
-    if (current.intr ?? false) continue;
+    // Handler entry: RVFI sanctions the discontinuity that `rvfi_intr` marks,
+    // and a core that reports debug entry on `rvfi_dbg` instead is held to
+    // the same rule.
+    if (current.entersHandler) continue;
     final expectedHex = _hex(expected);
     final actualHex = _hex(actual);
     final previousLabel = _retireLabel(previous);
@@ -657,7 +667,10 @@ List<RiscvConsistencyViolation> riscvCheckRetireOrder(
 ///   for the spec text and the riscv-formal check that says so;
 /// - the following retirement does not assert `rvfi_intr`, so the trace does
 ///   not show the handler being entered (checked only when `rvfi_intr` is
-///   bound and there *is* a following retirement);
+///   bound and there *is* a following retirement). A successor that enters
+///   debug mode by `rvfi_dbg` is the handler entry of an `ebreak` taken into
+///   debug mode (`dcsr.ebreakm`), and satisfies both this and the redirect
+///   condition above;
 /// - the following retirement runs at a **lower** privilege than the trapping
 ///   one. Traps are delivered to the same or a higher privilege level; only
 ///   an explicit `*ret` drops privilege, and that is not a trap.
@@ -675,7 +688,7 @@ List<RiscvConsistencyViolation> riscvCheckTrapConsistency(
     // A trapping retirement may report the sequential next PC provided the
     // successor asserts `rvfi_intr`; that pairing is what RVFI defines as
     // handler entry. Only the unflagged case is a violation.
-    final handlerEntryFlagged = next?.intr ?? false;
+    final handlerEntryFlagged = next?.entersHandler ?? false;
 
     if (pc != null && pcNext != null && !handlerEntryFlagged) {
       final insn = r.insnWord;
@@ -703,7 +716,10 @@ List<RiscvConsistencyViolation> riscvCheckTrapConsistency(
       }
     }
 
-    if (next != null && next.intr != null && !next.intr!) {
+    if (next != null &&
+        next.intr != null &&
+        !next.intr! &&
+        !next.entersDebugMode) {
       final pcNextHex = pcNext == null ? '?' : _hex(pcNext);
       out.add(
         RiscvConsistencyViolation(

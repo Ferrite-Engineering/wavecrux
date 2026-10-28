@@ -217,6 +217,7 @@ class RiscvRetireStreamService {
       trap: flag(RvfiChannel.trap),
       halt: flag(RvfiChannel.halt),
       intr: flag(RvfiChannel.intr),
+      debugEntryCause: uint(RvfiChannel.dbg),
       mode: uint(RvfiChannel.mode),
       ixl: uint(RvfiChannel.ixl),
       hasUnknownBits: unknown,

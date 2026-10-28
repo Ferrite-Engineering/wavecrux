@@ -356,10 +356,11 @@ void main() {
       // ── 2. it is BOUND, through the detection service, to all 21 channels ───
       expect(
         instance.signalBindings.keys.toSet(),
-        {for (final c in RvfiChannel.values) c.signalName},
+        {for (final c in RvfiChannel.standard) c.signalName},
         reason:
-            'the trace carries the full bundle, so auto-bind must place every '
-            'declared pin — a partially bound inspector renders a degraded view',
+            'the trace carries the full riscv-formal bundle, so auto-bind must '
+            'place every riscv-formal pin — a partially bound inspector '
+            'renders a degraded view',
       );
       expect(
         instance.signalBindings[RvfiChannel.pcRdata.signalName]?.signalRef,

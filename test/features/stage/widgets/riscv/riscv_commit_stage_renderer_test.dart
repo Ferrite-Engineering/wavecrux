@@ -72,8 +72,8 @@ void main() {
       );
       expect(
         find.text(
-          '${RvfiChannel.values.length} of '
-          '${RvfiChannel.values.length} RVFI channels bound',
+          '${RvfiChannel.standard.length} of '
+          '${RvfiChannel.standard.length} RVFI channels bound',
         ),
         findsOneWidget,
       );

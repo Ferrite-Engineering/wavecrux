@@ -165,6 +165,33 @@ void main() {
       expect(result.bindings.allRefs.length, RvfiChannel.values.length);
     });
 
+    test('a riscv-formal bundle without the rvfi_dbg extension is full', () {
+      final standardOnly = [
+        for (final c in RvfiChannel.standard)
+          _v(c.signalName, bitWidth: c.nominalBitWidth),
+      ];
+      final result = _service.detect(_map(standardOnly));
+      expect(result.report.completeness, RvfiBindingCompleteness.full);
+      expect(result.report.missing, isEmpty);
+      expect(result.report.found, isNot(contains(RvfiChannel.dbg)));
+    });
+
+    test('binds rvfi_dbg when the trace carries it (CV32E40X)', () {
+      final result = _service.detect(
+        _map([
+          for (final c in RvfiChannel.standard)
+            _v(
+              c.signalName,
+              scopePath: 'tb.rvfi_i',
+              bitWidth: c.nominalBitWidth,
+            ),
+          _v('rvfi_dbg', scopePath: 'tb.rvfi_i', bitWidth: 3),
+        ]),
+      );
+      expect(result.bindings.ref(RvfiChannel.dbg), 'tb.rvfi_i/rvfi_dbg');
+      expect(result.report.completeness, RvfiBindingCompleteness.full);
+    });
+
     test('binds a hierarchy-prefixed bundle and reports the scope', () {
       final result = _service.detect(
         _map([
@@ -249,8 +276,8 @@ void main() {
       expect(result.report.isUsable, isFalse);
       expect(
         result.report.missing.length,
-        RvfiChannel.values.length,
-        reason: 'nothing found means everything missing',
+        RvfiChannel.standard.length,
+        reason: 'nothing found means every riscv-formal channel missing',
       );
     });
 
