@@ -249,6 +249,19 @@ typedef struct WcDecoderDef {
     // makes the manifest invalid. An older host ignores both keys and
     // packs at `bit_width`, so one decoder still works there when bound to
     // signals of that width.
+    //
+    // ABI 1.3 adds an optional `auto_bind` object to a signal entry, naming
+    // extra leaf names the host's auto-bind may match for that signal:
+    //
+    //   {"name": "datak", "bit_width": 8,
+    //    "auto_bind": {"aliases": ["data_k"],
+    //                  "suffixes": ["_data_k", "_datak"]}}
+    //
+    // `aliases` match a whole leaf name, `suffixes` its ending, both
+    // case-insensitively, and both must be arrays of non-empty strings. They
+    // are tried after an exact name match and before a fuzzy one; where a
+    // suffix matches on several buses, the bus the other signals were found
+    // on wins. An older host ignores the key.
     const char* manifest_json;
 
     // Lifecycle callbacks. All are required in ABI 1.0.

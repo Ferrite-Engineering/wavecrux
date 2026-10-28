@@ -702,6 +702,23 @@ Decoder parameter labels, descriptions, and enum-value labels are localized thro
 | Bottom sheet on a phone | **WIDGET** (`test/features/viewer/widgets/signal_format_section_test.dart` — "on iOS and Android the same sections open in a bottom sheet") | Same opener for decoders and signals. |
 | Screen reader by ear, real phone sheet | **MANUAL** (steps 6 and 7) | Needs a real screen reader and device. |
 
+#### 5.1.6 Auto-bind names a plugin decoder declares (from 1.2)
+
+**What it does.** A plugin decoder's manifest can list, per signal, extra leaf names (`auto_bind.aliases`) and name endings (`auto_bind.suffixes`) auto-bind may match, so a plugin is not limited to its own binding names and the built-in alias table. They are tried after an exact name match and before a fuzzy one, only signals of the expected width qualify, and where an ending matches on several buses the bus the decoder's other signals were found on wins. The auto-bind preview names the alias or suffix that matched.
+
+**Steps.**
+
+1. Load a trace whose PIPE signals are named `phy_tx_data`, `phy_tx_data_k`, `phy_rx_data`, `phy_rx_data_k` and `rx_active` (the openPCIE co-simulation dump has this shape), and a PCIe PIPE plugin decoder whose manifest declares `auto_bind` names (a release that lists them in its changelog).
+2. Add the decoder and press **Auto-bind**. Verify `datak` binds to `phy_tx_data_k` (the bus `data` bound to), not `phy_rx_data_k`, and `rxvalid` binds to `rx_active`.
+3. Verify the preview's reason for each says it matched a name the decoder declares.
+4. Set the decoder's data width so `phy_tx_data_k` is the wrong width. Verify `datak` is left unbound rather than bound to a signal of the wrong width.
+
+| Check | Automatable? | How |
+|---|---|---|
+| Declared suffix binds on the detected bus, alias binds in any scope, width is enforced, no binding without declared names | **UNIT** (`test/services/decoders/decoder_auto_bind_service_test.dart` — "decoder-declared aliases and suffixes") | Synthetic signal maps. |
+| Manifest `auto_bind` loads onto the binding | **UNIT, needs a C toolchain** (`test/services/decoders/ffi/ffi_decoder_loader_test.dart` — "width_param / width_scale" fixture) | Built test plugin. |
+| Against a real plugin and trace | **MANUAL** (steps 1 to 4) | Needs the plugin build. |
+
 ---
 
 ### 5.2 SPI decoder

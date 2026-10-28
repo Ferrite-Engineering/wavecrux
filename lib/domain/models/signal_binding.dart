@@ -20,6 +20,8 @@ class SignalBinding {
     this.visibleWhenValues,
     this.widthParam,
     this.widthScale = 1,
+    this.autoBindAliases = const [],
+    this.autoBindSuffixes = const [],
   }) : assert(
          visibleWhenValue == null || visibleWhenValues == null,
          'set at most one of visibleWhenValue / visibleWhenValues',
@@ -48,6 +50,20 @@ class SignalBinding {
   /// the parameter's width, `0.125` for a byte-enable or K-character mask
   /// with one bit per byte. Ignored without [widthParam].
   final double widthScale;
+
+  /// Extra leaf names auto-bind accepts for this signal, matched whole and
+  /// case-insensitively (e.g. `rx_active` for a binding named `rxvalid`).
+  /// Tried at the same confidence as auto-bind's built-in aliases, after an
+  /// exact name match and before a fuzzy one. A plugin decoder declares them
+  /// in its manifest as `"auto_bind": {"aliases": [...]}`.
+  final List<String> autoBindAliases;
+
+  /// Leaf-name endings auto-bind accepts for this signal, case-insensitively
+  /// (e.g. `_data_k` matches `phy_tx_data_k`). Tried after
+  /// [autoBindAliases]. Where several signals end the same way, the one on
+  /// the bus the other bindings were found on wins. A plugin decoder declares
+  /// them as `"auto_bind": {"suffixes": [...]}`.
+  final List<String> autoBindSuffixes;
 
   /// Conditional visibility, mirroring `ConfigParam.visibleWhenKey`: when set,
   /// a pin-enumerating surface (the Stage bindings pane) renders this pin only
@@ -120,6 +136,8 @@ class SignalBinding {
     bool clearVisibleWhen = false,
     String? widthParam,
     double? widthScale,
+    List<String>? autoBindAliases,
+    List<String>? autoBindSuffixes,
   }) => SignalBinding(
     name: name ?? this.name,
     description: description ?? this.description,
@@ -135,6 +153,8 @@ class SignalBinding {
         : (visibleWhenValues ?? this.visibleWhenValues),
     widthParam: widthParam ?? this.widthParam,
     widthScale: widthScale ?? this.widthScale,
+    autoBindAliases: autoBindAliases ?? this.autoBindAliases,
+    autoBindSuffixes: autoBindSuffixes ?? this.autoBindSuffixes,
   );
 
   // ── equality ───────────────────────────────────────────────────────────────
@@ -151,7 +171,9 @@ class SignalBinding {
           visibleWhenValue == other.visibleWhenValue &&
           _setEquals(visibleWhenValues, other.visibleWhenValues) &&
           widthParam == other.widthParam &&
-          widthScale == other.widthScale;
+          widthScale == other.widthScale &&
+          _listEquals(autoBindAliases, other.autoBindAliases) &&
+          _listEquals(autoBindSuffixes, other.autoBindSuffixes);
 
   @override
   int get hashCode => Object.hash(
@@ -165,10 +187,21 @@ class SignalBinding {
     visibleWhenValues?.fold<int>(0, (acc, v) => acc ^ v.hashCode),
     widthParam,
     widthScale,
+    Object.hashAll(autoBindAliases),
+    Object.hashAll(autoBindSuffixes),
   );
 
   @override
   String toString() => 'SignalBinding(name: $name, bitWidth: $bitWidth)';
+
+  static bool _listEquals(List<String> a, List<String> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
 
   static bool _setEquals(Set<Object?>? a, Set<Object?>? b) {
     if (identical(a, b)) return true;

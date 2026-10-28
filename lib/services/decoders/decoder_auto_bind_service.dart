@@ -48,9 +48,11 @@ const Map<String, List<String>> _knownAliases = {
 /// - **Tier B** — case-insensitive direct suffix match without prefix
 ///   detection. For bindings that Tier A could not resolve, look for any
 ///   signal whose leaf name equals the binding name (case-insensitive).
-/// - **Tier C** — known-alias fallback. Uses [_knownAliases] to handle the
-///   industry conventions that are not direct suffix matches (e.g.
-///   `aclk` ↔ `clk`, `mosi` ↔ `sdo`, `dp` ↔ `d_p`).
+/// - **Tier C** — known-alias fallback. First the names the decoder declares
+///   for the signal ([SignalBinding.autoBindAliases] and
+///   [SignalBinding.autoBindSuffixes], from a plugin manifest's `auto_bind`),
+///   then [_knownAliases] for the industry conventions that are not direct
+///   suffix matches (e.g. `aclk` ↔ `clk`, `mosi` ↔ `sdo`, `dp` ↔ `d_p`).
 /// - **Tier D** — Levenshtein-distance-≤-2 fuzzy match against the binding
 ///   name on the leaf signal name. Handles typos and abbreviations.
 /// - **Tier E** — no match. Returns an [AutoBindCandidate] with
@@ -164,16 +166,33 @@ class DecoderAutoBindService {
         .toList();
 
     // ── Tier C: known aliases ───────────────────────────────────────────────
+    // The decoder's own aliases and suffixes (a plugin manifest's
+    // `auto_bind`) first, then the built-in table.
 
+    final claimedBeforeC = {
+      for (final c in candidates.values)
+        if (c.signalRef != null) c.signalRef!,
+    };
     for (final binding in stillUnboundAfterB) {
-      final match = _tierCMatch(
-        binding: binding,
-        availableSignals: availableSignals.values,
-        currentParameters: currentParameters,
-        definition: definition,
-      );
+      final match =
+          _declaredAliasMatch(
+            binding: binding,
+            availableSignals: availableSignals.values,
+            currentParameters: currentParameters,
+            definition: definition,
+            claimedRefs: claimedBeforeC,
+            busScopePath: tierAOutcome.detectedScopePath,
+            busPrefix: tierAOutcome.detectedPrefix,
+          ) ??
+          _tierCMatch(
+            binding: binding,
+            availableSignals: availableSignals.values,
+            currentParameters: currentParameters,
+            definition: definition,
+          );
       if (match != null) {
         candidates[binding.name] = match;
+        if (match.signalRef != null) claimedBeforeC.add(match.signalRef!);
       }
     }
 
@@ -480,6 +499,87 @@ class DecoderAutoBindService {
   }
 
   // ── Tier C ────────────────────────────────────────────────────────────────
+
+  /// Tier C on the names the decoder itself declares for [binding]
+  /// ([SignalBinding.autoBindAliases], then [SignalBinding.autoBindSuffixes]).
+  ///
+  /// A suffix such as `_data_k` can match one signal per bus in the design
+  /// (`phy_tx_data_k`, `phy_rx_data_k`), so a match on the bus Tier A found
+  /// (same scope, leaf starting with its prefix) wins over one elsewhere in
+  /// that scope, which wins over one in another scope; at the same distance
+  /// an alias wins over a suffix. Signals another binding already took are
+  /// skipped.
+  AutoBindCandidate? _declaredAliasMatch({
+    required SignalBinding binding,
+    required Iterable<Variable> availableSignals,
+    required Map<String, dynamic> currentParameters,
+    required DecoderDefinition definition,
+    required Set<String> claimedRefs,
+    required String? busScopePath,
+    required String? busPrefix,
+  }) {
+    final aliases = [
+      for (final a in binding.autoBindAliases) a.toLowerCase(),
+    ];
+    final suffixes = [
+      for (final x in binding.autoBindSuffixes) x.toLowerCase(),
+    ];
+    if (aliases.isEmpty && suffixes.isEmpty) return null;
+
+    final expectedWidth = expectedWidthFor(
+      binding: binding,
+      currentParameters: currentParameters,
+      definition: definition,
+    );
+    final prefixLower = busPrefix?.toLowerCase();
+
+    int distance(Variable v) {
+      if (busScopePath == null || v.scopePath != busScopePath) return 2;
+      if (prefixLower != null && v.name.toLowerCase().startsWith(prefixLower)) {
+        return 0;
+      }
+      return 1;
+    }
+
+    Variable? best;
+    String? bestReason;
+    var bestKey = 1 << 30;
+    for (final variable in availableSignals) {
+      if (claimedRefs.contains(variable.signalRef)) continue;
+      if (!_widthCompatible(variable, expectedWidth)) continue;
+      final leaf = variable.name.toLowerCase();
+      final aliasIndex = aliases.indexOf(leaf);
+      final String reason;
+      final int kind;
+      if (aliasIndex >= 0) {
+        kind = 0;
+        reason =
+            "matched alias '${binding.autoBindAliases[aliasIndex]}' the "
+            "decoder declares for binding '${binding.name}'";
+      } else {
+        final suffixIndex = suffixes.indexWhere(leaf.endsWith);
+        if (suffixIndex < 0) continue;
+        kind = 1;
+        reason =
+            "leaf name '${variable.name}' ends with "
+            "'${binding.autoBindSuffixes[suffixIndex]}', which the decoder "
+            "declares for binding '${binding.name}'";
+      }
+      final key = distance(variable) * 2 + kind;
+      if (key < bestKey) {
+        bestKey = key;
+        best = variable;
+        bestReason = reason;
+      }
+    }
+    if (best == null) return null;
+    return AutoBindCandidate(
+      signalRef: best.signalRef,
+      fullPath: best.fullPath,
+      confidence: AutoBindConfidence.knownAlias,
+      matchReason: bestReason!,
+    );
+  }
 
   AutoBindCandidate? _tierCMatch({
     required SignalBinding binding,

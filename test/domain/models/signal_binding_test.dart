@@ -206,5 +206,40 @@ void main() {
         );
       });
     });
+
+    group('auto-bind names', () {
+      const plain = SignalBinding(name: 'datak', description: '');
+      const declared = SignalBinding(
+        name: 'datak',
+        description: '',
+        autoBindAliases: ['data_k'],
+        autoBindSuffixes: ['_data_k'],
+      );
+
+      test('default to empty', () {
+        expect(plain.autoBindAliases, isEmpty);
+        expect(plain.autoBindSuffixes, isEmpty);
+      });
+
+      test('take part in equality and hashCode', () {
+        expect(declared, isNot(plain));
+        expect(
+          declared,
+          plain.copyWith(
+            autoBindAliases: ['data_k'],
+            autoBindSuffixes: ['_data_k'],
+          ),
+        );
+        expect(
+          declared.hashCode,
+          plain
+              .copyWith(
+                autoBindAliases: ['data_k'],
+                autoBindSuffixes: ['_data_k'],
+              )
+              .hashCode,
+        );
+      });
+    });
   });
 }

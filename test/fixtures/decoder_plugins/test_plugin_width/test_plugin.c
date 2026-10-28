@@ -1,7 +1,8 @@
 // Loader fixture for parameter-driven signal widths (ABI 1.2 manifest keys
 // `width_param` / `width_scale`). The manifest ties `data` to the
 // `data_width` parameter and `datak` to one bit per byte of it, the shape a
-// PIPE decoder with 8- to 64-bit data needs. `flush` reports the
+// PIPE decoder with 8- to 64-bit data needs; `datak` also declares the
+// ABI 1.3 `auto_bind` names. `flush` reports the
 // `WcSample.bit_width` the host packed, as the label "bits=<n>", with an
 // ABI 1.3 `short_label` field ("w") beside an ordinary field.
 //
@@ -22,7 +23,9 @@ static const char kManifestJson[] =
     "{\"name\":\"data\",\"bit_width\":64,"
     "\"width_param\":\"data_width\",\"width_scale\":1},"
     "{\"name\":\"datak\",\"bit_width\":8,"
-    "\"width_param\":\"data_width\",\"width_scale\":0.125}"
+    "\"width_param\":\"data_width\",\"width_scale\":0.125,"
+    "\"auto_bind\":{\"aliases\":[\"data_k\"],"
+    "\"suffixes\":[\"_data_k\",\"_datak\"]}}"
     "],"
     "\"parameters\":["
     "{\"name\":\"data_width\",\"kind\":\"integer\",\"default\":64}"

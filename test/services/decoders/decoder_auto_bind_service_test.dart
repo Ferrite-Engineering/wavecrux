@@ -555,6 +555,101 @@ void main() {
     });
   });
 
+  // A plugin manifest's `auto_bind` declares extra names per signal: the PIPE
+  // names the PCIe decoders' bindings missed (`rx_active`, `phy_tx_data_k`).
+  group('decoder-declared aliases and suffixes', () {
+    const pipeDef = DecoderDefinition(
+      id: 'plugin.pipe',
+      displayName: 'PIPE',
+      description: '',
+      requiredSignals: [
+        SignalBinding(name: 'clk', description: ''),
+        SignalBinding(name: 'data', description: '', bitWidth: 16),
+        SignalBinding(
+          name: 'datak',
+          description: '',
+          bitWidth: 2,
+          autoBindAliases: ['data_k'],
+          autoBindSuffixes: ['_data_k', '_k'],
+        ),
+        SignalBinding(
+          name: 'rxvalid',
+          description: '',
+          autoBindAliases: ['rx_active', 'rx_valid'],
+          autoBindSuffixes: ['_rx_valid'],
+        ),
+      ],
+    );
+
+    AutoBindCandidate bind(List<Variable> vars, String name) => findCandidate(
+      const DecoderAutoBindService()
+          .computeBindings(
+            definition: pipeDef,
+            availableSignals: availableFromPaths(vars),
+            currentParameters: const {},
+          )
+          .candidates,
+      name,
+    );
+
+    test('a declared suffix binds, preferring the bus the others are on', () {
+      // Two buses end in `_data_k`; the tx bus is the one Tier A found.
+      final vars = [
+        makeVar('tb.dut.phy_rx_data', bitWidth: 16),
+        makeVar('tb.dut.phy_rx_data_k', bitWidth: 2),
+        makeVar('tb.dut.phy_tx_clk'),
+        makeVar('tb.dut.phy_tx_data', bitWidth: 16),
+        makeVar('tb.dut.phy_tx_data_k', bitWidth: 2),
+      ];
+      final datak = bind(vars, 'datak');
+      expect(datak.signalRef, 'tb.dut.phy_tx_data_k');
+      expect(datak.confidence, AutoBindConfidence.knownAlias);
+      expect(datak.matchReason, contains("'_data_k'"));
+    });
+
+    test('a declared alias binds a leaf name in any scope', () {
+      final rxvalid = bind([
+        makeVar('tb.dut.clk'),
+        makeVar('tb.dut.data', bitWidth: 16),
+        makeVar('tb.phy.rx_active'),
+      ], 'rxvalid');
+      expect(rxvalid.signalRef, 'tb.phy.rx_active');
+      expect(rxvalid.confidence, AutoBindConfidence.knownAlias);
+      expect(rxvalid.matchReason, contains("'rx_active'"));
+    });
+
+    test('a declared name never takes a signal of the wrong width', () {
+      final datak = bind([
+        makeVar('tb.dut.clk'),
+        makeVar('tb.dut.data', bitWidth: 16),
+        makeVar('tb.dut.phy_tx_data_k', bitWidth: 4),
+      ], 'datak');
+      expect(datak.signalRef, isNull);
+    });
+
+    test('without declared names the same signals do not bind', () {
+      const bare = DecoderDefinition(
+        id: 'plugin.bare',
+        displayName: 'Bare',
+        description: '',
+        requiredSignals: [
+          SignalBinding(name: 'datak', description: '', bitWidth: 2),
+          SignalBinding(name: 'rxvalid', description: ''),
+        ],
+      );
+      final result = const DecoderAutoBindService().computeBindings(
+        definition: bare,
+        availableSignals: availableFromPaths([
+          makeVar('tb.dut.phy_tx_data_k', bitWidth: 2),
+          makeVar('tb.phy.rx_active'),
+        ]),
+        currentParameters: const {},
+      );
+      expect(findCandidate(result.candidates, 'datak').signalRef, isNull);
+      expect(findCandidate(result.candidates, 'rxvalid').signalRef, isNull);
+    });
+  });
+
   // A plugin manifest's `width_param` / `width_scale` set a binding's expected
   // width from a parameter, the way the built-in AXI decoders' data_width does.
   group('width_param bindings', () {

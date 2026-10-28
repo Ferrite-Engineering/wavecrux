@@ -690,15 +690,46 @@ class FfiDecoderLoader implements DecoderPluginLoader {
               'number: $scale',
             );
           }
+          // ABI 1.3: `auto_bind` lists extra names auto-bind may match.
+          // An older host ignores the key.
+          final autoBind = entry['auto_bind'];
+          if (autoBind != null && autoBind is! Map) {
+            throw FormatException(
+              'signal "$name" has an auto_bind that is not an object: '
+              '$autoBind',
+            );
+          }
           return SignalBinding(
             name: name,
             description: description,
             bitWidth: bitWidth,
             widthParam: widthParam as String?,
             widthScale: widthScale,
+            autoBindAliases: _decodeNameList(
+              name,
+              'aliases',
+              (autoBind as Map?)?['aliases'],
+            ),
+            autoBindSuffixes: _decodeNameList(
+              name,
+              'suffixes',
+              autoBind?['suffixes'],
+            ),
           );
         })
         .toList(growable: false);
+  }
+
+  /// One of a signal's `auto_bind` lists: an array of non-empty strings.
+  List<String> _decodeNameList(String signal, String key, Object? raw) {
+    if (raw == null) return const <String>[];
+    if (raw is! List || raw.any((e) => e is! String || e.isEmpty)) {
+      throw FormatException(
+        'signal "$signal": auto_bind.$key must be an array of non-empty '
+        'strings',
+      );
+    }
+    return List<String>.unmodifiable(raw.cast<String>());
   }
 
   List<DecoderParameter> _decodeParameters(Object? raw) {

@@ -219,6 +219,15 @@ void main() {
       expect(signals.map((s) => s.widthParam), ['data_width', 'data_width']);
       expect(signals.map((s) => s.widthScale), [1.0, 0.125]);
       expect(signals.map((s) => s.bitWidth), [64, 8]);
+      // ABI 1.3 `auto_bind`: only `datak` declares extra names.
+      expect(signals.map((s) => s.autoBindAliases), [
+        const <String>[],
+        ['data_k'],
+      ]);
+      expect(signals.map((s) => s.autoBindSuffixes), [
+        const <String>[],
+        ['_data_k', '_datak'],
+      ]);
 
       String packedWidth(Map<String, dynamic> parameters) => registry
           .getFactory('test_width_param')!(

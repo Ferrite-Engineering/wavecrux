@@ -52,7 +52,7 @@ Each `WcDecoderDef` carries the decoder's `id` (by convention lowercase and name
 
 | Key | Meaning |
 |---|---|
-| `signals` | Array of required bindings: `{ "name", "bit_width"?, "width_param"?, "width_scale"?, "description"? }`. See [widths set by a parameter](#width-param). |
+| `signals` | Array of required bindings: `{ "name", "bit_width"?, "width_param"?, "width_scale"?, "auto_bind"?, "description"? }`. See [widths set by a parameter](#width-param) and [names auto-bind should match](#auto-bind-names). |
 | `optional_signals` | Array of optional bindings, same shape. |
 | `parameters` | Array of `{ "name", "kind", "default"?, "description"?, "display_name"?, "enum_values"?, "enum_labels"? }`, where `kind` is `bool`, `int`, `enum` or `string`. `enum_labels` is an object keyed by value, `{ "tx": "Downstream", "rx": "Upstream" }`, or an array with one label per `enum_values` entry, in the same order. |
 | `description` | Optional text shown in the picker. |
@@ -68,6 +68,19 @@ From 1.1 (ABI 1.2), a signal's width can follow one of the decoder's parameters,
 ```
 
 The host packs the signal at the parameter's value times `width_scale` (default `1`, rounded up), offers only signals of that width in the binding picker, and auto-binds against it. When the parameter has no integer value it falls back to `bit_width`. `width_param` must name a parameter the manifest declares, and `width_scale` must be a positive number. A host older than 1.1 ignores both keys and packs at `bit_width`, so the decoder still works there when bound to signals of that width.
+
+#### Names auto-bind should match { #auto-bind-names }
+
+When a decoder is added, WaveCrux [auto-binds](protocol-decoders.md#how-decoders-work) each signal by name: a bus whose signals share a prefix and end in your binding names, then a leaf name equal to the binding name, then well-known aliases, then a close fuzzy match. Your binding names are your own, so the built-in aliases rarely help a plugin. From 1.2 (ABI 1.3), a signal entry can list extra names in `auto_bind`:
+
+```json
+{"name": "rxvalid", "bit_width": 1,
+ "auto_bind": {"aliases": ["rx_active", "rx_valid"], "suffixes": ["_rx_valid"]}}
+{"name": "datak", "bit_width": 8, "width_param": "data_width", "width_scale": 0.125,
+ "auto_bind": {"aliases": ["data_k"], "suffixes": ["_data_k", "_datak"]}}
+```
+
+`aliases` match a whole leaf name and `suffixes` the end of one (`_data_k` matches `phy_tx_data_k`), both case-insensitively, and only signals of the expected width qualify. They are tried at the same step as the built-in aliases, after an exact name match and before a fuzzy one, and the auto-bind preview names the alias or suffix that matched. Where a suffix matches on several buses (`phy_tx_data_k` and `phy_rx_data_k`), the bus the decoder's other signals were found on wins. Both keys must be arrays of non-empty strings, or the manifest is invalid. A host older than 1.2 ignores `auto_bind`.
 
 ## The four lifecycle callbacks { #lifecycle }
 
@@ -185,7 +198,7 @@ When a plugin won't load or behaves oddly, the Decoder Plugins panel and the [lo
 |---|---|
 | **ABI version mismatch** | The plugin's major ABI differs from the host. Rebuild against the matching header. |
 | **Missing entry point** | `wavecrux_decoder_abi_version` or `wavecrux_decoder_register` isn't exported. |
-| **Invalid manifest** | The `manifest_json` isn't a valid JSON object, or an entry is malformed (missing `name`, non-integer `bit_width`, a `width_param` that names no declared parameter, a `width_scale` that is not a positive number, unknown parameter `kind`). |
+| **Invalid manifest** | The `manifest_json` isn't a valid JSON object, or an entry is malformed (missing `name`, non-integer `bit_width`, a `width_param` that names no declared parameter, a `width_scale` that is not a positive number, an `auto_bind` that is not an object of string arrays, unknown parameter `kind`). |
 | **Load failed** | The library could not be opened, or registration failed; the message says which. |
 | **Disabled** / **Not approved** | You switched it off, or the organization's policy does not list its hash. |
 | No decoders from the plugin | `register` left `*inout_count` at 0. Set it to your decoder count on the first call. |
