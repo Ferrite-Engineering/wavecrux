@@ -4,7 +4,6 @@
 import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:wavecrux/core/help_urls.dart';
 import 'package:wavecrux/features/settings/providers/settings_providers.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
@@ -99,7 +98,8 @@ class PluginSafetyDialog extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           InkWell(
-            onTap: () => launchUrl(Uri.parse(HelpUrls.decoderPluginsSecurity)),
+            onTap: () =>
+                cruxOpenUrl(Uri.parse(HelpUrls.decoderPluginsSecurity)),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: Row(

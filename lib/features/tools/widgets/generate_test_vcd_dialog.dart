@@ -7,7 +7,6 @@ import 'dart:math';
 
 import 'package:crux_a11y/crux_a11y.dart';
 import 'package:crux_ide_layout/crux_ide_layout.dart';
-import 'package:crux_io/crux_io.dart' show revealInFileManager;
 import 'package:crux_settings_ui/crux_settings_ui.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -47,13 +46,13 @@ Future<String?> _defaultSaveVcdPicker({
   type: FileType.custom,
 );
 
-/// The reveal the dialog uses when none is injected: `crux_io`'s
-/// [revealInFileManager], which every product's "Reveal in Finder /
-/// Explorer / Files" shares. It selects the file on macOS and Windows,
-/// resolves each file-manager command to an absolute path before spawning
-/// it, and does nothing on the web.
+/// The reveal the dialog uses when none is injected: [cruxRevealFile], which
+/// every product's "Reveal in Finder / Explorer / Files" shares. It selects
+/// the file on macOS and Windows, resolves each file-manager command to an
+/// absolute path before spawning it, and when no file manager opens (a Linux
+/// host displayed remotely) shows a notice naming the path.
 @visibleForTesting
-const RevealLauncher defaultRevealLauncher = revealInFileManager;
+const RevealLauncher defaultRevealLauncher = cruxRevealFile;
 
 /// Standalone dialog for generating a synthetic VCD and either opening it in
 /// a new tab or revealing it in the platform file manager.

@@ -433,10 +433,10 @@ void main() {
       },
     );
 
-    // With nothing injected, the button reveals through crux_io's shared
-    // helper rather than a local copy of it.
+    // With nothing injected, the button reveals through the suite's shared
+    // reveal, which says where the file is when no file manager opens.
     test('the default reveal is the shared file-manager reveal', () {
-      expect(identical(defaultRevealLauncher, revealInFileManager), isTrue);
+      expect(identical(defaultRevealLauncher, cruxRevealFile), isTrue);
     });
 
     // The Windows reveal, driven with the generated file's path on a Windows

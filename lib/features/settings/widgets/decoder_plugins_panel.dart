@@ -10,7 +10,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart' as path_provider;
-import 'package:url_launcher/url_launcher.dart';
 import 'package:wavecrux/core/help_urls.dart';
 import 'package:wavecrux/core/mobile_metrics.dart';
 import 'package:wavecrux/core/platform_utils.dart';
@@ -42,7 +41,7 @@ Future<Directory?> _defaultAppSupportDirectory() async {
 /// Test seam — overridden by tests that want to assert the directory
 /// reveal action without launching a real `file://` URL.
 @visibleForTesting
-Future<bool> Function(Uri uri) decoderPluginsLaunchUrl = launchUrl;
+Future<bool> Function(Uri uri) decoderPluginsLaunchUrl = cruxOpenUrl;
 
 /// Settings → Decoders → Plugins panel.
 ///

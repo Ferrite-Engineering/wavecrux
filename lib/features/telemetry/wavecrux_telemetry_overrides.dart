@@ -1,10 +1,10 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_ide_layout/crux_ide_layout.dart' show cruxOpenUrl;
 import 'package:crux_telemetry/crux_telemetry.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/misc.dart' show Override;
-import 'package:url_launcher/url_launcher.dart';
 import 'package:wavecrux/core/app_info/application_build_info_provider.dart';
 import 'package:wavecrux/core/telemetry/wavecrux_telemetry_config.dart';
 import 'package:wavecrux/core/telemetry/wavecrux_telemetry_storage.dart';
@@ -50,7 +50,7 @@ final List<Override> wavecruxTelemetryOverrides = <Override>[
 
   // "Learn more" on both consent surfaces. The package default throws rather
   // than silently doing nothing when the user taps a link on a privacy notice.
-  telemetryUrlLauncherProvider.overrideWithValue(launchUrl),
+  telemetryUrlLauncherProvider.overrideWithValue(cruxOpenUrl),
 
   // The `app_version` envelope field. Until this resolves the package's
   // envelope resolver returns null and the flush skips — a version we do not

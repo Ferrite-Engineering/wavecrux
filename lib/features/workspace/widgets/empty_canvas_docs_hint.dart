@@ -3,9 +3,9 @@
 
 import 'dart:async';
 
+import 'package:crux_ide_layout/crux_ide_layout.dart' show cruxOpenUrl;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:wavecrux/core/help_urls.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 
@@ -43,7 +43,8 @@ class _EmptyCanvasDocsHintState extends State<EmptyCanvasDocsHint> {
     super.initState();
     _recognizer = TapGestureRecognizer()
       ..onTap =
-          widget.onTap ?? () => unawaited(launchUrl(Uri.parse(HelpUrls.docs)));
+          widget.onTap ??
+          () => unawaited(cruxOpenUrl(Uri.parse(HelpUrls.docs)));
   }
 
   @override

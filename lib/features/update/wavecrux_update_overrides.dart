@@ -3,10 +3,10 @@
 
 import 'dart:async' show unawaited;
 
+import 'package:crux_ide_layout/crux_ide_layout.dart' show cruxOpenUrl;
 import 'package:crux_license/crux_license.dart';
 import 'package:crux_updates/crux_updates.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
-import 'package:url_launcher/url_launcher.dart';
 import 'package:wavecrux/core/app_info/application_build_info_provider.dart';
 import 'package:wavecrux/core/app_info/crux_app_info_adapter.dart';
 import 'package:wavecrux/core/updates/wavecrux_update_config.dart';
@@ -81,5 +81,5 @@ final List<Override> wavecruxUpdateOverrides = <Override>[
 
   // "Update Now" / "View Changes". The package default throws rather than
   // silently doing nothing when the user taps the button.
-  updateUrlLauncherProvider.overrideWithValue(launchUrl),
+  updateUrlLauncherProvider.overrideWithValue(cruxOpenUrl),
 ];

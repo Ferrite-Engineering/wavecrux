@@ -3,11 +3,11 @@
 
 import 'dart:async';
 
+import 'package:crux_ide_layout/crux_ide_layout.dart' show cruxOpenUrl;
 import 'package:crux_workspace/crux_workspace.dart' as crux;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:wavecrux/core/app_info/application_build_info_provider.dart';
 import 'package:wavecrux/core/help_urls.dart';
 import 'package:wavecrux/core/theme/wavecrux_colors.dart';
@@ -213,7 +213,7 @@ class WaveCruxSuitePeers extends StatelessWidget {
 ///
 /// A mutable top-level seam rather than a direct `launchUrl` call so widget
 /// tests can activate the line without the `url_launcher` platform channel.
-Future<bool> Function(Uri uri) suiteSiteLaunchUrl = launchUrl;
+Future<bool> Function(Uri uri) suiteSiteLaunchUrl = cruxOpenUrl;
 
 class _Header extends ConsumerWidget {
   const _Header();

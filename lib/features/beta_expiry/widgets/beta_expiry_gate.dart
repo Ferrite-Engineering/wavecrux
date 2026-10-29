@@ -3,11 +3,11 @@
 
 import 'dart:async' show unawaited;
 
+import 'package:crux_ide_layout/crux_ide_layout.dart' show cruxOpenUrl;
 import 'package:crux_license/crux_license.dart';
 import 'package:crux_telemetry/crux_telemetry.dart' show cruxExit;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:wavecrux/core/help_urls.dart';
 import 'package:wavecrux/core/mobile_metrics.dart';
 import 'package:wavecrux/features/beta_expiry/widgets/beta_expiry_strings.dart';
@@ -17,7 +17,7 @@ import 'package:wavecrux/shared/layouts/device_class_provider.dart';
 /// Seam for opening the "download the latest build" page. Overridable in tests
 /// so the banner / modal actions can be exercised without the url_launcher
 /// platform channel. Mirrors `decoderPluginsLaunchUrl`.
-Future<bool> Function(Uri uri) betaExpiryLaunchUrl = launchUrl;
+Future<bool> Function(Uri uri) betaExpiryLaunchUrl = cruxOpenUrl;
 
 /// Seam for terminating the process from the expired modal's quit action.
 /// Overridable in tests (calling the real exit would kill the test runner).

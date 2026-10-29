@@ -3,7 +3,6 @@
 
 import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:wavecrux/core/platform_utils.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 
@@ -203,7 +202,7 @@ class _AcknowledgmentEntry extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               InkWell(
-                onTap: () => launchUrl(Uri.parse(url)),
+                onTap: () => cruxOpenUrl(Uri.parse(url)),
                 borderRadius: BorderRadius.circular(4),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2),

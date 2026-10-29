@@ -11,7 +11,6 @@ import 'package:crux_updates/crux_updates.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:wavecrux/core/about/wavecrux_about_strings.dart';
 import 'package:wavecrux/core/app_info/application_branding_provider.dart';
 import 'package:wavecrux/core/app_info/application_build_info_provider.dart';
@@ -97,12 +96,12 @@ abstract final class WaveCruxAboutDialog {
         AboutAction(
           label: l10n.aboutButtonVisitWebsite,
           icon: Icons.language_outlined,
-          onTap: (_) => unawaited(launchUrl(Uri.parse(branding.websiteUrl))),
+          onTap: (_) => unawaited(cruxOpenUrl(Uri.parse(branding.websiteUrl))),
         ),
         AboutAction(
           label: l10n.aboutButtonDocs,
           icon: Icons.menu_book_outlined,
-          onTap: (_) => unawaited(launchUrl(Uri.parse(HelpUrls.docs))),
+          onTap: (_) => unawaited(cruxOpenUrl(Uri.parse(HelpUrls.docs))),
         ),
         AboutAction(
           label: l10n.aboutButtonReportIssue,
@@ -122,13 +121,14 @@ abstract final class WaveCruxAboutDialog {
         AboutAction(
           label: l10n.aboutButtonPrivacy,
           icon: Icons.privacy_tip_outlined,
-          onTap: (_) => unawaited(launchUrl(Uri.parse(HelpUrls.privacyPolicy))),
+          onTap: (_) =>
+              unawaited(cruxOpenUrl(Uri.parse(HelpUrls.privacyPolicy))),
         ),
         AboutAction(
           label: l10n.aboutButtonTerms,
           icon: Icons.description_outlined,
           onTap: (_) =>
-              unawaited(launchUrl(Uri.parse(HelpUrls.termsOfService))),
+              unawaited(cruxOpenUrl(Uri.parse(HelpUrls.termsOfService))),
         ),
         AboutAction(
           label: l10n.aboutButtonCopyVersionInfo,
