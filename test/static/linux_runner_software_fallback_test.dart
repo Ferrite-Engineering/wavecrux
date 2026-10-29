@@ -14,34 +14,46 @@ import 'package:flutter_test/flutter_test.dart';
 /// to its software renderer only when `FLUTTER_LINUX_RENDERER=software` is
 /// set, and with Impeller on (the default) the software renderer aborts at
 /// the first line of text. The runner therefore probes for a context before
-/// creating the engine, sets the variable when the probe fails, and turns
-/// Impeller off whenever the software renderer is selected (wavecrux#73).
+/// creating the engine, sets the variable when the probe fails or the display
+/// is on another machine, and turns Impeller off whenever the software
+/// renderer is selected (wavecrux#73). The probe itself is crux-shared's
+/// `crux_select_renderer_for_display`, which every product's runner calls.
 ///
 /// Every piece is needed, and losing any one of them is silent on a desktop
 /// with a GPU, which is where the app is developed. Hence a static check.
 void main() {
   const path = 'linux/runner/my_application.cc';
 
+  const shared =
+      'crux-shared/packages/crux_file_dialogs/native/linux/crux_file_dialogs.cc';
+
   late String code;
+  late String probeCode;
+  String withoutComments(String file) => File(file)
+      .readAsLinesSync()
+      .where((line) => !line.trimLeft().startsWith('//'))
+      .join('\n');
   setUpAll(() {
-    code = File(path)
-        .readAsLinesSync()
-        .where((line) => !line.trimLeft().startsWith('//'))
-        .join('\n');
+    code = withoutComments(path);
+    probeCode = withoutComments(shared);
   });
 
   test('the runner probes the display for an OpenGL context', () {
-    expect(code, contains('gdk_window_create_gl_context('));
-    expect(code, contains('gdk_gl_context_realize('));
+    expect(probeCode, contains('gdk_window_create_gl_context('));
+    expect(probeCode, contains('gdk_gl_context_realize('));
   });
 
   test('a failed probe selects the software renderer and says so', () {
     expect(
-      code,
+      probeCode,
       contains('g_setenv("FLUTTER_LINUX_RENDERER", "software", FALSE)'),
       reason: 'FALSE keeps a value the user set, "opengl" included.',
     );
-    expect(code, contains('falling back'));
+    expect(probeCode, contains('falling back'));
+  });
+
+  test('a display on another machine selects the software renderer', () {
+    expect(probeCode, contains('x_display_is_remote(gdk_display_get_name('));
   });
 
   test('the software renderer runs with Impeller off', () {
@@ -52,7 +64,7 @@ void main() {
   });
 
   test('the probe runs before the engine is created', () {
-    final probe = code.indexOf('select_renderer_for_display();');
+    final probe = code.indexOf('crux_select_renderer_for_display(');
     final engine = code.indexOf('fl_view_new(');
     expect(probe, isNonNegative, reason: 'activate() never calls the probe.');
     expect(engine, isNonNegative);
