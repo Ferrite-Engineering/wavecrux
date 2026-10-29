@@ -92,6 +92,36 @@ void main() {
       expect(s, contains('cpol'));
     });
 
+    test('toString tells apart configs that differ only in values', () {
+      // A failed `equals` prints both sides with toString. When it printed
+      // keys only, two configs with the same slots but different refs, paths
+      // or parameter values read identically, and the mismatch was invisible.
+      const byRef = DecoderConfig(signalBindings: {'dp': '3'});
+      const otherRef = DecoderConfig(signalBindings: {'dp': '4'});
+      const withPath = DecoderConfig(
+        signalBindings: {'dp': '3'},
+        signalPaths: {'dp': 'tb.usb.dp'},
+      );
+      const otherParam = DecoderConfig(
+        signalBindings: {'dp': '3'},
+        parameters: {'speed': 'full'},
+      );
+      const sameKeyOtherParam = DecoderConfig(
+        signalBindings: {'dp': '3'},
+        parameters: {'speed': 'high'},
+      );
+      final printed = [
+        byRef,
+        otherRef,
+        withPath,
+        otherParam,
+        sameKeyOtherParam,
+      ].map((c) => c.toString()).toList();
+      expect(printed.toSet(), hasLength(printed.length));
+      expect(withPath.toString(), contains('tb.usb.dp'));
+      expect(sameKeyOtherParam.toString(), contains('high'));
+    });
+
     // ── JSON round-trip ───────────────────────────────────────────────────────
 
     test('toJson emits bindings and parameters maps', () {

@@ -133,10 +133,14 @@ class DecoderConfig {
     _mapHash(signalPaths),
   );
 
+  /// Prints every field with its values, so two configs that differ only in a
+  /// bound ref, a recorded path or a parameter value read differently in a
+  /// failed equality check.
   @override
   String toString() =>
-      'DecoderConfig(bindings: ${signalBindings.keys.toList()}, '
-      'params: ${parameters.keys.toList()})';
+      'DecoderConfig(bindings: $signalBindings, '
+      'paths: $signalPaths, '
+      'params: $parameters)';
 
   // ── private helpers ────────────────────────────────────────────────────────
 
