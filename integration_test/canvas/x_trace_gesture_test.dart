@@ -65,6 +65,12 @@ void main() {
 
       expect(find.text('Trace X Origin'), findsOneWidget);
 
+      // The menu fits an 800x600 window on a pointer layout (that is pinned
+      // by test/features/viewer/widgets/signal_row_menu_fits_window_test.dart);
+      // a window too small for it scrolls the menu, so bring the item into
+      // view first and test the action here, not the menu's height.
+      await tester.ensureVisible(find.text('Trace X Origin'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Trace X Origin'));
       await tester.pumpAndSettle();
 

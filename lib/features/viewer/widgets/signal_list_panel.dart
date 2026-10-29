@@ -6,6 +6,7 @@ import 'dart:async' show unawaited;
 import 'package:crux_cxp_ui/crux_cxp_ui.dart' show crossProbeMenuEntry;
 import 'package:crux_ide_layout/crux_ide_layout.dart'
     show
+        CruxDesktopTokens,
         CruxDialog,
         CruxDialogAction,
         CruxDialogActionRole,
@@ -918,6 +919,16 @@ class _SignalRowState extends ConsumerState<_SignalRow> {
             )
             as CruxSubmenu;
 
+    // Row heights. On a pointer layout (the Crux Desktop theme) the items
+    // take the desktop control height and the dividers 9 dp, as in the
+    // shared Crux context menu, so the whole menu shows in an 800x600 window
+    // with every optional section present. On a touch layout they keep the
+    // 48 dp touch target; the menu is then clamped to the window and
+    // scrolls, as every Material popup menu does.
+    final desktopTokens = CruxDesktopTokens.of(context);
+    final itemHeight = desktopTokens?.controlHeight ?? kMinInteractiveDimension;
+    final divider = PopupMenuDivider(height: desktopTokens == null ? 16 : 9);
+
     final items = <PopupMenuEntry<_SignalMenuResult>>[
       // ── Path header — always visible reveal of the truncated row name ────
       // Per ARCHITECTURE.md §3.1.8.14, every truncated `Text(overflow:
@@ -944,10 +955,11 @@ class _SignalRowState extends ConsumerState<_SignalRow> {
           ),
         ),
       ),
-      const PopupMenuDivider(),
+      divider,
       // ── Change color ──
       PopupMenuItem<_SignalMenuResult>(
         value: const _SignalMenuAction(_RegularAction.changeColor),
+        height: itemHeight,
         child: Row(
           children: [
             Container(
@@ -973,6 +985,7 @@ class _SignalRowState extends ConsumerState<_SignalRow> {
       // arriving from GTKWave right-clicks first.
       PopupMenuItem<_SignalMenuResult>(
         value: const _SignalMenuAction(_RegularAction.toggleRenderAsAnalog),
+        height: itemHeight,
         child: Row(
           children: [
             Icon(
@@ -995,16 +1008,14 @@ class _SignalRowState extends ConsumerState<_SignalRow> {
       // user arriving from GTKWave looks for on the signal name, and
       // Properties opens this row in the Inspector.
       if (widget.entry.signalRef != null) ...[
-        // 32 dp, as in the value column: the menu does not scroll, and it
-        // must still fit a minimum-height window.
         PopupMenuItem<_SignalMenuResult>(
           value: const _SignalMenuAction(_RegularAction.displayFormat),
-          height: 32,
+          height: itemHeight,
           child: displayFormatMenuEntryLabel(context, widget.entry.format),
         ),
         PopupMenuItem<_SignalMenuResult>(
           value: const _SignalMenuAction(_RegularAction.properties),
-          height: 32,
+          height: itemHeight,
           child: Text(
             l10n.valueColumnProperties,
             style: const TextStyle(fontSize: 13),
@@ -1013,7 +1024,7 @@ class _SignalRowState extends ConsumerState<_SignalRow> {
       ],
       // ── Inline group targets ──────────────────────────────────────────────
       if (widget.availableGroups.isNotEmpty) ...[
-        const PopupMenuDivider(),
+        divider,
         PopupMenuItem<_SignalMenuResult>(
           enabled: false,
           height: 22,
@@ -1052,11 +1063,12 @@ class _SignalRowState extends ConsumerState<_SignalRow> {
             ),
           ),
       ],
-      const PopupMenuDivider(),
+      divider,
       // ── Clipboard ──
       if (widget.onCopyValue != null)
         PopupMenuItem<_SignalMenuResult>(
           value: const _SignalMenuAction(_RegularAction.copyValue),
+          height: itemHeight,
           child: Text(
             l10n.signalListCopyValue,
             style: const TextStyle(fontSize: 13),
@@ -1064,6 +1076,7 @@ class _SignalRowState extends ConsumerState<_SignalRow> {
         ),
       PopupMenuItem<_SignalMenuResult>(
         value: const _SignalMenuAction(_RegularAction.copyPath),
+        height: itemHeight,
         child: Text(
           l10n.signalListCopyPath,
           style: const TextStyle(fontSize: 13),
@@ -1074,6 +1087,7 @@ class _SignalRowState extends ConsumerState<_SignalRow> {
       // the signal can be sent to a peer product without opening the panel.
       PopupMenuItem<_SignalMenuResult>(
         value: const _SignalMenuAction(_RegularAction.crossProbe),
+        height: itemHeight,
         enabled: crossProbe.enabled,
         child: Tooltip(
           message: crossProbe.tooltip ?? '',
@@ -1098,10 +1112,11 @@ class _SignalRowState extends ConsumerState<_SignalRow> {
           ),
         ),
       ),
-      const PopupMenuDivider(),
+      divider,
       // ── Translate filter ──
       PopupMenuItem<_SignalMenuResult>(
         value: const _SignalMenuAction(_RegularAction.assignFilter),
+        height: itemHeight,
         child: Text(
           l10n.translateFilterAssign,
           style: const TextStyle(fontSize: 13),
@@ -1110,6 +1125,7 @@ class _SignalRowState extends ConsumerState<_SignalRow> {
       if (widget.hasTranslateFilter)
         PopupMenuItem<_SignalMenuResult>(
           value: const _SignalMenuAction(_RegularAction.removeFilter),
+          height: itemHeight,
           child: Text(
             l10n.translateFilterRemove,
             style: const TextStyle(fontSize: 13),
@@ -1118,6 +1134,7 @@ class _SignalRowState extends ConsumerState<_SignalRow> {
       // ── Process filter ──
       PopupMenuItem<_SignalMenuResult>(
         value: const _SignalMenuAction(_RegularAction.assignProcessFilter),
+        height: itemHeight,
         child: Text(
           l10n.processFilterAssign,
           style: const TextStyle(fontSize: 13),
@@ -1126,6 +1143,7 @@ class _SignalRowState extends ConsumerState<_SignalRow> {
       if (widget.hasProcessFilter)
         PopupMenuItem<_SignalMenuResult>(
           value: const _SignalMenuAction(_RegularAction.clearProcessFilter),
+          height: itemHeight,
           child: Text(
             l10n.processFilterClear,
             style: const TextStyle(fontSize: 13),
@@ -1133,9 +1151,10 @@ class _SignalRowState extends ConsumerState<_SignalRow> {
         ),
       // ── X-trace ──
       if (widget.hasX) ...[
-        const PopupMenuDivider(),
+        divider,
         PopupMenuItem<_SignalMenuResult>(
           value: const _SignalMenuAction(_RegularAction.traceXOrigin),
+          height: itemHeight,
           child: Row(
             children: [
               Icon(
@@ -1151,9 +1170,10 @@ class _SignalRowState extends ConsumerState<_SignalRow> {
       ],
       // ── FSM ──
       if (widget.canVisualizeFsm) ...[
-        const PopupMenuDivider(),
+        divider,
         PopupMenuItem<_SignalMenuResult>(
           value: const _SignalMenuAction(_RegularAction.visualizeFsm),
+          height: itemHeight,
           child: Row(
             children: [
               Icon(
@@ -1168,6 +1188,7 @@ class _SignalRowState extends ConsumerState<_SignalRow> {
         ),
         PopupMenuItem<_SignalMenuResult>(
           value: const _SignalMenuAction(_RegularAction.annotateFsm),
+          height: itemHeight,
           child: Text(
             l10n.fsmMenuAnnotateStates,
             style: const TextStyle(fontSize: 13),
@@ -1176,9 +1197,10 @@ class _SignalRowState extends ConsumerState<_SignalRow> {
       ],
       // ── Remove the selection ──
       if (widget.isSelected) ...[
-        const PopupMenuDivider(),
+        divider,
         PopupMenuItem<_SignalMenuResult>(
           value: const _SignalMenuAction(_RegularAction.removeSelected),
+          height: itemHeight,
           child: Text(
             l10n.signalListRemoveSelected,
             style: const TextStyle(fontSize: 13),
