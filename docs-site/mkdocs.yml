@@ -63,6 +63,7 @@ nav:
       - Navigating & measuring: navigating-waveforms.md
       - Keyboard & mouse reference: keyboard-mouse.md
       - Working with signals: working-with-signals.md
+      - ROHD + EDACrux, from 1.2: rohd-and-edacrux.md
       - Waveforms from ROHD: rohd.md
       - Translators: translators.md
       - Analysis & debug: analysis.md

@@ -6,8 +6,10 @@ line created the signal. When ROHD has recorded that, WaveCrux adds a **Go to
 Dart Source** action to the signal's context menu, which opens your editor on
 the line.
 
-This is labelled **ROHD 0.7 or later (source tracing)**: the source-trace file
-it reads is written by ROHD 0.7 and later, and only when source tracing is on.
+This is from WaveCrux 1.2, and is labelled **ROHD 0.7 or later (source
+tracing)**: the source-trace file it reads is written by ROHD 0.7 and later, and
+only when source tracing is on. For the whole path from ROHD to WaveCrux, see
+[ROHD + EDACrux](rohd-and-edacrux.md).
 
 ## Turn tracing on in your ROHD flow {#flow}
 
