@@ -1,4 +1,7 @@
 #!/bin/sh
+# Copyright 2026 Ferrite Engineering LLC
+# SPDX-License-Identifier: Apache-2.0
+
 # Captures the states that integration_test/store_screenshot_stage_test.dart
 # holds on screen, at the simulator's native pixel size.
 #

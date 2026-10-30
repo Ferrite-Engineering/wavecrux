@@ -24,10 +24,13 @@ import 'package:wavecrux/features/stage/providers/riscv_commit_auto_stage.dart';
 import 'package:wavecrux/features/stage/providers/riscv_commit_landing_provider.dart';
 import 'package:wavecrux/features/stage/providers/stage_workspace_provider.dart';
 import 'package:wavecrux/features/tabs/providers/tab_providers.dart';
+import 'package:wavecrux/features/viewer/providers/navigation_provider.dart';
 import 'package:wavecrux/features/viewer/providers/panel_layout_provider.dart';
+import 'package:wavecrux/features/viewer/providers/time_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
 import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
+import 'package:wavecrux/services/remote/cxp/cxp_time_landing.dart';
 import 'package:wavecrux/services/remote/cxp/cxp_workspace_link.dart';
 import 'package:wavecrux/services/remote/cxp/formal_eqy_pairing.dart';
 import 'package:wavecrux/services/remote/cxp/formal_stream_coordinate_resolver.dart';
@@ -69,6 +72,10 @@ part 'cxp_inbound_handlers.g.dart';
 /// * A kind this build does not know at all (the wire type is open, so a
 ///   newer peer may send one) — same graceful honored=false reply.
 ///
+/// A signal-like element may carry `crux.time_ps` in [metadata] (CXP §9.3.2):
+/// once the element is honoured, the primary cursor moves to that time and is
+/// scrolled into view. See [_applyTimeMetadata].
+///
 /// Failure modes:
 /// * No file loaded → `honored: false`, `reason: "no waveform file loaded"`.
 /// * Element not found in the current waveform → `honored: false`,
@@ -82,12 +89,16 @@ Future<CruxCxpHandlerResult> dispatchCxpHighlight(
   CxpStreamCoordinate? coordinate,
 ]) async {
   final outcome = await _dispatchCxpHighlight(ref, element, metadata);
+  // The optional `crux.time_ps` (CXP §9.3.2) moves the cursor to a time on the
+  // signal just brought into view. It runs before the coordinate below, which
+  // is the more specific request and must win the cursor.
+  final timed = _applyTimeMetadata(ref, element, metadata, outcome.result);
   // `element` said what to open; the optional CXP §9.9 coordinate says
   // where to land inside it. Applied after the element, because a coordinate
   // is resolved against the trace the element just opened.
   final placed = await _applyStreamCoordinate(
     ref,
-    outcome.result,
+    timed,
     coordinate,
     openedTab: outcome.openedTab,
   );
@@ -107,6 +118,71 @@ Future<CruxCxpHandlerResult> dispatchCxpHighlight(
         ),
       );
   return placed;
+}
+
+/// Applies the `crux.time_ps` metadata key (CXP §9.3.2,
+/// https://edacrux.app/cxp) of a signal-like `request_highlight`: puts the
+/// primary cursor at that time in the active tab's waveform and scrolls it
+/// into view.
+///
+/// **The honoured flag never moves.** The element is what was asked for; the
+/// time rides along. So nothing here turns an honoured element into a refusal:
+/// a key that is absent, an element that was not honoured (there is no
+/// waveform to put a cursor in), and every kind that is not signal-like
+/// return [elementResult] untouched, and a value WaveCrux cannot place (not a
+/// non-negative integer, a waveform with no timescale) comes back as a reason
+/// on an otherwise-honoured reply, which the sender's user sees.
+///
+/// The picosecond value is converted to the dump's own timescale and clamped
+/// to the dump's range; a clamp is reported the same way, in the reason.
+CruxCxpHandlerResult _applyTimeMetadata(
+  Ref ref,
+  ElementId element,
+  Map<String, Object?> metadata,
+  CruxCxpHandlerResult elementResult,
+) {
+  if (!elementResult.honored) return elementResult;
+  if (!_timedKinds.contains(element.kind.known)) return elementResult;
+  final source = readActive(ref, waveformSourceProvider).value;
+  if (source == null) return elementResult;
+  final resolution = resolveCxpTimePs(
+    metadata,
+    timescale: source.timescale,
+    startTime: source.startTime,
+    endTime: source.endTime,
+  );
+  if (resolution == null) return elementResult;
+  final tick = resolution.tick;
+  if (tick == null) {
+    return CruxCxpHandlerResult(honored: true, reason: resolution.reason);
+  }
+  readActive(ref, cursorStateProvider.notifier).placePrimary(tick);
+  _scrollTimeIntoView(ref, tick);
+  if (resolution.reason == null) return elementResult;
+  return CruxCxpHandlerResult(honored: true, reason: resolution.reason);
+}
+
+/// The element kinds a `crux.time_ps` applies to: the ones
+/// [_dispatchCxpHighlight] resolves as a signal in the open waveform.
+const Set<KnownElementKind?> _timedKinds = <KnownElementKind?>{
+  KnownElementKind.signal,
+  KnownElementKind.instance,
+  KnownElementKind.net,
+  KnownElementKind.port,
+};
+
+/// Pans the active tab's viewport to centre [tick] when it is outside the
+/// visible range, and leaves a cursor that is already on screen where it is.
+///
+/// A viewport that has not been laid out yet (a tab the hand-off opened a
+/// moment ago) has nothing to pan, and does not need it: its first layout fits
+/// the whole waveform, which contains the cursor.
+void _scrollTimeIntoView(Ref ref, int tick) {
+  final mapper = readActive(ref, timeMapperProvider);
+  if (mapper.isEmpty) return;
+  if (!readActive(ref, timeMapperProvider.notifier).isLaidOut) return;
+  if (tick >= mapper.visibleStartTime && tick <= mapper.visibleEndTime) return;
+  readActive(ref, navigationProvider.notifier).jumpToTime(tick);
 }
 
 /// Applies the inbound `request_highlight`'s optional semantic stream

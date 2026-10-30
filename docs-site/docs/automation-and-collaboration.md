@@ -124,6 +124,12 @@ The server and its behavior live under **Settings → CXP Cross-Probe** — **En
 
 From WaveCrux 1.2 the other suite tools' **Cross-probe to** menus show the file open in WaveCrux's active tab beside its name (the file name only, never its folder), and the name follows as you switch tabs.
 
+### A signal at a time { #cxp-time }
+
+From WaveCrux 1.2, a tool that cross-probes a signal can also name a time, and WaveCrux puts the primary cursor there. A simulator that notices an overflow at 41,250 ps can send the signal and the time together, and the cursor lands on the moment instead of leaving you to scroll for it. The time is a number of picoseconds from the start of the simulation (the `crux.time_ps` key of CXP, in [the specification](https://edacrux.app/cxp)); WaveCrux converts it to the timescale of the waveform you have open.
+
+If the cursor is already on screen, the view stays where it is. If not, the view pans to centre it, at the zoom you had. A time outside the waveform goes to the nearest end of it, and the sender is told. When the waveform declares no timescale, or the value is not a whole non-negative number, WaveCrux still shows the signal and leaves the cursor alone; the sender is told that too. With no waveform open there is nothing to place a cursor in, and the request is declined as any other signal highlight is.
+
 ### Formal traces from SimCrux { #cxp-formal }
 
 From WaveCrux 1.2, when SimCrux sends you a formal counterexample or cover trace, WaveCrux opens it in a new tab and places the cursor on the step the solver reported. Step 0 is the trace's initial state. A short message says where the cursor landed, for example *Formal trace opened. Cursor at step 6.*, and screen readers speak it. A trace replayed from a demo fixture is labelled as one.

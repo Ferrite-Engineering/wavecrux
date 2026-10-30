@@ -174,6 +174,62 @@ void main() {
     );
   });
 
+  // CXP §9.3.2: a signal highlight may carry `crux.time_ps`, and when it also
+  // carries a coordinate the coordinate is the more specific request and wins
+  // the cursor.
+  const req = ElementId(kind: ElementKind.signal, path: 'handshake_imm.req');
+
+  testWidgets('a signal highlight with a time moves the cursor to it in the '
+      'real trace', (tester) async {
+    await _pumpMessenger(tester);
+    final harness = await _handOff(
+      tester,
+      handshake,
+      follow: const _FollowUp(req, <String, Object?>{'crux.time_ps': 20000}),
+    );
+    expect(harness.result.honored, isTrue);
+    expect(harness.result.reason, isNull);
+    // The trace declares a 1 ns timescale: 20000 ps is the sample at 20.
+    expect(harness.cursorTime, 20);
+  });
+
+  testWidgets('when a coordinate rides with the time, the coordinate wins the '
+      'cursor', (tester) async {
+    await _pumpMessenger(tester);
+    final harness = await _handOff(
+      tester,
+      handshake,
+      follow: _FollowUp(
+        req,
+        const <String, Object?>{'crux.time_ps': 20000},
+        formalStep(6),
+      ),
+    );
+    expect(harness.result.honored, isTrue);
+    expect(harness.cursorTime, 60, reason: 'step 6 is the sample at time 60');
+  });
+
+  testWidgets('a coordinate that cannot be placed leaves the time where it '
+      'put the cursor', (tester) async {
+    await _pumpMessenger(tester);
+    final dir = Directory.systemTemp.createTempSync('formal_time_');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final uneven = File(p.join(dir.path, 'uneven.vcd'))
+      ..writeAsStringSync(_unevenTrace);
+    final harness = await _handOff(
+      tester,
+      uneven.path,
+      follow: _FollowUp(
+        const ElementId(kind: ElementKind.signal, path: 'top.data'),
+        const <String, Object?>{'crux.time_ps': 25000},
+        formalStep(1),
+      ),
+    );
+    expect(harness.result.honored, isTrue);
+    expect(harness.result.reason, contains('not evenly spaced'));
+    expect(harness.cursorTime, 25);
+  });
+
   testWidgets('a property element is still declined: WaveCrux receives the '
       'trace, not the property', (tester) async {
     final harness = await _handOff(
@@ -206,14 +262,26 @@ class _Harness {
       tab.listen(cursorStateProvider, (_, _) {}).read().primaryCursorTime;
 }
 
+/// A second `request_highlight`, sent after the trace is open, whose reply
+/// becomes the hand-off's result.
+class _FollowUp {
+  const _FollowUp(this.element, this.metadata, [this.coordinate]);
+
+  final ElementId element;
+  final Map<String, Object?> metadata;
+  final CxpStreamCoordinate? coordinate;
+}
+
 /// Runs [dispatchCxpHighlight] for [element] (by default the trace at [path]
-/// as a `source`), the request SimCrux sends.
+/// as a `source`), the request SimCrux sends. With [follow], then sends that
+/// second request into the tab the first one opened.
 Future<_Harness> _handOff(
   WidgetTester tester,
   String path, {
   ElementId? element,
   CxpStreamCoordinate? coordinate,
   Map<String, Object?> metadata = const <String, Object?>{},
+  _FollowUp? follow,
 }) async {
   final tcm = TabContainerManager(
     extraTabOverrides: [
@@ -233,12 +301,20 @@ Future<_Harness> _handOff(
     root.dispose();
   });
   final result = await tester.runAsync(() async {
-    final result = await dispatchCxpHighlight(
+    var result = await dispatchCxpHighlight(
       root.read(_refProvider),
       element ?? ElementId(kind: ElementKind.source, path: path),
       metadata,
       coordinate,
     );
+    if (follow != null) {
+      result = await dispatchCxpHighlight(
+        root.read(_refProvider),
+        follow.element,
+        follow.metadata,
+        follow.coordinate,
+      );
+    }
     await root.wavecruxWorkspace.flushPendingSave();
     return result;
   });
