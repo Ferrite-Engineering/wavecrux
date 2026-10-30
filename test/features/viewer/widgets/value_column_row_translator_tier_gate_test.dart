@@ -69,6 +69,12 @@ SignalEntry _entry(String format) => SignalEntry.signal(
 
 const _alphaSentence = '“Fake Alpha” requires WaveCrux Pro.';
 
+/// Matches a semantics label that carries [sentence]. Where the row's context
+/// menu answers a long press (a touch layout), the row is one semantics node
+/// and the lock's sentence follows the value in its label, so an exact match
+/// on the sentence alone finds nothing.
+Pattern _carries(String sentence) => RegExp(RegExp.escape(sentence));
+
 /// A `licenseTierProvider` source a test can change after the scope is
 /// built, the way a stored licence resolves after startup.
 final _tier = NotifierProvider<_TierNotifier, LicenseTier>(_TierNotifier.new);
@@ -128,7 +134,7 @@ Future<ProviderContainer> _pump(
 void main() {
   testWidgets('during the beta there is no lock', (tester) async {
     await _pump(tester, beta: true, tier: LicenseTier.openCore);
-    expect(find.bySemanticsLabel(_alphaSentence), findsNothing);
+    expect(find.bySemanticsLabel(_carries(_alphaSentence)), findsNothing);
     expect(find.byIcon(Icons.lock_outline), findsNothing);
   });
 
@@ -138,7 +144,7 @@ void main() {
     // The plain value is still shown; the lock stands beside it.
     expect(find.text('a'), findsOneWidget);
     expect(find.byIcon(Icons.lock_outline), findsOneWidget);
-    expect(find.bySemanticsLabel(_alphaSentence), findsOneWidget);
+    expect(find.bySemanticsLabel(_carries(_alphaSentence)), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -147,7 +153,7 @@ void main() {
   ) async {
     await _pump(tester, beta: false, tier: LicenseTier.openCore, format: 'b');
     expect(
-      find.bySemanticsLabel('“Fake Beta” requires WaveCrux Pro.'),
+      find.bySemanticsLabel(_carries('“Fake Beta” requires WaveCrux Pro.')),
       findsOneWidget,
     );
   });
