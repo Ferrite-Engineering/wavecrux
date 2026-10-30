@@ -3093,6 +3093,53 @@
   "@settingsEditorCommandHint": {
     "description": "Placeholder hint shown in the editor command text field"
   },
+  "signalTreeGoToDartSource": "Dart ソースへ移動 (ROHD 0.7 以降)",
+  "@signalTreeGoToDartSource": {
+    "description": "Context-menu item on a signal that opens the Dart source line that created it, for waveforms written by ROHD (the Dart hardware description library) with source tracing on."
+  },
+  "signalTreeGoToDartNoEditor": "Dart ソースを開くには、設定 > エディターでエディターコマンドを指定してください。",
+  "@signalTreeGoToDartNoEditor": {
+    "description": "Message when Go to Dart source is chosen but no editor command is set in Settings > Editors."
+  },
+  "signalTreeGoToDartFailed": "Dart ソースを開けませんでした: {reason}",
+  "@signalTreeGoToDartFailed": {
+    "description": "Message when Go to Dart source could not start the editor. {reason} is the failure reason the editor launcher gave.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "signalTreeGoToDartOpened": "エディターで {location} を開きました",
+  "@signalTreeGoToDartOpened": {
+    "description": "Screen-reader announcement after Go to Dart source opened the editor. {location} is the file name and line, for example design.dart:25.",
+    "placeholders": {
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "signalTreeGoToDartAmbiguous": "この信号名はソーストレースファイル内の {count} 個の Dart 行に一致しました。最初の行を開きました。",
+  "@signalTreeGoToDartAmbiguous": {
+    "description": "Message after Go to Dart source when the signal's name matched more than one Dart line in the source-trace file (two bus slices of one signal) and the first was opened. {count} is how many lines matched.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsRohdSidecarLabel": "ROHD ソーストレースファイル (ROHD 0.7 以降)",
+  "@settingsRohdSidecarLabel": {
+    "description": "Label of the Settings > Editors field for the ROHD source-trace file or folder. ROHD is the Dart hardware description library."
+  },
+  "settingsRohdSidecarDescription": "ROHD が出力した .flc.json ファイル、またはそれを含むフォルダーです。信号を作成した Dart の行を見つけるために使います。空の場合は、開いている波形ファイルと同じ名前のファイル、次にその場所のすべての .flc.json を探します。",
+  "@settingsRohdSidecarDescription": {
+    "description": "Help text under the ROHD source-trace field: what the file is for, and where WaveCrux looks when the field is empty."
+  },
+  "settingsRohdSidecarHint": "build/Top.flc.json",
+  "@settingsRohdSidecarHint": {
+    "description": "Placeholder hint shown in the ROHD source-trace field."
+  },
   "crossProbeMenuItem": "クロスプローブパネルを表示",
   "@crossProbeMenuItem": {
     "description": "Command palette / menu entry that opens the cross-probe panel"

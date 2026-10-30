@@ -37,12 +37,16 @@ class SettingsEditorsSection extends ConsumerStatefulWidget {
 class _SettingsEditorsSectionState
     extends ConsumerState<SettingsEditorsSection> {
   late final TextEditingController _editorController;
+  late final TextEditingController _rohdController;
 
   @override
   void initState() {
     super.initState();
     _editorController = TextEditingController(
       text: widget.settings.cxpEditorCommand,
+    );
+    _rohdController = TextEditingController(
+      text: widget.settings.rohdSidecarPath,
     );
   }
 
@@ -59,11 +63,16 @@ class _SettingsEditorsSectionState
             widget.settings.cxpEditorCommand) {
       _editorController.text = widget.settings.cxpEditorCommand;
     }
+    if (_rohdController.text != widget.settings.rohdSidecarPath &&
+        oldWidget.settings.rohdSidecarPath != widget.settings.rohdSidecarPath) {
+      _rohdController.text = widget.settings.rohdSidecarPath;
+    }
   }
 
   @override
   void dispose() {
     _editorController.dispose();
+    _rohdController.dispose();
     super.dispose();
   }
 
@@ -102,6 +111,37 @@ class _SettingsEditorsSectionState
                 ),
                 onSubmitted: (value) {
                   unawaited(settingsNotifier.setCxpEditorCommand(value));
+                },
+              ),
+            ],
+          ),
+        ),
+        // The ROHD source-trace file or folder: what Go to Dart Source reads.
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.settingsRohdSidecarLabel,
+                style: theme.textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                l10n.settingsRohdSidecarDescription,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _rohdController,
+                decoration: InputDecoration(
+                  isDense: true,
+                  hintText: l10n.settingsRohdSidecarHint,
+                ),
+                onSubmitted: (value) {
+                  unawaited(settingsNotifier.setRohdSidecarPath(value));
                 },
               ),
             ],

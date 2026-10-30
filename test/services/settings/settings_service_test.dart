@@ -66,6 +66,14 @@ void main() {
       expect(loaded.canvasLegibilityBoost, isTrue);
     });
 
+    test('round-trip: rohdSidecarPath survives, and defaults empty', () async {
+      expect((await service.load()).rohdSidecarPath, isEmpty);
+      await service.save(
+        const AppSettings().copyWith(rohdSidecarPath: 'build/Top.flc.json'),
+      );
+      expect((await service.load()).rohdSidecarPath, 'build/Top.flc.json');
+    });
+
     test('canvasLegibilityBoost defaults to false', () async {
       final loaded = await service.load();
       expect(loaded.canvasLegibilityBoost, isFalse);

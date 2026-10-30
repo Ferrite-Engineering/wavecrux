@@ -354,3 +354,10 @@ dart run tool/generate_board_demo_fixtures.dart
 ```
 
 For every board (`basys3`, `nexys_a7`, `de10_lite`, `arty_a7`) this writes two VCDs — `<board>_demo_per_bit.vcd` and `<board>_demo_vector.vcd` — into both `test/fixtures/stage/boards/<board>/` and `verification/fixtures/stage/boards/<board>/` (the script mirrors them automatically; no separate copy step). The per-bit file names every LED / switch / numeric button as an individual 1-bit signal (`led0`, `sw0`, `btn0`, …) so auto-bind resolves them through the exact / per-bit tier; the vector file collapses each family into a single packed bus (`leds`, `sws`, `btn`, `key`) so auto-bind resolves them through the vector-fan-out tier. Both files are driven by the same exciting self-test — a six-pattern LED light show (cylon / VU bar / theater chase / switch-register mirror / expand-from-centre / sparkle), a coherent decoded seven-segment readout (Basys 3: free-running hex counter; Nexys A7: live accelerometer X/Y; DE10-Lite: 3-axis accelerometer X/Y/Z) with every digit exercised across its full 0–F range, evolving slide switches, and staggered button presses — so binding either one animates the board identically. Seven-segment fields are coherent decoded values sliced into per-digit nibbles (see `_SegField` in the generator), not a per-digit cascade. The integration test `test/fixtures/stage/boards/board_demo_fixtures_test.dart` parses every fixture and asserts the expected auto-bind tier for each board.
+
+## ROHD source-trace fixtures
+
+`verification/fixtures/rohd/` holds a ROHD-written VCD and its source-trace file,
+generated from pinned ROHD commits by `rohd/generator/generate.sh`; see its
+`README.md` for the provenance and the command. They back "Go to Dart Source" on
+a signal (guide section 22.35).

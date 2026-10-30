@@ -52,6 +52,7 @@ class WaveCruxSettingsCodec implements crux.SettingsCodec<AppSettings> {
   static const _kRemoteControlEnabled = 'settings.remoteControlEnabled';
   static const _kRemoteControlPort = 'settings.remoteControlPort';
   static const _kCxpEditorCommand = 'settings.cxpEditorCommand';
+  static const _kRohdSidecarPath = 'settings.rohdSidecarPath';
   static const _kSuppressLegacyFormatBanner =
       'settings.suppressLegacyFormatBanner';
   static const _kAlwaysKeepSessionAnnotations =
@@ -94,6 +95,7 @@ class WaveCruxSettingsCodec implements crux.SettingsCodec<AppSettings> {
         65535,
       ),
       cxpEditorCommand: prefs.getString(_kCxpEditorCommand) ?? '',
+      rohdSidecarPath: prefs.getString(_kRohdSidecarPath) ?? '',
       suppressLegacyFormatBanner:
           prefs.getBool(_kSuppressLegacyFormatBanner) ?? false,
       alwaysKeepSessionAnnotations:
@@ -130,6 +132,7 @@ class WaveCruxSettingsCodec implements crux.SettingsCodec<AppSettings> {
       prefs.setBool(_kRemoteControlEnabled, settings.remoteControlEnabled),
       prefs.setInt(_kRemoteControlPort, settings.remoteControlPort),
       prefs.setString(_kCxpEditorCommand, settings.cxpEditorCommand),
+      prefs.setString(_kRohdSidecarPath, settings.rohdSidecarPath),
       prefs.setBool(
         _kSuppressLegacyFormatBanner,
         settings.suppressLegacyFormatBanner,

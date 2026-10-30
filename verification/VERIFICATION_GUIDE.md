@@ -10532,6 +10532,36 @@ partition `alu.z`). The committed copies of every corpus trace are under
 
 ---
 
+## 22.35 Go to Dart source on ROHD waveforms (Open Core, ROHD 0.7 or later, source tracing)
+
+**What it does.** For a waveform written by ROHD's WaveDumper, with ROHD's
+source-trace file (`<Top>.flc.json`, version 6) beside it or named in Settings >
+Editors, the signal tree's context menu gains **Go to Dart Source**. It joins the
+waveform's scope path and signal name to the trace file's instance paths and
+traced names, and opens the editor on the Dart line that created the signal.
+Open core, no tier gate. The fixtures are real ROHD output from a pinned commit
+(`fixtures/rohd/README.md`).
+
+**Setup.** Copy `fixtures/rohd/top.vcd` and `Top.flc.json` into a folder, with the
+design file from `fixtures/rohd/generator/design.dart.txt` as `lib/design.dart`
+and a `pubspec.yaml` above it. Set Settings > Editors > Editor Command (for
+example `code -g`).
+
+| Check | Coverage | Where |
+|---|---|---|
+| Of the fixture's 32 signals, 31 resolve; the whole-struct aggregate does not | `[Coverage: UNIT]` | `test/services/rohd/rohd_wave_map_test.dart` |
+| The keyword-renamed instance (`reg` in the trace file, `reg_` in the waveform) and struct fields (`~data`) resolve | `[Coverage: UNIT]` | same file |
+| Two bus slices tracing to different Dart lines return the first and report the count; the same line is not ambiguous | `[Coverage: UNIT]` | same file |
+| The trace file is found beside the waveform by name, then any `.flc.json`, or from the setting (file or folder); the one describing the open design wins | `[Coverage: UNIT]` | `test/services/rohd/rohd_sidecar_locator_test.dart` |
+| Dart paths are normalized (`.dart_tool/..` removed) and resolved to the package on this machine | `[Coverage: UNIT]` | same file |
+| An unknown version, a truncated file and a missing file offer nothing, log once, and never throw | `[Coverage: UNIT]` | `rohd_sidecar_locator_test.dart`, `rohd_sidecar_test.dart` |
+| The menu item appears only for a resolved signal; choosing it runs the editor command at `file:line:column`; no editor and a failing editor are said | `[Coverage: UNIT]` | `test/features/signal_tree/widgets/variable_tree_leaf_rohd_test.dart`, `test/features/signal_tree/utils/go_to_dart_source_test.dart` |
+| The setting persists | `[Coverage: UNIT]` | `test/services/settings/settings_service_test.dart` |
+| All four locales render the menu | `[Coverage: UNIT]` | `variable_tree_leaf_rohd_test.dart` |
+| The editor opens on the right line with a real editor | `[Coverage: MANUAL]` | Right-click `gated` under `top`, choose Go to Dart Source; the cursor lands on the `Logic(name: 'gated'...)` line |
+
+---
+
 ## 23. Sign-off checklist
 
 Use this as the gate before any release ships. Tick each box; record the build/version, the platform tested, and the date.

@@ -41,6 +41,15 @@ void main() {
       expect(off.copyWith(autoCheckForUpdates: true), base);
     });
 
+    test('rohdSidecarPath defaults empty, copyWith and equality', () {
+      const base = AppSettings();
+      expect(base.rohdSidecarPath, isEmpty);
+      final changed = base.copyWith(rohdSidecarPath: 'trace');
+      expect(changed.rohdSidecarPath, 'trace');
+      expect(changed, isNot(base));
+      expect(changed.copyWith(rohdSidecarPath: ''), base);
+    });
+
     test('canvasLegibilityBoost defaults off, copyWith and equality', () {
       const base = AppSettings();
       expect(base.canvasLegibilityBoost, isFalse);

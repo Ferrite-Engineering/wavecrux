@@ -3229,6 +3229,53 @@
   "@settingsEditorCommandHint": {
     "description": "Placeholder hint shown in the editor command text field"
   },
+  "signalTreeGoToDartSource": "Go to Dart Source (ROHD 0.7 or later)",
+  "@signalTreeGoToDartSource": {
+    "description": "Context-menu item on a signal that opens the Dart source line that created it, for waveforms written by ROHD (the Dart hardware description library) with source tracing on."
+  },
+  "signalTreeGoToDartNoEditor": "Set an editor command in Settings > Editors to open the Dart source.",
+  "@signalTreeGoToDartNoEditor": {
+    "description": "Message when Go to Dart source is chosen but no editor command is set in Settings > Editors."
+  },
+  "signalTreeGoToDartFailed": "Could not open the Dart source: {reason}",
+  "@signalTreeGoToDartFailed": {
+    "description": "Message when Go to Dart source could not start the editor. {reason} is the failure reason the editor launcher gave.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "signalTreeGoToDartOpened": "Opened {location} in the editor",
+  "@signalTreeGoToDartOpened": {
+    "description": "Screen-reader announcement after Go to Dart source opened the editor. {location} is the file name and line, for example design.dart:25.",
+    "placeholders": {
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "signalTreeGoToDartAmbiguous": "This signal's name matched {count} Dart lines in the source-trace file. Opened the first.",
+  "@signalTreeGoToDartAmbiguous": {
+    "description": "Message after Go to Dart source when the signal's name matched more than one Dart line in the source-trace file (two bus slices of one signal) and the first was opened. {count} is how many lines matched.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsRohdSidecarLabel": "ROHD source-trace file (ROHD 0.7 or later)",
+  "@settingsRohdSidecarLabel": {
+    "description": "Label of the Settings > Editors field for the ROHD source-trace file or folder. ROHD is the Dart hardware description library."
+  },
+  "settingsRohdSidecarDescription": "A .flc.json file written by ROHD, or a folder holding some. It lets Go to Dart Source find the Dart line that created a signal. Empty looks beside the open waveform for a file of the same name, then any .flc.json there.",
+  "@settingsRohdSidecarDescription": {
+    "description": "Help text under the ROHD source-trace field: what the file is for, and where WaveCrux looks when the field is empty."
+  },
+  "settingsRohdSidecarHint": "build/Top.flc.json",
+  "@settingsRohdSidecarHint": {
+    "description": "Placeholder hint shown in the ROHD source-trace field."
+  },
   "crossProbeMenuItem": "Show Cross-Probe Panel",
   "@crossProbeMenuItem": {
     "description": "Command palette / menu entry that opens the cross-probe panel"

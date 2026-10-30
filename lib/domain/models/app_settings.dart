@@ -38,6 +38,7 @@ class AppSettings {
     this.remoteControlEnabled = false,
     this.remoteControlPort = 54321,
     this.cxpEditorCommand = '',
+    this.rohdSidecarPath = '',
     this.suppressLegacyFormatBanner = false,
     this.alwaysKeepSessionAnnotations = false,
     this.wheelNavigatesTime = false,
@@ -89,6 +90,11 @@ class AppSettings {
   /// Empty disables the open-source path; the handler replies with
   /// `honored: false`.
   final String cxpEditorCommand;
+
+  /// Where the ROHD source-trace sidecar (`*.flc.json`) is, for the Go to Dart
+  /// source action on a signal: a file, or a folder holding some. Empty means
+  /// look beside the open waveform. See `loadRohdWaveMap`.
+  final String rohdSidecarPath;
 
   /// When `true`, the "Opened from legacy LXT/LXT2 format" banner that
   /// appears above the waveform area on the first open of a converted file
@@ -243,6 +249,7 @@ class AppSettings {
     bool? remoteControlEnabled,
     int? remoteControlPort,
     String? cxpEditorCommand,
+    String? rohdSidecarPath,
     bool? suppressLegacyFormatBanner,
     bool? alwaysKeepSessionAnnotations,
     bool? wheelNavigatesTime,
@@ -282,6 +289,7 @@ class AppSettings {
       remoteControlEnabled: remoteControlEnabled ?? this.remoteControlEnabled,
       remoteControlPort: remoteControlPort ?? this.remoteControlPort,
       cxpEditorCommand: cxpEditorCommand ?? this.cxpEditorCommand,
+      rohdSidecarPath: rohdSidecarPath ?? this.rohdSidecarPath,
       suppressLegacyFormatBanner:
           suppressLegacyFormatBanner ?? this.suppressLegacyFormatBanner,
       alwaysKeepSessionAnnotations:
@@ -313,6 +321,7 @@ class AppSettings {
     if (other.remoteControlEnabled != remoteControlEnabled) return false;
     if (other.remoteControlPort != remoteControlPort) return false;
     if (other.cxpEditorCommand != cxpEditorCommand) return false;
+    if (other.rohdSidecarPath != rohdSidecarPath) return false;
     if (other.alwaysKeepSessionAnnotations != alwaysKeepSessionAnnotations) {
       return false;
     }
@@ -352,6 +361,7 @@ class AppSettings {
     remoteControlEnabled,
     remoteControlPort,
     cxpEditorCommand,
+    rohdSidecarPath,
     suppressLegacyFormatBanner,
     alwaysKeepSessionAnnotations,
     wheelNavigatesTime,
@@ -391,6 +401,7 @@ class AppSettings {
       'remoteControlEnabled: $remoteControlEnabled, '
       'remoteControlPort: $remoteControlPort, '
       'cxpEditorCommand: $cxpEditorCommand, '
+      'rohdSidecarPath: $rohdSidecarPath, '
       'suppressLegacyFormatBanner: $suppressLegacyFormatBanner, '
       'alwaysKeepSessionAnnotations: $alwaysKeepSessionAnnotations, '
       'wheelNavigatesTime: $wheelNavigatesTime, '

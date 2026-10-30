@@ -1,0 +1,301 @@
+{
+  "version": 6,
+  "files": [
+    ".dart_tool/../lib/design.dart"
+  ],
+  "modules": {
+    "Top": {
+      "implementationName": "Top",
+      "outputFiles": {
+        "sv": [
+          "/work/rohd_fixture/./Top.sv"
+        ]
+      },
+      "sourceOccurrences": [
+        {
+          "path": "top",
+          "definitionName": "Top",
+          "constructionTrace": [
+            "0:43:40"
+          ]
+        }
+      ],
+      "tree": [
+        [
+          "0:44:11",
+          "clk@35:13"
+        ],
+        [
+          "0:47:21",
+          "pkt@36:19"
+        ],
+        [
+          "0:48:9",
+          "k@37:19"
+        ],
+        [
+          "0:49:17",
+          "out@sv:50:34;sv:38:20"
+        ],
+        [
+          "0:59:19",
+          "gated@sv:51:1;sv:54:7;sv:43:13"
+        ],
+        [
+          "0:55:19",
+          "valid_bit@sv:48:8;sv:47:7"
+        ],
+        [
+          "0:51:19",
+          [
+            "0:9:9",
+            "inner_pkt_valid@sv:63:8;sv:45:7~valid"
+          ],
+          [
+            "0:8:9",
+            "inner_pkt_data@sv:62:8;sv:44:13~data"
+          ]
+        ],
+        [
+          "0:53:18",
+          "data_slice@sv:49:8;sv:42:13"
+        ],
+        [
+          "0:58:19",
+          [
+            "0:24:15",
+            "sum@sv:61:40;sv:46:13"
+          ],
+          [
+            "0:21:29",
+            "*adder@61:8"
+          ]
+        ],
+        [
+          "0:60:5",
+          "1'h1~const_1",
+          "8'h0~const_0",
+          "*combinational@51:5"
+        ],
+        [
+          "0:63:17",
+          [
+            "0:33:29",
+            "*reg_@50:6"
+          ]
+        ],
+        [
+          "0:52:11",
+          "*bussubset@62:39",
+          "*bussubset_0@63:38"
+        ]
+      ]
+    },
+    "Reg": {
+      "implementationName": "Reg",
+      "outputFiles": {
+        "sv": [
+          "/work/rohd_fixture/./Top.sv"
+        ]
+      },
+      "sourceOccurrences": [
+        {
+          "path": "top.reg",
+          "definitionName": "Reg",
+          "constructionTrace": [
+            "0:33:29",
+            "0:63:17"
+          ]
+        }
+      ],
+      "tree": [
+        [
+          "0:63:17",
+          [
+            "0:34:11",
+            "clk@23:13"
+          ],
+          [
+            "0:35:9",
+            "d@24:19"
+          ],
+          [
+            "0:36:15",
+            "q@sv:29:1;sv:29:26;sv:25:20"
+          ],
+          [
+            "0:37:10",
+            "*flipflop@29:38"
+          ]
+        ]
+      ]
+    },
+    "_ScalarFlipFlop_Logic_": {
+      "sourceOccurrences": [
+        {
+          "path": "top.reg.flipflop",
+          "definitionName": "_ScalarFlipFlop_Logic_",
+          "constructionTrace": [
+            "0:37:10",
+            "0:63:17"
+          ]
+        }
+      ],
+      "tree": [
+        [
+          "0:63:17",
+          [
+            "0:37:10",
+            "_clk",
+            "_d",
+            "_q",
+            "*sequential"
+          ]
+        ]
+      ]
+    },
+    "Sequential": {
+      "sourceOccurrences": [
+        {
+          "path": "top.reg.flipflop.sequential",
+          "definitionName": "Sequential",
+          "constructionTrace": [
+            "0:37:10",
+            "0:63:17"
+          ]
+        }
+      ],
+      "tree": [
+        [
+          "0:63:17",
+          [
+            "0:37:10",
+            "_in0__d",
+            "_trigger0__clk",
+            "_out1__q"
+          ]
+        ]
+      ]
+    },
+    "Combinational": {
+      "sourceOccurrences": [
+        {
+          "path": "top.combinational",
+          "definitionName": "Combinational",
+          "constructionTrace": [
+            "0:60:5"
+          ]
+        }
+      ],
+      "tree": [
+        [
+          "0:60:5",
+          "_in0_valid_bit",
+          "_in1_sum",
+          "_in2_const_1",
+          "_in3_const_0",
+          "_out4_gated"
+        ]
+      ]
+    },
+    "Adder": {
+      "implementationName": "Adder",
+      "outputFiles": {
+        "sv": [
+          "/work/rohd_fixture/./Top.sv"
+        ]
+      },
+      "sourceOccurrences": [
+        {
+          "path": "top.adder",
+          "definitionName": "Adder",
+          "constructionTrace": [
+            "0:21:29",
+            "0:58:19"
+          ]
+        }
+      ],
+      "tree": [
+        [
+          "0:58:19",
+          [
+            "0:22:9",
+            "a@8:19"
+          ],
+          [
+            "0:23:9",
+            "b@9:19"
+          ],
+          [
+            "0:24:15",
+            "sum@sv:16:8;sv:10:20"
+          ],
+          [
+            "0:25:21",
+            "partial@sv:17:1;sv:15:13"
+          ],
+          [
+            "0:26:18",
+            "_a_add_b_carry@sv:17:1;sv:14:7",
+            "*add@17:1"
+          ]
+        ]
+      ]
+    },
+    "Add": {
+      "sourceOccurrences": [
+        {
+          "path": "top.adder.add",
+          "definitionName": "Add",
+          "constructionTrace": [
+            "0:26:18",
+            "0:58:19"
+          ]
+        }
+      ],
+      "tree": [
+        [
+          "0:58:19",
+          [
+            "0:26:18",
+            "_in0_a",
+            "_in1_b",
+            "_a_add_b",
+            "_a_add_b_carry"
+          ]
+        ]
+      ]
+    },
+    "BusSubset": {
+      "sourceOccurrences": [
+        {
+          "path": "top.bussubset",
+          "definitionName": "BusSubset",
+          "constructionTrace": [
+            "0:52:11"
+          ]
+        },
+        {
+          "path": "top.bussubset",
+          "definitionName": "BusSubset",
+          "constructionTrace": [
+            "0:52:11"
+          ]
+        }
+      ],
+      "tree": [
+        [
+          "0:52:11",
+          "_original_pkt",
+          "_subset_7_0_pkt"
+        ],
+        [
+          "0:52:11",
+          "_original_pkt",
+          "_subset_8_8_pkt"
+        ]
+      ]
+    }
+  },
+  "packageRoot": "/work/rohd_fixture"
+}

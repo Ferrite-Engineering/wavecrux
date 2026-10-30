@@ -3,21 +3,28 @@
 
 import 'dart:async';
 
-import 'package:crux_ide_layout/crux_ide_layout.dart' show announceCrux;
+import 'package:crux_ide_layout/crux_ide_layout.dart'
+    show announceCrux, showCruxErrorSnack, showCruxInfoSnack;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/domain/enums/var_type.dart';
+import 'package:wavecrux/domain/models/rohd_dart_source.dart';
 import 'package:wavecrux/domain/models/scope.dart';
 import 'package:wavecrux/domain/models/variable.dart';
 import 'package:wavecrux/features/decoders/widgets/decoder_picker_dialog.dart';
+import 'package:wavecrux/features/settings/providers/settings_providers.dart'
+    show appSettingsProvider;
 import 'package:wavecrux/features/signal_tree/providers/parameter_value_provider.dart';
+import 'package:wavecrux/features/signal_tree/providers/rohd_wave_map_provider.dart';
 import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.dart';
+import 'package:wavecrux/features/signal_tree/utils/go_to_dart_source.dart';
 import 'package:wavecrux/features/signal_tree/utils/signal_tree_rows.dart';
 import 'package:wavecrux/features/signal_tree/utils/variable_tree_order.dart';
 import 'package:wavecrux/features/signal_tree/widgets/signal_tree_menu_anchor.dart';
 import 'package:wavecrux/features/viewer/providers/switching_activity_provider.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
+import 'package:wavecrux/services/remote/cxp/cxp_inbound_handlers.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
 import 'package:wavecrux/shared/widgets/platform_context_menu.dart';
 import 'package:wavecrux/shared/widgets/signal_drag_chip.dart';
@@ -280,6 +287,12 @@ class VariableTreeLeaf extends ConsumerWidget {
               .value
         : null;
 
+    // The Dart line this signal came from, when the waveform was written by
+    // ROHD with source tracing and a source-trace file is at hand. Resolved
+    // before the menu opens so the item is there or not; never throws.
+    final dartSource = await _dartSource(ref);
+    if (!context.mounted) return;
+
     final result = await showMenu<String>(
       context: context,
       position: position,
@@ -314,6 +327,11 @@ class VariableTreeLeaf extends ConsumerWidget {
           ),
         ],
         PopupMenuItem(value: 'copy', child: Text(l10n.signalTreeCopyPath)),
+        if (dartSource != null)
+          PopupMenuItem(
+            value: 'goToDart',
+            child: Text(l10n.signalTreeGoToDartSource),
+          ),
       ],
     );
     if (result == null || !context.mounted) return;
@@ -325,8 +343,63 @@ class VariableTreeLeaf extends ConsumerWidget {
         _addSelectedToViewer(context, ref, selection);
       case 'applyDecoder':
         _applyDecoderToSelection(context, ref, selection);
+      case 'goToDart':
+        if (dartSource != null) await _goToDart(context, ref, dartSource);
       case 'copy':
         await Clipboard.setData(ClipboardData(text: variable.fullPath));
+    }
+  }
+
+  /// The Dart source of this signal, or `null`: no waveform, no source-trace
+  /// file, or a signal the trace does not name.
+  Future<RohdDartSource?> _dartSource(WidgetRef ref) async {
+    try {
+      final map = await ref.read(rohdWaveMapProvider.future);
+      return map?.resolve(variable.scopePath, variable.name);
+    } on Object {
+      return null;
+    }
+  }
+
+  Future<void> _goToDart(
+    BuildContext context,
+    WidgetRef ref,
+    RohdDartSource source,
+  ) async {
+    // Settings load once at start-up; waiting on the future makes this right
+    // even for a click that races it.
+    final runner = ref.read(cxpEditorCommandRunnerProvider);
+    final settings = await ref.read(appSettingsProvider.future);
+    final result = await goToDartSource(
+      source,
+      editorCommand: settings.cxpEditorCommand,
+      runner: runner,
+    );
+    if (!context.mounted) return;
+    final l10n = L10N.of(context);
+    switch (result.outcome) {
+      case GoToDartOutcome.noEditor:
+        showCruxErrorSnack(context, l10n.signalTreeGoToDartNoEditor);
+      case GoToDartOutcome.failed:
+        showCruxErrorSnack(
+          context,
+          l10n.signalTreeGoToDartFailed(result.reason ?? ''),
+        );
+      case GoToDartOutcome.opened:
+        final primary = source.primary;
+        final name = primary.file.split(RegExp(r'[\\/]')).last;
+        announceCrux(
+          context,
+          source.ambiguous
+              ? l10n.signalTreeGoToDartAmbiguous(source.candidates)
+              : l10n.signalTreeGoToDartOpened('$name:${primary.line}'),
+        );
+        if (source.ambiguous) {
+          showCruxInfoSnack(
+            context,
+            l10n.signalTreeGoToDartAmbiguous(source.candidates),
+          );
+        }
     }
   }
 

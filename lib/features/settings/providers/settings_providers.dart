@@ -87,6 +87,11 @@ class AppSettingsNotifier extends _$AppSettingsNotifier {
   Future<void> setCxpEditorCommand(String command) =>
       _update((s) => s.copyWith(cxpEditorCommand: command));
 
+  /// Sets where the ROHD source-trace sidecar is (a `.flc.json` file or a
+  /// folder holding some). The empty string looks beside the waveform.
+  Future<void> setRohdSidecarPath(String path) =>
+      _update((s) => s.copyWith(rohdSidecarPath: path.trim()));
+
   Future<void> setDiagnosticsEnabled({required bool enabled}) =>
       _update((s) => s.copyWith(diagnosticsEnabled: enabled));
 

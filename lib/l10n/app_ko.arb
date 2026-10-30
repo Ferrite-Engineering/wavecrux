@@ -3093,6 +3093,53 @@
   "@settingsEditorCommandHint": {
     "description": "Placeholder hint shown in the editor command text field"
   },
+  "signalTreeGoToDartSource": "Dart 소스로 이동 (ROHD 0.7 이상)",
+  "@signalTreeGoToDartSource": {
+    "description": "Context-menu item on a signal that opens the Dart source line that created it, for waveforms written by ROHD (the Dart hardware description library) with source tracing on."
+  },
+  "signalTreeGoToDartNoEditor": "Dart 소스를 열려면 설정 > 에디터에서 에디터 명령을 지정하세요.",
+  "@signalTreeGoToDartNoEditor": {
+    "description": "Message when Go to Dart source is chosen but no editor command is set in Settings > Editors."
+  },
+  "signalTreeGoToDartFailed": "Dart 소스를 열 수 없습니다: {reason}",
+  "@signalTreeGoToDartFailed": {
+    "description": "Message when Go to Dart source could not start the editor. {reason} is the failure reason the editor launcher gave.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "signalTreeGoToDartOpened": "에디터에서 {location}을(를) 열었습니다",
+  "@signalTreeGoToDartOpened": {
+    "description": "Screen-reader announcement after Go to Dart source opened the editor. {location} is the file name and line, for example design.dart:25.",
+    "placeholders": {
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "signalTreeGoToDartAmbiguous": "이 신호 이름이 소스 추적 파일의 Dart 줄 {count}곳과 일치했습니다. 첫 번째를 열었습니다.",
+  "@signalTreeGoToDartAmbiguous": {
+    "description": "Message after Go to Dart source when the signal's name matched more than one Dart line in the source-trace file (two bus slices of one signal) and the first was opened. {count} is how many lines matched.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsRohdSidecarLabel": "ROHD 소스 추적 파일 (ROHD 0.7 이상)",
+  "@settingsRohdSidecarLabel": {
+    "description": "Label of the Settings > Editors field for the ROHD source-trace file or folder. ROHD is the Dart hardware description library."
+  },
+  "settingsRohdSidecarDescription": "ROHD가 작성한 .flc.json 파일 또는 그 파일이 들어 있는 폴더입니다. 신호를 만든 Dart 줄을 찾는 데 사용됩니다. 비워 두면 열려 있는 파형 파일과 같은 이름의 파일을 찾고, 그다음 같은 위치의 모든 .flc.json을 찾습니다.",
+  "@settingsRohdSidecarDescription": {
+    "description": "Help text under the ROHD source-trace field: what the file is for, and where WaveCrux looks when the field is empty."
+  },
+  "settingsRohdSidecarHint": "build/Top.flc.json",
+  "@settingsRohdSidecarHint": {
+    "description": "Placeholder hint shown in the ROHD source-trace field."
+  },
   "crossProbeMenuItem": "교차 프로브 패널 표시",
   "@crossProbeMenuItem": {
     "description": "Command palette / menu entry that opens the cross-probe panel"
