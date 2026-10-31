@@ -205,9 +205,13 @@ class _Tappable extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
+    // The tap is declared here because excludeSemantics drops the InkWell's
+    // own: without it a screen reader's activation would reach whatever
+    // tap the surrounding row offers instead of the upgrade dialog.
     return Semantics(
       button: true,
       label: message,
+      onTap: onTap,
       excludeSemantics: true,
       child: Tooltip(
         message: message,
