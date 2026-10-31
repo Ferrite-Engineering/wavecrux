@@ -10,6 +10,8 @@ import 'package:crux_eula/crux_eula.dart';
 import 'package:crux_file_dialogs/crux_file_dialogs.dart';
 import 'package:crux_ide_layout/crux_ide_layout.dart' show CruxToasts;
 import 'package:crux_issue_reporter/crux_issue_reporter.dart';
+import 'package:crux_keybindings/crux_keybindings.dart'
+    show installLinuxKeyEventRepair;
 import 'package:crux_license/crux_license.dart';
 import 'package:crux_linux_integration/crux_linux_integration.dart';
 import 'package:crux_policy/crux_policy.dart'
@@ -314,6 +316,9 @@ Future<bool> bootstrap({
 
   // Required before any platform-channel calls or await in main.
   WidgetsFlutterBinding.ensureInitialized();
+  // Over X forwarding from XQuartz the engine reads Backspace, Escape, Return
+  // and Tab as printable keys; this turns them back into the control keys.
+  installLinuxKeyEventRepair();
   // file_picker's Linux dialogs need a desktop session's DBus portal, which a
   // remotely displayed host often lacks; the runner draws them with GTK.
   useGtkFileDialogsOnLinux();
