@@ -40,13 +40,16 @@ Future<RohdWaveMap?> loadRohdWaveMap({
   final seen = <String>{};
   RohdWaveMap? first;
   for (final path in candidates) {
+    // A candidate that does not exist is skipped before it is marked as seen:
+    // on a case-sensitive filesystem `top.flc.json` can be missing while
+    // `Top.flc.json` is there, and marking the missing one would hide it.
+    final file = File(path);
+    if (!file.existsSync()) continue;
     // Case-folded: `top.flc.json` and `Top.flc.json` are one file on macOS and
     // Windows, and must not be read, or warned about, twice.
     if (!seen.add(p.normalize(path).toLowerCase())) continue;
     final RohdSidecar? sidecar;
     try {
-      final file = File(path);
-      if (!file.existsSync()) continue;
       final result = parseRohdSidecar(await file.readAsString());
       sidecar = result.sidecar;
       if (sidecar == null) {
