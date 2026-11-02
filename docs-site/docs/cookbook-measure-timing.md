@@ -1,6 +1,6 @@
 # Measure clock & timing
 
-A clock period, a pulse width, the latency between a request and its acknowledge — these are the measurements you take constantly, and WaveCrux reads them straight off the trace with two cursors. This recipe covers all three, plus how to land on exact edges so the numbers are right.
+A clock period, a pulse width, the latency between a request and its acknowledge: these are the measurements you take constantly, and WaveCrux reads them straight off the trace with two cursors. This recipe covers all three, plus how to land on exact edges so the numbers are right.
 
 Goal
 :   Read a clock period and frequency, a pulse width, and the delay between two events directly off the waveform.
@@ -16,7 +16,7 @@ You will use
 
 ## Before you start { #before }
 
-Bring the signal you want to measure onto the canvas. The two-cursor delta works on any pair of points in time, so the same steps measure a clock period, a pulse, or the gap between edges on two different signals. The key habit is to snap the cursors to real edges rather than eyeballing the click — the next two steps cover that.
+Bring the signal you want to measure onto the canvas. The two-cursor delta works on any pair of points in time, so the same steps measure a clock period, a pulse, or the gap between edges on two different signals. The key habit is to snap the cursors to real edges rather than eyeballing the click: the next two steps cover that.
 
 ## Steps { #steps }
 
@@ -26,11 +26,11 @@ Bring the signal you want to measure onto the canvas. The two-cursor delta works
 
 2. **Snap it exactly onto the edge.**
 
-    Select the signal and step with ++e++ (next transition) and ++q++ (previous). These move the primary cursor to the precise time of the signal's change — no modifier key — so your measurement starts on a real edge instead of an approximate one.
+    Select the signal and step with ++e++ (next transition) and ++q++ (previous). These move the primary cursor to the precise time of the signal's change, no modifier key, so your measurement starts on a real edge instead of an approximate one.
 
 3. **Drop the secondary cursor on the second edge.**
 
-    ++shift++ + click or right-click to place the secondary cursor on the next rising edge of the clock (for a period) or wherever the interval ends — on touch, long-press and choose **Place Secondary Cursor Here**. With both cursors down, the status bar shows the **Δ** between them and a derived frequency (`f:`) — the clock period and its frequency in one glance, no arithmetic.
+    ++shift++ + click or right-click to place the secondary cursor on the next rising edge of the clock (for a period) or wherever the interval ends, on touch, long-press and choose **Place Secondary Cursor Here**. With both cursors down, the status bar shows the **Δ** between them and a derived frequency (`f:`): the clock period and its frequency in one glance, no arithmetic.
 
 4. **Measure a pulse width.**
 
@@ -38,7 +38,7 @@ Bring the signal you want to measure onto the canvas. The two-cursor delta works
 
 5. **Measure cross-signal latency.**
 
-    Put the primary cursor on the edge of a `req` and the secondary on the responding edge of `ack` — the Δ is the request-to-acknowledge latency. Because the two cursors are independent of which signal is selected, they measure across any pair of signals.
+    Put the primary cursor on the edge of a `req` and the secondary on the responding edge of `ack`: the Δ is the request-to-acknowledge latency. Because the two cursors are independent of which signal is selected, they measure across any pair of signals.
 
 6. **Keep reference points with markers.**
 
@@ -46,7 +46,7 @@ Bring the signal you want to measure onto the canvas. The two-cursor delta works
 
 !!! tip "Let the tool find the clock"
 
-    For a quick estimate without placing cursors at all, run [switching activity](analysis.md#switching-activity) (++cmd+shift+a++ / ++ctrl+shift+a++) over the signals on the canvas — it flags periodic 1-bit signals as clocks and reports an estimated frequency and duty cycle for each. When you zoom in to place cursors, ++cmd++ / ++ctrl++ + scroll wheel zooms around the mouse pointer, so hover over the edge you are measuring.
+    For a quick estimate without placing cursors at all, run [switching activity](analysis.md#switching-activity) (++cmd+shift+a++ / ++ctrl+shift+a++) over the signals on the canvas: it flags periodic 1-bit signals as clocks and reports an estimated frequency and duty cycle for each. When you zoom in to place cursors, ++cmd++ / ++ctrl++ + scroll wheel zooms around the mouse pointer, so hover over the edge you are measuring.
 
 ## Where to go next { #next }
 

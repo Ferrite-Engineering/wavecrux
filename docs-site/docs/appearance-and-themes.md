@@ -1,15 +1,15 @@
 # Appearance & themes
 
-WaveCrux ships a set of built-in color themes — light and dark — that recolor the whole app and the waveform canvas in one click. The active theme *is* the light/dark control: there is no separate light/dark/system switch. You can fine-tune individual colors, and you can author and share your own theme as a small JSON file.
+WaveCrux ships a set of built-in color themes, light and dark, that recolor the whole app and the waveform canvas in one click. The active theme *is* the light/dark control: there is no separate light/dark/system switch. You can fine-tune individual colors, and you can author and share your own theme as a small JSON file.
 
 ## Choosing a theme { #choosing }
 
-Open **Settings** (++cmd+comma++ / ++ctrl+comma++) and select the **Appearance** category. Above the theme controls sit **Language**, **Waveform Font Size** (8–24), and **Boost Legibility for XR / Large Displays**, which thickens traces and raises the minimum text size for XR glasses and far-away screens. The **Presets** section below shows a grid of theme cards; each card previews its color swatches. Tap a card to apply it — the canvas, panels, toolbar, and status bar all recolor immediately, and the choice persists across launches.
+Open **Settings** (++cmd+comma++ / ++ctrl+comma++) and select the **Appearance** category. Above the theme controls sit **Language**, **Waveform Font Size** (8–24), and **Boost Legibility for XR / Large Displays**, which thickens traces and raises the minimum text size for XR glasses and far-away screens. The **Presets** section below shows a grid of theme cards; each card previews its color swatches. Tap a card to apply it: the canvas, panels, toolbar, and status bar all recolor immediately, and the choice persists across launches.
 
 | Built-in preset | Brightness | Notes |
 |---|---|---|
 | Crux Dark | Dark | The default. The suite's engineering-tool look, tuned for long debugging sessions. |
-| Crux Light | Light | The light counterpart — good for bright rooms, projectors, and printed screenshots. |
+| Crux Light | Light | The light counterpart: good for bright rooms, projectors, and printed screenshots. |
 | Solarized Dark | Dark | The familiar Solarized palette applied to the app chrome. Cursors in Solarized yellow and orange, markers in Solarized blue. |
 | High Contrast Dark | Dark | Maximum contrast for accessibility and high-glare environments. Pure yellow and cyan cursors on a pure-black ruler. |
 | Oscilloscope | Dark | A phosphor-green-on-black look reminiscent of a bench oscilloscope. Both cursors are green: the primary is a solid line, the secondary a paler dashed one. |
@@ -19,27 +19,27 @@ Crux Dark and Crux Light share the suite's cursor colors: a yellow primary and l
 
 ## Light, dark, and the toggle { #light-dark }
 
-Brightness is a property of the theme. Picking a *light* preset switches the entire app to light; picking any *dark* preset switches it to dark. There is no separate light/dark/system selector — the preset you choose is the single brightness control.
+Brightness is a property of the theme. Picking a *light* preset switches the entire app to light; picking any *dark* preset switches it to dark. There is no separate light/dark/system selector: the preset you choose is the single brightness control.
 
 To flip quickly, press ++cmd+shift+k++ / ++ctrl+shift+k++ (also available as **View → Toggle Theme**). From any dark theme it switches to Crux Light, and from any light theme back to Crux Dark.
 
 !!! note
 
-    Earlier builds had a light/dark/system segmented control in Settings. It was removed: once the presets shipped, the preset already determined brightness, so the separate switch was redundant — and it no longer drove the app's colors. The preset picker and the ++cmd+shift+k++ toggle now move the same single lever.
+    Earlier builds had a light/dark/system segmented control in Settings. It was removed: once the presets shipped, the preset already determined brightness, so the separate switch was redundant, and it no longer drove the app's colors. The preset picker and the ++cmd+shift+k++ toggle now move the same single lever.
 
 ## Fine-tuning colors { #overrides }
 
 Below the presets, the **Color overrides** section lets you adjust individual colors on top of the active preset, grouped into **Canvas** and **Application chrome**. Tap a token's swatch to open a color picker (hex, RGB or HSV); your change repaints live and is saved with your settings. A per-token **Reset to default** drops the override and returns that color to the preset's value.
 
-Overrides belong to the preset you made them on: choosing a different preset — from the grid or with the theme toggle — starts that preset clean and discards the overrides.
+Overrides belong to the preset you made them on: choosing a different preset, from the grid or with the theme toggle, starts that preset clean and discards the overrides.
 
 ## Creating a custom theme { #custom }
 
-A complete theme is a small JSON file with the `.crux-theme.json` extension — a **theme pack**. Use the **Theme packs** section of Settings → Appearance to:
+A complete theme is a small JSON file with the `.crux-theme.json` extension: a **theme pack**. Use the **Theme packs** section of Settings → Appearance to:
 
-- **Import theme pack…** — pick a `.crux-theme.json` file. It is validated, copied into WaveCrux's themes folder, and appears under **Installed packs**.
+- **Import theme pack…**: pick a `.crux-theme.json` file. It is validated, copied into WaveCrux's themes folder, and appears under **Installed packs**.
 - **Activate** an installed pack so its colors take effect.
-- **Export current theme…** — save the active theme, including your color overrides, to a `.crux-theme.json` file. The fastest way to start a custom theme is to export a built-in preset and edit it.
+- **Export current theme…**: save the active theme, including your color overrides, to a `.crux-theme.json` file. The fastest way to start a custom theme is to export a built-in preset and edit it.
 - **Uninstall** a pack you no longer want.
 
 An activated pack stays active and is reapplied at the next launch, before the window appears. If it has been uninstalled since, WaveCrux opens on Crux Dark instead. Color changes you make while a pack is active last for the session only; to keep them, export the theme and import it as a pack.
@@ -50,7 +50,7 @@ An activated pack stays active and is reapplied at the next launch, before the w
 
 ## The .crux-theme.json schema { #json }
 
-A theme pack is a JSON object with a small fixed header and a nested `tokens` map. Colors are hex strings — `#RRGGBB` or `#RRGGBBAA` (the optional last byte is alpha).
+A theme pack is a JSON object with a small fixed header and a nested `tokens` map. Colors are hex strings: `#RRGGBB` or `#RRGGBBAA` (the optional last byte is alpha).
 
 ```json
 {
@@ -84,7 +84,7 @@ A theme pack is a JSON object with a small fixed header and a nested `tokens` ma
 
 `tokens` is grouped into two categories. Every token is optional: a canvas token you omit uses its light or dark default, and a chrome token you omit keeps the standard look of the app.
 
-**`canvas`** — everything drawn in the waveform area:
+**`canvas`**: everything drawn in the waveform area:
 
 | Token | Colors |
 |---|---|
@@ -94,7 +94,7 @@ A theme pack is a JSON object with a small fixed header and a nested `tokens` ma
 | `group.header` | Signal-group header background |
 | `signal.x.fill`, `signal.x.hatch` | Unknown (X) state fill and hatching |
 | `signal.z.line` | High-impedance (Z) line |
-| `cursor.primary`, `cursor.secondary` | The two cursors — their lines on the canvas and their triangles on the time ruler |
+| `cursor.primary`, `cursor.secondary` | The two cursors: their lines on the canvas and their triangles on the time ruler |
 | `cursor.delta` | Shaded band between the two cursors. Off (fully transparent) in every built-in theme |
 | `marker.line` | A line through the canvas at each named marker. Off (fully transparent) in every built-in theme |
 | `marker.flag`, `marker.flagText` | A named marker's triangle and letter on the time ruler |
@@ -107,7 +107,7 @@ A trace and a bus's value labels are drawn in the signal's own color, which you 
 
 `cursor.delta` and `marker.line` need a color with some opacity to show: use the 8-digit `#RRGGBBAA` form, for example `#FFEE5833` for a faint yellow band. The color picker's sliders keep a color's opacity, so start from the hex field.
 
-**`chrome`** — the application surfaces around the canvas:
+**`chrome`**: the application surfaces around the canvas:
 
 | Token | Colors |
 |---|---|
@@ -145,7 +145,7 @@ Crux Dark and Crux Light set no chrome tokens: every surface keeps the app's sta
 
 !!! tip
 
-    Themes are portable, plain-text files — commit them to your project repo or drop them in a team chat so everyone debugs against the same palette.
+    Themes are portable, plain-text files: commit them to your project repo or drop them in a team chat so everyone debugs against the same palette.
 
 !!! note "Next"
 

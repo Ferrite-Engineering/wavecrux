@@ -4,11 +4,11 @@ A WaveCrux Stage widget is a [Rive](https://rive.app) animation driven by your w
 
 !!! tip "Free & Open Core"
 
-    The Stage widget SDK is part of Open Core. Anyone can build, install, and run custom Rive widgets for free — no license key, no Pro tier, no account. The **Tachometer** reference widget ships in the open-core source (`assets/stage/widgets/rive/`, with its manifest and an editor-contract README), so you have a complete, working example to start from. (Only the *curated Pro widget pack* content is paid; the authoring capability is not.)
+    The Stage widget SDK is part of Open Core. Anyone can build, install, and run custom Rive widgets for free: no license key, no Pro tier, no account. The **Tachometer** reference widget ships in the open-core source (`assets/stage/widgets/rive/`, with its manifest and an editor-contract README), so you have a complete, working example to start from. (Only the *curated Pro widget pack* content is paid; the authoring capability is not.)
 
 !!! note "Would rather commission one?"
 
-    Authoring is free and documented here in full, but a polished widget is a design job as much as an engineering one. The BLDC motor, traffic-light intersection and elevator/lift in the curated Pro pack were designed and animated by **Jennifer Phillips**, who takes commissions — so if you want a widget for your own hardware and would rather not draw it yourself, she is the person we work with.
+    Authoring is free and documented here in full, but a polished widget is a design job as much as an engineering one. The BLDC motor, traffic-light intersection and elevator/lift in the curated Pro pack were designed and animated by **Jennifer Phillips**, who takes commissions, so if you want a widget for your own hardware and would rather not draw it yourself, she is the person we work with.
 
     Widget Design & Rive Animation by Jennifer Phillips · [jenniferphillipscreative.com](https://jenniferphillipscreative.com)
 
@@ -31,7 +31,7 @@ Bundles are treated as untrusted and validated on load. The limits below keep an
 - **Max path depth 8 segments.**
 - Absolute paths, `..` traversal, and symlinks are **rejected**.
 
-Open **Settings → Extensions → Custom Widgets** and click **Load widget bundle…** to install a `.wcrux-widget`; the widget then appears in the Stage **Add Stage Widget** picker. For an authoring loop, click **Watch directory…** instead and point it at the folder you write your bundles into: WaveCrux loads every `.wcrux-widget` in a watched directory and reloads a bundle when its file is added, replaced or removed — so re-zipping over the old bundle updates the widget without reinstalling. Loaded bundles and watched directories are remembered across launches; **Remove** and **Stop watching** undo them.
+Open **Settings → Extensions → Custom Widgets** and click **Load widget bundle…** to install a `.wcrux-widget`; the widget then appears in the Stage **Add Stage Widget** picker. For an authoring loop, click **Watch directory…** instead and point it at the folder you write your bundles into: WaveCrux loads every `.wcrux-widget` in a watched directory and reloads a bundle when its file is added, replaced or removed, so re-zipping over the old bundle updates the widget without reinstalling. Loaded bundles and watched directories are remembered across launches; **Remove** and **Stop watching** undo them.
 
 !!! tip
 
@@ -105,7 +105,7 @@ Each `signal_bindings` entry has:
 
 | Key | Meaning |
 |---|---|
-| `name` | The binding id. **Case-sensitive** — must *exactly* match the Rive state-machine input name. |
+| `name` | The binding id. **Case-sensitive**: must *exactly* match the Rive state-machine input name. |
 | `description` | One sentence, shown in the binding UI. |
 | `signal_type` | One of `scalar` (1-bit), `vector` (multi-bit), `analog` (real-valued), or `bus_group`. |
 | `bit_width` | Optional `{min, max}` for vectors. |
@@ -119,12 +119,12 @@ Each `signal_bindings` entry has:
 The renderer makes three fixed assumptions about the `.riv` file:
 
 - **One artboard, the file's default.** The renderer loads the default artboard; others are ignored.
-- **The artboard's default State Machine.** The manifest has no state-machine name field, so a bundle's widget drives whichever state machine is the artboard's default — name it anything. (The built-in Tachometer is the one exception: it is compiled into the app and looks its state machine up by the name `Tachometer`.)
+- **The artboard's default State Machine.** The manifest has no state-machine name field, so a bundle's widget drives whichever state machine is the artboard's default: name it anything. (The built-in Tachometer is the one exception: it is compiled into the app and looks its state machine up by the name `Tachometer`.)
 - **State-machine input names match manifest `signal_bindings` by exact, case-sensitive name.** A binding named `rpm` drives the input `rpm`.
 
 !!! warning "Case-sensitive names"
 
-    Input names are matched *exactly*, including case. A manifest binding named `rpm` will not connect to a Rive input named `RPM` or `Rpm`. When a **required** binding has no matching input, the whole widget shows **Widget failed to load** rather than running with a dead input — confirm the names line up character-for-character.
+    Input names are matched *exactly*, including case. A manifest binding named `rpm` will not connect to a Rive input named `RPM` or `Rpm`. When a **required** binding has no matching input, the whole widget shows **Widget failed to load** rather than running with a dead input: confirm the names line up character-for-character.
 
 ## How signals drive inputs { #routing }
 
@@ -134,16 +134,16 @@ On every frame the renderer takes the bound signal's value, applies any normaliz
 |---|---|
 | A true/false value (a `scalar`, or a `boolean` normalizer) | A **Boolean** input. |
 | A number (a `vector` or `analog`, or a `linear` normalizer) | A **Number** input. |
-| An enum label (an `enum` normalizer) | Fires a **Trigger** — the one named by the label, or else the one named like the binding. |
-| An X/Z (unknown) sample | **Nothing is written** — the input holds its previous value. |
+| An enum label (an `enum` normalizer) | Fires a **Trigger**: the one named by the label, or else the one named like the binding. |
+| An X/Z (unknown) sample | **Nothing is written**: the input holds its previous value. |
 
 !!! note "Tolerate held values"
 
-    When a sample is `X` or `Z`, the renderer writes nothing and the input *holds* its previous value. Design your state machine so that a stale held value is a sensible, non-glitching state — never assume every frame brings a fresh write.
+    When a sample is `X` or `Z`, the renderer writes nothing and the input *holds* its previous value. Design your state machine so that a stale held value is a sensible, non-glitching state: never assume every frame brings a fresh write.
 
 !!! note "Edge detection lives in the state machine"
 
-    Pulse-on-edge behavior — "flash when this Boolean becomes true" — belongs *inside* the Rive state machine as a transition, not as a runtime trigger. Model it as a transition ("when this Boolean becomes true, play the pulse"). This is exactly how the Tachometer's `shift` pulse works.
+    Pulse-on-edge behavior, "flash when this Boolean becomes true", belongs *inside* the Rive state machine as a transition, not as a runtime trigger. Model it as a transition ("when this Boolean becomes true, play the pulse"). This is exactly how the Tachometer's `shift` pulse works.
 
 ## Normalizing values { #normalizing }
 
@@ -153,12 +153,12 @@ A raw signal value rarely maps directly onto the 0.0–1.0 range a Rive animatio
 |---|---|
 | `linear` | Maps a raw value onto an output range: `output = output_min + (input − input_min) / (input_max − input_min) × (output_max − output_min)`. Options: `input_min` and `input_max` (required, and different), `output_min` / `output_max` (default 0.0–1.0), `clamp` (default true), `xz_policy`, and `default_value`. Use it to scale, say, an RPM count onto a 0.0–1.0 needle deflection. |
 | `bit_field` | Extracts the bit slice `high_bit`…`low_bit`, optionally feeding it to a nested normalizer under `sub`. |
-| `boolean` | Reduces a value to true/false — `reduction` is `lsb` (default), `anyHigh`, or `allHigh` — with `xz_policy` and `default_value`. |
+| `boolean` | Reduces a value to true/false (`reduction` is `lsb` (default), `anyHigh`, or `allHigh`) with `xz_policy` and `default_value`. |
 | `enum` | Maps integer values to labels (`labels: {0: IDLE, 1: RUN}`), with an optional `default_label` and `xz_policy`. |
 
-`xz_policy` decides what an unknown sample becomes: `propagate` (the default — the input holds its previous value), `as_default` (use the normalizer's default value or label), or `best_effort` (treat unknown bits as 0 unless every bit is unknown).
+`xz_policy` decides what an unknown sample becomes: `propagate` (the default: the input holds its previous value), `as_default` (use the normalizer's default value or label), or `best_effort` (treat unknown bits as 0 unless every bit is unknown).
 
-Normalizers can be **chained** — for example, a `bit_field` extract followed by a `linear` map, to pull a field out of a packed bus and then scale it onto an animation range. Use a `chain:` list in place of `kind:`; each stage feeds the next:
+Normalizers can be **chained**, for example, a `bit_field` extract followed by a `linear` map, to pull a field out of a packed bus and then scale it onto an animation range. Use a `chain:` list in place of `kind:`; each stage feeds the next:
 
 ```yaml
 parameters:
@@ -177,13 +177,13 @@ parameters:
 
 ## Per-instance configuration { #per-instance }
 
-A widget compiled into the app can expose typed knobs — integer, decimal, toggle, text, and enum choice — each with a default and optional min/max/step. These render in the **Configuration** section of the bindings pane and let a user override ranges *per instance*. The Tachometer, for example, exposes minimum and maximum RPM knobs that override its manifest's static `input_min` / `input_max`, so two instances of the same widget can be calibrated for different engines.
+A widget compiled into the app can expose typed knobs (integer, decimal, toggle, text, and enum choice) each with a default and optional min/max/step. These render in the **Configuration** section of the bindings pane and let a user override ranges *per instance*. The Tachometer, for example, exposes minimum and maximum RPM knobs that override its manifest's static `input_min` / `input_max`, so two instances of the same widget can be calibrated for different engines.
 
-Configuration is stored on the instance and persists in the session. Missing or invalid values fall back to the declared defaults rather than crashing — a malformed config never takes the widget down.
+Configuration is stored on the instance and persists in the session. Missing or invalid values fall back to the declared defaults rather than crashing: a malformed config never takes the widget down.
 
 !!! warning "Config knobs need Dart"
 
-    These per-instance knobs are **not** declarable in the manifest. They are defined in Dart on a `StageWidget` subclass (its `configParams`), so they are only available to widgets compiled into the app — the built-in widgets like the Tachometer, and the Pro pack. A community widget shipped as a manifest + `.riv` bundle has no per-instance config UI; bake your ranges into the manifest's static normalizers instead.
+    These per-instance knobs are **not** declarable in the manifest. They are defined in Dart on a `StageWidget` subclass (its `configParams`), so they are only available to widgets compiled into the app: the built-in widgets like the Tachometer, and the Pro pack. A community widget shipped as a manifest + `.riv` bundle has no per-instance config UI; bake your ranges into the manifest's static normalizers instead.
 
 ## The Tachometer reference { #tachometer }
 
@@ -192,11 +192,11 @@ The open-core **Tachometer** is the worked example to copy from. Its layout:
 - One artboard, roughly 320×220.
 - One state machine named `Tachometer`.
 - Three inputs:
-    - `rpm` — a Number, linearly normalized `0..8192` → `0.0..1.0` needle deflection (overridable per instance).
-    - `redline` — a Boolean that lights the warning glow.
-    - `shift` — a Boolean that triggers a pulse via a state-machine transition.
+    - `rpm`: a Number, linearly normalized `0..8192` → `0.0..1.0` needle deflection (overridable per instance).
+    - `redline`: a Boolean that lights the warning glow.
+    - `shift`: a Boolean that triggers a pulse via a state-machine transition.
 
-The reference widget ships in the open-core source under `assets/stage/widgets/rive/` — its `manifest.yaml`, the `.riv`, and a README with the full editor contract. Open the `.riv` in Rive and trace each input back to its manifest binding before building your own.
+The reference widget ships in the open-core source under `assets/stage/widgets/rive/`: its `manifest.yaml`, the `.riv`, and a README with the full editor contract. Open the `.riv` in Rive and trace each input back to its manifest binding before building your own.
 
 ## Validation and troubleshooting { #troubleshooting }
 
@@ -214,4 +214,4 @@ When a bundle fails to load, **Settings → Extensions → Custom Widgets** list
 
 !!! tip "A working loop"
 
-    Load the bundle once, leave it on the Stage, and keep Rive open beside WaveCrux. Write your re-zipped `.wcrux-widget` into a directory you added with **Watch directory…**, and each update reloads the widget — so you can confirm input names, normalizer ranges, and the held-value behavior against a real waveform without reinstalling.
+    Load the bundle once, leave it on the Stage, and keep Rive open beside WaveCrux. Write your re-zipped `.wcrux-widget` into a directory you added with **Watch directory…**, and each update reloads the widget, so you can confirm input names, normalizer ranges, and the held-value behavior against a real waveform without reinstalling.

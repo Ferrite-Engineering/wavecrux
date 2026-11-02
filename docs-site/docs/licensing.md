@@ -1,7 +1,7 @@
 # Tiers & licensing
 
-Licensing terms are the same for all four EDACrux products — WaveCrux, NetCrux,
-LintCrux and SimCrux — so they live in one place on the suite site:
+Licensing terms are the same for all four EDACrux products (WaveCrux, NetCrux,
+LintCrux and SimCrux) so they live in one place on the suite site:
 **[edacrux.app/licensing](https://edacrux.app/licensing)**.
 
 That page covers the Open Core, Pro, Enterprise and Education tiers, how license

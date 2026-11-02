@@ -1,6 +1,6 @@
 # Use in VS Code
 
-The **WaveCrux extension** opens waveforms in a VS Code editor tab, beside the RTL that produced them. It embeds the free, open-source WaveCrux viewer — no account, no license key, no separate download — and connects your editor to the WaveCrux, NetCrux, LintCrux and SimCrux desktop apps over [CXP](automation-and-collaboration.md#cxp).
+The **WaveCrux extension** opens waveforms in a VS Code editor tab, beside the RTL that produced them. It embeds the free, open-source WaveCrux viewer (no account, no license key, no separate download) and connects your editor to the WaveCrux, NetCrux, LintCrux and SimCrux desktop apps over [CXP](automation-and-collaboration.md#cxp).
 
 It installs from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=ferrite-engineering.wavecrux) and from [Open VSX](https://open-vsx.org/extension/ferrite-engineering/wavecrux), which is where Cursor, Windsurf, VSCodium and Theia install from. To install all four EDACrux extensions at once, install the [EDACrux Suite](https://marketplace.visualstudio.com/items?itemName=ferrite-engineering.edacrux) pack.
 
@@ -22,7 +22,7 @@ Cross-probing works between apps on the same machine.
 
 ## What stays in the desktop app { #desktop-only }
 
-- Pro and Enterprise features — such as the [Debug Advisor](analysis.md#debug-advisor), [SVA visualization](analysis.md#sva), [collaborative viewing](automation-and-collaboration.md#collaborative-viewing) and the Pro Stage widgets — are not in the extension.
+- Pro and Enterprise features (such as the [Debug Advisor](analysis.md#debug-advisor), [SVA visualization](analysis.md#sva), [collaborative viewing](automation-and-collaboration.md#collaborative-viewing) and the Pro Stage widgets) are not in the extension.
 - Multi-tab workspaces, the [Stage panel](stage.md), [WCP remote control](automation-and-collaboration.md#wcp) and [interactive VCD](automation-and-collaboration.md#interactive-vcd) are desktop features.
 - FSDB files are refused with an explanation: reading them needs Synopsys libraries that cannot be redistributed.
 

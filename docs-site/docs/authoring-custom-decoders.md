@@ -1,22 +1,22 @@
 # Authoring custom decoders
 
-WaveCrux's built-in decoders are not a closed set. You can write your own protocol decoder in any language that produces a native shared library, drop it into a directory, and it appears in the decoder picker alongside the built-in decoders — and runs at native speed. This page is the full contract: the C ABI, the two-call register pattern, the four lifecycle callbacks, how signal values reach your code, how timestamps work, who owns which strings, and where to install the finished plugin. It also covers the other way to teach WaveCrux something new without writing code: [ISA encoding tables](#isa-tables) for instruction-trace decoding.
+WaveCrux's built-in decoders are not a closed set. You can write your own protocol decoder in any language that produces a native shared library, drop it into a directory, and it appears in the decoder picker alongside the built-in decoders, and runs at native speed. This page is the full contract: the C ABI, the two-call register pattern, the four lifecycle callbacks, how signal values reach your code, how timestamps work, who owns which strings, and where to install the finished plugin. It also covers the other way to teach WaveCrux something new without writing code: [ISA encoding tables](#isa-tables) for instruction-trace decoding.
 
 !!! tip "Free & Open Core"
 
-    The decoder plugin interface is part of Open Core — free, on every tier, no license key required. The C ABI header (`include/wavecrux_decoder.h`) and two complete reference implementations (one in C, one in Rust, under `examples/`) ship in the open-core source, so you start from working code. Only the *curated Pro decoder pack* (AXI4 full, USB 2.0, PCIe TLP, Ethernet, JTAG, …) is paid; the *capability* to author your own is not.
+    The decoder plugin interface is part of Open Core: free, on every tier, no license key required. The C ABI header (`include/wavecrux_decoder.h`) and two complete reference implementations (one in C, one in Rust, under `examples/`) ship in the open-core source, so you start from working code. Only the *curated Pro decoder pack* (AXI4 full, USB 2.0, PCIe TLP, Ethernet, JTAG, …) is paid; the *capability* to author your own is not.
 
 ## How plugin decoders work { #how-it-works }
 
-A plugin decoder is a native shared library — a `.so` (Linux), `.dylib` (macOS), or `.dll` (Windows) — that exports a small set of C functions. At startup (and on demand via **Reload plugins**), WaveCrux scans its plugin directories, opens each library, checks its ABI version, and asks it to register the decoders it contributes. Registered decoders then behave like built-ins: they appear in the decoder picker (under **User Plugins** unless the manifest names another category), take signal bindings, and emit transactions overlaid on the waveform.
+A plugin decoder is a native shared library (a `.so` (Linux), `.dylib` (macOS), or `.dll` (Windows)) that exports a small set of C functions. At startup (and on demand via **Reload plugins**), WaveCrux scans its plugin directories, opens each library, checks its ABI version, and asks it to register the decoders it contributes. Registered decoders then behave like built-ins: they appear in the decoder picker (under **User Plugins** unless the manifest names another category), take signal bindings, and emit transactions overlaid on the waveform.
 
-Loading is **desktop-only** — Linux, macOS, and Windows. iOS, Android, and the web build do not load native plugins, and the Decoder Plugins settings are not shown there.
+Loading is **desktop-only**: Linux, macOS, and Windows. iOS, Android, and the web build do not load native plugins, and the Decoder Plugins settings are not shown there.
 
 ## Plugin security { #security }
 
 !!! warning "Plugins run native code"
 
-    A decoder plugin is unsandboxed native code running with your full process privileges — it can read any file you can read, open network connections, and call any operating-system API. Before WaveCrux scans for plugins it shows a one-time safety acknowledgment, **Plugins run as native code**, that you must accept (**I understand, continue**) or decline (**Disable plugin loading**). Only install plugins you trust or built yourself. A master switch and per-plugin **Enabled** toggles live in **Settings → Extensions → Decoder Plugins**.
+    A decoder plugin is unsandboxed native code running with your full process privileges: it can read any file you can read, open network connections, and call any operating-system API. Before WaveCrux scans for plugins it shows a one-time safety acknowledgment, **Plugins run as native code**, that you must accept (**I understand, continue**) or decline (**Disable plugin loading**). Only install plugins you trust or built yourself. A master switch and per-plugin **Enabled** toggles live in **Settings → Extensions → Decoder Plugins**.
 
 Every plugin is loaded in isolation: a library that fails to open, declares the wrong ABI, is missing a required symbol, ships a malformed manifest, or registers a duplicate decoder id is logged with a specific diagnostic and *skipped*. One bad plugin never blocks startup or disturbs the others.
 
@@ -36,11 +36,11 @@ int32_t  wavecrux_decoder_register(WcDecoderDef* out_defs,
 
 `wavecrux_decoder_register()` uses a **two-call pattern** so the host can size its buffer:
 
-1. **First call — count.**
+1. **First call: count.**
 
     The host calls with `out_defs == NULL` and `*inout_count == 0`. Write the number of decoders you contribute into `*inout_count` and return `WC_DECODER_NEED_MORE_SLOTS` (or `WC_DECODER_OK`).
 
-2. **Second call — fill.**
+2. **Second call: fill.**
 
     The host calls again with a buffer large enough for that many `WcDecoderDef` entries. Populate the array, set `*inout_count` to the number actually written, and return `WC_DECODER_OK`. Return `WC_DECODER_ERR` on an internal failure and the plugin is skipped.
 
@@ -95,11 +95,11 @@ Each registered decoder exposes four callbacks the host drives in order:
 
 `feed` and `flush` write through a host-provided array of `*inout_count` transactions; to emit more than fit, return `WC_DECODER_NEED_MORE_SLOTS` and the host retries with a larger buffer. Any other non-zero return is fatal for that instance.
 
-The host serializes the instance configuration as `{"decoder_id": "…", "signal_bindings": {…}, "parameters": {…}, "options": {…}}` and passes it to `create` as a UTF-8 NUL-terminated JSON string. `decoder_id` is the `id` of the decoder being created, so a plugin that registers several decoders through one `create` can tell them apart; `options` carries the same values as `parameters`. Most decoders read only the parameters — the host has already used your manifest to pack the bound signals into each sample in declaration order, so you read values by position, not by name.
+The host serializes the instance configuration as `{"decoder_id": "…", "signal_bindings": {…}, "parameters": {…}, "options": {…}}` and passes it to `create` as a UTF-8 NUL-terminated JSON string. `decoder_id` is the `id` of the decoder being created, so a plugin that registers several decoders through one `create` can tell them apart; `options` carries the same values as `parameters`. Most decoders read only the parameters: the host has already used your manifest to pack the bound signals into each sample in declaration order, so you read values by position, not by name.
 
 !!! note "Threading"
 
-    The host serializes all calls on a single handle, so an instance never sees concurrent `feed`/`flush` calls. Different handles may run on different threads, though — do not share mutable state across instances without your own synchronization.
+    The host serializes all calls on a single handle, so an instance never sees concurrent `feed`/`flush` calls. Different handles may run on different threads, though: do not share mutable state across instances without your own synchronization.
 
 ## Reading signal values { #reading-signals }
 
@@ -107,10 +107,10 @@ Each `feed` call receives a `WcSample` whose `bits_ptr` packs every bound signal
 
 | Buffer bit | Meaning |
 |---|---|
-| Even (offset 0, 2, 4 …) | Level — `0` or `1`. |
-| Odd (offset 1, 3, 5 …) | Unknown flag — set if the source sample was `X` or `Z`. |
+| Even (offset 0, 2, 4 …) | Level: `0` or `1`. |
+| Odd (offset 1, 3, 5 …) | Unknown flag: set if the source sample was `X` or `Z`. |
 
-For a 1-bit signal, `bits_ptr[0] & 1` is the level and `(bits_ptr[0] >> 1) & 1` is the unknown flag. For a multi-bit binding, signal bit *i* lives at buffer-bit `2*i` (level) / `2*i + 1` (unknown). When several bindings are declared, the declaration order sets the packing order — required signals first, then optional ones: the first binding's bits start at offset 0, the next at `2 × binding[0].bit_width`, and so on. A binding with a [`width_param`](#width-param) occupies its configured width, so read that parameter from the `create` configuration to find the offsets. Mask the unused high bits of the final byte.
+For a 1-bit signal, `bits_ptr[0] & 1` is the level and `(bits_ptr[0] >> 1) & 1` is the unknown flag. For a multi-bit binding, signal bit *i* lives at buffer-bit `2*i` (level) / `2*i + 1` (unknown). When several bindings are declared, the declaration order sets the packing order: required signals first, then optional ones: the first binding's bits start at offset 0, the next at `2 × binding[0].bit_width`, and so on. A binding with a [`width_param`](#width-param) occupies its configured width, so read that parameter from the `create` configuration to find the offsets. Mask the unused high bits of the final byte.
 
 !!! note "Always check the unknown flag"
 
@@ -118,7 +118,7 @@ For a 1-bit signal, `bits_ptr[0] & 1` is the level and `(bits_ptr[0] >> 1) & 1` 
 
 ## Timestamps are femtoseconds { #timestamps }
 
-Every timestamp the host passes you — and every timestamp you put on an emitted transaction — is in **femtoseconds**, not ticks and not the file's native timescale. The host derives the conversion from the file's timescale before calling you, so your decoder logic is timescale-independent.
+Every timestamp the host passes you, and every timestamp you put on an emitted transaction, is in **femtoseconds**, not ticks and not the file's native timescale. The host derives the conversion from the file's timescale before calling you, so your decoder logic is timescale-independent.
 
 When you port timing thresholds from a datasheet, convert up front: multiply nanoseconds by 1,000,000 and microseconds by 1,000,000,000 to reach femtoseconds. A transaction whose timestamps look off by orders of magnitude is almost always a missing unit conversion here.
 
@@ -129,7 +129,7 @@ WaveCrux 1.0.0 converted the timestamps it passed in but not the ones it got bac
 The ABI splits string ownership into two simple rules:
 
 - **Definition strings are borrowed for the library's lifetime.** The `id`, `display_name`, and `manifest_json` you put on a `WcDecoderDef` are held by the host for as long as the plugin is loaded (until shutdown or **Reload plugins**). Static string literals in `.rodata` satisfy this trivially.
-- **Per-transaction strings are owned until the next call.** The `label` and `fields_json` on each emitted `WcTransaction` must stay valid until the *next* call on the same handle. A small ring of per-instance scratch buffers satisfies this with no dynamic allocation — the reference decoders do exactly that.
+- **Per-transaction strings are owned until the next call.** The `label` and `fields_json` on each emitted `WcTransaction` must stay valid until the *next* call on the same handle. A small ring of per-instance scratch buffers satisfies this with no dynamic allocation: the reference decoders do exactly that.
 
 Set `is_error` on a `WcTransaction` to flag it as a protocol violation.
 
@@ -171,12 +171,12 @@ Then:
 
 ## The C and Rust references { #references }
 
-The open-core source ships two complete, working demonstrators under `examples/` that both implement the same passive 1-Wire (Maxim/Dallas) bus decoder — chosen because it rides a single `dq` line, has cleanly bounded RESET / PRESENCE / BYTE transactions, and isn't already a built-in. Copy one, swap in your own protocol logic and manifest id, and you have a finished plugin.
+The open-core source ships two complete, working demonstrators under `examples/` that both implement the same passive 1-Wire (Maxim/Dallas) bus decoder: chosen because it rides a single `dq` line, has cleanly bounded RESET / PRESENCE / BYTE transactions, and isn't already a built-in. Copy one, swap in your own protocol logic and manifest id, and you have a finished plugin.
 
-- **C reference** (`examples/decoder-plugin-demo`) — a single `onewire_decoder.c` with a Makefile and CMake build, a reference VCD fixture, and the expected-transactions JSON. The shortest path to a working `.so`/`.dylib`/`.dll`.
-- **Rust reference** (`examples/decoder-plugin-demo-rust`) — an idiomatic `cdylib` port across the identical C ABI boundary. Memory-safe state, enum-typed transactions, no manual string-lifetime bookkeeping.
+- **C reference** (`examples/decoder-plugin-demo`): a single `onewire_decoder.c` with a Makefile and CMake build, a reference VCD fixture, and the expected-transactions JSON. The shortest path to a working `.so`/`.dylib`/`.dll`.
+- **Rust reference** (`examples/decoder-plugin-demo-rust`): an idiomatic `cdylib` port across the identical C ABI boundary. Memory-safe state, enum-typed transactions, no manual string-lifetime bookkeeping.
 
-Both include their own walkthrough README, and the open-core test suite builds the C reference and round-trips the 1-Wire fixture through the real loader whenever a C toolchain is available — so the reference is not just illustrative.
+Both include their own walkthrough README, and the open-core test suite builds the C reference and round-trips the 1-Wire fixture through the real loader whenever a C toolchain is available, so the reference is not just illustrative.
 
 !!! note "Pull the header matching your build"
 
@@ -203,18 +203,18 @@ When a plugin won't load or behaves oddly, the Decoder Plugins panel and the [lo
 | **Disabled** / **Not approved** | You switched it off, or the organization's policy does not list its hash. |
 | No decoders from the plugin | `register` left `*inout_count` at 0. Set it to your decoder count on the first call. |
 | `create` returns NULL | Per-instance allocation or configuration parsing failed. |
-| Timestamps look wildly off | A missing femtosecond conversion — see [Timestamps](#timestamps). |
+| Timestamps look wildly off | A missing femtosecond conversion: see [Timestamps](#timestamps). |
 
 ## ISA encoding tables { #isa-tables }
 
-Instruction-trace decoding does not need a plugin at all. The **RISC-V Instruction Trace** decoder and the RISC-V [instruction translator](translators.md#riscv) read **TOML encoding tables** — the bundled RISC-V sets plus any you add — so describing an instruction set is authoring a table, not writing code. The intended uses are extending a RISC-V core (custom instructions in the `custom-0`…`custom-3` opcode space, for example) and replacing a bundled set.
+Instruction-trace decoding does not need a plugin at all. The **RISC-V Instruction Trace** decoder and the RISC-V [instruction translator](translators.md#riscv) read **TOML encoding tables**, the bundled RISC-V sets plus any you add, so describing an instruction set is authoring a table, not writing code. The intended uses are extending a RISC-V core (custom instructions in the `custom-0`…`custom-3` opcode space, for example) and replacing a bundled set.
 
-- **Where they load from.** **Settings → Extensions → ISA encoding tables → Add directory…** (below Decoder Plugins), plus any directories named in the `WAVECRUX_ISA_PATH` environment variable. Every `*.toml` directly inside a directory is loaded; subdirectories and symbolic links are not followed, and paths must be absolute. Desktop builds only — the browser and mobile builds use the bundled tables.
+- **Where they load from.** **Settings → Extensions → ISA encoding tables → Add directory…** (below Decoder Plugins), plus any directories named in the `WAVECRUX_ISA_PATH` environment variable. Every `*.toml` directly inside a directory is loaded; subdirectories and symbolic links are not followed, and paths must be absolute. Desktop builds only: the browser and mobile builds use the bundled tables.
 - **When they take effect.** Tables are composed **at launch**, so restart WaveCrux after adding a directory. The panel reports straight away how many tables parsed and lists any that failed, with the offending key.
-- **How collisions resolve.** A table is keyed by its **file name**: a file named `RV32I.toml` replaces the bundled RV32I on purpose. A table with a new name is composed after the bundled sets, and when an encoding matches more than one set the last match wins — so your custom instruction takes precedence over an overlapping base encoding.
+- **How collisions resolve.** A table is keyed by its **file name**: a file named `RV32I.toml` replaces the bundled RV32I on purpose. A table with a new name is composed after the bundled sets, and when an encoding matches more than one set the last match wins, so your custom instruction takes precedence over an overlapping base encoding.
 - **What the decoder consults.** Only tables with `width = 32`; 16-bit compressed encodings go in the low half of a 32-bit word.
 
-The schema is the JKU `instruction-decoder` format, with stricter checks: a known radix, mapping types that exist, and field slices that account for every bit of the word. The single most common mistake is reading `top` / `bot` as positions in the instruction word — they are positions in the decoded part's *value*, and slices tile the word most-significant-bit first in declaration order. The complete format reference, with a minimal worked table, is `docs/ISA_TABLE_AUTHORING.md` in the open-core source.
+The schema is the JKU `instruction-decoder` format, with stricter checks: a known radix, mapping types that exist, and field slices that account for every bit of the word. The single most common mistake is reading `top` / `bot` as positions in the instruction word: they are positions in the decoded part's *value*, and slices tile the word most-significant-bit first in declaration order. The complete format reference, with a minimal worked table, is `docs/ISA_TABLE_AUTHORING.md` in the open-core source.
 
 !!! note "Related"
 

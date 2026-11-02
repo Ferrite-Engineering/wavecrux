@@ -1,40 +1,40 @@
 # Navigating & measuring
 
-The work of reading a trace is moving the viewport precisely and reading time off it exactly. This page covers cursors and delta measurement, jumping between transitions, the 26 named markers, the full zoom and pan vocabulary, and the complete keyboard reference. Bindings are written macOS first; the modifier is ++cmd++ on macOS and iPadOS and ++ctrl++ on Linux, Windows, the web, and Android.
+The work of reading a trace is moving the viewport accurately and reading time off it exactly. This page covers cursors and delta measurement, jumping between transitions, the 26 named markers, the full zoom and pan vocabulary, and the complete keyboard reference. Bindings are written macOS first; the modifier is ++cmd++ on macOS and iPadOS and ++ctrl++ on Linux, Windows, the web, and Android.
 
 ## Cursors & delta measurement { #cursors }
 
-The **primary cursor** is the anchor for every time readout. Place it by clicking anywhere in the waveform canvas or the time ruler above it, or drag it — anywhere in the canvas, or by its triangle on the ruler. The status bar reports the cursor time (`T:`) in units auto-scaled to the file's own timescale, so the unit always matches the resolution of the trace rather than a fixed scale.
+The **primary cursor** is the anchor for every time readout. Place it by clicking anywhere in the waveform canvas or the time ruler above it, or drag it: anywhere in the canvas, or by its triangle on the ruler. The status bar reports the cursor time (`T:`) in units auto-scaled to the file's own timescale, so the unit always matches the resolution of the trace rather than a fixed scale.
 
 The **value column** beside the signal names shows each signal's value at the primary cursor. Move the cursor and the entire column updates to that instant, which is the fastest way to read a bus or sample a set of control signals at one point in time.
 
-For interval measurement, place the **secondary cursor**. A plain click always moves the *primary* cursor; to drop the secondary instead, ++shift++ + click or right-click anywhere in the canvas or on the ruler. On touch, long-press and choose **Place Secondary Cursor Here** from the menu. With both cursors down, the status bar adds the secondary time (`T2:`), the **Δ** between the cursors, and a derived frequency (`f:`) — useful for measuring a clock period, a pulse width, or the latency between two events without arithmetic. Clear just the secondary cursor with ++shift+esc++; clear both cursors with ++esc++ (or, on touch, long-press → **Clear Cursors**).
+For interval measurement, place the **secondary cursor**. A plain click always moves the *primary* cursor; to drop the secondary instead, ++shift++ + click or right-click anywhere in the canvas or on the ruler. On touch, long-press and choose **Place Secondary Cursor Here** from the menu. With both cursors down, the status bar adds the secondary time (`T2:`), the **Δ** between the cursors, and a derived frequency (`f:`): useful for measuring a clock period, a pulse width, or the latency between two events without arithmetic. Clear just the secondary cursor with ++shift+esc++; clear both cursors with ++esc++ (or, on touch, long-press → **Clear Cursors**).
 
 ### How to measure an interval { #measure-interval }
 
 1. **Place the primary cursor.**
 
-    Click at the start of the interval, then — with the signal selected — snap exactly onto the edge with ++e++ (next) or ++q++ (previous) so you start on a real transition.
+    Click at the start of the interval, then, with the signal selected, snap exactly onto the edge with ++e++ (next) or ++q++ (previous) so you start on a real transition.
 
 2. **Place the secondary cursor.**
 
-    ++shift++ + click or right-click where the interval ends — the next clock edge, the falling edge of a pulse, or an edge on a different signal entirely (long-press → **Place Secondary Cursor Here** on touch).
+    ++shift++ + click or right-click where the interval ends: the next clock edge, the falling edge of a pulse, or an edge on a different signal entirely (long-press → **Place Secondary Cursor Here** on touch).
 
 3. **Read the result.**
 
     The status bar reports the **Δ** time and the derived frequency. Clear just the secondary cursor with ++shift+esc++, or both with ++esc++.
 
-For the full set of timing measurements — clock period, pulse width, and cross-signal latency — follow the cookbook recipe [Measure clock & timing](cookbook-measure-timing.md).
+For the full set of timing measurements (clock period, pulse width, and cross-signal latency) follow the cookbook recipe [Measure clock & timing](cookbook-measure-timing.md).
 
 !!! tip "Touch devices"
 
-    On phones and tablets the cursor triangles and markers use enlarged hit targets, so you can grab and drag a cursor precisely with a fingertip rather than a pointer.
+    On phones and tablets the cursor triangles and markers use enlarged hit targets, so you can grab and drag a cursor accurately with a fingertip rather than a pointer.
 
 ## Transitions & markers { #transitions }
 
-To follow a signal edge-by-edge, select it and step to the next or previous transition with ++e++ (next) and ++q++ (previous). These are bare keys — no modifier — and they move the primary cursor to the exact time of the signal's next change, snapping you onto real edges rather than approximate clicks. They step from the primary cursor, so place one first; with no signal selected they follow the first signal in the list.
+To follow a signal edge-by-edge, select it and step to the next or previous transition with ++e++ (next) and ++q++ (previous). These are bare keys, no modifier, and they move the primary cursor to the exact time of the signal's next change, snapping you onto real edges rather than approximate clicks. They step from the primary cursor, so place one first; with no signal selected they follow the first signal in the list.
 
-For points you return to repeatedly, set a **named marker**. WaveCrux provides 26 markers, `a` through `z`. To set one, press ++m++ and then a letter ++a++–++z++ — a two-key chord that drops the marker at the current primary cursor time. To jump back to a marker, press ++shift+m++ and then the letter. **Navigate → Remove Marker…** deletes one, or right-click its flag on the ruler. Markers persist with the session, so a labelled set of points of interest survives across reloads.
+For points you return to repeatedly, set a **named marker**. WaveCrux provides 26 markers, `a` through `z`. To set one, press ++m++ and then a letter ++a++–++z++: a two-key chord that drops the marker at the current primary cursor time. To jump back to a marker, press ++shift+m++ and then the letter. **Navigate → Remove Marker…** deletes one, or right-click its flag on the ruler. Markers persist with the session, so a labelled set of points of interest survives across reloads.
 
 !!! note "Reading the marker chords"
 
@@ -74,7 +74,7 @@ The complete default binding set is grouped below. Modifier shortcuts are shown 
 | Export Waveform… | ++cmd+e++ / ++ctrl+e++ |
 | Settings… | ++cmd+comma++ / ++ctrl+comma++ |
 | About WaveCrux | ++f1++ |
-| Quit WaveCrux — **Exit** on Linux and Windows | ++cmd+q++ / ++ctrl+q++ |
+| Quit WaveCrux: **Exit** on Linux and Windows | ++cmd+q++ / ++ctrl+q++ |
 
 ### Zoom & pan
 
@@ -151,7 +151,7 @@ With the signal tree focused, the arrow keys, ++home++ / ++end++, ++page-up++ / 
 
 !!! note "Bindings are yours"
 
-    Every binding above is a default you can change. The command palette always shows an action's current binding next to its name — so even after you remap, the palette is the authoritative reference. The ++w++ / ++a++ / ++s++ / ++d++ and ++q++ / ++e++ navigation keys take no modifier. On an iPad with a Magic Keyboard, the ++cmd++ shortcuts behave exactly as they do on macOS.
+    Every binding above is a default you can change. The command palette always shows an action's current binding next to its name, so even after you remap, the palette is the authoritative reference. The ++w++ / ++a++ / ++s++ / ++d++ and ++q++ / ++e++ navigation keys take no modifier. On an iPad with a Magic Keyboard, the ++cmd++ shortcuts behave exactly as they do on macOS.
 
 ### Customizing shortcuts { #customize-shortcuts }
 
@@ -159,7 +159,7 @@ Open **Settings → Keyboard Shortcuts** (Settings is ++cmd+comma++ / ++ctrl+com
 
 1. **Start from a preset.**
 
-    The **Preset** chooser at the top loads a complete key map in one step. Pick **WaveCrux (Default)** for the bindings in this reference, or **GTKWave** if your fingers already know GTKWave — it moves Search Signals to ++alt+s++ and Export Waveform to ++cmd+p++ / ++ctrl+p++, and binds hex, decimal, binary and octal display formats to ++alt+x++, ++alt+d++, ++alt+b++ and ++alt+o++. The chooser reads **Custom** automatically once you hand-edit any single binding.
+    The **Preset** chooser at the top loads a complete key map in one step. Pick **WaveCrux (Default)** for the bindings in this reference, or **GTKWave** if your fingers already know GTKWave: it moves Search Signals to ++alt+s++ and Export Waveform to ++cmd+p++ / ++ctrl+p++, and binds hex, decimal, binary and octal display formats to ++alt+x++, ++alt+d++, ++alt+b++ and ++alt+o++. The chooser reads **Custom** automatically once you hand-edit any single binding.
 
 2. **Rebind one action.**
 
@@ -167,7 +167,7 @@ Open **Settings → Keyboard Shortcuts** (Settings is ++cmd+comma++ / ++ctrl+com
 
 3. **Resolve conflicts.**
 
-    If two actions claim the same chord, WaveCrux flags both inline — the row that actually fires reads "Takes precedence over …", the other "Won't fire — shadowed by …" — and a banner above the list counts how many conflicts need attention. Nothing is silently dropped.
+    If two actions claim the same chord, WaveCrux flags both inline (the row that actually fires reads "Takes precedence over …", the other "Won't fire) shadowed by …", and a banner above the list counts how many conflicts need attention. Nothing is silently dropped.
 
 4. **Share your map.**
 

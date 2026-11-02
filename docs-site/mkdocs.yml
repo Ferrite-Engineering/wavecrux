@@ -1,6 +1,6 @@
 site_name: WaveCrux Documentation
 site_url: https://docs.wavecrux.app/
-site_description: The complete WaveCrux user guide — installation, the interface, loading waveforms, analysis, protocol decoders, WaveCrux Stage, the Sigrok bridge, and authoring Rive widgets. Covers Open Core, Pro, and Enterprise.
+site_description: The complete WaveCrux user guide covering installation, the interface, loading waveforms, analysis, protocol decoders, WaveCrux Stage, the Sigrok bridge, and authoring Rive widgets. Covers Open Core, Pro, and Enterprise.
 copyright: Copyright &copy; 2026 Ferrite Engineering LLC
 use_directory_urls: false
 docs_dir: docs

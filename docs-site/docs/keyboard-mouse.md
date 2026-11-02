@@ -4,7 +4,7 @@ The waveform canvas is driven almost entirely by the pointer: a click drops a cu
 
 ## Cursors & measurement { #cursors }
 
-A plain click always moves the **primary cursor** — the anchor for every time readout. Drop the **secondary cursor** to measure an interval; with both down, the status bar reports `T:`, `T2:`, and `Δ:` (plus a derived frequency, `f:`).
+A plain click always moves the **primary cursor**: the anchor for every time readout. Drop the **secondary cursor** to measure an interval; with both down, the status bar reports `T:`, `T2:`, and `Δ:` (plus a derived frequency, `f:`).
 
 | Gesture | Action |
 |---|---|
@@ -18,7 +18,7 @@ A plain click always moves the **primary cursor** — the anchor for every time 
 
 !!! tip "Reading the measurement"
 
-    With both cursors placed, the status bar shows `T:` (primary time), `T2:` (secondary time), and `Δ:` (the interval), alongside the frequency derived from it — measure a clock period or pulse width without arithmetic.
+    With both cursors placed, the status bar shows `T:` (primary time), `T2:` (secondary time), and `Δ:` (the interval), alongside the frequency derived from it: measure a clock period or pulse width without arithmetic.
 
 ## Pan & zoom { #pan-zoom }
 
@@ -27,7 +27,7 @@ Move and scale the viewport with the pointer. The scroll wheel does double duty:
 | Gesture | Action |
 |---|---|
 | ++cmd++ / ++ctrl++ + left-drag, or middle-mouse drag | Pan the time axis. |
-| Scroll wheel | Scroll the signal list — or pan time when **Mouse wheel scrolls through time** is on. |
+| Scroll wheel | Scroll the signal list, or pan time when **Mouse wheel scrolls through time** is on. |
 | ++shift++ + scroll wheel | The other of the two: pan time, or scroll the signal list when the setting is on. |
 | Horizontal (tilt) wheel | Pan the time axis. |
 | ++cmd++ / ++ctrl++ + scroll wheel | Zoom in / out around the pointer. |
@@ -38,7 +38,7 @@ Move and scale the viewport with the pointer. The scroll wheel does double duty:
 
 !!! note "Scroll-wheel direction"
 
-    The wheel's roles for time and the signal list swap with the **Mouse wheel scrolls through time** setting. The keyboard equivalents — the ++w++ / ++s++ zoom and ++a++ / ++d++ pan keys, Fit All, and Zoom to Selection — are covered in [Navigating & measuring → Zoom & pan](navigating-waveforms.md#zoom).
+    The wheel's roles for time and the signal list swap with the **Mouse wheel scrolls through time** setting. The keyboard equivalents (the ++w++ / ++s++ zoom and ++a++ / ++d++ pan keys, Fit All, and Zoom to Selection) are covered in [Navigating & measuring → Zoom & pan](navigating-waveforms.md#zoom).
 
 ## Selection { #selection }
 
@@ -50,7 +50,7 @@ WaveCrux distinguishes two kinds of selection: a **time range** on the canvas (d
 | Click a signal in the signal tree | Add it to the waveform. |
 | ++cmd++ / ++ctrl++ + click a signal in the signal tree | Toggle it into the *selection* without re-adding it. |
 | ++shift++ + click a signal in the signal tree | Select the range of rows from the last one you clicked. |
-| Right-click a signal in the signal tree | **Add to Viewer**, **Copy Signal Path**, and — with several selected — **Add Selected to Viewer** and **Apply Decoder to Selection…**. |
+| Right-click a signal in the signal tree | **Add to Viewer**, **Copy Signal Path**, and, with several selected,**Add Selected to Viewer** and **Apply Decoder to Selection…**. |
 | Drag a signal from the signal tree | Drop it onto a Stage widget binding. |
 | Click a value in the value column | Copy that value to the clipboard. |
 | ++cmd++ / ++ctrl++ + click a signal's row in the value column | Toggle its selection from the waveform. |
@@ -61,11 +61,11 @@ WaveCrux distinguishes two kinds of selection: a **time range** on the canvas (d
 | ++delete++ or ++backspace++ in the signal list | Remove the selected signals from the canvas, with an **Undo**. |
 | Right-click a selected row in the signal list | **Remove Selected**, among the row's other actions. |
 | Right-click a scope in the signal tree | **Add All in Scope** or **Remove All in Scope**. |
-| ++esc++ | Clear the signal selection — and the cursors. |
+| ++esc++ | Clear the signal selection, and the cursors. |
 
 !!! tip "Clearing the selection"
 
-    Besides ++esc++, the selection chip in the status bar carries its own clear control (**×**) — click it to drop the current signal selection without also clearing your cursors.
+    Besides ++esc++, the selection chip in the status bar carries its own clear control (**×**): click it to drop the current signal selection without also clearing your cursors.
 
 ## Annotations { #annotations }
 
@@ -90,14 +90,14 @@ The signal tree is a single ++tab++ stop: ++tab++ from its search field lands on
 | ++arrow-left++ | Collapse an expanded scope; otherwise move to the scope that contains the row. |
 | ++enter++ or ++space++ | The same as a click: expand or collapse a scope, or add a signal to the viewer and select it. |
 | ++shift+arrow-up++ / ++shift+arrow-down++ | Move and extend the selection over a range of signals, the same as ++shift++ + click. |
-| ++ctrl+space++ | Add the current signal to the selection, or remove it, without adding it to the viewer — the same as ++cmd++ / ++ctrl++ + click. |
+| ++ctrl+space++ | Add the current signal to the selection, or remove it, without adding it to the viewer: the same as ++cmd++ / ++ctrl++ + click. |
 | ++shift+f10++ or ++context-menu++ | Open the row's context menu, the same as a right-click: **Add to Viewer**, **Copy Signal Path**, **Add All in Scope** and, with several signals selected, **Add Selected to Viewer** and **Apply Decoder to Selection…**. Focus starts on the first item; ++arrow-up++ / ++arrow-down++ and ++enter++ choose one, and ++esc++ closes the menu. Either way, focus returns to the same row. |
 
 Clicking a row makes it the tree's current row without taking keyboard focus, so the arrow keys keep panning the waveform after you click signals in. With a screen reader, each row is announced as a button with its expanded or selected state, and adding a signal is announced.
 
 ## In the transaction table, from the keyboard { #transaction-table-keys }
 
-The table's controls come first — **Decoder filter**, the search box, **Export CSV** and the sortable column headers — and then the rows, which are a single ++tab++ stop rather than one stop per cell. While the rows have focus their keys take priority over the waveform's pan, jump and playback keys.
+The table's controls come first (**Decoder filter**, the search box, **Export CSV** and the sortable column headers) and then the rows, which are a single ++tab++ stop rather than one stop per cell. While the rows have focus their keys take priority over the waveform's pan, jump and playback keys.
 
 | Key | Action |
 |---|---|
@@ -109,7 +109,7 @@ The table's controls come first — **Decoder filter**, the search box, **Export
 | ++arrow-left++ / ++arrow-right++ | Scroll the field columns sideways. |
 | ++enter++ or ++space++ on a row | The same as a click: select the transaction and move the primary cursor and the view to its start. |
 
-With a screen reader, each row is read as one sentence — number, decoder, start to end time, label, and the error if the decoder flagged one — and arrows in decoder labels are read as words ("R 0x08 to 0xFF"). Rows have no context menu.
+With a screen reader, each row is read as one sentence (number, decoder, start to end time, label, and the error if the decoder flagged one) and arrows in decoder labels are read as words ("R 0x08 to 0xFF"). Rows have no context menu.
 
 ## Moving around the window { #regions }
 
