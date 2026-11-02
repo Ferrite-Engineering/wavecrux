@@ -19,12 +19,14 @@ import 'package:wavecrux/domain/models/signal_group.dart';
 import 'package:wavecrux/features/cursors/providers/cursor_providers.dart';
 import 'package:wavecrux/features/tabs/providers/tab_providers.dart';
 import 'package:wavecrux/features/viewer/providers/signal_group_providers.dart';
+import 'package:wavecrux/features/viewer/providers/time_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
 import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/services/remote/cxp/cxp_inbound_handlers.dart';
 import 'package:wavecrux/services/tabs/tab_container_manager.dart';
 import 'package:wavecrux/services/waveform/wellen_provider.dart';
+import 'package:wavecrux/services/waveform_geom/time_mapper.dart';
 
 import '../../../helpers/in_memory_workspace_service.dart';
 import '../../../helpers/product_telemetry_config.dart';
@@ -230,6 +232,40 @@ void main() {
     expect(harness.cursorTime, 25);
   });
 
+  testWidgets('a step beyond the visible range is scrolled into view, the '
+      'zoom kept', (tester) async {
+    await _pumpMessenger(tester);
+    late TimeMapper before;
+    final harness = await _handOff(
+      tester,
+      handshake,
+      // The trace is open and zoomed to its first few ticks when the step
+      // arrives: step 6 (time 60) is off-screen.
+      beforeFollow: (tab) async {
+        final source = tab.read(waveformSourceProvider).value!;
+        tab.read(timeMapperProvider.notifier)
+          ..initialize(
+            startTime: source.startTime,
+            endTime: source.endTime,
+            viewportWidth: 100,
+          )
+          ..zoomIn(focalPixel: 0, factor: 10);
+        before = tab.read(timeMapperProvider);
+      },
+      follow: _FollowUp(req, const <String, Object?>{}, formalStep(6)),
+    );
+    expect(before.visibleEndTime, lessThan(60), reason: 'off-screen at first');
+    expect(harness.cursorTime, 60);
+    final after = harness.tab.read(timeMapperProvider);
+    expect(after.visibleStartTime, lessThanOrEqualTo(60));
+    expect(after.visibleEndTime, greaterThanOrEqualTo(60));
+    expect(
+      after.visibleEndTime - after.visibleStartTime,
+      before.visibleEndTime - before.visibleStartTime,
+      reason: 'panning keeps the zoom',
+    );
+  });
+
   testWidgets('a property element is still declined: WaveCrux receives the '
       'trace, not the property', (tester) async {
     final harness = await _handOff(
@@ -282,6 +318,7 @@ Future<_Harness> _handOff(
   CxpStreamCoordinate? coordinate,
   Map<String, Object?> metadata = const <String, Object?>{},
   _FollowUp? follow,
+  Future<void> Function(ProviderContainer tab)? beforeFollow,
 }) async {
   final tcm = TabContainerManager(
     extraTabOverrides: [
@@ -308,6 +345,9 @@ Future<_Harness> _handOff(
       coordinate,
     );
     if (follow != null) {
+      await beforeFollow?.call(
+        tcm.containerFor(root.read(activeTabIdProvider)),
+      );
       result = await dispatchCxpHighlight(
         root.read(_refProvider),
         follow.element,

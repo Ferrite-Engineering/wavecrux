@@ -253,6 +253,7 @@ Future<CruxCxpHandlerResult> _applyStreamCoordinate(
   // selects that retirement, folds the register file to it, and scopes the
   // memory and trap logs to it — one move, five consistent views.
   readActive(ref, cursorStateProvider.notifier).placePrimary(time);
+  _scrollTimeIntoView(ref, time);
   // …but a tab this hand-off opened a moment ago has no Stage panel, so there
   // is no Commit Inspector for the cursor to select *in*, and no banner to
   // explain the move. Mount one. Only into a tab we opened, and only now —
@@ -309,6 +310,9 @@ Future<CruxCxpHandlerResult> _applyFormalCoordinate(
     return CruxCxpHandlerResult(honored: true, reason: resolution.reason);
   }
   readActive(ref, cursorStateProvider.notifier).placePrimary(time);
+  // A step past the visible range would otherwise land off-screen while the
+  // toast says the cursor is on it; pan to it, keeping the zoom.
+  _scrollTimeIntoView(ref, time);
   final step = resolution.step!;
   final replayed =
       coordinate.attributes[CxpStreamCoordinate.formalModeAttribute] ==

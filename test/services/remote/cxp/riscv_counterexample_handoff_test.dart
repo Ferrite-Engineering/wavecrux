@@ -22,6 +22,7 @@ import 'package:wavecrux/features/stage/widgets/riscv/riscv_commit_stage_widget.
 import 'package:wavecrux/features/stage/widgets/riscv/riscv_commit_views.dart';
 import 'package:wavecrux/features/tabs/providers/tab_providers.dart';
 import 'package:wavecrux/features/viewer/providers/panel_layout_provider.dart';
+import 'package:wavecrux/features/viewer/providers/time_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
 import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
@@ -286,6 +287,51 @@ void main() {
       expect(landing.selectedRetirement, isTrue);
       expect(landing.attributes['riscv.formal.check'], 'insn_sub_ch0');
       expect(landing.attributes['riscv.mode'], 'demo');
+    });
+
+    test('a step beyond the visible range is scrolled into view, the zoom '
+        'kept', () async {
+      final source = await openTrace(tracePath);
+      addTearDown(source.close);
+      final container = ProviderContainer(
+        overrides: [
+          productTelemetryConfig,
+          waveformSourceProvider.overrideWith(
+            () => _PreloadedSourceNotifier(source),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.read(timeMapperProvider.notifier)
+        ..initialize(
+          startTime: source.startTime,
+          endTime: source.endTime,
+          viewportWidth: 100,
+        )
+        ..zoomIn(focalPixel: 0, factor: 10);
+      final before = container.read(timeMapperProvider);
+      expect(
+        before.visibleEndTime,
+        lessThan(70),
+        reason: 'off-screen at first',
+      );
+
+      await dispatchCxpHighlight(
+        container.read(_refProvider),
+        const ElementId(kind: ElementKind.signal, path: 'rvfi.rvfi_valid'),
+        const <String, Object?>{},
+        coordinate,
+      );
+
+      final after = container.read(timeMapperProvider);
+      expect(container.read(cursorStateProvider).primaryCursorTime, 70);
+      expect(after.visibleStartTime, lessThanOrEqualTo(70));
+      expect(after.visibleEndTime, greaterThanOrEqualTo(70));
+      expect(
+        after.visibleEndTime - after.visibleStartTime,
+        before.visibleEndTime - before.visibleStartTime,
+        reason: 'panning keeps the zoom',
+      );
     });
 
     test('a trace with no RVFI in it is declined WITH a reason, never '
