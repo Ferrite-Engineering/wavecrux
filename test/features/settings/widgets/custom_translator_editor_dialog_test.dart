@@ -73,6 +73,42 @@ void main() {
     expect(find.text('Add Field'), findsOneWidget);
   });
 
+  testWidgets('a filled field row keeps a visible caption for every value, '
+      'and the bit fields keep their accessible names', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await _open(
+      tester,
+      initial: const CustomTranslatorDef(
+        name: 'AXI',
+        config: BitfieldTranslatorConfig(
+          fields: [
+            BitFieldSpec(name: 'size', hiBit: 12, loBit: 7),
+          ],
+        ),
+      ),
+    );
+    // Every value is filled in, yet its caption is on screen.
+    expect(find.text('12'), findsOneWidget);
+    expect(find.text('7'), findsOneWidget);
+    final header = find.byKey(const Key('customTranslatorColumnHeader'));
+    for (final caption in const [
+      'Field name',
+      'High bit',
+      'Low bit',
+      'Format',
+    ]) {
+      expect(
+        find.descendant(of: header, matching: find.text(caption)),
+        findsOneWidget,
+        reason: 'caption "$caption" is visible over the filled row',
+      );
+    }
+    // The captions are decoration; the controls carry the names.
+    expect(find.bySemanticsLabel('High bit'), findsOneWidget);
+    expect(find.bySemanticsLabel('Low bit'), findsOneWidget);
+    semantics.dispose();
+  });
+
   testWidgets('dirty cancel prompts to discard; keep editing stays open', (
     tester,
   ) async {

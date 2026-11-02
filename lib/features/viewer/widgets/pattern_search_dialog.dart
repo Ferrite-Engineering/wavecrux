@@ -8,6 +8,7 @@ import 'package:crux_ide_layout/crux_ide_layout.dart'
         CruxSegment,
         CruxSegmentedControl,
         showCruxDialog;
+import 'package:crux_settings_ui/crux_settings_ui.dart' show CruxFormRow;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/core/help_urls.dart';
@@ -440,18 +441,24 @@ class _PatternSearchDialogState extends ConsumerState<PatternSearchDialog> {
           // Value field.
           SizedBox(
             width: 88,
-            child: TextFormField(
-              initialValue: row.value,
-              decoration: InputDecoration(
-                labelText: l10n.patternSearchValueHint,
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 6,
+            // The value sits right after the operator in the condition, so
+            // its role stays obvious once filled; the hint names it while
+            // empty and the semantics label always.
+            child: Semantics(
+              label: l10n.patternSearchValueHint,
+              child: TextFormField(
+                initialValue: row.value,
+                decoration: InputDecoration(
+                  hintText: l10n.patternSearchValueHint,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                  border: const OutlineInputBorder(),
                 ),
-                border: const OutlineInputBorder(),
+                onChanged: (v) => row.value = v,
               ),
-              onChanged: (v) => row.value = v,
             ),
           ),
 
@@ -544,41 +551,41 @@ class _PatternSearchDialogState extends ConsumerState<PatternSearchDialog> {
           const SizedBox(height: 6),
           Row(
             children: [
-              SizedBox(
-                width: 130,
-                child: TextField(
-                  controller: _customStartController,
-                  decoration: InputDecoration(
-                    labelText: l10n.patternSearchTimeRangeStart,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 6,
-                    ),
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
+              _timeBoundField(
+                l10n.patternSearchTimeRangeStart,
+                _customStartController,
               ),
               const SizedBox(width: 8),
-              SizedBox(
-                width: 130,
-                child: TextField(
-                  controller: _customEndController,
-                  decoration: InputDecoration(
-                    labelText: l10n.patternSearchTimeRangeEnd,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 6,
-                    ),
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
+              _timeBoundField(
+                l10n.patternSearchTimeRangeEnd,
+                _customEndController,
               ),
             ],
           ),
         ],
       ],
+    );
+  }
+
+  /// A custom time bound: the label stays visible beside the value.
+  Widget _timeBoundField(String label, TextEditingController controller) {
+    return SizedBox(
+      width: 64 + 110,
+      child: CruxFormRow(
+        label: label,
+        labelWidth: 64,
+        child: SizedBox(
+          width: 110,
+          child: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              isDense: true,
+              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ),
+      ),
     );
   }
 

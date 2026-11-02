@@ -3,6 +3,7 @@
 
 import 'package:crux_ide_layout/crux_ide_layout.dart'
     show CruxSegment, CruxSegmentedControl, showCruxDialog;
+import 'package:crux_settings_ui/crux_settings_ui.dart' show CruxFormRow;
 import 'package:crux_telemetry/crux_telemetry.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -455,6 +456,10 @@ class _TypeFilterRow extends ConsumerWidget {
 
 // ── Advanced filters ──────────────────────────────────────────────────────────
 
+/// The label column and field width of a bit-width bound in the advanced row.
+const double _kWidthLabelColumn = 48;
+const double _kWidthFieldWidth = 72;
+
 class _AdvancedFilterRow extends ConsumerWidget {
   const _AdvancedFilterRow({
     required this.l10n,
@@ -478,44 +483,18 @@ class _AdvancedFilterRow extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
       child: Row(
         children: [
-          SizedBox(
-            width: 80,
-            child: TextField(
-              controller: minWidthController,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              style: theme.textTheme.bodySmall,
-              onChanged: (v) => notifier.setMinBitWidth(int.tryParse(v)),
-              decoration: InputDecoration(
-                labelText: l10n.searchDialogWidthMin,
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 6,
-                ),
-                border: const OutlineInputBorder(),
-              ),
-            ),
+          _widthField(
+            theme: theme,
+            label: l10n.searchDialogWidthMin,
+            controller: minWidthController,
+            onChanged: (v) => notifier.setMinBitWidth(int.tryParse(v)),
           ),
           const SizedBox(width: 8),
-          SizedBox(
-            width: 80,
-            child: TextField(
-              controller: maxWidthController,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              style: theme.textTheme.bodySmall,
-              onChanged: (v) => notifier.setMaxBitWidth(int.tryParse(v)),
-              decoration: InputDecoration(
-                labelText: l10n.searchDialogWidthMax,
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 6,
-                ),
-                border: const OutlineInputBorder(),
-              ),
-            ),
+          _widthField(
+            theme: theme,
+            label: l10n.searchDialogWidthMax,
+            controller: maxWidthController,
+            onChanged: (v) => notifier.setMaxBitWidth(int.tryParse(v)),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -545,6 +524,37 @@ class _AdvancedFilterRow extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// A bit-width bound: the label stays visible beside the number.
+  Widget _widthField({
+    required ThemeData theme,
+    required String label,
+    required TextEditingController controller,
+    required ValueChanged<String> onChanged,
+  }) {
+    return SizedBox(
+      width: _kWidthLabelColumn + _kWidthFieldWidth,
+      child: CruxFormRow(
+        label: label,
+        labelWidth: _kWidthLabelColumn,
+        child: SizedBox(
+          width: _kWidthFieldWidth,
+          child: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            style: theme.textTheme.bodySmall,
+            onChanged: onChanged,
+            decoration: const InputDecoration(
+              isDense: true,
+              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ),
       ),
     );
   }

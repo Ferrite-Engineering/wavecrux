@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'package:crux_ide_layout/crux_ide_layout.dart' show CruxPopUpButton;
+import 'package:crux_settings_ui/crux_settings_ui.dart' show CruxFormRow;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -151,6 +152,59 @@ void main() {
       await _openDialog(tester);
       final l10n = tester.element(find.byType(PatternSearchDialog)).l10n;
       expect(find.text(l10n.patternSearchTimeRangeLabel), findsOneWidget);
+    });
+
+    testWidgets('custom time bounds keep their Start and End labels once '
+        'filled', (tester) async {
+      await tester.pumpWidget(_buildApp());
+      await _openDialog(tester);
+      final l10n = tester.element(find.byType(PatternSearchDialog)).l10n;
+      await tester.tap(find.text(l10n.patternSearchTimeRangeCustom));
+      await tester.pumpAndSettle();
+
+      Finder fieldOf(String label) => find.descendant(
+        of: find.ancestor(
+          of: find.text(label),
+          matching: find.byType(CruxFormRow),
+        ),
+        matching: find.byType(TextField),
+      );
+
+      await tester.enterText(
+        fieldOf(l10n.patternSearchTimeRangeStart),
+        '100',
+      );
+      await tester.enterText(fieldOf(l10n.patternSearchTimeRangeEnd), '900');
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(TextField, '100'), findsOneWidget);
+      expect(find.widgetWithText(TextField, '900'), findsOneWidget);
+      expect(find.text(l10n.patternSearchTimeRangeStart), findsOneWidget);
+      expect(find.text(l10n.patternSearchTimeRangeEnd), findsOneWidget);
+    });
+
+    testWidgets('a filled condition value keeps its accessible name', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(_buildApp(waveformLoaded: true));
+      await _openDialog(tester);
+      final l10n = tester.element(find.byType(PatternSearchDialog)).l10n;
+
+      final value = find.widgetWithText(
+        TextFormField,
+        l10n.patternSearchValueHint,
+      );
+      expect(value, findsOneWidget);
+      await tester.enterText(find.byType(TextFormField).first, '0xFF');
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(TextFormField, '0xFF'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(l10n.patternSearchValueHint),
+        findsOneWidget,
+      );
+      semantics.dispose();
     });
 
     // ── interactions ───────────────────────────────────────────────────────

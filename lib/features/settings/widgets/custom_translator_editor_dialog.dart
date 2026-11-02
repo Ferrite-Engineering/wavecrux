@@ -40,6 +40,13 @@ class CustomTranslatorEditorDialog extends StatefulWidget {
       _CustomTranslatorEditorDialogState();
 }
 
+/// The width of the high-bit and low-bit columns, and of the column caption
+/// over each.
+const double _kBitColumnWidth = 64;
+
+/// The width of the format column and its caption.
+const double _kFormatColumnWidth = 132;
+
 class _EditableField {
   _EditableField({
     required this.name,
@@ -234,6 +241,7 @@ class _CustomTranslatorEditorDialogState
             style: Theme.of(context).textTheme.titleSmall,
           ),
           const SizedBox(height: 8),
+          _buildColumnHeader(context, l10n),
           for (var i = 0; i < _fields.length; i++)
             _buildFieldRow(context, l10n, _fields[i]),
           Align(
@@ -260,6 +268,46 @@ class _CustomTranslatorEditorDialogState
     );
   }
 
+  /// The captions over the field rows. Every row's name, bit and format
+  /// controls line up under them, so a filled row still shows what each
+  /// value is. The controls name themselves for a screen reader, so the
+  /// captions stay out of the semantics tree.
+  Widget _buildColumnHeader(BuildContext context, L10N l10n) {
+    final style = Theme.of(context).textTheme.labelMedium?.copyWith(
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    );
+    Widget caption(String text) => ExcludeSemantics(
+      child: Text(text, style: style, maxLines: 2),
+    );
+    return Padding(
+      key: const Key('customTranslatorColumnHeader'),
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(flex: 3, child: caption(l10n.customTranslatorFieldName)),
+          const SizedBox(width: 6),
+          SizedBox(
+            width: _kBitColumnWidth,
+            child: caption(l10n.customTranslatorFieldHiBit),
+          ),
+          const SizedBox(width: 6),
+          SizedBox(
+            width: _kBitColumnWidth,
+            child: caption(l10n.customTranslatorFieldLoBit),
+          ),
+          const SizedBox(width: 6),
+          SizedBox(
+            width: _kFormatColumnWidth,
+            child: caption(l10n.customTranslatorFieldFormat),
+          ),
+          // The remove button's slot.
+          const SizedBox(width: 48),
+        ],
+      ),
+    );
+  }
+
   Widget _buildFieldRow(
     BuildContext context,
     L10N l10n,
@@ -282,28 +330,28 @@ class _CustomTranslatorEditorDialogState
           ),
           const SizedBox(width: 6),
           SizedBox(
-            width: 56,
-            child: TextFormField(
-              initialValue: field.hiBit.toString(),
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                isDense: true,
-                labelText: l10n.customTranslatorFieldHiBit,
+            width: _kBitColumnWidth,
+            child: Semantics(
+              label: l10n.customTranslatorFieldHiBit,
+              child: TextFormField(
+                initialValue: field.hiBit.toString(),
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(isDense: true),
+                onChanged: (v) => field.hiBit = int.tryParse(v) ?? field.hiBit,
               ),
-              onChanged: (v) => field.hiBit = int.tryParse(v) ?? field.hiBit,
             ),
           ),
           const SizedBox(width: 6),
           SizedBox(
-            width: 56,
-            child: TextFormField(
-              initialValue: field.loBit.toString(),
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                isDense: true,
-                labelText: l10n.customTranslatorFieldLoBit,
+            width: _kBitColumnWidth,
+            child: Semantics(
+              label: l10n.customTranslatorFieldLoBit,
+              child: TextFormField(
+                initialValue: field.loBit.toString(),
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(isDense: true),
+                onChanged: (v) => field.loBit = int.tryParse(v) ?? field.loBit,
               ),
-              onChanged: (v) => field.loBit = int.tryParse(v) ?? field.loBit,
             ),
           ),
           const SizedBox(width: 6),
@@ -317,7 +365,7 @@ class _CustomTranslatorEditorDialogState
                 ),
             ],
             onChanged: (v) => setState(() => field.format = v),
-            width: 132,
+            width: _kFormatColumnWidth,
             dense: true,
             semanticLabel: l10n.customTranslatorFieldFormat,
           ),

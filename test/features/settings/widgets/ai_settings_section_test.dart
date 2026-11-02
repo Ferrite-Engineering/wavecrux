@@ -138,6 +138,35 @@ void main() {
     expect(emptyState, findsNothing);
   });
 
+  testWidgets('endpoint and API key keep their labels while holding a value', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final store = _FakeKeyStore();
+    await store.writeKey(AiProvider.anthropic, 'sk-123');
+    final c = _container(enabled: true, keyStore: store);
+    addTearDown(c.dispose);
+
+    await tester.pumpWidget(_wrap(c));
+    await tester.pumpAndSettle();
+    await tester.enterText(endpoint, 'https://example.test/v1');
+    await tester.pumpAndSettle();
+
+    expect(
+      find.widgetWithText(TextField, 'https://example.test/v1'),
+      findsOneWidget,
+    );
+    // The labels are rows beside the fields, not decoration shown only
+    // while a field is empty.
+    expect(find.text('Endpoint'), findsOneWidget);
+    expect(find.text('API key'), findsOneWidget);
+    expect(find.text("Stored in your device's secure storage"), findsOneWidget);
+    // The accessible names are unchanged.
+    expect(find.bySemanticsLabel(RegExp('Endpoint')), findsWidgets);
+    expect(find.bySemanticsLabel(RegExp('API key')), findsWidgets);
+    semantics.dispose();
+  });
+
   testWidgets('toggle and clear-key controls meet the 44dp touch target', (
     tester,
   ) async {

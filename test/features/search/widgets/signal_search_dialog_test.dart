@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_settings_ui/crux_settings_ui.dart' show CruxFormRow;
 import 'package:crux_workspace/crux_workspace.dart'
     show CruxTabNavigatorHost, CruxTabNavigators;
 import 'package:flutter/material.dart';
@@ -279,6 +280,33 @@ void main() {
       await tester.tap(find.byIcon(Icons.tune));
       await tester.pumpAndSettle();
 
+      expect(find.text('Min'), findsOneWidget);
+      expect(find.text('Max'), findsOneWidget);
+    });
+
+    testWidgets('width bounds keep their Min and Max labels once filled', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_buildApp());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.tune));
+      await tester.pumpAndSettle();
+
+      Finder fieldOf(String label) => find.descendant(
+        of: find.ancestor(
+          of: find.text(label),
+          matching: find.byType(CruxFormRow),
+        ),
+        matching: find.byType(TextField),
+      );
+
+      await tester.enterText(fieldOf('Min'), '8');
+      await tester.enterText(fieldOf('Max'), '32');
+      await tester.pumpAndSettle();
+
+      // The values are in the fields, and the labels are still on screen.
+      expect(find.widgetWithText(TextField, '8'), findsOneWidget);
+      expect(find.widgetWithText(TextField, '32'), findsOneWidget);
       expect(find.text('Min'), findsOneWidget);
       expect(find.text('Max'), findsOneWidget);
     });

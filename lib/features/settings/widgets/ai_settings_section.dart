@@ -151,54 +151,33 @@ class _AiSettingsSectionState extends ConsumerState<AiSettingsSection> {
       ),
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-        child: TextField(
-          key: const Key('settingsAiEndpointField'),
-          controller: _endpointController,
-          decoration: InputDecoration(
-            labelText: l10n.settingsAiEndpointLabel,
-            hintText: provider.defaultEndpoint.isEmpty
-                ? l10n.settingsAiEndpointHint
-                : provider.defaultEndpoint,
+        child: CruxFormRow(
+          label: l10n.settingsAiEndpointLabel,
+          child: TextField(
+            key: const Key('settingsAiEndpointField'),
+            controller: _endpointController,
+            decoration: InputDecoration(
+              hintText: provider.defaultEndpoint.isEmpty
+                  ? l10n.settingsAiEndpointHint
+                  : provider.defaultEndpoint,
+            ),
+            onChanged: (v) => unawaited(notifier.setAiEndpoint(v)),
           ),
-          onChanged: (v) => unawaited(notifier.setAiEndpoint(v)),
         ),
       ),
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-        child: TextField(
-          key: const Key('settingsAiApiKeyField'),
-          controller: _keyController,
-          obscureText: _obscureKey,
-          decoration: InputDecoration(
-            labelText: l10n.settingsAiApiKeyLabel,
-            helperText: l10n.settingsAiApiKeyHint,
-            suffixIcon: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  tooltip: _obscureKey
-                      ? l10n.settingsAiApiKeyShowTooltip
-                      : l10n.settingsAiApiKeyHideTooltip,
-                  icon: Icon(
-                    _obscureKey ? Icons.visibility : Icons.visibility_off,
-                  ),
-                  onPressed: () => setState(() => _obscureKey = !_obscureKey),
-                ),
-                IconButton(
-                  key: const Key('settingsAiApiKeyClear'),
-                  tooltip: l10n.settingsAiApiKeyClearTooltip,
-                  icon: const Icon(Icons.clear),
-                  onPressed: _keyController.text.isEmpty
-                      ? null
-                      : () {
-                          _keyController.clear();
-                          unawaited(_writeKey(provider, ''));
-                        },
-                ),
-              ],
-            ),
+        // The field carries two buttons of its own (show/hide and clear), so
+        // the row does not merge them into one node; the field names itself.
+        child: CruxFormRow(
+          label: l10n.settingsAiApiKeyLabel,
+          help: l10n.settingsAiApiKeyHint,
+          mergeSemantics: false,
+          child: Semantics(
+            label: l10n.settingsAiApiKeyLabel,
+            hint: l10n.settingsAiApiKeyHint,
+            child: _apiKeyField(l10n, provider),
           ),
-          onChanged: (v) => unawaited(_writeKey(provider, v)),
         ),
       ),
       if (keyMissing)
@@ -210,6 +189,40 @@ class _AiSettingsSectionState extends ConsumerState<AiSettingsSection> {
           ),
         ),
     ];
+  }
+
+  Widget _apiKeyField(L10N l10n, AiProvider provider) {
+    return TextField(
+      key: const Key('settingsAiApiKeyField'),
+      controller: _keyController,
+      obscureText: _obscureKey,
+      decoration: InputDecoration(
+        suffixIcon: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: _obscureKey
+                  ? l10n.settingsAiApiKeyShowTooltip
+                  : l10n.settingsAiApiKeyHideTooltip,
+              icon: Icon(_obscureKey ? Icons.visibility : Icons.visibility_off),
+              onPressed: () => setState(() => _obscureKey = !_obscureKey),
+            ),
+            IconButton(
+              key: const Key('settingsAiApiKeyClear'),
+              tooltip: l10n.settingsAiApiKeyClearTooltip,
+              icon: const Icon(Icons.clear),
+              onPressed: _keyController.text.isEmpty
+                  ? null
+                  : () {
+                      _keyController.clear();
+                      unawaited(_writeKey(provider, ''));
+                    },
+            ),
+          ],
+        ),
+      ),
+      onChanged: (v) => unawaited(_writeKey(provider, v)),
+    );
   }
 
   String _providerLabel(AiProvider provider, L10N l10n) => switch (provider) {
