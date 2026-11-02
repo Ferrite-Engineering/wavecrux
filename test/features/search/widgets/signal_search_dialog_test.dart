@@ -287,6 +287,8 @@ void main() {
     testWidgets('width bounds keep their Min and Max labels once filled', (
       tester,
     ) async {
+      // Semantics on: the rows merge their label and field into one node.
+      final semantics = tester.ensureSemantics();
       await tester.pumpWidget(_buildApp());
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.tune));
@@ -309,6 +311,8 @@ void main() {
       expect(find.widgetWithText(TextField, '32'), findsOneWidget);
       expect(find.text('Min'), findsOneWidget);
       expect(find.text('Max'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
     });
 
     // ── mode toggle ─────────────────────────────────────────────────────────

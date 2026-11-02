@@ -150,7 +150,11 @@ void main() {
     await tester.pumpWidget(_wrap(c));
     await tester.pumpAndSettle();
     await tester.enterText(endpoint, 'https://example.test/v1');
+    // The key field carries suffix buttons, so its row does not merge
+    // semantics; entering text with semantics on must not assert.
+    await tester.enterText(keyField, 'sk-456');
     await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
 
     expect(
       find.widgetWithText(TextField, 'https://example.test/v1'),

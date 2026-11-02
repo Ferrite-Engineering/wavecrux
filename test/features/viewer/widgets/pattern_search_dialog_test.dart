@@ -156,6 +156,8 @@ void main() {
 
     testWidgets('custom time bounds keep their Start and End labels once '
         'filled', (tester) async {
+      // Semantics on: the rows merge their label and field into one node.
+      final semantics = tester.ensureSemantics();
       await tester.pumpWidget(_buildApp());
       await _openDialog(tester);
       final l10n = tester.element(find.byType(PatternSearchDialog)).l10n;
@@ -181,6 +183,8 @@ void main() {
       expect(find.widgetWithText(TextField, '900'), findsOneWidget);
       expect(find.text(l10n.patternSearchTimeRangeStart), findsOneWidget);
       expect(find.text(l10n.patternSearchTimeRangeEnd), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
     });
 
     testWidgets('a filled condition value keeps its accessible name', (
