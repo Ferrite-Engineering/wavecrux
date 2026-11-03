@@ -30,10 +30,17 @@ class BoardAutoBindPreviewDialog extends StatelessWidget {
   const BoardAutoBindPreviewDialog({
     required this.result,
     this.title,
+    this.signalName,
     super.key,
   });
 
   final BoardAutoBindResult result;
+
+  /// Resolves a binding's opaque `signalRef` to the signal's full
+  /// hierarchical name for display. Returns null when the ref is unknown, in
+  /// which case the raw ref is shown. When the callback itself is null every
+  /// row shows the raw ref.
+  final String? Function(String signalRef)? signalName;
 
   /// Dialog title. Defaults to the board auto-bind heading when null —
   /// callers that are not binding a board pass their own localized string.
@@ -43,10 +50,15 @@ class BoardAutoBindPreviewDialog extends StatelessWidget {
     BuildContext context, {
     required BoardAutoBindResult result,
     String? title,
+    String? Function(String signalRef)? signalName,
   }) {
     return showCruxDialog<BoardAutoBindApplyResult>(
       context: context,
-      builder: (_) => BoardAutoBindPreviewDialog(result: result, title: title),
+      builder: (_) => BoardAutoBindPreviewDialog(
+        result: result,
+        title: title,
+        signalName: signalName,
+      ),
     );
   }
 
@@ -76,7 +88,7 @@ class BoardAutoBindPreviewDialog extends StatelessWidget {
                 separatorBuilder: (_, _) => const Divider(height: 1),
                 itemBuilder: (context, index) {
                   final entry = entries[index];
-                  return _PreviewRow(entry: entry);
+                  return _PreviewRow(entry: entry, signalName: signalName);
                 },
               ),
       ),
@@ -184,9 +196,12 @@ class _DisplayEntry {
 }
 
 class _PreviewRow extends StatelessWidget {
-  const _PreviewRow({required this.entry});
+  const _PreviewRow({required this.entry, required this.signalName});
 
   final _DisplayEntry entry;
+  final String? Function(String signalRef)? signalName;
+
+  String _nameOf(String signalRef) => signalName?.call(signalRef) ?? signalRef;
 
   @override
   Widget build(BuildContext context) {
@@ -215,18 +230,34 @@ class _PreviewRow extends StatelessWidget {
     }
 
     final String signalLabel;
-    if (c.binding == null) {
+    final binding = c.binding;
+    if (binding == null) {
       signalLabel = '—';
-    } else if (c.binding!.bitIndex == null) {
-      signalLabel = c.binding!.signalRef;
-    } else if (c.binding!.bitWidth != null && c.binding!.bitWidth! > 1) {
-      // Multi-bit slice: render as `signalRef[msb:lsb]` (Verilog
-      // notation) so the user sees the full slice extent at a glance.
-      final lsb = c.binding!.bitIndex!;
-      final msb = lsb + c.binding!.bitWidth! - 1;
-      signalLabel = '${c.binding!.signalRef}[$msb:$lsb]';
+    } else if (entry.isFamily) {
+      // A fan-out family names its bus once with the span of bits it covers,
+      // not the first member's single bit.
+      final name = _nameOf(binding.signalRef);
+      final bits = [
+        for (final m in entry.familyMembers!)
+          if (m.value.binding?.bitIndex != null) m.value.binding!.bitIndex!,
+      ]..sort();
+      if (bits.isEmpty) {
+        signalLabel = name;
+      } else if (bits.first == bits.last) {
+        signalLabel = '$name[${bits.first}]';
+      } else {
+        signalLabel = '$name[${bits.last}:${bits.first}]';
+      }
+    } else if (binding.bitIndex == null) {
+      signalLabel = _nameOf(binding.signalRef);
+    } else if (binding.bitWidth != null && binding.bitWidth! > 1) {
+      // Multi-bit slice: render as `name[msb:lsb]` (Verilog notation) so the
+      // user sees the full slice extent at a glance.
+      final lsb = binding.bitIndex!;
+      final msb = lsb + binding.bitWidth! - 1;
+      signalLabel = '${_nameOf(binding.signalRef)}[$msb:$lsb]';
     } else {
-      signalLabel = '${c.binding!.signalRef}[${c.binding!.bitIndex}]';
+      signalLabel = '${_nameOf(binding.signalRef)}[${binding.bitIndex}]';
     }
 
     return Padding(

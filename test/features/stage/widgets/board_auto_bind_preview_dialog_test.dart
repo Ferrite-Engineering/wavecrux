@@ -48,6 +48,7 @@ Widget _harness(
   void Function(BoardAutoBindApplyResult? result) onResult, {
   required BoardAutoBindResult result,
   Locale locale = const Locale('en'),
+  String? Function(String signalRef)? signalName,
 }) {
   return MaterialApp(
     locale: locale,
@@ -61,6 +62,7 @@ Widget _harness(
               final apply = await BoardAutoBindPreviewDialog.show(
                 context,
                 result: result,
+                signalName: signalName,
               );
               onResult(apply);
             },
@@ -166,6 +168,101 @@ void main() {
       expect(find.text('btnC'), findsOneWidget);
       expect(find.text('btnL'), findsOneWidget);
       expect(find.text('unmapped'), findsOneWidget);
+    });
+  });
+
+  group('BoardAutoBindPreviewDialog — signal names', () {
+    // Opaque refs, as a VCD hands them out: declaration indices.
+    const names = {
+      '0': 'top.leds',
+      '2': 'top.btnC',
+      '14': 'top.digit7',
+      '20': 'top.sw',
+    };
+
+    BoardAutoBindResult namedResult() => BoardAutoBindResult(
+      candidates: {
+        for (var i = 0; i < 16; i++)
+          'led$i': BoardAutoBindCandidate(
+            confidence: BoardAutoBindConfidence.vectorFanOut,
+            matchReason: 'vector match',
+            binding: StageSignalBinding(signalRef: '0', bitIndex: i),
+            familyPrefix: 'led',
+          ),
+        'btnC': const BoardAutoBindCandidate(
+          confidence: BoardAutoBindConfidence.exactMatch,
+          matchReason: 'exact',
+          binding: StageSignalBinding(signalRef: '2'),
+        ),
+        'digit7': const BoardAutoBindCandidate(
+          confidence: BoardAutoBindConfidence.exactMatch,
+          matchReason: 'exact',
+          binding: StageSignalBinding(signalRef: '14'),
+        ),
+        'bit': const BoardAutoBindCandidate(
+          confidence: BoardAutoBindConfidence.exactMatch,
+          matchReason: 'exact',
+          binding: StageSignalBinding(signalRef: '0', bitIndex: 5),
+        ),
+        'slice': const BoardAutoBindCandidate(
+          confidence: BoardAutoBindConfidence.exactMatch,
+          matchReason: 'exact',
+          binding: StageSignalBinding(
+            signalRef: '20',
+            bitIndex: 4,
+            bitWidth: 4,
+          ),
+        ),
+        'unmapped': const BoardAutoBindCandidate(
+          confidence: BoardAutoBindConfidence.noMatch,
+          matchReason: 'none',
+        ),
+        'orphan': const BoardAutoBindCandidate(
+          confidence: BoardAutoBindConfidence.fuzzyMatch,
+          matchReason: 'fuzzy',
+          binding: StageSignalBinding(signalRef: '99'),
+        ),
+      },
+    );
+
+    Future<void> open(WidgetTester tester) async {
+      await tester.pumpWidget(
+        _harness((_) {}, result: namedResult(), signalName: (r) => names[r]),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('scalar, bit and slice rows show names, not refs', (
+      tester,
+    ) async {
+      await open(tester);
+      expect(find.text('top.btnC'), findsOneWidget);
+      expect(find.text('top.digit7'), findsOneWidget);
+      expect(find.text('top.leds[5]'), findsOneWidget);
+      expect(find.text('top.sw[7:4]'), findsOneWidget);
+      expect(find.text('2'), findsNothing);
+      expect(find.text('14'), findsNothing);
+      expect(find.text('0[5]'), findsNothing);
+    });
+
+    testWidgets('a fan-out family names the bus once with its range', (
+      tester,
+    ) async {
+      await open(tester);
+      expect(find.text('led0…led15'), findsOneWidget);
+      expect(find.text('top.leds[15:0]'), findsOneWidget);
+      expect(find.text('0[0]'), findsNothing);
+    });
+
+    testWidgets('no binding keeps the dash', (tester) async {
+      await open(tester);
+      expect(find.text('—'), findsOneWidget);
+    });
+
+    testWidgets('an unknown ref falls back to the raw ref', (tester) async {
+      await open(tester);
+      expect(find.text('99'), findsOneWidget);
     });
   });
 }

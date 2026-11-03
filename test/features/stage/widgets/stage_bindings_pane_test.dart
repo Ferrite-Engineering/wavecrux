@@ -836,5 +836,40 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Auto-bind board signals'), findsOneWidget);
     });
+
+    testWidgets('the dialog shows signal names, not opaque signalRefs', (
+      tester,
+    ) async {
+      const variable = Variable(
+        name: 'rvfi_valid',
+        varType: VarType.wire,
+        direction: VarDirection.unknown,
+        signalRef: '7',
+        scopePath: 'top.core',
+      );
+      await _pump(
+        tester,
+        overrides: [
+          signalVariablesByPathProvider.overrideWithValue(
+            const {'top.core.rvfi_valid': variable},
+          ),
+        ],
+        seed: const StageWorkspaceState(
+          panels: [
+            StagePanelConfig(
+              id: 'p0',
+              name: 'P',
+              instances: [StageInstance(id: 'i0', widgetId: 'autobind')],
+            ),
+          ],
+          activePanelId: 'p0',
+        ),
+        selectedInstanceId: 'i0',
+      );
+      await tester.tap(find.byIcon(Icons.auto_fix_high));
+      await tester.pumpAndSettle();
+      expect(find.text('top.core.rvfi_valid'), findsOneWidget);
+      expect(find.text('7'), findsNothing);
+    });
   });
 }

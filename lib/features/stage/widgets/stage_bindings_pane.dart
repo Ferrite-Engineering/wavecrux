@@ -64,10 +64,17 @@ class StageBindingsPane extends ConsumerWidget {
       existingBindings: instance.signalBindings,
       configuration: instance.configuration,
     );
+    // The binding stores the opaque signalRef; the dialog shows the name.
+    // An aliased signal has several names, and the first one listed wins.
+    final namesByRef = <String, String>{};
+    for (final v in variables.values) {
+      namesByRef.putIfAbsent(v.signalRef, () => v.fullPath);
+    }
     final apply = await BoardAutoBindPreviewDialog.show(
       context,
       result: result,
       title: title,
+      signalName: (ref) => namesByRef[ref],
     );
     if (apply == null || !context.mounted) return;
     // Merge the auto-bind result with any existing bindings the user
