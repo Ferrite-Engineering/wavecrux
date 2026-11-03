@@ -4,6 +4,7 @@
 import 'package:crux_telemetry/crux_telemetry.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:wavecrux/core/ui/menu_position.dart';
 import 'package:wavecrux/domain/enums/display_format.dart';
 import 'package:wavecrux/features/viewer/providers/signal_group_providers.dart';
 import 'package:wavecrux/features/viewer/widgets/signal_format_section.dart'
@@ -121,7 +122,7 @@ Future<void> showDisplayFormatMenu(
     ...kAdvancedDisplayFormats.map(item),
   ];
 
-  final selected = await showMenu<DisplayFormat>(
+  final selected = await showRootMenu<DisplayFormat>(
     context: context,
     position: position,
     items: items,

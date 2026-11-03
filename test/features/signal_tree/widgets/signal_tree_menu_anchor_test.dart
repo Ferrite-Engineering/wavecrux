@@ -7,12 +7,46 @@ import 'package:wavecrux/features/signal_tree/utils/signal_tree_rows.dart';
 import 'package:wavecrux/features/signal_tree/widgets/signal_tree_menu_anchor.dart';
 
 void main() {
-  test('a pointer menu is anchored at the pointer', () {
-    expect(
-      signalTreePointerMenuAnchor(const Offset(40, 70)),
-      const RelativeRect.fromLTRB(40, 70, 41, 71),
-    );
-  });
+  testWidgets(
+    'a pointer menu is anchored at the pointer, in the root overlay',
+    (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(800, 600)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      late BuildContext inner;
+      // A root overlay that starts at (10, 50) in the window, as one does below
+      // a strip: a global pointer position is that much further than its own.
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: Padding(
+            padding: const EdgeInsets.only(left: 10, top: 50),
+            child: Overlay(
+              initialEntries: [
+                OverlayEntry(
+                  builder: (context) {
+                    inner = context;
+                    return const SizedBox.expand();
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        signalTreePointerMenuAnchor(inner, const Offset(40, 70)),
+        RelativeRect.fromRect(
+          const Rect.fromLTWH(30, 20, 1, 1),
+          const Rect.fromLTWH(0, 0, 790, 550),
+        ),
+      );
+    },
+  );
 
   testWidgets('a keyboard menu is anchored over the row, after scrolling', (
     tester,

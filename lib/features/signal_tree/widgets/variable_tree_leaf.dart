@@ -8,6 +8,7 @@ import 'package:crux_ide_layout/crux_ide_layout.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:wavecrux/core/ui/menu_position.dart';
 import 'package:wavecrux/domain/enums/var_type.dart';
 import 'package:wavecrux/domain/models/rohd_dart_source.dart';
 import 'package:wavecrux/domain/models/scope.dart';
@@ -180,17 +181,10 @@ class VariableTreeLeaf extends ConsumerWidget {
 
     final tappable = GestureDetector(
       onTap: () => _handleTap(context, ref),
-      onSecondaryTapDown: (details) => showContextMenu(
-        context,
-        ref,
-        signalTreePointerMenuAnchor(details.globalPosition),
-      ),
+      onSecondaryTapDown: (details) =>
+          _showPointerMenu(context, ref, details.globalPosition),
       onLongPressStart: enableLongPress
-          ? (details) => showContextMenu(
-              context,
-              ref,
-              signalTreePointerMenuAnchor(details.globalPosition),
-            )
+          ? (details) => _showPointerMenu(context, ref, details.globalPosition)
           : null,
       // The row's own node carries the name; the icon, name text and badges
       // underneath would otherwise be read a second time.
@@ -257,7 +251,18 @@ class VariableTreeLeaf extends ConsumerWidget {
     ];
   }
 
-  /// Opens the row's context menu at [position].
+  /// Opens the row's context menu at the pointer, [globalPosition].
+  void _showPointerMenu(
+    BuildContext context,
+    WidgetRef ref,
+    Offset globalPosition,
+  ) {
+    final position = signalTreePointerMenuAnchor(context, globalPosition);
+    if (position != null) unawaited(showContextMenu(context, ref, position));
+  }
+
+  /// Opens the row's context menu at [position], resolved against the root
+  /// overlay.
   ///
   /// A right-click or long-press anchors it at the pointer. The tree opens it
   /// from the keyboard (Shift+F10 or the Menu key) through this same method,
@@ -293,7 +298,7 @@ class VariableTreeLeaf extends ConsumerWidget {
     final dartSource = await _dartSource(ref);
     if (!context.mounted) return;
 
-    final result = await showMenu<String>(
+    final result = await showRootMenu<String>(
       context: context,
       position: position,
       items: [

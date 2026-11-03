@@ -14,6 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/core/constants.dart';
 import 'package:wavecrux/core/providers/browser_download_provider.dart';
 import 'package:wavecrux/core/providers/system_dialog_provider.dart';
+import 'package:wavecrux/core/ui/menu_position.dart';
 import 'package:wavecrux/core/utils/focus_opening_menu.dart';
 import 'package:wavecrux/domain/models/active_decoder.dart';
 import 'package:wavecrux/features/cursors/providers/cursor_providers.dart';
@@ -397,20 +398,17 @@ class _FilterBarState extends State<_FilterBar> {
   /// or activated from the keyboard, with focus on its first item.
   Future<void> _showDecoderMenu(BuildContext context) async {
     final l10n = widget.l10n;
-    final overlay =
-        Overlay.of(context).context.findRenderObject()! as RenderBox;
     final button = _filterButtonKey.currentContext?.findRenderObject();
     if (button is! RenderBox || !button.hasSize) return;
-    final anchor = Rect.fromPoints(
-      button.localToGlobal(
-        button.size.bottomLeft(Offset.zero),
-        ancestor: overlay,
-      ),
-      button.localToGlobal(
-        button.size.bottomRight(Offset.zero),
-        ancestor: overlay,
+    // The menu opens below the button, along its bottom edge.
+    final anchor = rootMenuPositionForRect(
+      context,
+      Rect.fromPoints(
+        button.localToGlobal(button.size.bottomLeft(Offset.zero)),
+        button.localToGlobal(button.size.bottomRight(Offset.zero)),
       ),
     );
+    if (anchor == null) return;
 
     final items = <PopupMenuEntry<_DecoderMenuAction>>[
       PopupMenuItem<_DecoderMenuAction>(
@@ -437,9 +435,9 @@ class _FilterBarState extends State<_FilterBar> {
         ),
     ];
 
-    final shown = showMenu<_DecoderMenuAction>(
+    final shown = showRootMenu<_DecoderMenuAction>(
       context: context,
-      position: RelativeRect.fromRect(anchor, Offset.zero & overlay.size),
+      position: anchor,
       items: items,
     );
     focusFirstItemOfOpeningMenu();

@@ -5,6 +5,7 @@ import 'package:crux_ide_layout/crux_ide_layout.dart' show showCruxInfoSnack;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:wavecrux/core/ui/menu_position.dart';
 import 'package:wavecrux/domain/enums/waveform_format.dart';
 import 'package:wavecrux/domain/models/file_stats.dart';
 import 'package:wavecrux/features/diagnostics/providers/file_stats_provider.dart';
@@ -399,13 +400,9 @@ class _MetricsCardRow extends StatelessWidget {
     required String? copiedSnackbar,
   }) async {
     if (!context.mounted) return;
-    final overlay =
-        Overlay.of(context).context.findRenderObject()! as RenderBox;
-    final menuPosition = RelativeRect.fromRect(
-      Rect.fromLTWH(globalPosition.dx, globalPosition.dy, 0, 0),
-      Offset.zero & overlay.size,
-    );
-    final result = await showMenu<_RowMenuAction>(
+    final menuPosition = rootMenuPositionForPoint(context, globalPosition);
+    if (menuPosition == null) return;
+    final result = await showRootMenu<_RowMenuAction>(
       context: context,
       position: menuPosition,
       items: <PopupMenuEntry<_RowMenuAction>>[

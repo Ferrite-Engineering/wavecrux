@@ -90,7 +90,7 @@ void main() {
     ),
     const CruxOutlineExemption(
       file: 'lib/features/viewer/widgets/time_ruler_widget.dart',
-      line: 482,
+      line: 479,
       expectedTrimmed: 'borderColor: colorScheme.outline,',
       reason:
           'a CustomPainter constructor argument, assigned to Paint.color '
@@ -99,7 +99,7 @@ void main() {
     ),
     const CruxOutlineExemption(
       file: 'lib/features/decoders/widgets/transaction_table_panel.dart',
-      line: 488,
+      line: 486,
       expectedTrimmed: 'color: Theme.of(context).colorScheme.outline,',
       reason:
           "Border.all() color for the decoder filter button's cell border "

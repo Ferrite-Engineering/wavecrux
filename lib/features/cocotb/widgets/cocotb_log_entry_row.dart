@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/core/theme/wavecrux_colors.dart';
+import 'package:wavecrux/core/ui/menu_position.dart';
 import 'package:wavecrux/domain/enums/cocotb_log_severity.dart';
 import 'package:wavecrux/domain/models/cocotb_log_entry.dart';
 import 'package:wavecrux/features/cocotb/widgets/cocotb_severity_style.dart';
@@ -45,17 +46,14 @@ class CocotbLogEntryRow extends ConsumerWidget {
     Offset globalPosition,
   ) async {
     final l10n = L10N.of(context);
-    final overlay =
-        Overlay.of(context).context.findRenderObject()! as RenderBox;
+    final menuPosition = rootMenuPositionForPoint(context, globalPosition);
+    if (menuPosition == null) return;
     final canJump = entry.simTimeTicks != null;
     final canCopyTimestamp = entry.simTimeString != null;
 
-    final action = await showMenu<String>(
+    final action = await showRootMenu<String>(
       context: context,
-      position: RelativeRect.fromRect(
-        Rect.fromLTWH(globalPosition.dx, globalPosition.dy, 0, 0),
-        Offset.zero & overlay.size,
-      ),
+      position: menuPosition,
       items: <PopupMenuEntry<String>>[
         if (canJump)
           PopupMenuItem<String>(

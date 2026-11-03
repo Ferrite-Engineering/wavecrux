@@ -8,6 +8,7 @@ import 'package:wavecrux/core/license/tier_unlocked_provider.dart';
 import 'package:wavecrux/core/mobile_metrics.dart';
 import 'package:wavecrux/core/theme/wavecrux_colors.dart';
 import 'package:wavecrux/core/theme/wavecrux_theme.dart';
+import 'package:wavecrux/core/ui/menu_position.dart';
 import 'package:wavecrux/domain/models/active_decoder.dart';
 import 'package:wavecrux/domain/models/persisted_decoder.dart';
 import 'package:wavecrux/features/decoders/constants/transaction_lane_constants.dart';
@@ -192,8 +193,6 @@ class DecoderListEntry extends ConsumerWidget {
     required String displayName,
   }) async {
     final l10n = L10N.of(context);
-    final overlay =
-        Overlay.of(context).context.findRenderObject()! as RenderBox;
 
     final items = <PopupMenuEntry<_DecoderRowMenuAction>>[
       // Path-header item per ARCHITECTURE.md §3.1.8.14 — the truncated
@@ -251,12 +250,11 @@ class DecoderListEntry extends ConsumerWidget {
       ),
     ];
 
-    final result = await showMenu<_DecoderRowMenuAction>(
+    final menuPosition = rootMenuPositionForPoint(context, position);
+    if (menuPosition == null) return;
+    final result = await showRootMenu<_DecoderRowMenuAction>(
       context: context,
-      position: RelativeRect.fromRect(
-        Rect.fromLTWH(position.dx, position.dy, 0, 0),
-        Offset.zero & overlay.size,
-      ),
+      position: menuPosition,
       items: items,
     );
     if (!context.mounted) return;
@@ -424,14 +422,11 @@ class HeldDecoderListEntry extends ConsumerWidget {
     String label,
   ) async {
     final l10n = L10N.of(context);
-    final overlay =
-        Overlay.of(context).context.findRenderObject()! as RenderBox;
-    final remove = await showMenu<bool>(
+    final menuPosition = rootMenuPositionForPoint(context, position);
+    if (menuPosition == null) return;
+    final remove = await showRootMenu<bool>(
       context: context,
-      position: RelativeRect.fromRect(
-        Rect.fromLTWH(position.dx, position.dy, 0, 0),
-        Offset.zero & overlay.size,
-      ),
+      position: menuPosition,
       items: [
         PopupMenuItem<bool>(
           enabled: false,

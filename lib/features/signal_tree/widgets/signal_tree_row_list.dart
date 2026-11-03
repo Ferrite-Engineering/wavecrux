@@ -7,6 +7,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:wavecrux/core/ui/menu_position.dart';
 import 'package:wavecrux/core/utils/focus_opening_menu.dart';
 import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.dart';
 import 'package:wavecrux/features/signal_tree/utils/signal_tree_navigation.dart';
@@ -289,8 +290,8 @@ class _SignalTreeRowListState extends ConsumerState<SignalTreeRowList> {
   void _openContextMenu(List<SignalTreeRow> rows, int index) {
     _reveal(index);
     final list = context.findRenderObject();
-    final overlay = Overlay.maybeOf(context)?.context.findRenderObject();
-    if (list is! RenderBox || overlay is! RenderBox) return;
+    final overlay = rootOverlayBox(context);
+    if (list is! RenderBox || overlay == null) return;
     final anchor = signalTreeRowMenuAnchor(
       list: list,
       overlay: overlay,

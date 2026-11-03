@@ -14,6 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/core/mobile_metrics.dart';
 import 'package:wavecrux/core/theme/wavecrux_colors.dart';
 import 'package:wavecrux/core/theme/wavecrux_theme_accessors.dart';
+import 'package:wavecrux/core/ui/menu_position.dart';
 import 'package:wavecrux/domain/enums/device_class.dart';
 import 'package:wavecrux/domain/interfaces/waveform_data_source.dart';
 import 'package:wavecrux/domain/models/active_decoder.dart';
@@ -1350,14 +1351,11 @@ class _WaveformCanvasState extends ConsumerState<WaveformCanvas> {
   ) async {
     final l10n = L10N.of(context);
     final time = ref.read(timeMapperProvider).pixelToTime(localPosition.dx);
-    final result = await showMenu<_WaveformContextAction>(
+    final position = rootMenuPositionForPoint(context, globalPosition);
+    if (position == null) return;
+    final result = await showRootMenu<_WaveformContextAction>(
       context: context,
-      position: RelativeRect.fromLTRB(
-        globalPosition.dx,
-        globalPosition.dy,
-        globalPosition.dx + 1,
-        globalPosition.dy + 1,
-      ),
+      position: position,
       items: [
         PopupMenuItem(
           value: _WaveformContextAction.placePrimary,

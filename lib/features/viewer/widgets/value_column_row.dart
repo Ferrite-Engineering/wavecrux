@@ -12,6 +12,7 @@ import 'package:wavecrux/core/mobile_metrics.dart';
 import 'package:wavecrux/core/providers/system_dialog_provider.dart';
 import 'package:wavecrux/core/theme/wavecrux_colors.dart';
 import 'package:wavecrux/core/theme/wavecrux_theme.dart';
+import 'package:wavecrux/core/ui/menu_position.dart';
 import 'package:wavecrux/domain/enums/display_format.dart';
 import 'package:wavecrux/domain/models/bitfield_translator_config.dart';
 import 'package:wavecrux/domain/models/signal_group.dart';
@@ -337,12 +338,8 @@ class ValueColumnRow extends ConsumerWidget {
     L10N l10n,
     Offset position,
   ) async {
-    final rect = RelativeRect.fromLTRB(
-      position.dx,
-      position.dy,
-      position.dx + 1,
-      position.dy + 1,
-    );
+    final rect = rootMenuPositionForPoint(context, position);
+    if (rect == null) return;
 
     final signalRef = entry.signalRef;
     final hasFilter =
@@ -486,7 +483,7 @@ class ValueColumnRow extends ConsumerWidget {
         ),
     ];
 
-    final selected = await showMenu<Object?>(
+    final selected = await showRootMenu<Object?>(
       context: context,
       position: rect,
       items: items,

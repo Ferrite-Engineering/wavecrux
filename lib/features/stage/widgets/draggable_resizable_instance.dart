@@ -4,6 +4,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:wavecrux/core/ui/menu_position.dart';
 import 'package:wavecrux/domain/models/stage_instance.dart';
 import 'package:wavecrux/domain/models/stage_signal_binding.dart';
 import 'package:wavecrux/domain/models/stage_widget_slot.dart';
@@ -142,14 +143,11 @@ class DraggableResizableInstance extends ConsumerWidget {
     // on.
     ref.read(stageSelectedInstanceProvider.notifier).select(instance.id);
 
-    final result = await showMenu<String>(
+    final menuPosition = rootMenuPositionForPoint(context, position);
+    if (menuPosition == null) return;
+    final result = await showRootMenu<String>(
       context: context,
-      position: RelativeRect.fromLTRB(
-        position.dx,
-        position.dy,
-        position.dx + 1,
-        position.dy + 1,
-      ),
+      position: menuPosition,
       items: [
         PopupMenuItem(
           value: 'front',
@@ -519,14 +517,11 @@ class _TileDragTarget extends ConsumerWidget {
     if (pins.length == 1) {
       targetPin = pins.first.name;
     } else {
-      targetPin = await showMenu<String>(
+      final dropPosition = rootMenuPositionForPoint(context, details.offset);
+      if (dropPosition == null) return;
+      targetPin = await showRootMenu<String>(
         context: context,
-        position: RelativeRect.fromLTRB(
-          details.offset.dx,
-          details.offset.dy,
-          details.offset.dx + 1,
-          details.offset.dy + 1,
-        ),
+        position: dropPosition,
         items: [
           for (final pin in pins)
             PopupMenuItem(

@@ -22,6 +22,7 @@ import 'package:wavecrux/core/mobile_metrics.dart';
 import 'package:wavecrux/core/providers/system_dialog_provider.dart';
 import 'package:wavecrux/core/theme/wavecrux_colors.dart';
 import 'package:wavecrux/core/theme/wavecrux_theme.dart';
+import 'package:wavecrux/core/ui/menu_position.dart';
 import 'package:wavecrux/domain/enums/device_class.dart';
 import 'package:wavecrux/domain/models/active_decoder.dart';
 import 'package:wavecrux/domain/models/app_settings.dart';
@@ -908,8 +909,6 @@ class _SignalRowState extends ConsumerState<_SignalRow> {
     final signalColor = widget.entry.argbColor != null
         ? Color(widget.entry.argbColor!)
         : WavecruxColors.signalGreen;
-    final overlay =
-        Overlay.of(context).context.findRenderObject()! as RenderBox;
     final crossProbe =
         crossProbeMenuEntry(
               context,
@@ -1209,11 +1208,9 @@ class _SignalRowState extends ConsumerState<_SignalRow> {
       ],
     ];
 
-    final menuPosition = RelativeRect.fromRect(
-      Rect.fromLTWH(position.dx, position.dy, 0, 0),
-      Offset.zero & overlay.size,
-    );
-    final result = await showMenu<_SignalMenuResult>(
+    final menuPosition = rootMenuPositionForPoint(context, position);
+    if (menuPosition == null) return;
+    final result = await showRootMenu<_SignalMenuResult>(
       context: context,
       position: menuPosition,
       items: items,
@@ -1775,14 +1772,11 @@ class _GroupTileState extends State<_GroupTile> {
 
   Future<void> _showContextMenu(BuildContext context, Offset position) async {
     final l10n = L10N.of(context);
-    final overlay =
-        Overlay.of(context).context.findRenderObject()! as RenderBox;
-    final result = await showMenu<_GroupContextAction>(
+    final menuPosition = rootMenuPositionForPoint(context, position);
+    if (menuPosition == null) return;
+    final result = await showRootMenu<_GroupContextAction>(
       context: context,
-      position: RelativeRect.fromRect(
-        Rect.fromLTWH(position.dx, position.dy, 0, 0),
-        Offset.zero & overlay.size,
-      ),
+      position: menuPosition,
       items: [
         PopupMenuItem(
           value: _GroupContextAction.rename,

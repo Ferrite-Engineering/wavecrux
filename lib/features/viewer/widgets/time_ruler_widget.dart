@@ -13,6 +13,7 @@ import 'package:wavecrux/core/mobile_metrics.dart';
 import 'package:wavecrux/core/theme/wavecrux_colors.dart';
 import 'package:wavecrux/core/theme/wavecrux_theme.dart';
 import 'package:wavecrux/core/theme/wavecrux_theme_accessors.dart';
+import 'package:wavecrux/core/ui/menu_position.dart';
 import 'package:wavecrux/domain/models/cursor_state.dart';
 import 'package:wavecrux/domain/models/marker_state.dart';
 import 'package:wavecrux/domain/models/time_range.dart';
@@ -250,15 +251,11 @@ class _TimeRulerWidgetState extends ConsumerState<TimeRulerWidget> {
     String letter,
   ) async {
     final l10n = L10N.of(context);
-    final overlay =
-        Overlay.of(context).context.findRenderObject() as RenderBox?;
-    if (overlay == null) return;
-    final selected = await showMenu<String>(
+    final position = rootMenuPositionForPoint(context, globalPosition);
+    if (position == null) return;
+    final selected = await showRootMenu<String>(
       context: context,
-      position: RelativeRect.fromRect(
-        globalPosition & const Size(1, 1),
-        Offset.zero & overlay.size,
-      ),
+      position: position,
       items: [
         PopupMenuItem<String>(
           value: 'remove',

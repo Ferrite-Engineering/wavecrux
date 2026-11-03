@@ -1,10 +1,13 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'dart:async' show unawaited;
+
 import 'package:crux_ide_layout/crux_ide_layout.dart'
     show announceCrux, showCruxInfoSnack;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:wavecrux/core/ui/menu_position.dart';
 import 'package:wavecrux/domain/enums/scope_type.dart';
 import 'package:wavecrux/domain/models/scope.dart';
 import 'package:wavecrux/domain/models/variable.dart';
@@ -143,17 +146,10 @@ class ScopeTreeNode extends ConsumerWidget {
         onTapped?.call();
         toggle(ref, scope);
       },
-      onSecondaryTapDown: (details) => showContextMenu(
-        context,
-        ref,
-        signalTreePointerMenuAnchor(details.globalPosition),
-      ),
+      onSecondaryTapDown: (details) =>
+          _showPointerMenu(context, ref, details.globalPosition),
       onLongPressStart: enableLongPress
-          ? (details) => showContextMenu(
-              context,
-              ref,
-              signalTreePointerMenuAnchor(details.globalPosition),
-            )
+          ? (details) => _showPointerMenu(context, ref, details.globalPosition)
           : null,
       // The row's own node carries the name, state and count; the arrow,
       // icon, name text and badge underneath would otherwise be read again.
@@ -224,7 +220,18 @@ class ScopeTreeNode extends ConsumerWidget {
     );
   }
 
-  /// Opens the row's context menu at [position].
+  /// Opens the row's context menu at the pointer, [globalPosition].
+  void _showPointerMenu(
+    BuildContext context,
+    WidgetRef ref,
+    Offset globalPosition,
+  ) {
+    final position = signalTreePointerMenuAnchor(context, globalPosition);
+    if (position != null) unawaited(showContextMenu(context, ref, position));
+  }
+
+  /// Opens the row's context menu at [position], resolved against the root
+  /// overlay.
   ///
   /// A right-click or long-press anchors it at the pointer. The tree opens it
   /// from the keyboard (Shift+F10 or the Menu key) through this same method,
@@ -235,7 +242,7 @@ class ScopeTreeNode extends ConsumerWidget {
     RelativeRect position,
   ) async {
     final l10n = L10N.of(context);
-    final result = await showMenu<String>(
+    final result = await showRootMenu<String>(
       context: context,
       position: position,
       items: [
