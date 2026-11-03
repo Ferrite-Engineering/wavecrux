@@ -201,10 +201,11 @@ void main() {
       ),
       findsOneWidget,
     );
-    // Applied from the sheet, written to the tab.
-    await tester.tap(find.byType(Checkbox));
+    // Applied from the sheet, written to the tab. The Apply bar is pinned
+    // under the list, which leaves the checkbox below the fold of the sheet.
+    await tester.ensureVisible(find.byType(Checkbox));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(_apply);
+    await tester.tap(find.byType(Checkbox));
     await tester.pumpAndSettle();
     await tester.tap(_apply);
     await tester.pumpAndSettle();

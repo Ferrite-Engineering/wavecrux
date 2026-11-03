@@ -86,20 +86,15 @@ Finder get _fields => find.descendant(
   matching: find.byType(TextField),
 );
 
+// The Apply bar is pinned to the Inspector's bottom edge, outside the section.
 Finder get _apply => find.descendant(
-  of: find.byType(FsmStateNamesSection),
-  matching: find.descendant(
-    of: find.byType(CruxInspectorApplyBar),
-    matching: find.byType(FilledButton),
-  ),
+  of: find.byType(CruxInspectorApplyBar),
+  matching: find.byType(FilledButton),
 );
 
 Finder get _revert => find.descendant(
-  of: find.byType(FsmStateNamesSection),
-  matching: find.descendant(
-    of: find.byType(CruxInspectorApplyBar),
-    matching: find.byType(TextButton),
-  ),
+  of: find.byType(CruxInspectorApplyBar),
+  matching: find.byType(TextButton),
 );
 
 void main() {
