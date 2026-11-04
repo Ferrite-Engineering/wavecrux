@@ -4,6 +4,7 @@
 import 'dart:io';
 
 import 'package:logging/logging.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:wavecrux/services/rohd/rohd_sidecar.dart';
 import 'package:wavecrux/services/rohd/rohd_wave_map.dart';
@@ -47,7 +48,7 @@ Future<RohdWaveMap?> loadRohdWaveMap({
     if (!file.existsSync()) continue;
     // Case-folded: `top.flc.json` and `Top.flc.json` are one file on macOS and
     // Windows, and must not be read, or warned about, twice.
-    if (!seen.add(p.normalize(path).toLowerCase())) continue;
+    if (!seen.add(sidecarIdentity(path))) continue;
     final RohdSidecar? sidecar;
     try {
       final result = parseRohdSidecar(await file.readAsString());
@@ -62,7 +63,7 @@ Future<RohdWaveMap?> loadRohdWaveMap({
       _log.warning('The ROHD source-trace file $path could not be read.');
       continue;
     }
-    final resolver = _DartPathResolver(
+    final resolver = RohdDartPathResolver(
       packageRoot: sidecar.packageRoot,
       sidecarDir: p.dirname(path),
       waveformDir: dir,
@@ -73,6 +74,17 @@ Future<RohdWaveMap?> loadRohdWaveMap({
   }
   return first;
 }
+
+/// The key a sidecar is remembered by, so one file is read, and warned about,
+/// once however it was reached.
+///
+/// Case-folded and normalized: `top.flc.json` and `Top.flc.json`, or
+/// `C:\a\x.flc.json` and `c:/a/x.flc.json`, are one file on Windows and
+/// macOS. [context] is for tests, which can then exercise another platform's
+/// path rules.
+@visibleForTesting
+String sidecarIdentity(String path, {p.Context? context}) =>
+    (context ?? p.context).normalize(path).toLowerCase();
 
 List<String> _configured(String configured) {
   final value = configured.trim();
@@ -100,43 +112,49 @@ List<String> _flcIn(String dir) {
 /// folder above the sidecar, each above the waveform. If none holds it, the
 /// nearest of those with a `pubspec.yaml` is used, so the answer is still a
 /// usable path; failing that, the sidecar's own folder.
-class _DartPathResolver {
-  _DartPathResolver({
+///
+/// [context] is for tests, which can then exercise another platform's path
+/// rules.
+@visibleForTesting
+class RohdDartPathResolver {
+  RohdDartPathResolver({
     required this.packageRoot,
     required this.sidecarDir,
     required this.waveformDir,
-  });
+    p.Context? context,
+  }) : _p = context ?? p.context;
 
   final String? packageRoot;
   final String sidecarDir;
   final String waveformDir;
+  final p.Context _p;
 
   String resolve(String raw) {
     final normalized = p.posix.normalize(raw.replaceAll(r'\', '/'));
-    if (p.isAbsolute(normalized)) return p.normalize(normalized);
+    if (_p.isAbsolute(normalized)) return _p.normalize(normalized);
     final roots = <String>[
       ?packageRoot,
       ..._ancestors(sidecarDir),
       ..._ancestors(waveformDir),
     ];
     for (final root in roots) {
-      final candidate = p.normalize(p.join(root, normalized));
+      final candidate = _p.normalize(_p.join(root, normalized));
       if (File(candidate).existsSync()) return candidate;
     }
     for (final root in roots) {
-      if (File(p.join(root, 'pubspec.yaml')).existsSync()) {
-        return p.normalize(p.join(root, normalized));
+      if (File(_p.join(root, 'pubspec.yaml')).existsSync()) {
+        return _p.normalize(_p.join(root, normalized));
       }
     }
-    return p.normalize(p.join(sidecarDir, normalized));
+    return _p.normalize(_p.join(sidecarDir, normalized));
   }
 
-  static List<String> _ancestors(String dir) {
+  List<String> _ancestors(String dir) {
     final out = <String>[];
-    var current = p.absolute(dir);
+    var current = _p.absolute(dir);
     for (var i = 0; i < 8; i++) {
       out.add(current);
-      final parent = p.dirname(current);
+      final parent = _p.dirname(current);
       if (parent == current) break;
       current = parent;
     }
