@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logging/logging.dart';
+import 'package:path/path.dart' as p;
 import 'package:wavecrux/services/rohd/rohd_sidecar_locator.dart';
 
 import '../../support/rohd_fixture_package.dart';
@@ -46,10 +47,9 @@ void main() {
       () async {
         pkg = RohdFixturePackage.create(sidecar: false);
         File(pkg.inBuild('a.flc.json')).writeAsStringSync(
-          File('$kRohdFixtureDir/Top.flc.json').readAsStringSync().replaceAll(
-            '"0:59:19"',
-            '"0:77:7"',
-          ),
+          File(
+            '$kRohdFixtureDir/Top.flc.json',
+          ).readAsStringSync().replaceAll('"0:59:19"', '"0:77:7"'),
         );
         File(
           '$kRohdFixtureDir/Top.flc.json',
@@ -92,7 +92,9 @@ void main() {
     test('a waveform in a folder that is gone is null', () async {
       pkg = RohdFixturePackage.create(sidecar: false);
       expect(
-        await loadRohdWaveMap(waveformPath: '${pkg.root}/nowhere/top.vcd'),
+        await loadRohdWaveMap(
+          waveformPath: p.join(pkg.root, 'nowhere', 'top.vcd'),
+        ),
         isNull,
       );
     });
@@ -104,10 +106,10 @@ void main() {
       final elsewhere = Directory(pkg.path('trace'))..createSync();
       File(
         '$kRohdFixtureDir/Top.flc.json',
-      ).copySync('${elsewhere.path}/Top.flc.json');
+      ).copySync(p.join(elsewhere.path, 'Top.flc.json'));
       final map = await loadRohdWaveMap(
         waveformPath: pkg.inBuild('top.vcd'),
-        configured: '${elsewhere.path}/Top.flc.json',
+        configured: p.join(elsewhere.path, 'Top.flc.json'),
       );
       expect(map!.resolve('top', 'gated'), isNotNull);
     });
@@ -117,7 +119,7 @@ void main() {
       final elsewhere = Directory(pkg.path('trace'))..createSync();
       File(
         '$kRohdFixtureDir/Top.flc.json',
-      ).copySync('${elsewhere.path}/Top.flc.json');
+      ).copySync(p.join(elsewhere.path, 'Top.flc.json'));
       final map = await loadRohdWaveMap(
         waveformPath: pkg.inBuild('top.vcd'),
         configured: elsewhere.path,
@@ -131,7 +133,7 @@ void main() {
         pkg = RohdFixturePackage.create();
         final map = await loadRohdWaveMap(
           waveformPath: pkg.inBuild('top.vcd'),
-          configured: '${pkg.root}/missing.flc.json',
+          configured: p.join(pkg.root, 'missing.flc.json'),
         );
         expect(map!.resolve('top', 'gated'), isNotNull);
       },
@@ -166,5 +168,58 @@ void main() {
         expect(map!.resolve('top', 'gated'), isNotNull);
       },
     );
+  });
+
+  // These run the Windows rules on every platform: the Windows CI leg runs
+  // weekly, and a file system's case rules cannot be chosen on the machine
+  // running the tests.
+  group('Windows path rules, on any platform', () {
+    final win = p.Context(style: p.Style.windows, current: r'C:\work');
+
+    test('one sidecar reached by different spellings has one identity', () {
+      final a = sidecarIdentity(r'C:\proj\build\Top.flc.json', context: win);
+      expect(sidecarIdentity(r'c:\proj\build\top.flc.json', context: win), a);
+      expect(sidecarIdentity('C:/proj/build/./Top.flc.json', context: win), a);
+      expect(
+        sidecarIdentity(r'C:\proj\build\Other.flc.json', context: win),
+        isNot(a),
+      );
+    });
+
+    test('a Windows path in a sidecar is kept as it is', () {
+      final r = RohdDartPathResolver(
+        packageRoot: null,
+        sidecarDir: r'C:\proj\build',
+        waveformDir: r'C:\proj\build',
+        context: win,
+      );
+      expect(
+        r.resolve(r'D:\other\lib\design.dart'),
+        r'D:\other\lib\design.dart',
+      );
+      expect(
+        r.resolve('D:/other/lib/design.dart'),
+        r'D:\other\lib\design.dart',
+      );
+    });
+
+    test('a relative path comes back in backslashes', () {
+      final r = RohdDartPathResolver(
+        packageRoot: r'C:\proj',
+        sidecarDir: r'C:\proj\build',
+        waveformDir: r'C:\proj\build',
+        context: win,
+      );
+      // No such folder here, so the answer is the fallback join; it must still
+      // be a clean Windows path.
+      expect(
+        r.resolve('.dart_tool/../lib/design.dart'),
+        r'C:\proj\build\lib\design.dart',
+      );
+      expect(
+        r.resolve(r'lib\sub\..\design.dart'),
+        r'C:\proj\build\lib\design.dart',
+      );
+    });
   });
 }

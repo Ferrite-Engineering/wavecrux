@@ -50,8 +50,11 @@ class RohdFixturePackage {
   /// A path under [build].
   String inBuild(String name) => p.join(build, name);
 
-  /// A path under the package.
-  String path(String relative) => p.join(root, relative);
+  /// A path under the package. [relative] is written with `/` on every
+  /// platform and comes back in the platform's own separators, the form the
+  /// code under test returns, so it can be compared as a string on Windows.
+  String path(String relative) =>
+      p.normalize(p.joinAll([root, ...p.posix.split(relative)]));
 
   /// Removes the package.
   void dispose() {
