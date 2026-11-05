@@ -416,6 +416,45 @@ abstract final class VectorSignalPainter {
     textDirection: TextDirection.ltr,
   );
 
+  /// Measures single characters for [_advanceWidth]. Kept apart from
+  /// [_labelPainter] so a measurement never disturbs the label being fitted.
+  static final TextPainter _advancePainter = TextPainter(
+    textDirection: TextDirection.ltr,
+  );
+
+  /// Rendered width of each UTF-16 code unit under [_advanceStyle].
+  static final Map<int, double> _advances = <int, double>{};
+  static TextStyle? _advanceStyle;
+
+  /// Width of [text] as the sum of its characters' advances.
+  ///
+  /// Laying a paragraph out is the expensive part of painting a bus label, and
+  /// a fit search needs several widths per label. The value font is monospace,
+  /// so a width is the sum of per-character advances, each laid out once per
+  /// style and cached. This is an estimate (it ignores kerning and ligatures);
+  /// [_paintLabel] checks the one layout it keeps against the real width.
+  static double _advanceWidth(String text, TextStyle style) {
+    final cached = _advanceStyle;
+    if (cached == null || !(identical(cached, style) || cached == style)) {
+      _advances.clear();
+      _advanceStyle = style;
+    }
+    var width = 0.0;
+    for (var i = 0; i < text.length; i++) {
+      final unit = text.codeUnitAt(i);
+      var advance = _advances[unit];
+      if (advance == null) {
+        _advancePainter
+          ..text = TextSpan(text: String.fromCharCode(unit), style: style)
+          ..layout();
+        advance = _advancePainter.width;
+        _advances[unit] = advance;
+      }
+      width += advance;
+    }
+    return width;
+  }
+
   static void _paintLabel(
     Canvas canvas,
     String label,
@@ -441,14 +480,28 @@ abstract final class VectorSignalPainter {
     // Measured unconstrained: a `maxWidth` layout clips the text to fit and
     // reports the clipped width, which is how an overflowing label used to
     // draw its leading digits with nothing to say that any were missing.
-    final fitted = fitBusLabel(
+    // The search runs on cached advances, so a label that overflows costs the
+    // one layout that is drawn, not one per candidate.
+    var fitted = fitBusLabel(
       label,
       maxWidth: maxWidth,
-      measure: measure,
+      measure: (text) => _advanceWidth(text, style),
       stripLeadingZeros: stripLeadingZeros,
     );
     if (fitted == null) return;
-    if (laidOut != fitted) measure(fitted);
+    measure(fitted);
+    if (tp.width > maxWidth) {
+      // The estimate was optimistic (kerning, a ligature): search again on
+      // real layouts, so nothing wider than the lane is ever drawn.
+      fitted = fitBusLabel(
+        label,
+        maxWidth: maxWidth,
+        measure: measure,
+        stripLeadingZeros: stripLeadingZeros,
+      );
+      if (fitted == null) return;
+      if (laidOut != fitted) measure(fitted);
+    }
 
     final textX = (x0 + x1) / 2.0 - tp.width / 2.0;
     final textY = yMid - tp.height / 2.0;
