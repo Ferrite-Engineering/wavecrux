@@ -20,8 +20,8 @@ import 'package:wavecrux/shared/widgets/fold_feed.dart';
 // iPhone Duo inner panel as published (D4 measures the real figure): about
 // 669 × 951 pt upright, with a 40 pt division region across the middle.
 const _upright = Size(669, 951);
-final _horizontalCrease = Rect.fromLTWH(0, 455.5, 669, 40);
-final _verticalCrease = Rect.fromLTWH(455.5, 0, 40, 669);
+const _horizontalCrease = Rect.fromLTWH(0, 455.5, 669, 40);
+const _verticalCrease = Rect.fromLTWH(455.5, 0, 40, 669);
 
 class _FakeFoldSource implements FoldSource {
   _FakeFoldSource(this.events);
@@ -51,14 +51,14 @@ void main() {
 
     test('horizontal crease is tabletop, vertical is book', () {
       expect(
-        FoldState(
+        const FoldState(
           status: HingeStatus.partiallyOpen,
           crease: _horizontalCrease,
         ).posture,
         FoldPosture.tabletop,
       );
       expect(
-        FoldState(
+        const FoldState(
           status: HingeStatus.partiallyOpen,
           crease: _verticalCrease,
         ).posture,
@@ -167,7 +167,7 @@ void main() {
   group('tabletopSplit', () {
     test('puts the dock boundary on the crease centre line', () {
       // Dock area 800 tall, crease 40 tall centred at 420.
-      final split = tabletopSplit(Rect.fromLTWH(0, 400, 669, 40), 800);
+      final split = tabletopSplit(const Rect.fromLTWH(0, 400, 669, 40), 800);
       expect(split, isNotNull);
       expect(split!.bottomSize, 380);
       expect(split.inset, 20);
@@ -179,21 +179,21 @@ void main() {
     });
 
     test('null when either half would be unusably short', () {
-      expect(tabletopSplit(Rect.fromLTWH(0, 60, 669, 40), 800), isNull);
-      expect(tabletopSplit(Rect.fromLTWH(0, 700, 669, 40), 800), isNull);
+      expect(tabletopSplit(const Rect.fromLTWH(0, 60, 669, 40), 800), isNull);
+      expect(tabletopSplit(const Rect.fromLTWH(0, 700, 669, 40), 800), isNull);
     });
   });
 
   group('bookSplit', () {
     test('one pane per page, crease as the gap', () {
-      final split = bookSplit(Rect.fromLTWH(455, 0, 40, 600), 951);
+      final split = bookSplit(const Rect.fromLTWH(455, 0, 40, 600), 951);
       expect(split, (leftWidth: 455.0, gap: 40.0, rightWidth: 456.0));
     });
 
     test('null without a vertical crease or with a sliver pane', () {
       expect(bookSplit(null, 951), isNull);
       expect(bookSplit(_horizontalCrease, 951), isNull);
-      expect(bookSplit(Rect.fromLTWH(120, 0, 40, 600), 951), isNull);
+      expect(bookSplit(const Rect.fromLTWH(120, 0, 40, 600), 951), isNull);
     });
   });
 
@@ -297,7 +297,7 @@ void main() {
             ),
           ),
         );
-        final tabletop = FoldState(
+        const tabletop = FoldState(
           status: HingeStatus.partiallyOpen,
           hingeAngle: 100,
           crease: _horizontalCrease,
@@ -354,20 +354,20 @@ void main() {
       container
           .read(foldStateProvider.notifier)
           .set(
-            FoldState(
+            const FoldState(
               status: HingeStatus.partiallyOpen,
               crease: Rect.fromLTWH(0, 400, 800, 40),
             ),
           );
       await tester.pump();
       await tester.pump();
-      expect(seen.last, Rect.fromLTWH(0, 300, 800, 40));
+      expect(seen.last, const Rect.fromLTWH(0, 300, 800, 40));
 
       // Book posture is not asked for here.
       container
           .read(foldStateProvider.notifier)
           .set(
-            FoldState(
+            const FoldState(
               status: HingeStatus.partiallyOpen,
               crease: Rect.fromLTWH(380, 0, 40, 600),
             ),

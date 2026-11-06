@@ -26,11 +26,19 @@ class WaveCruxDockRestoreBars extends ConsumerWidget {
   const WaveCruxDockRestoreBars({
     required this.child,
     required this.onLoadStems,
+    this.foldHeld = false,
     super.key,
   });
 
   /// The IDE layout being wrapped.
   final Widget child;
+
+  /// True while a half-folded foldable decides the layout (tabletop
+  /// posture): the docks shown are the fold's, not the user's, so a bar
+  /// offering to restore a region the fold has already opened (or hidden on
+  /// purpose) would be wrong, and its strip would push the dock boundary off
+  /// the crease. No bars while held; the frame keeps its shape.
+  final bool foldHeld;
 
   /// Opens the RTL stems file picker (the viewer screen owns the flow).
   final VoidCallback onLoadStems;
@@ -54,9 +62,9 @@ class WaveCruxDockRestoreBars extends ConsumerWidget {
     final layout = ref.watch(panelLayoutProvider);
     final notifier = ref.read(panelLayoutProvider.notifier);
 
-    final showLeftBar = !layout.signalTreeVisible;
-    final showRightBar = !layout.valueColumnVisible;
-    final showBottomBar = !layout.transactionViewVisible;
+    final showLeftBar = !foldHeld && !layout.signalTreeVisible;
+    final showRightBar = !foldHeld && !layout.valueColumnVisible;
+    final showBottomBar = !foldHeld && !layout.transactionViewVisible;
 
     // crux_ide_layout's CruxDockRestoreFrame keeps one tree shape whatever
     // is collapsed and keys each slot, so a bar appearing or vanishing never

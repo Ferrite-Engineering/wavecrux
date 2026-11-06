@@ -3,8 +3,10 @@
 
 // Structural guardrail for the IdeLayout pane min-size invariants
 // (ARCHITECTURE.md §3.1.8.6): the per-tab `CruxIdeLayout` in
-// `lib/features/viewer/screens/viewer_screen.dart` must construct its
-// `IdeController` with pane minimums of at least:
+// `lib/features/viewer/screens/viewer_screen_fold.dart` (the per-tab dock
+// area, `_buildIdeArea`, a part of `viewer_screen.dart` since the foldable
+// layouts of campaign 2026-10-iphone-duo) must construct its `IdeController`
+// with pane minimums of at least:
 //
 //   - bottomMinSize ≥ 80 dp  — "The bottom panel must honor its
 //     `bottomMinSize` (≥ 80 dp) so it cannot be re-shown at zero height."
@@ -44,7 +46,7 @@ void main() {
     'min-size floors (bottom ≥ 80, left/right ≥ 150, center ≥ 120 dp)',
     () {
       final file = File(
-        'lib/features/viewer/screens/viewer_screen.dart',
+        'lib/features/viewer/screens/viewer_screen_fold.dart',
       );
       expect(
         file.existsSync(),
