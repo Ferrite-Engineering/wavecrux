@@ -872,7 +872,7 @@ only direct dev dependencies as such, so the shipped subset
 cannot be computed exactly, and over-listing is the safe side
 of an attribution question.
 
-  Apache-2.0 7,  BSD-3-Clause 122,  MIT 28,  MPL-2.0 1,  SDK 47
+  Apache-2.0 7,  BSD-3-Clause 122,  MIT 28,  MPL-2.0 1,  SDK 48
 
   _fe_analyzer_shared                          99.0.0           BSD-3-Clause
   analyzer                                     12.1.0           BSD-3-Clause
@@ -1068,6 +1068,7 @@ of an attribution question.
   very_good_analysis                           11.0.0           MIT
   vm_service                                   15.4.0           BSD-3-Clause
   watcher                                      1.2.1            BSD-3-Clause
+  wavecrux_fold                                0.1.0            SDK
   web                                          1.1.1            BSD-3-Clause
   web_socket                                   1.0.1            BSD-3-Clause
   web_socket_channel                           3.0.3            BSD-3-Clause
