@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Folding a foldable into tabletop ("laptop") posture and back, with semantics
-// on and a waveform open (campaign 2026-10-iphone-duo, D5).
+// on and a waveform open.
 //
 // The fold is the demo, so the transition must be invisible to the session:
 // the canvas stays in place (same pane scope, no GlobalKey migration across

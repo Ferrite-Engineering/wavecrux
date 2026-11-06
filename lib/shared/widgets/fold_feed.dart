@@ -50,7 +50,7 @@ class _FoldFeedState extends ConsumerState<FoldFeed> {
       (state) {
         if (!mounted || state == _native) return;
         // Debug builds only: the real crease and panel size, for checking a
-        // new device against the layout's assumptions (campaign D4).
+        // new device against the layout's assumptions.
         if (kDebugMode &&
             (state.posture != _native.posture ||
                 state.status != _native.status)) {

@@ -5,8 +5,8 @@
 // (ARCHITECTURE.md §3.1.8.6): the per-tab `CruxIdeLayout` in
 // `lib/features/viewer/screens/viewer_screen_fold.dart` (the per-tab dock
 // area, `_buildIdeArea`, a part of `viewer_screen.dart` since the foldable
-// layouts of campaign 2026-10-iphone-duo) must construct its `IdeController`
-// with pane minimums of at least:
+// layouts arrived) must construct its `IdeController` with pane minimums of
+// at least:
 //
 //   - bottomMinSize ≥ 80 dp  — "The bottom panel must honor its
 //     `bottomMinSize` (≥ 80 dp) so it cannot be re-shown at zero height."

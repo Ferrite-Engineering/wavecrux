@@ -1,7 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
-// The viewer screen on a foldable (campaign 2026-10-iphone-duo): the dock area
+// The viewer screen on a foldable (iPhone Duo, Android foldables): the dock area
 // that splits around a tabletop crease, Stage brought forward when the device
 // folds into tabletop posture, and tilt-to-zoom. Every member here is inert on
 // a device without a hinge, where the fold state is always FoldState.none.

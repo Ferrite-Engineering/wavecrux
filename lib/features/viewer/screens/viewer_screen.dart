@@ -1039,7 +1039,7 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
               // this tab's panel state and reuses the docks' own entry
               // assemblers.
               //
-              // Foldables (campaign 2026-10-iphone-duo): half-folded like a
+              // Foldables (the iPhone Duo, Android foldables): half-folded like a
               // laptop, the dock boundary moves onto the crease, so the
               // waveform fills the upright half and the bottom dock (Stage)
               // the flat half. The crease is measured in this area's own
