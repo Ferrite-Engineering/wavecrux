@@ -1,0 +1,27 @@
+# Copyright 2026 Ferrite Engineering LLC
+# SPDX-License-Identifier: Apache-2.0
+#
+# Native-only plugin: forwards the iPhone Duo's hinge (UIHingeInteraction) and
+# crease (UIView reserved regions, kind `division`) to Dart on the event
+# channel `com.wavecrux/fold`. The Dart side lives in the app
+# (`lib/services/platform/fold_source.dart`), so this package has no Dart code.
+# A package rather than Runner code so the open-core and Pro apps, which each
+# have their own ios/Runner, share one copy.
+name: wavecrux_fold
+description: iPhone Duo hinge and crease events for WaveCrux.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.10.0
+  flutter: ">=3.38.1"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      ios:
+        pluginClass: WCXFoldPlugin

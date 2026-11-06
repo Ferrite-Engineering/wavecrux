@@ -40,6 +40,8 @@ class _WaveCruxIdePanelLayout implements IdePanelLayout {
     required this.isPhone,
     this.defaultLeft = 280,
     this.defaultRight = 220,
+    this.tabletopBottom,
+    this.compactSides = false,
   });
 
   final PanelLayoutState _state;
@@ -51,24 +53,41 @@ class _WaveCruxIdePanelLayout implements IdePanelLayout {
   final double defaultLeft;
   final double defaultRight;
 
+  /// Set while a foldable is half-folded like a laptop: the bottom dock's
+  /// height that puts its top edge on the crease. The waveform then has the
+  /// upright half to itself and the dock (Stage) the flat half; the side
+  /// docks step aside. The user's own panel state is not touched, so going
+  /// flat restores exactly what was there.
+  final double? tabletopBottom;
+
+  /// Hide the side docks while two panes share a half-folded book-posture
+  /// foldable, one pane per page: a page is too narrow for the signal tree
+  /// and the value column beside a waveform. Preferences are kept.
+  final bool compactSides;
+
+  bool get _sidesHidden => isPhone || compactSides || tabletopBottom != null;
+
   @override
-  bool get leftVisible => !isPhone && _state.signalTreeVisible;
+  bool get leftVisible => !_sidesHidden && _state.signalTreeVisible;
 
   @override
   PaneSize? get leftSize => PaneSize.pixel(_state.leftPaneSize ?? defaultLeft);
 
   @override
-  bool get rightVisible => !isPhone && _state.valueColumnVisible;
+  bool get rightVisible => !_sidesHidden && _state.valueColumnVisible;
 
   @override
   PaneSize? get rightSize =>
       PaneSize.pixel(_state.rightPaneSize ?? defaultRight);
 
   @override
-  bool get bottomVisible => !isPhone && _state.transactionViewVisible;
+  bool get bottomVisible =>
+      tabletopBottom != null || (!isPhone && _state.transactionViewVisible);
 
   @override
-  PaneSize? get bottomSize => _state.bottomDockMaximized
+  PaneSize? get bottomSize => tabletopBottom != null
+      ? PaneSize.pixel(tabletopBottom!)
+      : _state.bottomDockMaximized
       // Maximize: report an effectively-infinite height and let the
       // CruxIdeLayout fit clamp cap it at the window minus the center floor.
       // The user's real size stays in bottomPaneSize, so restoring is just
@@ -105,6 +124,31 @@ class _WaveCruxIdePanelLayoutSink implements IdePanelLayoutSink {
 
   @override
   void setBottomSize(double pixels) => _notifier.setBottomPaneSize(pixels);
+}
+
+/// The write side while the fold decides the layout (tabletop posture): drags
+/// and collapses are not written back, so the user's saved geometry is the
+/// one that returns when the device goes flat.
+class _FoldHeldIdePanelLayoutSink implements IdePanelLayoutSink {
+  const _FoldHeldIdePanelLayoutSink();
+
+  @override
+  void setLeftVisible({required bool visible}) {}
+
+  @override
+  void setRightVisible({required bool visible}) {}
+
+  @override
+  void setBottomVisible({required bool visible}) {}
+
+  @override
+  void setLeftSize(double pixels) {}
+
+  @override
+  void setRightSize(double pixels) {}
+
+  @override
+  void setBottomSize(double pixels) {}
 }
 
 /// Wraps the WaveformViewCenter (and every widget inside it that reads

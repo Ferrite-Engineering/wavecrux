@@ -74,6 +74,12 @@ void main() {
       expect((await service.load()).rohdSidecarPath, 'build/Top.flc.json');
     });
 
+    test('round-trip: hingeZoomEnabled survives, and defaults off', () async {
+      expect((await service.load()).hingeZoomEnabled, isFalse);
+      await service.save(const AppSettings().copyWith(hingeZoomEnabled: true));
+      expect((await service.load()).hingeZoomEnabled, isTrue);
+    });
+
     test('canvasLegibilityBoost defaults to false', () async {
       final loaded = await service.load();
       expect(loaded.canvasLegibilityBoost, isFalse);

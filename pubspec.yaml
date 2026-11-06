@@ -307,6 +307,12 @@ dependencies:
   toml: ^0.18.0
   url_launcher: ^6.3.0
   uuid: ^4.5.3
+  # iPhone Duo hinge and crease (iOS 27.1 UIHingeInteraction and reserved
+  # regions) on the `com.wavecrux/fold` event channel. Native only, in-tree so
+  # the open-core and Pro apps share one copy; the Dart side is
+  # lib/services/platform/fold_source.dart.
+  wavecrux_fold:
+    path: ./packages/wavecrux_fold
   web: ^1.1.0
   # Frameless custom title bar on Windows/Linux (VS Code-style chrome: app
   # logo + inline menus + custom min/maximize/close caption buttons).

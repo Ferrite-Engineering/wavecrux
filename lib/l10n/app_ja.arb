@@ -1605,6 +1605,14 @@
   "@settingsCanvasLegibilityBoostDescription": {
     "description": "Descriptive subtitle under the legibility-boost toggle in the Appearance section"
   },
+  "settingsHingeZoomLabel": "傾けてズーム（折りたたみ端末）",
+  "@settingsHingeZoomLabel": {
+    "description": "Label for the toggle that lets tilting a half-folded foldable phone zoom the waveform time axis"
+  },
+  "settingsHingeZoomDescription": "端末をノートパソコンのように半分折りたたんだとき、画面を傾けるとカーソルを中心に時間軸をズームします。手前に倒すと拡大、奥に倒すと縮小します",
+  "@settingsHingeZoomDescription": {
+    "description": "Subtitle under the tilt-to-zoom toggle in the Orientation section, shown only on a device with a hinge"
+  },
   "settingsWaveformDefaultsSection": "波形のデフォルト",
   "@settingsWaveformDefaultsSection": {
     "description": "Section heading for waveform display default settings"

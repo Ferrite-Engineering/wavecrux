@@ -50,6 +50,7 @@ class AppSettings {
     this.autoCheckForUpdates = true,
     this.canvasLegibilityBoost = false,
     this.isaTableDirectories = const <String>[],
+    this.hingeZoomEnabled = false,
   });
 
   /// The cross-suite shared subset of settings (theme, locale, diagnostics
@@ -171,6 +172,12 @@ class AppSettings {
   /// decoder plugin.
   final List<String> isaTableDirectories;
 
+  /// When `true`, tilting the upright half of a half-folded foldable (the
+  /// iPhone Duo in laptop posture) zooms the time axis around the cursor:
+  /// closing the screen towards you zooms in, opening it zooms out. Off by
+  /// default, and offered only on a device that reports a hinge angle.
+  final bool hingeZoomEnabled;
+
   // ─── Forwarder getters into [core] ───────────────────────────────────────
   // Preserve the historical flat API so existing read sites keep working.
   // Equivalent to writing `settings.core.themeMode` everywhere; consumer
@@ -261,6 +268,7 @@ class AppSettings {
     bool? autoCheckForUpdates,
     bool? canvasLegibilityBoost,
     List<String>? isaTableDirectories,
+    bool? hingeZoomEnabled,
   }) {
     final newCore =
         core ??
@@ -306,6 +314,7 @@ class AppSettings {
       canvasLegibilityBoost:
           canvasLegibilityBoost ?? this.canvasLegibilityBoost,
       isaTableDirectories: isaTableDirectories ?? this.isaTableDirectories,
+      hingeZoomEnabled: hingeZoomEnabled ?? this.hingeZoomEnabled,
     );
   }
 
@@ -336,6 +345,7 @@ class AppSettings {
     if (other.aiEndpoint != aiEndpoint) return false;
     if (other.autoCheckForUpdates != autoCheckForUpdates) return false;
     if (other.canvasLegibilityBoost != canvasLegibilityBoost) return false;
+    if (other.hingeZoomEnabled != hingeZoomEnabled) return false;
     if (!_listEquals(other.isaTableDirectories, isaTableDirectories)) {
       return false;
     }
@@ -373,6 +383,7 @@ class AppSettings {
     autoCheckForUpdates,
     canvasLegibilityBoost,
     Object.hashAll(isaTableDirectories),
+    hingeZoomEnabled,
   ]);
 
   @override
@@ -410,6 +421,7 @@ class AppSettings {
       'aiExperimentalEnabled: $aiExperimentalEnabled, '
       'aiProvider: $aiProvider, '
       'aiEndpoint: $aiEndpoint, '
-      'autoCheckForUpdates: $autoCheckForUpdates'
+      'autoCheckForUpdates: $autoCheckForUpdates, '
+      'hingeZoomEnabled: $hingeZoomEnabled'
       ')';
 }

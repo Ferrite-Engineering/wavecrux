@@ -136,6 +136,7 @@ import 'package:wavecrux/services/workspace/wavecrux_workspace_codec.dart';
 import 'package:wavecrux/services/workspace/window_bounds_store.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
 import 'package:wavecrux/shared/widgets/display_size_feed.dart';
+import 'package:wavecrux/shared/widgets/fold_feed.dart';
 
 /// An organization theme pack that did not apply at launch. `developer.log`
 /// emits nothing from a release build, so this goes to the product log.
@@ -2048,7 +2049,12 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
         // host — title bar and menu bar included, which is why it wraps
         // everything the builder draws rather than living in the viewer.
         // Renders `app` untouched on the web and on mobile.
-        final droppable = DesktopFileDropTarget(child: app);
+        // Hinge and crease (iPhone Duo, Android foldables) into
+        // foldStateProvider, and the crease into MediaQuery while half-folded
+        // so dialogs open beside it rather than across it. Outside
+        // DisplaySizeFeed so both read the same root MediaQuery. Returns its
+        // child unchanged on a device without a hinge.
+        final droppable = DesktopFileDropTarget(child: FoldFeed(child: app));
         if (!useCustomWindowChrome) return droppable;
         // Persist window geometry live (debounced) on every resize/move/maximize
         // so it survives even when the quit-time flush is cut off by a hard

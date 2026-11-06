@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/core/mobile_metrics.dart';
 import 'package:wavecrux/domain/enums/device_class.dart';
+import 'package:wavecrux/domain/models/fold_state.dart';
 import 'package:wavecrux/domain/models/pane_id.dart';
 import 'package:wavecrux/domain/models/wavecrux_tab_payload.dart';
 import 'package:wavecrux/features/diagnostics/providers/diagnostics_providers.dart';
@@ -26,6 +27,9 @@ import 'package:wavecrux/services/panes/pane_container_manager.dart';
 import 'package:wavecrux/services/tabs/active_tab_navigator.dart';
 import 'package:wavecrux/services/tabs/tab_container_manager.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
+import 'package:wavecrux/shared/layouts/fold_layout.dart';
+import 'package:wavecrux/shared/layouts/fold_local_crease.dart';
+import 'package:wavecrux/shared/layouts/fold_state_provider.dart';
 import 'package:wavecrux/shared/platform/reveal_tab_file.dart';
 import 'package:wavecrux/shared/widgets/lazy_indexed_stack.dart';
 
@@ -66,7 +70,11 @@ class WaveCruxPaneHost extends ConsumerWidget {
     final showTabBars =
         deviceClass != DeviceClass.phone &&
         deviceClass != DeviceClass.phoneLandscape;
-    final enableSplitPane = _splitAllowed(context, deviceClass);
+    final enableSplitPane = _splitAllowed(
+      context,
+      deviceClass,
+      foldable: ref.watch(hasHingeProvider),
+    );
 
     return crux.PaneHost<WaveCruxTabPayload>(
       provider: workspaceProvider,
@@ -146,8 +154,15 @@ class WaveCruxPaneHost extends ConsumerWidget {
 
   /// Whether the current device class supports split-pane — the shared
   /// [isSplitPaneAllowed] rule, measured against this host's window width.
-  static bool _splitAllowed(BuildContext context, DeviceClass deviceClass) =>
-      isSplitPaneAllowed(deviceClass, MediaQuery.sizeOf(context).width);
+  static bool _splitAllowed(
+    BuildContext context,
+    DeviceClass deviceClass, {
+    required bool foldable,
+  }) => isSplitPaneAllowed(
+    deviceClass,
+    MediaQuery.sizeOf(context).width,
+    foldable: foldable,
+  );
 
   /// Fully composes the tab chip's context menu, reproducing the
   /// pre-consolidation order: a non-interactive monospace full-path header
@@ -335,7 +350,11 @@ class _PaneTrailingActions extends ConsumerWidget {
     final canSplit =
         workspace != null &&
         workspace.panes.length == 1 &&
-        WaveCruxPaneHost._splitAllowed(context, deviceClass) &&
+        WaveCruxPaneHost._splitAllowed(
+          context,
+          deviceClass,
+          foldable: ref.watch(hasHingeProvider),
+        ) &&
         paneTabCount >= 2;
 
     return Row(
@@ -435,53 +454,77 @@ class _ResizablePaneRowState extends State<_ResizablePaneRow> {
     final splitterColor = (_hovered || _dragging)
         ? chrome?.splitterHover ?? colorScheme.primary
         : chrome?.splitter ?? colorScheme.outlineVariant;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final totalWidth = constraints.maxWidth;
-        final usable = (totalWidth - _kHitWidth).clamp(0.0, double.infinity);
-        final minFrac = usable > 0
-            ? (_kMinPaneWidthDp / usable).clamp(0.0, 0.5)
-            : 0.0;
-        final maxFrac = 1.0 - minFrac;
-        final clampedFrac = _leftFraction.clamp(minFrac, maxFrac);
-        final leftWidth = usable * clampedFrac;
-        final rightWidth = usable - leftWidth;
+    // A half-folded foldable held like a book puts one pane on each page: the
+    // crease band becomes the gap and the splitter cannot be dragged off it.
+    // The widget tree is the same either way, so a posture change re-lays
+    // the panes out without remounting them. No hinge: `crease` is always
+    // null and this is the plain drag-resizable row.
+    return FoldLocalCrease(
+      posture: FoldPosture.book,
+      builder: (context, crease) => LayoutBuilder(
+        builder: (context, constraints) {
+          final totalWidth = constraints.maxWidth;
+          final book = bookSplit(crease, totalWidth);
+          final splitterWidth = book?.gap ?? _kHitWidth;
+          final usable = (totalWidth - splitterWidth).clamp(
+            0.0,
+            double.infinity,
+          );
+          final minFrac = usable > 0
+              ? (_kMinPaneWidthDp / usable).clamp(0.0, 0.5)
+              : 0.0;
+          final maxFrac = 1.0 - minFrac;
+          final clampedFrac = _leftFraction.clamp(minFrac, maxFrac);
+          final leftWidth = book?.leftWidth ?? usable * clampedFrac;
+          final rightWidth = book?.rightWidth ?? usable - leftWidth;
 
-        return Row(
-          children: [
-            SizedBox(width: leftWidth, child: widget.children[0]),
-            MouseRegion(
-              cursor: SystemMouseCursors.resizeColumn,
-              onEnter: (_) => setState(() => _hovered = true),
-              onExit: (_) => setState(() => _hovered = false),
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onHorizontalDragStart: (_) => setState(() => _dragging = true),
-                onHorizontalDragEnd: (_) => setState(() => _dragging = false),
-                onHorizontalDragCancel: () => setState(() => _dragging = false),
-                onHorizontalDragUpdate: (details) {
-                  if (usable <= 0) return;
-                  setState(() {
-                    final next = (leftWidth + details.delta.dx) / usable;
-                    _leftFraction = next.clamp(minFrac, maxFrac);
-                  });
-                },
-                child: SizedBox(
-                  width: _kHitWidth,
-                  child: Center(
-                    child: Container(
-                      key: const ValueKey('paneSplitterBar'),
-                      width: _kSplitterWidth,
-                      color: splitterColor,
+          return Row(
+            children: [
+              SizedBox(width: leftWidth, child: widget.children[0]),
+              MouseRegion(
+                cursor: book == null
+                    ? SystemMouseCursors.resizeColumn
+                    : MouseCursor.defer,
+                onEnter: (_) => setState(() => _hovered = true),
+                onExit: (_) => setState(() => _hovered = false),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onHorizontalDragStart: book != null
+                      ? null
+                      : (_) => setState(() => _dragging = true),
+                  onHorizontalDragEnd: book != null
+                      ? null
+                      : (_) => setState(() => _dragging = false),
+                  onHorizontalDragCancel: book != null
+                      ? null
+                      : () => setState(() => _dragging = false),
+                  onHorizontalDragUpdate: book != null
+                      ? null
+                      : (details) {
+                          if (usable <= 0) return;
+                          setState(() {
+                            final next =
+                                (leftWidth + details.delta.dx) / usable;
+                            _leftFraction = next.clamp(minFrac, maxFrac);
+                          });
+                        },
+                  child: SizedBox(
+                    width: splitterWidth,
+                    child: Center(
+                      child: Container(
+                        key: const ValueKey('paneSplitterBar'),
+                        width: book == null ? _kSplitterWidth : 0,
+                        color: splitterColor,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            SizedBox(width: rightWidth, child: widget.children[1]),
-          ],
-        );
-      },
+              SizedBox(width: rightWidth, child: widget.children[1]),
+            ],
+          );
+        },
+      ),
     );
   }
 }

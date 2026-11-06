@@ -59,6 +59,16 @@ void main() {
       expect(on.copyWith(canvasLegibilityBoost: false), base);
     });
 
+    test('hingeZoomEnabled defaults off, copyWith and equality', () {
+      const base = AppSettings();
+      expect(base.hingeZoomEnabled, isFalse);
+      final on = base.copyWith(hingeZoomEnabled: true);
+      expect(on.hingeZoomEnabled, isTrue);
+      expect(on, isNot(base));
+      expect(on.hashCode, isNot(base.hashCode));
+      expect(on.copyWith(hingeZoomEnabled: false), base);
+    });
+
     test('custom constructor values', () {
       final s = const AppSettings().copyWith(
         themeMode: AppThemeMode.light,

@@ -1738,6 +1738,14 @@
   "@settingsCanvasLegibilityBoostDescription": {
     "description": "Descriptive subtitle under the legibility-boost toggle in the Appearance section"
   },
+  "settingsHingeZoomLabel": "Tilt to Zoom (Foldables)",
+  "@settingsHingeZoomLabel": {
+    "description": "Label for the toggle that lets tilting a half-folded foldable phone zoom the waveform time axis"
+  },
+  "settingsHingeZoomDescription": "When the phone is half-folded like a laptop, tilting the screen zooms the time axis around the cursor: towards you zooms in, away zooms out",
+  "@settingsHingeZoomDescription": {
+    "description": "Subtitle under the tilt-to-zoom toggle in the Orientation section, shown only on a device with a hinge"
+  },
   "settingsWaveformDefaultsSection": "Waveform Defaults",
   "@settingsWaveformDefaultsSection": {
     "description": "Section heading for waveform display default settings"

@@ -57,6 +57,10 @@ class AppSettingsNotifier extends _$AppSettingsNotifier {
   Future<void> setCanvasLegibilityBoost({required bool enabled}) =>
       _update((s) => s.copyWith(canvasLegibilityBoost: enabled));
 
+  /// Turns tilt-to-zoom on a half-folded foldable on or off.
+  Future<void> setHingeZoomEnabled({required bool enabled}) =>
+      _update((s) => s.copyWith(hingeZoomEnabled: enabled));
+
   Future<void> setDefaultDisplayFormat(DisplayFormat format) =>
       _update((s) => s.copyWith(defaultDisplayFormat: format));
 

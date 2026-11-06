@@ -31,6 +31,7 @@ import 'package:wavecrux/features/stage/settings/custom_widgets_panel.dart';
 import 'package:wavecrux/features/workspace/commands/reset_workspace_command.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/services/remote/remote_control_notifier.dart';
+import 'package:wavecrux/shared/layouts/fold_state_provider.dart';
 import 'package:wavecrux/shared/widgets/help_link.dart';
 
 /// The inset every Settings row takes inside its card, the same one the shared
@@ -582,6 +583,23 @@ class _OrientationSection extends ConsumerWidget {
             onSelectionChanged: (s) => notifier.setOrientationLockMode(s.first),
           ),
         ),
+        // Only a device with a hinge can tilt to zoom, so only it offers the
+        // switch (the iPhone Duo; Android foldables report no angle and never
+        // zoom, so it is hidden there too until one does).
+        if (ref.watch(
+          foldStateProvider.select((s) => s.hasHinge && s.hingeAngle != null),
+        ))
+          Padding(
+            padding: _kSettingsRowPadding,
+            child: CruxFormRow.toggle(
+              key: const Key('settingsHingeZoomSwitch'),
+              label: l10n.settingsHingeZoomLabel,
+              help: l10n.settingsHingeZoomDescription,
+              value: settings.hingeZoomEnabled,
+              onChanged: (v) =>
+                  unawaited(notifier.setHingeZoomEnabled(enabled: v)),
+            ),
+          ),
       ],
     );
   }

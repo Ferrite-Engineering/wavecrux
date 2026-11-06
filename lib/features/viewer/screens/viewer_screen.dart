@@ -50,6 +50,7 @@ import 'package:wavecrux/domain/enums/device_class.dart';
 import 'package:wavecrux/domain/enums/display_format.dart';
 import 'package:wavecrux/domain/interfaces/waveform_data_source.dart';
 import 'package:wavecrux/domain/models/app_settings.dart';
+import 'package:wavecrux/domain/models/fold_state.dart';
 import 'package:wavecrux/domain/models/session_state.dart';
 import 'package:wavecrux/domain/models/signal_filter.dart';
 import 'package:wavecrux/domain/models/signal_group.dart';
@@ -93,6 +94,7 @@ import 'package:wavecrux/features/stage/providers/stage_workspace_provider.dart'
 import 'package:wavecrux/features/statistics/widgets/live_statistics_strip.dart';
 import 'package:wavecrux/features/tabs/providers/tab_providers.dart';
 import 'package:wavecrux/features/tools/widgets/generate_test_vcd_dialog.dart';
+import 'package:wavecrux/features/viewer/hinge_zoom.dart';
 import 'package:wavecrux/features/viewer/providers/active_tab_panel_layout_provider.dart';
 import 'package:wavecrux/features/viewer/providers/export_providers.dart';
 import 'package:wavecrux/features/viewer/providers/file_watcher_provider.dart';
@@ -158,6 +160,9 @@ import 'package:wavecrux/services/waveform/url_file_loader.dart';
 import 'package:wavecrux/services/waveform/web_file_loader.dart';
 import 'package:wavecrux/services/waveform_geom/lane_geometry.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
+import 'package:wavecrux/shared/layouts/fold_layout.dart';
+import 'package:wavecrux/shared/layouts/fold_local_crease.dart';
+import 'package:wavecrux/shared/layouts/fold_state_provider.dart';
 import 'package:wavecrux/shared/layouts/pane_defaults.dart';
 import 'package:wavecrux/shared/widgets/editor_host_boundary.dart';
 import 'package:wavecrux/widgets/legacy_conversion_progress_dialog.dart';
@@ -338,6 +343,46 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
       ref.read(tabContainerManagerProvider).containerFor(id);
 
   ProviderContainer get _activeTabContainer => _tabContainer(_activeTabId);
+
+  /// Hinge angle the last hinge-zoom step was measured from; null outside
+  /// tabletop posture. See [_onFoldStateChanged].
+  double? _hingeZoomReference;
+
+  /// Tilt-to-zoom (Settings > Orientation, off by default): in tabletop
+  /// posture each tilt of the upright half beyond the dead band zooms the
+  /// active tab's time axis around its cursor (the viewport centre when no
+  /// cursor is placed). Leaving the posture drops the reference, so unfolding
+  /// or closing the device never zooms.
+  void _onFoldStateChanged(FoldState? previous, FoldState next) {
+    final angle = next.hingeAngle;
+    if (next.posture != FoldPosture.tabletop || angle == null) {
+      _hingeZoomReference = null;
+      return;
+    }
+    final enabled =
+        ref.read(appSettingsProvider).value?.hingeZoomEnabled ?? false;
+    final from = _hingeZoomReference;
+    if (!enabled || from == null) {
+      _hingeZoomReference = angle;
+      return;
+    }
+    final step = hingeZoomStep(from, angle);
+    if (step == null) return;
+    _hingeZoomReference = angle;
+    final container = _activeTabContainer;
+    final mapper = container.read(timeMapperProvider);
+    if (mapper.isEmpty || mapper.viewportWidth <= 0) return;
+    final cursor = container.read(cursorStateProvider).primaryCursorTime;
+    final focal = cursor == null
+        ? mapper.viewportWidth / 2
+        : mapper.timeToPixel(cursor).clamp(0.0, mapper.viewportWidth);
+    final notifier = container.read(timeMapperProvider.notifier);
+    if (step.zoomIn) {
+      notifier.zoomIn(focalPixel: focal, factor: step.factor);
+    } else {
+      notifier.zoomOut(focalPixel: focal, factor: step.factor);
+    }
+  }
 
   // Debounce state for the disabled-shortcut hint (see
   // [_showDisabledActionHint]). A held key auto-repeats at the platform rate,
@@ -673,6 +718,8 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
         mobileMemoryGuardProvider,
         _onMemoryGuardStateChanged,
       )
+      // Tilt-to-zoom on a half-folded foldable. Never fires without a hinge.
+      ..listen<FoldState>(foldStateProvider, _onFoldStateChanged)
       // Show the landscape-orientation hint snackbar once per session when
       // a file finishes loading in phone-portrait.
       ..listen<bool>(waveformIsLoadedProvider, (prev, next) {
@@ -874,8 +921,25 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
         final ideIsPhone =
             deviceClass == DeviceClass.phone ||
             deviceClass == DeviceClass.phoneLandscape;
+        // Two panes on a half-folded book-posture foldable get one page each,
+        // and a page has no room for the side docks next to a waveform.
+        final bookShared =
+            paneRef.watch(foldPostureProvider) == FoldPosture.book &&
+            (paneRef.watch(workspaceProvider).value?.panes.length ?? 1) >= 2;
 
         paneRef
+          // Folding into tabletop posture puts the bottom dock on the flat
+          // half; bring Stage forward there, when this tab has a Stage
+          // session, so the laptop pose shows the waveform above and the
+          // design's widgets below without a tap. Only on entering the
+          // posture, so a tab picked afterwards stays picked.
+          ..listen<FoldPosture>(foldPostureProvider, (prev, next) {
+            if (next != FoldPosture.tabletop || prev == FoldPosture.tabletop) {
+              return;
+            }
+            if (tab.id != paneRef.read(activeTabIdProvider)) return;
+            _revealStageForTabletop(paneRef);
+          })
           // Issue 16: auto-show the bottom panel when this tab's X-Trace
           // becomes active. Both `xTraceProvider` and `panelLayoutProvider`
           // are per-tab and resolve through [paneRef], so this docks THIS
@@ -1009,53 +1073,34 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
               // edge (JetBrains tool-window model) — the wrapper watches
               // this tab's panel state and reuses the docks' own entry
               // assemblers.
-              child: WaveCruxDockRestoreBars(
-                onLoadStems: _loadRtlStemsFile,
-                child: CruxIdeLayout(
-                  layout: _WaveCruxIdePanelLayout(
-                    panelState,
-                    isPhone: ideIsPhone,
-                    defaultLeft: paneDefaults.left,
-                    defaultRight: paneDefaults.right,
-                  ),
-                  sink: _WaveCruxIdePanelLayoutSink(
-                    _tabContainer(
-                      tab.id,
-                    ).read(panelLayoutProvider.notifier),
-                  ),
-                  // Geometry only. The resizer colours come from the theme
-                  // (its splitter tokens, else outlineVariant / primary);
-                  // passing them here would override a user's choice.
-                  theme: CruxIdeLayoutTheme(
-                    resizerThickness: paneMetrics.splitterVisualWidth,
-                    resizerHitTestThickness: paneMetrics.splitterHitWidth,
-                  ),
-                  leftMinSize: PaneSize.pixel(150),
-                  rightMinSize: PaneSize.pixel(150),
-                  bottomMinSize: PaneSize.pixel(80),
-                  centerMinSize: PaneSize.pixel(120),
-                  // Left dock: Signals (pinned) · Diff (on-demand). The
-                  // signal-tree ⇄ diff-summary swap became tabs.
-                  leftBuilder: (context, _) => const WaveCruxLeftDock(),
-                  centerBuilder: (context, _) => _FocusableWaveformPane(
-                    child: _PaneScopedCanvas(
-                      paneId: tab.paneId,
-                      repaintKey: _repaintKeyForTab(hostPaneId, tab.id),
-                      child: WaveformViewCenter(
-                        onCompareWith: _compareWaveforms,
-                      ),
-                    ),
-                  ),
-                  // Right dock: Values (pinned) · RTL Source · Cross-Probe.
-                  // The 3-deep priority chain became tabs.
-                  rightBuilder: (context, _) => WaveCruxRightDock(
-                    onLoadStems: _loadRtlStemsFile,
-                  ),
-                  // The VSCode-style bottom dock: every candidate surface is
-                  // a tab (Transactions pinned; Stage ×N dynamic; analyses
-                  // on-demand). The phone sheet hosts the same entries via
-                  // [WaveCruxBottomDockSheet] — the priority chain is gone.
-                  bottomBuilder: (context, _) => const WaveCruxBottomDock(),
+              //
+              // Foldables (campaign 2026-10-iphone-duo): half-folded like a
+              // laptop, the dock boundary moves onto the crease, so the
+              // waveform fills the upright half and the bottom dock (Stage)
+              // the flat half. The crease is measured in this area's own
+              // coordinates. Without a hinge `crease` is always null, the
+              // split is null and the layout is the usual one; the wrappers
+              // stay in the tree either way so a posture change never
+              // remounts the canvas.
+              child: FoldLocalCrease(
+                posture: FoldPosture.tabletop,
+                builder: (context, crease) => LayoutBuilder(
+                  builder: (context, constraints) {
+                    final tabletop = tabletopSplit(
+                      crease,
+                      constraints.maxHeight,
+                    );
+                    return _buildIdeArea(
+                      tab,
+                      hostPaneId: hostPaneId,
+                      panelState: panelState,
+                      ideIsPhone: ideIsPhone,
+                      paneDefaults: paneDefaults,
+                      paneMetrics: paneMetrics,
+                      tabletop: tabletop,
+                      compactSides: bookShared,
+                    );
+                  },
                 ),
               ),
             ),
@@ -1075,6 +1120,97 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
         return PhoneSignalTreeDrawerHost(enabled: isPhoneWidth, child: content);
       },
     );
+  }
+
+  /// The tab's dock area: [CruxIdeLayout] in its docks-restore wrapper.
+  ///
+  /// [tabletop] is non-null only while a foldable is half-folded like a
+  /// laptop; [compactSides] only while two panes share a book-posture
+  /// foldable. Both are null/false on every other device.
+  Widget _buildIdeArea(
+    WorkspaceTab tab, {
+    required PaneId hostPaneId,
+    required PanelLayoutState panelState,
+    required bool ideIsPhone,
+    required ({double left, double right}) paneDefaults,
+    required MobileMetrics paneMetrics,
+    required TabletopSplit? tabletop,
+    required bool compactSides,
+  }) {
+    final inset = tabletop?.inset ?? 0.0;
+    return WaveCruxDockRestoreBars(
+      onLoadStems: _loadRtlStemsFile,
+      child: CruxIdeLayout(
+        layout: _WaveCruxIdePanelLayout(
+          panelState,
+          isPhone: ideIsPhone,
+          defaultLeft: paneDefaults.left,
+          defaultRight: paneDefaults.right,
+          tabletopBottom: tabletop?.bottomSize,
+          compactSides: compactSides,
+        ),
+        sink: tabletop != null
+            ? const _FoldHeldIdePanelLayoutSink()
+            : _WaveCruxIdePanelLayoutSink(
+                _tabContainer(
+                  tab.id,
+                ).read(panelLayoutProvider.notifier),
+              ),
+        // Geometry only. The resizer colours come from the theme
+        // (its splitter tokens, else outlineVariant / primary);
+        // passing them here would override a user's choice.
+        theme: CruxIdeLayoutTheme(
+          resizerThickness: paneMetrics.splitterVisualWidth,
+          resizerHitTestThickness: paneMetrics.splitterHitWidth,
+        ),
+        leftMinSize: PaneSize.pixel(150),
+        rightMinSize: PaneSize.pixel(150),
+        bottomMinSize: PaneSize.pixel(80),
+        centerMinSize: PaneSize.pixel(120),
+        // Left dock: Signals (pinned) · Diff (on-demand). The
+        // signal-tree ⇄ diff-summary swap became tabs.
+        leftBuilder: (context, _) => const WaveCruxLeftDock(),
+        // Both halves keep clear of the crease band in tabletop
+        // posture; the padding is zero (and stays in the tree, so
+        // nothing remounts) everywhere else.
+        centerBuilder: (context, _) => Padding(
+          padding: EdgeInsets.only(bottom: inset),
+          child: _FocusableWaveformPane(
+            child: _PaneScopedCanvas(
+              paneId: tab.paneId,
+              repaintKey: _repaintKeyForTab(hostPaneId, tab.id),
+              child: WaveformViewCenter(
+                onCompareWith: _compareWaveforms,
+              ),
+            ),
+          ),
+        ),
+        // Right dock: Values (pinned) · RTL Source · Cross-Probe.
+        // The 3-deep priority chain became tabs.
+        rightBuilder: (context, _) => WaveCruxRightDock(
+          onLoadStems: _loadRtlStemsFile,
+        ),
+        // The VSCode-style bottom dock: every candidate surface is
+        // a tab (Transactions pinned; Stage ×N dynamic; analyses
+        // on-demand). The phone sheet hosts the same entries via
+        // [WaveCruxBottomDockSheet] — the priority chain is gone.
+        bottomBuilder: (context, _) => Padding(
+          padding: EdgeInsets.only(top: inset),
+          child: const WaveCruxBottomDock(),
+        ),
+      ),
+    );
+  }
+
+  /// Selects the active Stage panel's tab in [paneRef]'s bottom dock, when
+  /// the tab has a Stage session with at least one panel. Nothing otherwise:
+  /// tabletop posture does not invent a Stage session.
+  void _revealStageForTabletop(WidgetRef paneRef) {
+    final panelState = paneRef.read(panelLayoutProvider);
+    final stage = paneRef.read(stageWorkspaceProvider);
+    if (!panelState.stageViewVisible || stage.panels.isEmpty) return;
+    final active = stage.activePanel ?? stage.panels.first;
+    selectBottomDockTab(paneRef, '$kBottomDockStagePrefix${active.id}');
   }
 
   /// Routes a panel-visibility mutation to whichever **tab** currently has

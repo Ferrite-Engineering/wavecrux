@@ -65,6 +65,7 @@ class WaveCruxSettingsCodec implements crux.SettingsCodec<AppSettings> {
   static const _kAiEndpoint = 'settings.aiEndpoint';
   static const _kAutoCheckForUpdates = 'settings.autoCheckForUpdates';
   static const _kCanvasLegibilityBoost = 'settings.canvasLegibilityBoost';
+  static const _kHingeZoomEnabled = 'settings.hingeZoomEnabled';
 
   /// Public because [peekIsaTableDirectories] reads it before the provider
   /// container exists. Kept as the single definition so the pre-hydration read
@@ -118,6 +119,7 @@ class WaveCruxSettingsCodec implements crux.SettingsCodec<AppSettings> {
       canvasLegibilityBoost: prefs.getBool(_kCanvasLegibilityBoost) ?? false,
       isaTableDirectories:
           prefs.getStringList(isaTableDirectoriesKey) ?? const <String>[],
+      hingeZoomEnabled: prefs.getBool(_kHingeZoomEnabled) ?? false,
     );
   }
 
@@ -150,6 +152,7 @@ class WaveCruxSettingsCodec implements crux.SettingsCodec<AppSettings> {
       prefs.setBool(_kAutoCheckForUpdates, settings.autoCheckForUpdates),
       prefs.setBool(_kCanvasLegibilityBoost, settings.canvasLegibilityBoost),
       prefs.setStringList(isaTableDirectoriesKey, settings.isaTableDirectories),
+      prefs.setBool(_kHingeZoomEnabled, settings.hingeZoomEnabled),
     ]);
   }
 

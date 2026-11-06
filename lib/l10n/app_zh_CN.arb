@@ -1605,6 +1605,14 @@
   "@settingsCanvasLegibilityBoostDescription": {
     "description": "Descriptive subtitle under the legibility-boost toggle in the Appearance section"
   },
+  "settingsHingeZoomLabel": "倾斜缩放（折叠屏）",
+  "@settingsHingeZoomLabel": {
+    "description": "Label for the toggle that lets tilting a half-folded foldable phone zoom the waveform time axis"
+  },
+  "settingsHingeZoomDescription": "手机像笔记本电脑一样半折时，倾斜屏幕即可以光标为中心缩放时间轴：向自己倾斜放大，向外倾斜缩小",
+  "@settingsHingeZoomDescription": {
+    "description": "Subtitle under the tilt-to-zoom toggle in the Orientation section, shown only on a device with a hinge"
+  },
   "settingsWaveformDefaultsSection": "波形默认值",
   "@settingsWaveformDefaultsSection": {
     "description": "Section heading for waveform display default settings"
