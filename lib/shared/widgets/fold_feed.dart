@@ -42,13 +42,19 @@ class _FoldFeedState extends ConsumerState<FoldFeed> {
   StreamSubscription<FoldState>? _sub;
   FoldState _native = FoldState.none;
   FoldState _fromFeatures = FoldState.none;
+  bool _flat = false;
 
   @override
   void initState() {
     super.initState();
     _sub = ref.read(foldSourceProvider).watch().listen(
-      (state) {
-        if (!mounted || state == _native) return;
+      (reading) {
+        if (!mounted) return;
+        // A nearly flat hinge lays out as flat; see kFoldFlatEnterDegrees.
+        final banded = applyFlatBand(reading, wasFlat: _flat);
+        _flat = banded.flat;
+        final state = banded.state;
+        if (state == _native) return;
         // Debug builds only: the real crease and panel size, for checking a
         // new device against the layout's assumptions.
         if (kDebugMode &&

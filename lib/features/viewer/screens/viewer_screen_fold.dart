@@ -9,7 +9,7 @@
 part of 'viewer_screen.dart';
 
 extension _ViewerScreenFold on _ViewerScreenState {
-  /// Tilt-to-zoom (Settings > Orientation, off by default): in tabletop
+  /// Tilt-to-zoom (Settings > Orientation & Display, off by default): in tabletop
   /// posture each tilt of the upright half beyond the dead band zooms the
   /// active tab's time axis around its cursor (the viewport centre when no
   /// cursor is placed). Leaving the posture drops the reference, so unfolding

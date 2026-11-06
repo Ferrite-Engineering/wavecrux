@@ -119,6 +119,45 @@ void main() {
     });
   });
 
+  group('applyFlatBand', () {
+    FoldState partly(double angle) => FoldState(
+      status: HingeStatus.partiallyOpen,
+      hingeAngle: angle,
+      crease: _verticalCrease,
+    );
+
+    test('a nearly flat hinge lays out as flat', () {
+      // The simulator passes through ~174° on its way to 180°.
+      final r = applyFlatBand(partly(174), wasFlat: false);
+      expect(r.flat, isTrue);
+      expect(r.state.status, HingeStatus.fullyOpen);
+      expect(r.state.posture, FoldPosture.none);
+    });
+
+    test("the simulator's 134° open is still half-folded", () {
+      final r = applyFlatBand(partly(134), wasFlat: false);
+      expect(r.flat, isFalse);
+      expect(r.state.posture, FoldPosture.book);
+    });
+
+    test('hysteresis: enter at 160°, leave below 150°', () {
+      expect(applyFlatBand(partly(155), wasFlat: false).flat, isFalse);
+      expect(applyFlatBand(partly(155), wasFlat: true).flat, isTrue);
+      expect(applyFlatBand(partly(149), wasFlat: true).flat, isFalse);
+    });
+
+    test('closed and no-hinge readings pass through and reset the band', () {
+      const closed = FoldState(status: HingeStatus.closed, hingeAngle: 0);
+      final r = applyFlatBand(closed, wasFlat: true);
+      expect(r.state, closed);
+      expect(r.flat, isFalse);
+      expect(
+        applyFlatBand(FoldState.none, wasFlat: true).state,
+        FoldState.none,
+      );
+    });
+  });
+
   group('foldStateFromDisplayFeatures (Android)', () {
     test('no fold feature is none', () {
       expect(foldStateFromDisplayFeatures(const []), FoldState.none);

@@ -73,6 +73,46 @@ FoldState foldStateFromPlatformEvent(Object? event) {
   );
 }
 
+/// A partly open hinge at or above this angle counts as flat.
+///
+/// Hands rarely hold a foldable at exactly 180°, and the hinge reports
+/// "partially open" for any angle short of its stop (the iOS simulator passes
+/// through about 174° on the way to flat). Without a band, a phone held open
+/// but slightly bent would keep the book or tabletop layout.
+const double kFoldFlatEnterDegrees = 160;
+
+/// Once counted as flat, the hinge must close below this angle to count as
+/// half-folded again, so a hand resting near the threshold does not flip the
+/// layout back and forth.
+const double kFoldFlatLeaveDegrees = 150;
+
+/// Applies the flat band to a hinge reading.
+///
+/// Returns the reading to lay out with (a partly open hinge inside the band
+/// is reported as [HingeStatus.fullyOpen]) and whether it is now in the band,
+/// which the caller passes back as [wasFlat] with the next reading.
+({FoldState state, bool flat}) applyFlatBand(
+  FoldState reading, {
+  required bool wasFlat,
+}) {
+  switch (reading.status) {
+    case HingeStatus.fullyOpen:
+      return (state: reading, flat: true);
+    case HingeStatus.partiallyOpen:
+      final angle = reading.hingeAngle;
+      if (angle == null) return (state: reading, flat: false);
+      final threshold = wasFlat ? kFoldFlatLeaveDegrees : kFoldFlatEnterDegrees;
+      if (angle < threshold) return (state: reading, flat: false);
+      return (
+        state: reading.copyWith(status: HingeStatus.fullyOpen),
+        flat: true,
+      );
+    case HingeStatus.none:
+    case HingeStatus.closed:
+      return (state: reading, flat: false);
+  }
+}
+
 /// The thinnest crease band WaveCrux lays out around. Android reports a fold
 /// as a zero-width line; the iPhone Duo reports a 40 pt band.
 const double kMinCreaseBand = 24;
