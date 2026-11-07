@@ -156,8 +156,12 @@ class DecoderPickerDialog extends ConsumerWidget {
                 ),
               )
             : ScrollConfiguration(
+                // Adds mouse drag to the app's drag devices; it must not
+                // replace them, or a finger cannot scroll the list on a
+                // phone or tablet.
                 behavior: ScrollConfiguration.of(context).copyWith(
                   dragDevices: {
+                    ...ScrollConfiguration.of(context).dragDevices,
                     PointerDeviceKind.mouse,
                     PointerDeviceKind.trackpad,
                   },

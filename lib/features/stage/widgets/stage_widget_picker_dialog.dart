@@ -99,8 +99,14 @@ class StageWidgetPickerDialog extends ConsumerWidget {
                 ),
               )
             : ScrollConfiguration(
+                // Adds mouse drag to the app's drag devices; it must not
+                // replace them, or a finger cannot scroll the list on a
+                // phone or tablet (the categories below the first couple were
+                // unreachable on a half-folded foldable, where the dialog
+                // keeps to one half).
                 behavior: ScrollConfiguration.of(context).copyWith(
                   dragDevices: {
+                    ...ScrollConfiguration.of(context).dragDevices,
                     PointerDeviceKind.mouse,
                     PointerDeviceKind.trackpad,
                   },

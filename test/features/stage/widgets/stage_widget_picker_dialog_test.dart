@@ -4,6 +4,7 @@
 import 'package:crux_ide_layout/crux_ide_layout.dart';
 import 'package:crux_license/crux_license.dart';
 import 'package:crux_telemetry/crux_telemetry.dart';
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -137,6 +138,43 @@ void main() {
   });
 
   group('StageWidgetPickerDialog', () {
+    for (final kind in [
+      PointerDeviceKind.touch,
+      PointerDeviceKind.mouse,
+      PointerDeviceKind.trackpad,
+    ]) {
+      testWidgets('a ${kind.name} drag scrolls the list', (tester) async {
+        // Phones and tablets scroll this list with a finger; a dialog squeezed
+        // into one half of a foldable shows only a couple of rows, so a list
+        // that ignores touch hides every category below them.
+        for (var i = 0; i < 40; i++) {
+          StageRegistry.instance.register(
+            _StubWidget(id: 'w$i', displayName: 'Widget $i'),
+          );
+        }
+        await tester.pumpWidget(_wrap(const StageWidgetPickerDialog()));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byType(ExpansionTile).first);
+        await tester.pumpAndSettle();
+        final scrollable = find
+            .descendant(
+              of: find.byType(CruxDialog),
+              matching: find.byType(Scrollable),
+            )
+            .first;
+        final position = tester.state<ScrollableState>(scrollable).position;
+        expect(position.maxScrollExtent, greaterThan(0));
+
+        await tester.dragFrom(
+          tester.getCenter(scrollable),
+          const Offset(0, -120),
+          kind: kind,
+        );
+        await tester.pumpAndSettle();
+        expect(position.pixels, greaterThan(0), reason: '$kind');
+      });
+    }
+
     testWidgets('shows empty state when no widgets registered', (tester) async {
       await tester.pumpWidget(_wrap(const StageWidgetPickerDialog()));
       await tester.pumpAndSettle();
