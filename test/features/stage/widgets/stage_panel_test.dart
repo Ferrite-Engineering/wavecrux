@@ -9,6 +9,7 @@ import 'package:wavecrux/domain/enums/device_class.dart';
 import 'package:wavecrux/domain/enums/editor_host_kind.dart';
 import 'package:wavecrux/domain/enums/stage_widget_category.dart';
 import 'package:wavecrux/domain/interfaces/stage_widget.dart';
+import 'package:wavecrux/domain/models/fold_state.dart';
 import 'package:wavecrux/domain/models/signal_binding.dart';
 import 'package:wavecrux/features/stage/providers/stage_selection_provider.dart';
 import 'package:wavecrux/features/stage/providers/stage_startup_render_gate_provider.dart';
@@ -19,6 +20,7 @@ import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/plugins/stage_registry.dart';
 import 'package:wavecrux/services/host_bridge/editor_host_provider.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
+import 'package:wavecrux/shared/layouts/fold_state_provider.dart';
 
 import '../../../helpers/product_telemetry_config.dart';
 
@@ -41,11 +43,13 @@ Widget _wrap({
   Locale locale = const Locale('en'),
   DeviceClass deviceClass = DeviceClass.desktop,
   EditorHostKind hostKind = EditorHostKind.none,
+  FoldPosture posture = FoldPosture.none,
 }) {
   final container = ProviderContainer(
     overrides: [
       productTelemetryConfig,
       deviceClassProvider.overrideWithValue(deviceClass),
+      foldPostureProvider.overrideWithValue(posture),
     ],
   );
   container.read(editorHostKindProvider.notifier).set(hostKind);
@@ -117,6 +121,44 @@ void main() {
         _wrap(
           child: const StagePanel(),
           deviceClass: DeviceClass.phoneLandscape,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('unavailable on phone-class'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a flip phone half-folded like a laptop shows the panel', (
+      tester,
+    ) async {
+      // Flex mode: Stage has the flat half to itself, the waveform the
+      // upright half, so the phone objection does not apply.
+      for (final dc in [DeviceClass.phone, DeviceClass.phoneLandscape]) {
+        await tester.pumpWidget(
+          _wrap(
+            child: const StagePanel(),
+            deviceClass: dc,
+            posture: FoldPosture.tabletop,
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.textContaining('unavailable on phone-class'),
+          findsNothing,
+          reason: '$dc in tabletop posture',
+        );
+        expect(tester.takeException(), isNull);
+      }
+    });
+
+    testWidgets('a phone in book posture is still gated', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          child: const StagePanel(),
+          deviceClass: DeviceClass.phone,
+          posture: FoldPosture.book,
         ),
       );
       await tester.pumpAndSettle();

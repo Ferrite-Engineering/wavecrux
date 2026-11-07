@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/domain/enums/device_class.dart';
 import 'package:wavecrux/domain/enums/editor_host_capability.dart';
+import 'package:wavecrux/domain/models/fold_state.dart';
 import 'package:wavecrux/domain/models/stage_panel_config.dart';
 import 'package:wavecrux/features/stage/providers/stage_selection_provider.dart';
 import 'package:wavecrux/features/stage/providers/stage_startup_render_gate_provider.dart';
@@ -14,6 +15,7 @@ import 'package:wavecrux/features/stage/widgets/draggable_resizable_instance.dar
 import 'package:wavecrux/features/stage/widgets/stage_bindings_pane.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
+import 'package:wavecrux/shared/layouts/fold_state_provider.dart';
 import 'package:wavecrux/shared/widgets/editor_host_boundary.dart';
 
 /// Logical-pixel step used by single-arrow-key nudges of the selected
@@ -39,6 +41,11 @@ const double kStageNudgeLargeStep = 8;
 /// correlation) or a full-screen mode (losing timeline context),
 /// neither of which is acceptable. Phone Stage is deferred to Future
 /// Phases.
+///
+/// One exception: a flip phone half-folded like a laptop (Galaxy Z Flip and
+/// Razr "flex mode"). There the bottom dock has the flat half to itself and
+/// the waveform the upright half, so Stage neither overlays the waveform
+/// nor hides the timeline, which is the whole objection above.
 class StagePanel extends ConsumerWidget {
   const StagePanel({super.key});
 
@@ -46,7 +53,8 @@ class StagePanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = L10N.of(context);
     final deviceClass = ref.watch(deviceClassProvider);
-    if (deviceClass.isPhoneClass) {
+    final tabletop = ref.watch(foldPostureProvider) == FoldPosture.tabletop;
+    if (deviceClass.isPhoneClass && !tabletop) {
       return _PhoneNotSupported(message: l10n.stagePanelPhoneUnsupported);
     }
 
