@@ -74,10 +74,15 @@ class _FoldFeedState extends ConsumerState<FoldFeed> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final next = foldStateFromDisplayFeatures(
-      MediaQuery.displayFeaturesOf(context),
-    );
+    final features = MediaQuery.displayFeaturesOf(context);
+    final next = foldStateFromDisplayFeatures(features);
     if (next != _fromFeatures) {
+      if (kDebugMode) {
+        debugPrint(
+          'WaveCrux fold (display features): $next, '
+          'features $features, view ${MediaQuery.sizeOf(context)}',
+        );
+      }
       _fromFeatures = next;
       _push();
     }

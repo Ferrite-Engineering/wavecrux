@@ -283,6 +283,49 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets(
+    'a flip phone half-folded gets the bottom dock on its flat half',
+    (
+      tester,
+    ) async {
+      // Galaxy Z Flip / Razr class: a phone-sized inner screen (the Android
+      // emulator's 6.7" foldable reports 360 x 879 dp) with a horizontal
+      // hinge across the middle. The phone layout has no docks at all until
+      // the fold gives the bottom dock a half of its own.
+      const flip = Size(360, 879);
+      const flipCrease = Rect.fromLTWH(0, 427.5, 360, 24);
+      await _pumpViewer(tester, size: flip);
+      final root = ProviderScope.containerOf(
+        tester.element(find.byType(ViewerScreen)),
+      );
+      root.read(_classProvider.notifier).set(DeviceClass.phone);
+      await tester.pumpAndSettle();
+      expect(find.byType(WaveCruxBottomDock).hitTestable(), findsNothing);
+
+      root
+          .read(foldStateProvider.notifier)
+          .set(
+            const FoldState(
+              status: HingeStatus.partiallyOpen,
+              crease: flipCrease,
+            ),
+          );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byType(WaveCruxBottomDock).hitTestable(), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.byType(WaveCruxBottomDock)).dy,
+        closeTo(flipCrease.bottom, 4),
+      );
+
+      root
+          .read(foldStateProvider.notifier)
+          .set(const FoldState(status: HingeStatus.fullyOpen));
+      await tester.pumpAndSettle();
+      expect(find.byType(WaveCruxBottomDock).hitTestable(), findsNothing);
+    },
+  );
+
   testWidgets('without a hinge the layout is the one it always was', (
     tester,
   ) async {
