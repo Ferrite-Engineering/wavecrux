@@ -61,6 +61,11 @@ class AppSettingsNotifier extends _$AppSettingsNotifier {
   Future<void> setHingeZoomEnabled({required bool enabled}) =>
       _update((s) => s.copyWith(hingeZoomEnabled: enabled));
 
+  /// Puts the waveform on the flat (`true`) or upright half of a foldable
+  /// half-folded like a laptop.
+  Future<void> setTabletopWaveformBelow({required bool below}) =>
+      _update((s) => s.copyWith(tabletopWaveformBelow: below));
+
   Future<void> setDefaultDisplayFormat(DisplayFormat format) =>
       _update((s) => s.copyWith(defaultDisplayFormat: format));
 

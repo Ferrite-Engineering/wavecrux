@@ -1613,6 +1613,14 @@
   "@settingsHingeZoomDescription": {
     "description": "Subtitle under the tilt-to-zoom toggle in the Orientation section, shown only on a device with a hinge"
   },
+  "settingsTabletopWaveformBelowLabel": "파형을 평평한 쪽에 표시(폴더블)",
+  "@settingsTabletopWaveformBelowLabel": {
+    "description": "Label for the toggle that puts the waveform on the flat half of a foldable half-folded like a laptop"
+  },
+  "settingsTabletopWaveformBelowDescription": "휴대폰을 노트북처럼 반쯤 접었을 때 파형은 손이 닿는 평평한 쪽에, Stage가 포함된 하단 도크는 세워진 쪽에 표시됩니다. 끄면 위치가 바뀝니다",
+  "@settingsTabletopWaveformBelowDescription": {
+    "description": "Subtitle under the waveform-placement toggle in the Orientation section, shown only on a device with a hinge"
+  },
   "settingsWaveformDefaultsSection": "파형 기본값",
   "@settingsWaveformDefaultsSection": {
     "description": "Section heading for waveform display default settings"

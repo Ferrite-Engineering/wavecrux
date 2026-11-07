@@ -59,6 +59,16 @@ void main() {
       expect(on.copyWith(canvasLegibilityBoost: false), base);
     });
 
+    test('tabletopWaveformBelow defaults on, copyWith and equality', () {
+      const base = AppSettings();
+      expect(base.tabletopWaveformBelow, isTrue);
+      final above = base.copyWith(tabletopWaveformBelow: false);
+      expect(above.tabletopWaveformBelow, isFalse);
+      expect(above, isNot(base));
+      expect(above.hashCode, isNot(base.hashCode));
+      expect(above.copyWith(tabletopWaveformBelow: true), base);
+    });
+
     test('hingeZoomEnabled defaults off, copyWith and equality', () {
       const base = AppSettings();
       expect(base.hingeZoomEnabled, isFalse);

@@ -1746,6 +1746,14 @@
   "@settingsHingeZoomDescription": {
     "description": "Subtitle under the tilt-to-zoom toggle in the Orientation section, shown only on a device with a hinge"
   },
+  "settingsTabletopWaveformBelowLabel": "Waveform on the Flat Half (Foldables)",
+  "@settingsTabletopWaveformBelowLabel": {
+    "description": "Label for the toggle that puts the waveform on the flat half of a foldable half-folded like a laptop"
+  },
+  "settingsTabletopWaveformBelowDescription": "When the phone is half-folded like a laptop, the waveform goes on the flat half under your hands and the bottom dock, with Stage, on the upright half. Turn off to swap them",
+  "@settingsTabletopWaveformBelowDescription": {
+    "description": "Subtitle under the waveform-placement toggle in the Orientation section, shown only on a device with a hinge"
+  },
   "settingsWaveformDefaultsSection": "Waveform Defaults",
   "@settingsWaveformDefaultsSection": {
     "description": "Section heading for waveform display default settings"

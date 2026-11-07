@@ -1613,6 +1613,14 @@
   "@settingsHingeZoomDescription": {
     "description": "Subtitle under the tilt-to-zoom toggle in the Orientation section, shown only on a device with a hinge"
   },
+  "settingsTabletopWaveformBelowLabel": "波形を平らな側に表示（折りたたみ端末）",
+  "@settingsTabletopWaveformBelowLabel": {
+    "description": "Label for the toggle that puts the waveform on the flat half of a foldable half-folded like a laptop"
+  },
+  "settingsTabletopWaveformBelowDescription": "端末をノートパソコンのように半分折りたたんだとき、波形を手元の平らな側に、Stage を含む下部ドックを立てた側に表示します。オフにすると入れ替わります",
+  "@settingsTabletopWaveformBelowDescription": {
+    "description": "Subtitle under the waveform-placement toggle in the Orientation section, shown only on a device with a hinge"
+  },
   "settingsWaveformDefaultsSection": "波形のデフォルト",
   "@settingsWaveformDefaultsSection": {
     "description": "Section heading for waveform display default settings"

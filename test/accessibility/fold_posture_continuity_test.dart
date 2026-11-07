@@ -17,6 +17,7 @@ import 'package:crux_workspace/crux_workspace.dart' show CruxGlowingAppIcon;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wavecrux/domain/enums/device_class.dart';
 import 'package:wavecrux/domain/enums/scope_type.dart';
 import 'package:wavecrux/domain/enums/var_direction.dart';
@@ -197,103 +198,128 @@ const _panel = Size(669, 951);
 const _crease = Rect.fromLTWH(0, 455.5, 669, 40);
 
 void main() {
-  testWidgets('tabletop and back keeps the canvas, the source and the cursor, '
-      'and restores the docks', (tester) async {
-    final handle = tester.ensureSemantics();
-    await _pumpViewer(tester, size: _panel);
+  for (final waveformBelow in [true, false]) {
+    final placement = waveformBelow
+        ? 'waveform on the flat half (default)'
+        : 'waveform on the upright half';
+    testWidgets('tabletop and back with the $placement keeps the canvas, the '
+        'source and the cursor, and restores the docks', (tester) async {
+      SharedPreferences.setMockInitialValues({
+        if (!waveformBelow) 'settings.tabletopWaveformBelow': false,
+      });
+      final handle = tester.ensureSemantics();
+      await _pumpViewer(tester, size: _panel);
 
-    final tab = ProviderScope.containerOf(
-      tester.element(find.byType(SignalTreePanel)),
-    );
-    final source = tab.read(waveformSourceProvider).value!;
-    await source.loadSignal(_fsmState.signalRef);
-    tab.read(signalGroupsProvider.notifier).addSignal(_fsmState);
-    tab.read(cursorStateProvider.notifier).placePrimary(200);
-    await tester.pumpAndSettle();
-
-    ProviderContainer paneScope() => ProviderScope.containerOf(
-      tester.element(find.byType(WaveformCanvas)),
-    );
-    final root = ProviderScope.containerOf(
-      tester.element(find.byType(ViewerScreen)),
-    );
-    final initialScope = paneScope();
-    final panelBefore = tab.read(panelLayoutProvider);
-    expect(find.byType(SignalTreePanel).hitTestable(), findsOneWidget);
-
-    for (final tabletop in [true, false, true, false]) {
-      root
-          .read(foldStateProvider.notifier)
-          .set(
-            tabletop
-                ? const FoldState(
-                    status: HingeStatus.partiallyOpen,
-                    hingeAngle: 100,
-                    crease: _crease,
-                  )
-                : const FoldState(
-                    status: HingeStatus.fullyOpen,
-                    hingeAngle: 180,
-                  ),
-          );
+      final tab = ProviderScope.containerOf(
+        tester.element(find.byType(SignalTreePanel)),
+      );
+      final source = tab.read(waveformSourceProvider).value!;
+      await source.loadSignal(_fsmState.signalRef);
+      tab.read(signalGroupsProvider.notifier).addSignal(_fsmState);
+      tab.read(cursorStateProvider.notifier).placePrimary(200);
       await tester.pumpAndSettle();
 
-      final label = tabletop ? 'tabletop' : 'flat';
-      expect(tester.takeException(), isNull, reason: label);
-      expect(find.byType(WaveformCanvas), findsOneWidget, reason: label);
-      expect(paneScope(), same(initialScope), reason: '$label: no remount');
-      expect(
-        tab.read(waveformSourceProvider).value,
-        same(source),
-        reason: '$label: the trace must not be parsed again',
+      final root = ProviderScope.containerOf(
+        tester.element(find.byType(ViewerScreen)),
       );
-      expect(
-        tab.read(cursorStateProvider).primaryCursorTime,
-        200,
-        reason: '$label: cursor kept',
-      );
-      expect(
-        find.byType(SignalTreePanel).hitTestable(),
-        tabletop ? findsNothing : findsOneWidget,
-        reason: '$label: side docks step aside only while half-folded',
-      );
-      if (tabletop) {
-        final dockTop = tester.getTopLeft(find.byType(WaveCruxBottomDock)).dy;
+      // The canvas may move between the layout's two slots (the default
+      // placement swaps their contents); its State must travel with it, not
+      // be rebuilt from scratch.
+      final canvasState = tester.state(find.byType(WaveformCanvas));
+      final panelBefore = tab.read(panelLayoutProvider);
+      expect(find.byType(SignalTreePanel).hitTestable(), findsOneWidget);
+
+      for (final tabletop in [true, false, true, false]) {
+        root
+            .read(foldStateProvider.notifier)
+            .set(
+              tabletop
+                  ? const FoldState(
+                      status: HingeStatus.partiallyOpen,
+                      hingeAngle: 100,
+                      crease: _crease,
+                    )
+                  : const FoldState(
+                      status: HingeStatus.fullyOpen,
+                      hingeAngle: 180,
+                    ),
+            );
+        await tester.pumpAndSettle();
+
+        final label = '${tabletop ? 'tabletop' : 'flat'}, $placement';
+        expect(tester.takeException(), isNull, reason: label);
+        expect(find.byType(WaveformCanvas), findsOneWidget, reason: label);
         expect(
-          dockTop,
-          closeTo(_crease.bottom, 4),
-          reason: 'the bottom dock starts just below the crease band',
+          tester.state(find.byType(WaveformCanvas)),
+          same(canvasState),
+          reason: '$label: the canvas keeps its state',
         );
-        final canvasBottom = tester
-            .getBottomLeft(find.byType(WaveformCanvas))
-            .dy;
         expect(
-          canvasBottom,
-          lessThanOrEqualTo(_crease.top + 4),
-          reason: 'the waveform stays above the crease band',
+          tab.read(waveformSourceProvider).value,
+          same(source),
+          reason: '$label: the trace must not be parsed again',
         );
-      } else {
         expect(
-          tab.read(panelLayoutProvider),
-          panelBefore,
-          reason: "the user's dock preferences are untouched by the fold",
+          tab.read(cursorStateProvider).primaryCursorTime,
+          200,
+          reason: '$label: cursor kept',
         );
+        expect(
+          find.byType(SignalTreePanel).hitTestable(),
+          tabletop ? findsNothing : findsOneWidget,
+          reason: '$label: side docks step aside only while half-folded',
+        );
+        if (tabletop) {
+          final dock = tester.getRect(find.byType(WaveCruxBottomDock));
+          final canvas = tester.getRect(find.byType(WaveformCanvas));
+          if (waveformBelow) {
+            expect(
+              dock.bottom,
+              lessThanOrEqualTo(_crease.top + 4),
+              reason: '$label: the dock (Stage) fills the upright half',
+            );
+            expect(
+              canvas.top,
+              greaterThanOrEqualTo(_crease.bottom - 4),
+              reason: '$label: the waveform is on the flat half',
+            );
+          } else {
+            expect(
+              dock.top,
+              closeTo(_crease.bottom, 4),
+              reason: '$label: the dock starts just below the crease band',
+            );
+            expect(
+              canvas.bottom,
+              lessThanOrEqualTo(_crease.top + 4),
+              reason: '$label: the waveform stays above the crease band',
+            );
+          }
+        } else {
+          expect(
+            tab.read(panelLayoutProvider),
+            panelBefore,
+            reason: "$label: the user's dock preferences are untouched",
+          );
+        }
       }
-    }
-    handle.dispose();
-  });
+      handle.dispose();
+    });
+  }
 
   testWidgets(
-    'a flip phone half-folded gets the bottom dock on its flat half',
+    'a flip phone half-folded gives the waveform and the dock a half each',
     (
       tester,
     ) async {
       // Galaxy Z Flip / Razr class: a phone-sized inner screen (the Android
       // emulator's 6.7" foldable reports 360 x 879 dp) with a horizontal
       // hinge across the middle. The phone layout has no docks at all until
-      // the fold gives the bottom dock a half of its own.
+      // the fold gives the bottom dock a half of its own: by default the
+      // upright one, with the waveform on the flat half under the thumbs.
       const flip = Size(360, 879);
       const flipCrease = Rect.fromLTWH(0, 427.5, 360, 24);
+      SharedPreferences.setMockInitialValues({});
       await _pumpViewer(tester, size: flip);
       final root = ProviderScope.containerOf(
         tester.element(find.byType(ViewerScreen)),
@@ -314,8 +340,12 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.byType(WaveCruxBottomDock).hitTestable(), findsOneWidget);
       expect(
-        tester.getTopLeft(find.byType(WaveCruxBottomDock)).dy,
-        closeTo(flipCrease.bottom, 4),
+        tester.getRect(find.byType(WaveCruxBottomDock)).bottom,
+        lessThanOrEqualTo(flipCrease.top + 4),
+      );
+      expect(
+        tester.getRect(find.byType(WaveformCanvas)).top,
+        greaterThanOrEqualTo(flipCrease.bottom - 4),
       );
 
       root

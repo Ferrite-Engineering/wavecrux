@@ -65,7 +65,7 @@ void main() {
     ),
     const CruxOutlineExemption(
       file: 'lib/features/viewer/screens/viewer_screen_widgets.dart',
-      line: 419,
+      line: 420,
       expectedTrimmed: 'color: colorScheme.outline.withValues(alpha: 0.4),',
       reason:
           "Border.all() color for a jump-to-marker letter tile's cell "

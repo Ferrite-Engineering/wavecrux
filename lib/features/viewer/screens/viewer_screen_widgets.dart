@@ -53,9 +53,10 @@ class _WaveCruxIdePanelLayout implements IdePanelLayout {
   final double defaultLeft;
   final double defaultRight;
 
-  /// Set while a foldable is half-folded like a laptop: the bottom dock's
-  /// height that puts its top edge on the crease. The waveform then has the
-  /// upright half to itself and the dock (Stage) the flat half; the side
+  /// Set while a foldable is half-folded like a laptop: the bottom region's
+  /// height that puts its top edge on the crease, so the center region is
+  /// the upright half and the bottom region the flat half (which of the
+  /// waveform and the dock goes where is `_buildIdeArea`'s choice); the side
   /// docks step aside. The user's own panel state is not touched, so going
   /// flat restores exactly what was there.
   final double? tabletopBottom;

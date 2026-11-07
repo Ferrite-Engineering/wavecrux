@@ -1613,6 +1613,14 @@
   "@settingsHingeZoomDescription": {
     "description": "Subtitle under the tilt-to-zoom toggle in the Orientation section, shown only on a device with a hinge"
   },
+  "settingsTabletopWaveformBelowLabel": "波形显示在平放的一半（折叠屏）",
+  "@settingsTabletopWaveformBelowLabel": {
+    "description": "Label for the toggle that puts the waveform on the flat half of a foldable half-folded like a laptop"
+  },
+  "settingsTabletopWaveformBelowDescription": "手机像笔记本电脑一样半折时，波形显示在手边平放的一半，包含 Stage 的底部停靠栏显示在立起的一半。关闭后两者互换",
+  "@settingsTabletopWaveformBelowDescription": {
+    "description": "Subtitle under the waveform-placement toggle in the Orientation section, shown only on a device with a hinge"
+  },
   "settingsWaveformDefaultsSection": "波形默认值",
   "@settingsWaveformDefaultsSection": {
     "description": "Section heading for waveform display default settings"

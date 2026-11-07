@@ -51,6 +51,7 @@ class AppSettings {
     this.canvasLegibilityBoost = false,
     this.isaTableDirectories = const <String>[],
     this.hingeZoomEnabled = false,
+    this.tabletopWaveformBelow = true,
   });
 
   /// The cross-suite shared subset of settings (theme, locale, diagnostics
@@ -178,6 +179,13 @@ class AppSettings {
   /// default, and offered only on a device that reports a hinge angle.
   final bool hingeZoomEnabled;
 
+  /// Which half the waveform takes when a foldable is half-folded like a
+  /// laptop. `true` (default): the waveform on the flat half, under the
+  /// hands, where scrubbing the cursor is easy, and the bottom dock (Stage)
+  /// on the upright half, where it is watched. `false`: the waveform on the
+  /// upright half and the dock on the flat half.
+  final bool tabletopWaveformBelow;
+
   // ─── Forwarder getters into [core] ───────────────────────────────────────
   // Preserve the historical flat API so existing read sites keep working.
   // Equivalent to writing `settings.core.themeMode` everywhere; consumer
@@ -269,6 +277,7 @@ class AppSettings {
     bool? canvasLegibilityBoost,
     List<String>? isaTableDirectories,
     bool? hingeZoomEnabled,
+    bool? tabletopWaveformBelow,
   }) {
     final newCore =
         core ??
@@ -315,6 +324,8 @@ class AppSettings {
           canvasLegibilityBoost ?? this.canvasLegibilityBoost,
       isaTableDirectories: isaTableDirectories ?? this.isaTableDirectories,
       hingeZoomEnabled: hingeZoomEnabled ?? this.hingeZoomEnabled,
+      tabletopWaveformBelow:
+          tabletopWaveformBelow ?? this.tabletopWaveformBelow,
     );
   }
 
@@ -346,6 +357,7 @@ class AppSettings {
     if (other.autoCheckForUpdates != autoCheckForUpdates) return false;
     if (other.canvasLegibilityBoost != canvasLegibilityBoost) return false;
     if (other.hingeZoomEnabled != hingeZoomEnabled) return false;
+    if (other.tabletopWaveformBelow != tabletopWaveformBelow) return false;
     if (!_listEquals(other.isaTableDirectories, isaTableDirectories)) {
       return false;
     }
@@ -384,6 +396,7 @@ class AppSettings {
     canvasLegibilityBoost,
     Object.hashAll(isaTableDirectories),
     hingeZoomEnabled,
+    tabletopWaveformBelow,
   ]);
 
   @override
@@ -422,6 +435,7 @@ class AppSettings {
       'aiProvider: $aiProvider, '
       'aiEndpoint: $aiEndpoint, '
       'autoCheckForUpdates: $autoCheckForUpdates, '
-      'hingeZoomEnabled: $hingeZoomEnabled'
+      'hingeZoomEnabled: $hingeZoomEnabled, '
+      'tabletopWaveformBelow: $tabletopWaveformBelow'
       ')';
 }

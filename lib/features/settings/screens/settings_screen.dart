@@ -583,6 +583,20 @@ class _OrientationSection extends ConsumerWidget {
             onSelectionChanged: (s) => notifier.setOrientationLockMode(s.first),
           ),
         ),
+        // Which half the waveform takes in laptop posture: any device with a
+        // hinge (iPhone Duo, Android foldables and flip phones).
+        if (ref.watch(hasHingeProvider))
+          Padding(
+            padding: _kSettingsRowPadding,
+            child: CruxFormRow.toggle(
+              key: const Key('settingsTabletopWaveformBelowSwitch'),
+              label: l10n.settingsTabletopWaveformBelowLabel,
+              help: l10n.settingsTabletopWaveformBelowDescription,
+              value: settings.tabletopWaveformBelow,
+              onChanged: (v) =>
+                  unawaited(notifier.setTabletopWaveformBelow(below: v)),
+            ),
+          ),
         // Only a device with a hinge can tilt to zoom, so only it offers the
         // switch (the iPhone Duo; Android foldables report no angle and never
         // zoom, so it is hidden there too until one does).

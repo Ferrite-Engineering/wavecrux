@@ -886,25 +886,12 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
         final ideIsPhone =
             deviceClass == DeviceClass.phone ||
             deviceClass == DeviceClass.phoneLandscape;
-        // Two panes on a half-folded book-posture foldable get one page each,
-        // and a page has no room for the side docks next to a waveform.
-        final bookShared =
-            paneRef.watch(foldPostureProvider) == FoldPosture.book &&
-            (paneRef.watch(workspaceProvider).value?.panes.length ?? 1) >= 2;
+        // Foldables: layout flags for this tab, and Stage brought forward on
+        // folding into laptop posture (viewer_screen_fold.dart).
+        final fold = _foldFlagsForTab(paneRef);
+        _listenFoldForTab(paneRef, tab);
 
         paneRef
-          // Folding into tabletop posture puts the bottom dock on the flat
-          // half; bring Stage forward there, when this tab has a Stage
-          // session, so the laptop pose shows the waveform above and the
-          // design's widgets below without a tap. Only on entering the
-          // posture, so a tab picked afterwards stays picked.
-          ..listen<FoldPosture>(foldPostureProvider, (prev, next) {
-            if (next != FoldPosture.tabletop || prev == FoldPosture.tabletop) {
-              return;
-            }
-            if (tab.id != paneRef.read(activeTabIdProvider)) return;
-            _revealStageForTabletop(paneRef);
-          })
           // Issue 16: auto-show the bottom panel when this tab's X-Trace
           // becomes active. Both `xTraceProvider` and `panelLayoutProvider`
           // are per-tab and resolve through [paneRef], so this docks THIS
@@ -1063,7 +1050,8 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
                       paneDefaults: paneDefaults,
                       paneMetrics: paneMetrics,
                       tabletop: tabletop,
-                      compactSides: bookShared,
+                      compactSides: fold.bookShared,
+                      waveformBelow: fold.waveformBelow,
                     );
                   },
                 ),

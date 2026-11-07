@@ -74,6 +74,17 @@ void main() {
       expect((await service.load()).rohdSidecarPath, 'build/Top.flc.json');
     });
 
+    test(
+      'round-trip: tabletopWaveformBelow survives, and defaults on',
+      () async {
+        expect((await service.load()).tabletopWaveformBelow, isTrue);
+        await service.save(
+          const AppSettings().copyWith(tabletopWaveformBelow: false),
+        );
+        expect((await service.load()).tabletopWaveformBelow, isFalse);
+      },
+    );
+
     test('round-trip: hingeZoomEnabled survives, and defaults off', () async {
       expect((await service.load()).hingeZoomEnabled, isFalse);
       await service.save(const AppSettings().copyWith(hingeZoomEnabled: true));

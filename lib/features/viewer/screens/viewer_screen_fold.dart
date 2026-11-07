@@ -50,6 +50,14 @@ extension _ViewerScreenFold on _ViewerScreenState {
   /// [tabletop] is non-null only while a foldable is half-folded like a
   /// laptop; [compactSides] only while two panes share a book-posture
   /// foldable. Both are null/false on every other device.
+  ///
+  /// In tabletop posture the two halves are the layout's center slot (above
+  /// the crease) and its bottom slot (below). With [waveformBelow] (the
+  /// default) they swap contents: the dock, Stage included, goes in the upper
+  /// slot, where it is watched like a laptop's screen, and the waveform in
+  /// the lower one, under the hands, where the cursor is scrubbed. The
+  /// shared layout has no top dock, so the swap is of slot contents, not of
+  /// regions; geometry is the same either way.
   Widget _buildIdeArea(
     WorkspaceTab tab, {
     required PaneId hostPaneId,
@@ -59,8 +67,18 @@ extension _ViewerScreenFold on _ViewerScreenState {
     required MobileMetrics paneMetrics,
     required TabletopSplit? tabletop,
     required bool compactSides,
+    required bool waveformBelow,
   }) {
     final inset = tabletop?.inset ?? 0.0;
+    final swap = tabletop != null && waveformBelow;
+    Widget waveform() => _FocusableWaveformPane(
+      child: _PaneScopedCanvas(
+        paneId: tab.paneId,
+        repaintKey: _repaintKeyForTab(hostPaneId, tab.id),
+        child: WaveformViewCenter(onCompareWith: _compareWaveforms),
+      ),
+    );
+    const dock = WaveCruxBottomDock();
     return WaveCruxDockRestoreBars(
       onLoadStems: _loadRtlStemsFile,
       foldHeld: tabletop != null,
@@ -99,15 +117,7 @@ extension _ViewerScreenFold on _ViewerScreenState {
         // nothing remounts) everywhere else.
         centerBuilder: (context, _) => Padding(
           padding: EdgeInsets.only(bottom: inset),
-          child: _FocusableWaveformPane(
-            child: _PaneScopedCanvas(
-              paneId: tab.paneId,
-              repaintKey: _repaintKeyForTab(hostPaneId, tab.id),
-              child: WaveformViewCenter(
-                onCompareWith: _compareWaveforms,
-              ),
-            ),
-          ),
+          child: swap ? dock : waveform(),
         ),
         // Right dock: Values (pinned) · RTL Source · Cross-Probe.
         // The 3-deep priority chain became tabs.
@@ -120,10 +130,45 @@ extension _ViewerScreenFold on _ViewerScreenState {
         // [WaveCruxBottomDockSheet] — the priority chain is gone.
         bottomBuilder: (context, _) => Padding(
           padding: EdgeInsets.only(top: inset),
-          child: const WaveCruxBottomDock(),
+          child: swap ? waveform() : dock,
         ),
       ),
     );
+  }
+
+  /// This tab's fold layout flags, read in the per-tab Consumer's build (the
+  /// LayoutBuilder that uses them runs during layout, where watching is not
+  /// allowed).
+  ///
+  /// [bookShared]: two panes on a half-folded book-posture foldable get one
+  /// page each, and a page has no room for the side docks beside a waveform.
+  /// [waveformBelow]: in laptop posture the waveform takes the flat half
+  /// (the default; Settings > Orientation & Display swaps it).
+  ({bool bookShared, bool waveformBelow}) _foldFlagsForTab(WidgetRef paneRef) {
+    final bookShared =
+        paneRef.watch(foldPostureProvider) == FoldPosture.book &&
+        (paneRef.watch(workspaceProvider).value?.panes.length ?? 1) >= 2;
+    final waveformBelow =
+        paneRef.watch(
+          appSettingsProvider.select((s) => s.value?.tabletopWaveformBelow),
+        ) ??
+        true;
+    return (bookShared: bookShared, waveformBelow: waveformBelow);
+  }
+
+  /// Folding into laptop posture gives the bottom dock a half of its own
+  /// (the upright one by default); bring Stage forward there, when [tab] is
+  /// active and has a Stage session, so the pose shows the design's widgets
+  /// beside the waveform without a tap. Only on entering the posture, so a
+  /// dock tab picked afterwards stays picked.
+  void _listenFoldForTab(WidgetRef paneRef, WorkspaceTab tab) {
+    paneRef.listen<FoldPosture>(foldPostureProvider, (prev, next) {
+      if (next != FoldPosture.tabletop || prev == FoldPosture.tabletop) {
+        return;
+      }
+      if (tab.id != paneRef.read(activeTabIdProvider)) return;
+      _revealStageForTabletop(paneRef);
+    });
   }
 
   /// Selects the active Stage panel's tab in [paneRef]'s bottom dock, when
