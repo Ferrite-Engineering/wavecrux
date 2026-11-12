@@ -397,6 +397,16 @@ class SignalListPanel extends ConsumerWidget {
       return KeyEventResult.ignored;
     }
     final key = event.logicalKey;
+    // Shift+F10 and the Menu key open the selected row's context menu: the
+    // keyboard route to the commands right-click reaches.
+    if (isContextMenuKey(
+      key,
+      shiftPressed: HardwareKeyboard.instance.isShiftPressed,
+    )) {
+      return _openSelectedRowMenu(context, ref)
+          ? KeyEventResult.handled
+          : KeyEventResult.ignored;
+    }
     if (key != LogicalKeyboardKey.delete &&
         key != LogicalKeyboardKey.backspace) {
       return KeyEventResult.ignored;
@@ -410,6 +420,51 @@ class SignalListPanel extends ConsumerWidget {
     return removeSelectedSignals(context, ref)
         ? KeyEventResult.handled
         : KeyEventResult.ignored;
+  }
+
+  /// Whether [key] (with [shiftPressed]) is the platform's keyboard request for
+  /// a context menu: Shift+F10 or the Menu key.
+  @visibleForTesting
+  static bool isContextMenuKey(
+    LogicalKeyboardKey key, {
+    required bool shiftPressed,
+  }) =>
+      (key == LogicalKeyboardKey.f10 && shiftPressed) ||
+      key == LogicalKeyboardKey.contextMenu;
+
+  /// Opens the context menu of the first selected signal row that is built,
+  /// under that row. False when no selected row is on screen.
+  static bool _openSelectedRowMenu(BuildContext context, WidgetRef ref) {
+    final variablesMap = ref.read(signalVariablesMapProvider);
+    final selected = ref.read(selectedVariablesProvider);
+    for (final e in ref.read(signalGroupsProvider).entries) {
+      if (e.kind != SignalEntryKind.signal) continue;
+      if (!selected.contains(
+        SignalGroupsNotifier.selectionPathOf(e, variablesMap),
+      )) {
+        continue;
+      }
+      _SignalRowState? found;
+      void visit(Element element) {
+        if (found != null) return;
+        if (element is StatefulElement) {
+          final state = element.state;
+          if (state is _SignalRowState && state.widget.entry.id == e.id) {
+            found = state;
+            return;
+          }
+        }
+        element.visitChildren(visit);
+      }
+
+      context.visitChildElements(visit);
+      final row = found;
+      if (row != null && row.mounted) {
+        row.openContextMenuFromKeyboard();
+        return true;
+      }
+    }
+    return false;
   }
 
   /// Removes every selected signal from this tab's canvas in one update and
@@ -903,6 +958,16 @@ class _SignalRowState extends ConsumerState<_SignalRow> {
   /// grip color (outlineVariant at rest → primary while dragging) per
   /// ARCHITECTURE.md §3.1.8.8.
   bool _isResizing = false;
+
+  /// Opens the row's context menu at its bottom-left corner: the keyboard
+  /// form of a right-click (Shift+F10, Menu key).
+  void openContextMenuFromKeyboard() {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+    unawaited(
+      _showContextMenu(context, box.localToGlobal(Offset(0, box.size.height))),
+    );
+  }
 
   Future<void> _showContextMenu(BuildContext context, Offset position) async {
     final l10n = L10N.of(context);
