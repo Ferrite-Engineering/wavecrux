@@ -87,7 +87,7 @@ flutter run -d macos        # or -d linux, -d windows, -d chrome
 ## Try it
 
 [`examples/`](examples/README.md) holds ready-to-open sessions. Launch
-WaveCrux, use **File → Open File** (`Cmd/Ctrl+O`) and pick the `.wavecrux` in
+WaveCrux, use **File → Open File…** (`Cmd/Ctrl+O`) and pick the `.wavecrux` in
 one of these — the picker accepts session files alongside `.vcd` / `.fst` /
 `.ghw`, and opens the trace named inside:
 

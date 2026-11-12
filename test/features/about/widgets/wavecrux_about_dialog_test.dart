@@ -254,10 +254,13 @@ void main() {
       expect(find.text('Visit Website'), findsOneWidget);
     });
 
-    testWidgets('shows "Report Issue" button', (tester) async {
+    testWidgets('shows "Submit Issue…" button, as the Help menu words it', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildApp());
       await _openDialog(tester);
-      expect(find.text('Report Issue'), findsOneWidget);
+      expect(find.text('Submit Issue…'), findsOneWidget);
+      expect(find.text('Report Issue'), findsNothing);
     });
 
     testWidgets('shows "Check for Updates" button', (tester) async {

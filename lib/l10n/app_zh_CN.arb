@@ -81,7 +81,7 @@
   "@panelEdgeTabShowTransactionView": {
     "description": "Tooltip on the bottom-edge chevron tab that re-expands the hidden bottom panel (transactions / FSM / x-trace / activity / cocotb)"
   },
-  "shortcutActionOpenFile": "打开文件",
+  "shortcutActionOpenFile": "打开文件…",
   "@shortcutActionOpenFile": {
     "description": "Label for the Open File keyboard shortcut action in the shortcuts settings"
   },
@@ -125,11 +125,11 @@
   "@shortcutActionToggleTheme": {
     "description": "Label for the Toggle Theme (light/dark) keyboard shortcut action"
   },
-  "shortcutActionOpenAppDiagnostics": "应用诊断",
+  "shortcutActionOpenAppDiagnostics": "应用诊断…",
   "@shortcutActionOpenAppDiagnostics": {
     "description": "Label for the Open App Diagnostics keyboard shortcut action (opens the process-wide diagnostics dialog)"
   },
-  "shortcutActionOpenTabDiagnostics": "标签页诊断",
+  "shortcutActionOpenTabDiagnostics": "标签页诊断…",
   "@shortcutActionOpenTabDiagnostics": {
     "description": "Label for the Open Tab Diagnostics keyboard shortcut action (opens the per-tab side drawer)"
   },
@@ -1283,7 +1283,7 @@
   "@shortcutActionSaveSession": {
     "description": "Label for the Ctrl/Cmd+S save-session shortcut action shown in keyboard shortcuts settings"
   },
-  "shortcutActionSaveSessionAs": "另存会话为",
+  "shortcutActionSaveSessionAs": "另存会话为…",
   "@shortcutActionSaveSessionAs": {
     "description": "Label for the Ctrl/Cmd+Shift+S save-session-as shortcut action shown in keyboard shortcuts settings"
   },
@@ -2188,7 +2188,7 @@
   "@translateFilterPickerTitle": {
     "description": "Title for the native file picker dialog used to choose a GTKWave .txt translate filter file"
   },
-  "shortcutActionOpenCommandPalette": "命令面板",
+  "shortcutActionOpenCommandPalette": "命令面板…",
   "@shortcutActionOpenCommandPalette": {
     "description": "Label for the Open Command Palette shortcut action (Ctrl/Cmd+Shift+P) shown in keyboard shortcuts settings and in the palette itself"
   },
@@ -5618,7 +5618,7 @@
   "@aboutButtonTerms": {
     "description": "Action button label that opens the WaveCrux terms of service in the default browser"
   },
-  "aboutButtonReportIssue": "报告问题",
+  "aboutButtonReportIssue": "提交问题…",
   "@aboutButtonReportIssue": {
     "description": "Action button label that opens the WaveCrux issue tracker in the default browser"
   },
@@ -5642,11 +5642,11 @@
   "@aboutCompanyName": {
     "description": "Company name displayed in the About dialog copyright line and as the logo fallback text when the logo asset is missing"
   },
-  "shortcutActionShareSession": "分享会话",
+  "shortcutActionShareSession": "分享会话…",
   "@shortcutActionShareSession": {
     "description": "Menu bar / command palette label for the action that starts a new collaborative viewing session (Enterprise tier)"
   },
-  "shortcutActionJoinSession": "加入会话",
+  "shortcutActionJoinSession": "加入会话…",
   "@shortcutActionJoinSession": {
     "description": "Menu bar / command palette label for the action that joins an existing collaborative viewing session (Enterprise tier)"
   },
@@ -6052,7 +6052,7 @@
   "@recoveryBannerDismissLabel": {
     "description": "Tooltip and accessibility label for the close button that dismisses the startup recovery banner for this session"
   },
-  "shortcutActionResetWorkspace": "重置工作区",
+  "shortcutActionResetWorkspace": "重置工作区…",
   "@shortcutActionResetWorkspace": {
     "description": "See app_en.arb for description"
   },
@@ -6135,7 +6135,7 @@
   "@exportTabAsSessionPickerTitle": {
     "description": "See app_en.arb for description"
   },
-  "shortcutActionSaveWorkspaceAs": "将工作区另存为",
+  "shortcutActionSaveWorkspaceAs": "将工作区另存为…",
   "@shortcutActionSaveWorkspaceAs": {
     "description": "See app_en.arb for description"
   },

@@ -81,7 +81,7 @@
   "@panelEdgeTabShowTransactionView": {
     "description": "Tooltip on the bottom-edge chevron tab that re-expands the hidden bottom panel (transactions / FSM / x-trace / activity / cocotb)"
   },
-  "shortcutActionOpenFile": "Open File",
+  "shortcutActionOpenFile": "Open File…",
   "@shortcutActionOpenFile": {
     "description": "Label for the Open File keyboard shortcut action in the shortcuts settings"
   },
@@ -125,11 +125,11 @@
   "@shortcutActionToggleTheme": {
     "description": "Label for the Toggle Theme (light/dark) keyboard shortcut action"
   },
-  "shortcutActionOpenAppDiagnostics": "App Diagnostics",
+  "shortcutActionOpenAppDiagnostics": "App Diagnostics…",
   "@shortcutActionOpenAppDiagnostics": {
     "description": "Label for the Open App Diagnostics keyboard shortcut action (opens the process-wide diagnostics dialog)"
   },
-  "shortcutActionOpenTabDiagnostics": "Tab Diagnostics",
+  "shortcutActionOpenTabDiagnostics": "Tab Diagnostics…",
   "@shortcutActionOpenTabDiagnostics": {
     "description": "Label for the Open Tab Diagnostics keyboard shortcut action (opens the per-tab side drawer)"
   },
@@ -1416,7 +1416,7 @@
   "@shortcutActionSaveSession": {
     "description": "Label for the Ctrl/Cmd+S save-session shortcut action shown in keyboard shortcuts settings"
   },
-  "shortcutActionSaveSessionAs": "Save Session As",
+  "shortcutActionSaveSessionAs": "Save Session As…",
   "@shortcutActionSaveSessionAs": {
     "description": "Label for the Ctrl/Cmd+Shift+S save-session-as shortcut action shown in keyboard shortcuts settings"
   },
@@ -2321,7 +2321,7 @@
   "@translateFilterPickerTitle": {
     "description": "Title for the native file picker dialog used to choose a GTKWave .txt translate filter file"
   },
-  "shortcutActionOpenCommandPalette": "Command Palette",
+  "shortcutActionOpenCommandPalette": "Command Palette…",
   "@shortcutActionOpenCommandPalette": {
     "description": "Label for the Open Command Palette shortcut action (Ctrl/Cmd+Shift+P) shown in keyboard shortcuts settings and in the palette itself"
   },
@@ -3296,7 +3296,7 @@
   "@crossProbeMenuItem": {
     "description": "Command palette / menu entry that opens the cross-probe panel"
   },
-  "actionCrossProbeSelection": "Cross-probe Selection…",
+  "actionCrossProbeSelection": "Cross-Probe Selection…",
   "@actionCrossProbeSelection": {
     "description": "Menu / command palette label for sending the selected signal to a peer product"
   },
@@ -5800,7 +5800,7 @@
   "@aboutButtonTerms": {
     "description": "Action button label that opens the WaveCrux terms of service in the default browser"
   },
-  "aboutButtonReportIssue": "Report Issue",
+  "aboutButtonReportIssue": "Submit Issue…",
   "@aboutButtonReportIssue": {
     "description": "Action button label that opens the WaveCrux issue tracker in the default browser"
   },
@@ -5824,11 +5824,11 @@
   "@aboutCompanyName": {
     "description": "Company name displayed in the About dialog copyright line and as the logo fallback text when the logo asset is missing"
   },
-  "shortcutActionShareSession": "Share Session",
+  "shortcutActionShareSession": "Share Session…",
   "@shortcutActionShareSession": {
     "description": "Menu bar / command palette label for the action that starts a new collaborative viewing session (Enterprise tier)"
   },
-  "shortcutActionJoinSession": "Join Session",
+  "shortcutActionJoinSession": "Join Session…",
   "@shortcutActionJoinSession": {
     "description": "Menu bar / command palette label for the action that joins an existing collaborative viewing session (Enterprise tier)"
   },
@@ -6237,7 +6237,7 @@
   "@recoveryBannerDismissLabel": {
     "description": "Tooltip and accessibility label for the close button that dismisses the startup recovery banner for this session"
   },
-  "shortcutActionResetWorkspace": "Reset Workspace",
+  "shortcutActionResetWorkspace": "Reset Workspace…",
   "@shortcutActionResetWorkspace": {
     "description": "Command palette / menu label for the Reset Workspace action — empties the current workspace after a single confirmation"
   },
@@ -6320,7 +6320,7 @@
   "@exportTabAsSessionPickerTitle": {
     "description": "Title of the OS save dialog opened by the Export Tab as Session command (writes the active tab's full state to a .wavecrux file)"
   },
-  "shortcutActionSaveWorkspaceAs": "Save Workspace As",
+  "shortcutActionSaveWorkspaceAs": "Save Workspace As…",
   "@shortcutActionSaveWorkspaceAs": {
     "description": "Menu / command palette label for the Save Workspace As command"
   },

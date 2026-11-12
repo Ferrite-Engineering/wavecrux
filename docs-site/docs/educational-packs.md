@@ -18,7 +18,7 @@ Each pack carries a forward-compatible manifest file, `pack.yaml`, listing its l
 
 ## Using a pack { #using-a-pack }
 
-A pack is just files, so there is no special importer to run. Once you have one, open its **session template**, the `.wavecrux` file in the pack's `fixtures/` folder, in WaveCrux with **File → Open File** (++cmd+o++ / ++ctrl+o++). The waveform loads with the right signals, groups, display formats, decoder bindings, and any Stage layout already arranged, so the lab is ready the moment it opens. To start from a blank slate instead, open the pack's raw `VCD`/`FST` fixture and build the view yourself by following the handout.
+A pack is just files, so there is no special importer to run. Once you have one, open its **session template**, the `.wavecrux` file in the pack's `fixtures/` folder, in WaveCrux with **File → Open File…** (++cmd+o++ / ++ctrl+o++). The waveform loads with the right signals, groups, display formats, decoder bindings, and any Stage layout already arranged, so the lab is ready the moment it opens. To start from a blank slate instead, open the pack's raw `VCD`/`FST` fixture and build the view yourself by following the handout.
 
 ## They run on Open Core { #open-core }
 

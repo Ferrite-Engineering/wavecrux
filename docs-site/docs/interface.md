@@ -67,7 +67,7 @@ Almost every action in WaveCrux is reachable from more than one place, across se
 
 1. **Toolbar icons**: the frequent actions, one click away across the top. When the window is too narrow for all of them, the rest move into the toolbar's overflow menu.
 2. **Menus**: the menu bar on desktop (the system menu bar on macOS, an in-window menu bar on Windows and Linux), and the categorized overflow menu on every device class, presented as a bottom sheet on phone.
-3. **The command palette**: open it with ++cmd+shift+p++ / ++ctrl+shift+p++ (or **View → Command Palette**) and fuzzy-search any action by name. Each result shows its keyboard shortcut and its required license tier inline. The palette lists only actions you can run right now; menus show the rest greyed out.
+3. **The command palette**: open it with ++cmd+shift+p++ / ++ctrl+shift+p++ (or **View → Command Palette…**) and fuzzy-search any action by name. Each result shows its keyboard shortcut and its required license tier inline. The palette lists only actions you can run right now; menus show the rest greyed out.
 
 Pro and Enterprise actions carry a tier badge wherever they are listed in the menu bar, the overflow menu and the command palette, so you can always see what a command requires before you run it. See [Tiers & licensing](licensing.md) for what each tier covers.
 
@@ -99,8 +99,8 @@ Three deeper diagnostics surfaces are available on tablet and desktop, and are h
 
 | Surface | What it shows | Open with |
 |---|---|---|
-| Tab Diagnostics drawer | **File Info**, **Signal Health**, and **Benchmark This File** for the active tab. | ++cmd+shift+i++ / ++ctrl+shift+i++ (**Tools → Tab Diagnostics**) |
-| App Diagnostics dialog | **Memory**, **Frame Stats**, a **Per-Tab Memory Breakdown**, and a live [Logs](#logs) view for the whole app, with **Copy Full Diagnostics Report**. | ++cmd+shift+m++ / ++ctrl+shift+m++ (**Tools → App Diagnostics**) |
+| Tab Diagnostics drawer | **File Info**, **Signal Health**, and **Benchmark This File** for the active tab. | ++cmd+shift+i++ / ++ctrl+shift+i++ (**Tools → Tab Diagnostics…**) |
+| App Diagnostics dialog | **Memory**, **Frame Stats**, a **Per-Tab Memory Breakdown**, and a live [Logs](#logs) view for the whole app, with **Copy Full Diagnostics Report**. | ++cmd+shift+m++ / ++ctrl+shift+m++ (**Tools → App Diagnostics…**) |
 | Pane Render Stats popover | Render statistics for a single pane: paint, layout and per-layer times, visible transitions, line segments, canvas size. | The **i** icon in a pane's tab bar, or **Pane Render Stats** in the command palette (no default shortcut) |
 
 !!! tip

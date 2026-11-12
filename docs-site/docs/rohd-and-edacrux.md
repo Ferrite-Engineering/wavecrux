@@ -43,7 +43,7 @@ Earlier ROHD releases write the same kind of file with `WaveDumper(top, outputPa
 wavecrux build/MyDesign.vcd
 ```
 
-Or choose `File → Open File`, or ++cmd+o++ / ++ctrl+o++. The format is detected from the file itself. Opening the VCD is all you need to browse signals, measure, decode buses and annotate. See [Files & sessions](files-and-sessions.md).
+Or choose `File → Open File…`, or ++cmd+o++ / ++ctrl+o++. The format is detected from the file itself. Opening the VCD is all you need to browse signals, measure, decode buses and annotate. See [Files & sessions](files-and-sessions.md).
 
 To open the waveform together with the rest of the design, name it in a `<design>.crux-project` file. See [one file for the whole design](https://docs.netcrux.app/rohd-and-edacrux#manifest).
 
