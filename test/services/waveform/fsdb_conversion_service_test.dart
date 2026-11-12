@@ -23,6 +23,15 @@ FsdbProcessRunner _failRunner({int exitCode = 1, String stderr = 'error'}) =>
 FsdbExecutableLocator _locator(List<String> available) =>
     (name) => available.contains(name) ? '/fake/$name' : null;
 
+/// A [FsdbProcessRunner] that plays both tools: `fsdb2vcd` prints
+/// `vcd-output`, `vcd2fst` writes `converted-fst` to its output argument.
+Future<ProcessResult> _fstWriter(String exe, List<String> args) async {
+  if (exe == '/fake/vcd2fst') {
+    await File(args[1]).writeAsString('converted-fst');
+  }
+  return ProcessResult(1, 0, 'vcd-output', '');
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 void main() {
@@ -98,53 +107,189 @@ void main() {
 
   group('FsdbConversionService.getCachedFst', () {
     late Directory tempDir;
+    late Directory appCache;
 
     setUp(() async {
       tempDir = await Directory.systemTemp.createTemp('fsdb_test_');
+      appCache = await Directory(p.join(tempDir.path, 'app-cache')).create();
     });
 
     tearDown(() async {
       if (tempDir.existsSync()) await tempDir.delete(recursive: true);
     });
 
-    test('returns null when no FST file exists', () {
-      const service = FsdbConversionService();
+    FsdbConversionService converting() => FsdbConversionService(
+      executableLocator: _locator(['fsdb2vcd', 'vcd2fst']),
+      processRunner: _fstWriter,
+      appCacheDirResolver: () async => appCache,
+    );
+
+    test('returns null when no FST file exists', () async {
+      final service = converting();
       final fsdbPath = p.join(tempDir.path, 'sim.fsdb');
-      expect(service.getCachedFst(fsdbPath), isNull);
+      expect(await service.getCachedFst(fsdbPath), isNull);
     });
 
     test('returns null when FST exists but is older than FSDB', () async {
-      const service = FsdbConversionService();
+      final service = converting();
       final fsdbPath = p.join(tempDir.path, 'sim.fsdb');
-      final fstPath = p.join(tempDir.path, 'sim.fst');
-
-      await File(fstPath).writeAsString('fst');
       await File(fsdbPath).writeAsString('fsdb');
+      final fstPath = await service.convertFsdbToFst(fsdbPath);
 
       // Explicitly set timestamps so FST is 1 hour older than FSDB.
       final old = DateTime.now().subtract(const Duration(hours: 1));
       await File(fstPath).setLastModified(old);
       await File(fsdbPath).setLastModified(DateTime.now());
 
-      expect(service.getCachedFst(fsdbPath), isNull);
+      expect(await service.getCachedFst(fsdbPath), isNull);
     });
 
-    test('returns FST path when FST is newer than FSDB', () async {
-      const service = FsdbConversionService();
+    test(
+      "returns the FST path for WaveCrux's own current conversion",
+      () async {
+        final service = converting();
+        final fsdbPath = p.join(tempDir.path, 'sim.fsdb');
+        await File(fsdbPath).writeAsString('fsdb');
+        final fstPath = await service.convertFsdbToFst(fsdbPath);
+
+        // Explicitly set timestamps so FST is 1 hour newer than FSDB.
+        await File(fsdbPath).setLastModified(
+          DateTime.now().subtract(const Duration(hours: 1)),
+        );
+        await File(fstPath).setLastModified(DateTime.now());
+
+        expect(fstPath, p.join(tempDir.path, 'sim.fst'));
+        expect(await service.getCachedFst(fsdbPath), fstPath);
+      },
+    );
+
+    test(
+      'a newer sibling FST WaveCrux did not write is not a cache',
+      () async {
+        final service = converting();
+        final fsdbPath = p.join(tempDir.path, 'sim.fsdb');
+        final fstPath = p.join(tempDir.path, 'sim.fst');
+
+        await File(fsdbPath).writeAsString('fsdb');
+        await File(fstPath).writeAsString("the user's own fst");
+
+        // Explicitly set timestamps so FST is 1 hour newer than FSDB.
+        await File(fsdbPath).setLastModified(
+          DateTime.now().subtract(const Duration(hours: 1)),
+        );
+        await File(fstPath).setLastModified(DateTime.now());
+
+        expect(await service.getCachedFst(fsdbPath), isNull);
+      },
+    );
+
+    test(
+      'returns null when the FSDB changed size since the conversion',
+      () async {
+        final service = converting();
+        final fsdbPath = p.join(tempDir.path, 'sim.fsdb');
+        await File(fsdbPath).writeAsString('fsdb');
+        final fstPath = await service.convertFsdbToFst(fsdbPath);
+
+        await File(fsdbPath).writeAsString('a longer fsdb');
+        await File(fsdbPath).setLastModified(
+          DateTime.now().subtract(const Duration(hours: 1)),
+        );
+        await File(fstPath).setLastModified(DateTime.now());
+
+        expect(await service.getCachedFst(fsdbPath), isNull);
+      },
+    );
+
+    test('finds a conversion that went to the app cache', () async {
+      final service = converting();
       final fsdbPath = p.join(tempDir.path, 'sim.fsdb');
-      final fstPath = p.join(tempDir.path, 'sim.fst');
-
       await File(fsdbPath).writeAsString('fsdb');
-      await File(fstPath).writeAsString('fst');
+      await File(p.join(tempDir.path, 'sim.fst')).writeAsString('user');
+      final fstPath = await service.convertFsdbToFst(fsdbPath);
 
-      // Explicitly set timestamps so FST is 1 hour newer than FSDB.
       await File(fsdbPath).setLastModified(
         DateTime.now().subtract(const Duration(hours: 1)),
       );
       await File(fstPath).setLastModified(DateTime.now());
 
-      expect(service.getCachedFst(fsdbPath), fstPath);
+      expect(p.isWithin(appCache.path, fstPath), isTrue);
+      expect(await service.getCachedFst(fsdbPath), fstPath);
     });
+  });
+
+  group('FsdbConversionService.convertFsdbToFst never overwrites a file '
+      'WaveCrux did not write', () {
+    late Directory tempDir;
+    late Directory appCache;
+
+    setUp(() async {
+      tempDir = await Directory.systemTemp.createTemp('fsdb_owner_test_');
+      appCache = await Directory(p.join(tempDir.path, 'app-cache')).create();
+    });
+
+    tearDown(() async {
+      if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+    });
+
+    FsdbConversionService service(List<String> tools) => FsdbConversionService(
+      executableLocator: _locator(tools),
+      processRunner: _fstWriter,
+      appCacheDirResolver: () async => appCache,
+    );
+
+    test(
+      'a sibling .fst stays as it was; the FST goes to the app cache',
+      () async {
+        final fsdbPath = p.join(tempDir.path, 'run.fsdb');
+        await File(fsdbPath).writeAsString('fsdb');
+        final userFst = File(p.join(tempDir.path, 'run.fst'));
+        await userFst.writeAsString("the user's own fst");
+
+        final result = await service([
+          'fsdb2vcd',
+          'vcd2fst',
+        ]).convertFsdbToFst(fsdbPath);
+
+        expect(await userFst.readAsString(), "the user's own fst");
+        expect(p.isWithin(appCache.path, result), isTrue, reason: result);
+        expect(p.basename(result), 'run.fst');
+        expect(await File(result).readAsString(), 'converted-fst');
+      },
+    );
+
+    test(
+      'a sibling .vcd stays as it was; the VCD goes to the app cache',
+      () async {
+        final fsdbPath = p.join(tempDir.path, 'run.fsdb');
+        await File(fsdbPath).writeAsString('fsdb');
+        final userVcd = File(p.join(tempDir.path, 'run.vcd'));
+        await userVcd.writeAsString("the user's own vcd");
+
+        final result = await service(['fsdb2vcd']).convertFsdbToFst(fsdbPath);
+
+        expect(await userVcd.readAsString(), "the user's own vcd");
+        expect(p.isWithin(appCache.path, result), isTrue, reason: result);
+        expect(p.basename(result), 'run.vcd');
+        expect(await File(result).readAsString(), 'vcd-output');
+      },
+    );
+
+    test(
+      "WaveCrux's own earlier sibling output is converted in place",
+      () async {
+        final fsdbPath = p.join(tempDir.path, 'run.fsdb');
+        await File(fsdbPath).writeAsString('fsdb');
+        final converter = service(['fsdb2vcd', 'vcd2fst']);
+
+        final first = await converter.convertFsdbToFst(fsdbPath);
+        final second = await converter.convertFsdbToFst(fsdbPath);
+
+        expect(first, p.join(tempDir.path, 'run.fst'));
+        expect(second, first);
+        expect(appCache.listSync(), isEmpty);
+      },
+    );
   });
 
   group('FsdbConversionService.convertFsdbToFst', () {

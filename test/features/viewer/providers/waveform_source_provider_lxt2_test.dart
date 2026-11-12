@@ -143,6 +143,27 @@ void main() {
       );
     });
 
+    test("opening run.lxt2 leaves the user's own run.fst untouched", () async {
+      final converter = _SpyConverter();
+      final cache = Lxt2FstCache(appCacheDirResolver: () async => appCache);
+      final container = _buildContainer(converter: converter, cache: cache);
+      addTearDown(container.dispose);
+
+      final source = writeLxt2('run.lxt2');
+      final userFst = File(p.join(tempRoot.path, 'run.fst'))
+        ..writeAsStringSync("the user's own fst");
+
+      await container.read(waveformSourceProvider.notifier).openFile(source);
+
+      expect(converter.calls, hasLength(1));
+      expect(
+        p.isWithin(appCache.path, converter.calls.single.outPath),
+        isTrue,
+        reason: 'got ${converter.calls.single.outPath}',
+      );
+      expect(userFst.readAsStringSync(), "the user's own fst");
+    });
+
     test('does NOT invoke the converter for a non-legacy file', () async {
       final converter = _SpyConverter();
       final cache = Lxt2FstCache(appCacheDirResolver: () async => appCache);

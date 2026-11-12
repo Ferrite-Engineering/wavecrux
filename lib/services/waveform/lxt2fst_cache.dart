@@ -13,8 +13,11 @@
 //      the same directory as the source. This is the path a user actually
 //      sees and it makes a re-open of the source file instantaneous.
 //   2. If the sibling directory is not writable (sandboxed cloud mount,
-//      read-only share, removable media), fall back to
-//      `${appCacheDir}/legacy_conversions/<sha256-of-source-path>.fst`.
+//      read-only share, removable media), or a sibling `.fst` already
+//      exists without the `.lxt2cache.json` sidecar WaveCrux writes beside
+//      its own output (the user's file, or another tool's), fall back to
+//      `${appCacheDir}/legacy_conversions/<hash-of-source-path>.fst`.
+//      WaveCrux never writes over a file it did not create.
 //   3. On open, consider a cached `.fst` *fresh* iff:
 //        a) its mtime ≥ source mtime, AND
 //        b) the sidecar `.lxt2cache.json` records a matching source size.
@@ -38,7 +41,9 @@ import 'package:path_provider/path_provider.dart';
 /// Injectable so tests don't have to hit `path_provider`.
 typedef AppCacheDirectoryResolver = Future<Directory> Function();
 
-Future<Directory> _defaultAppCacheDir() async {
+/// The production [AppCacheDirectoryResolver], shared by the LXT/LXT2 and
+/// FSDB convert-on-open paths.
+Future<Directory> defaultAppCacheDirectory() async {
   // `getApplicationCacheDirectory` is the right target
   // ("${appCacheDir}/legacy_conversions"), but it is not yet wired on
   // every platform in this project. Fall back to ApplicationSupport which
@@ -79,7 +84,7 @@ class Lxt2CacheDecision {
 /// demand.
 class Lxt2FstCache {
   Lxt2FstCache({AppCacheDirectoryResolver? appCacheDirResolver})
-    : _appCacheDir = appCacheDirResolver ?? _defaultAppCacheDir;
+    : _appCacheDir = appCacheDirResolver ?? defaultAppCacheDirectory;
 
   /// Filename of the sidecar metadata that records the source size used
   /// to detect stale caches. Lives next to the cached FST.
@@ -98,6 +103,11 @@ class Lxt2FstCache {
   /// The returned [Lxt2CacheDecision.fstPath] is guaranteed to be in a
   /// directory the caller can write to: either the sibling directory
   /// (when writable) or the app-cache subdirectory (always writable).
+  ///
+  /// It is never a file WaveCrux did not write: a sibling `.fst` that
+  /// exists without the [sidecarSuffix] sidecar belongs to the user (or to
+  /// another tool), so the decision routes to the app-cache path instead
+  /// and the sibling is left untouched.
   Future<Lxt2CacheDecision> resolve(String sourcePath) async {
     if (kIsWeb) {
       throw UnsupportedError(
@@ -111,8 +121,11 @@ class Lxt2FstCache {
     final sourceSize = sourceStat.size;
 
     final sibling = _siblingFstPath(sourcePath);
-    final siblingWritable = _isWritable(p.dirname(sibling));
-    if (siblingWritable) {
+    // Absent, or WaveCrux's own output (it carries the sidecar).
+    final siblingIsOurs =
+        !File(sibling).existsSync() ||
+        File('$sibling$sidecarSuffix').existsSync();
+    if (siblingIsOurs && _isWritable(p.dirname(sibling))) {
       final fresh = _isFresh(
         fstPath: sibling,
         sourceMTime: sourceMTime,
@@ -135,6 +148,24 @@ class Lxt2FstCache {
       fstPath: fallback,
       fromCache: fresh,
       isSibling: false,
+    );
+  }
+
+  /// Mark [fstPath] as WaveCrux's output before the converter writes it.
+  ///
+  /// Writes a sidecar with no source size, so [resolve] treats the file as
+  /// ours (a cancelled or failed conversion's partial file is reconverted in
+  /// place, not abandoned beside the source) but never as a fresh cache hit.
+  /// [recordSuccess] replaces it once the conversion completes.
+  Future<void> claim({
+    required String sourcePath,
+    required String fstPath,
+  }) async {
+    if (kIsWeb) return;
+    final sidecar = File('$fstPath$sidecarSuffix');
+    sidecar.parent.createSync(recursive: true);
+    sidecar.writeAsStringSync(
+      jsonEncode(<String, Object?>{'sourcePath': sourcePath, 'pending': true}),
     );
   }
 
@@ -176,7 +207,7 @@ class Lxt2FstCache {
     final base = await _appCacheDir();
     final subdir = Directory(p.join(base.path, appCacheSubdir))
       ..createSync(recursive: true);
-    return p.join(subdir.path, '${_stableHashHex(sourcePath)}.fst');
+    return p.join(subdir.path, '${stableSourcePathHash(sourcePath)}.fst');
   }
 
   bool _isFresh({
@@ -232,7 +263,7 @@ class Lxt2FstCache {
 /// and a 32-bit hash is plenty at that scale. Two independent runs are
 /// combined to give the filename eight extra hex digits of entropy
 /// without overflowing JS's 53-bit safe integer range.
-String _stableHashHex(String input) {
+String stableSourcePathHash(String input) {
   const fnvOffset = 0x811c9dc5;
   const fnvPrime = 0x01000193;
   const mask = 0xffffffff;

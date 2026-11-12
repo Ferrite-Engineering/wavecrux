@@ -163,6 +163,45 @@ void main() {
       },
     );
 
+    test(
+      'a sibling .fst WaveCrux did not write stays as it was; the decision '
+      'routes to the app cache',
+      () async {
+        final cache = buildCache();
+        final source = writeSource(name: 'run.lxt2');
+        // Newer than the source, so only ownership can tell it apart.
+        final userFst = File(p.join(tempRoot.path, 'run.fst'))
+          ..writeAsStringSync("the user's own fst")
+          ..setLastModifiedSync(
+            DateTime.now().add(const Duration(minutes: 5)),
+          );
+
+        final decision = await cache.resolve(source);
+
+        expect(decision.isSibling, isFalse);
+        expect(decision.fromCache, isFalse);
+        expect(p.isWithin(appCache.path, decision.fstPath), isTrue);
+        expect(userFst.readAsStringSync(), "the user's own fst");
+      },
+    );
+
+    test(
+      'a claimed sibling (a cancelled conversion) is reconverted in place',
+      () async {
+        final cache = buildCache();
+        final source = writeSource(name: 'run.lxt2');
+        final first = await cache.resolve(source);
+        await cache.claim(sourcePath: source, fstPath: first.fstPath);
+        File(first.fstPath).writeAsBytesSync(const [0x00]); // partial output
+
+        final second = await cache.resolve(source);
+
+        expect(second.isSibling, isTrue);
+        expect(second.fstPath, first.fstPath);
+        expect(second.fromCache, isFalse, reason: 'a claim is not a cache');
+      },
+    );
+
     test('the app-cache filename is deterministic per source path', () async {
       final cache = buildCache();
       final a = await cache.appCacheFstPathForTest('/some/where/a.lxt2');

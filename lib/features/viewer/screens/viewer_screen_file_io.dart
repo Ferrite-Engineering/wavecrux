@@ -681,8 +681,9 @@ extension _ViewerScreenFileIo on _ViewerScreenState {
     String fsdbPath,
     FsdbConversionService service,
   ) async {
-    // Use a cached FST if it exists and is newer than the FSDB.
-    final cached = service.getCachedFst(fsdbPath);
+    // Use a cached FST if WaveCrux converted this FSDB and it is current.
+    final cached = await service.getCachedFst(fsdbPath);
+    if (!mounted) return false;
     if (cached != null) {
       final tabId = await ref.wavecruxWorkspace.openFile(cached);
       if (!mounted) return false;

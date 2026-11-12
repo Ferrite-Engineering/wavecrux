@@ -503,7 +503,8 @@ class WaveformSourceNotifier extends _$WaveformSourceNotifier {
   ///
   /// Uses [Lxt2FstCache] to find a fresh sibling-of-source `.fst` first,
   /// falling back to `${appCacheDir}/legacy_conversions/<hash>.fst` when
-  /// the sibling directory is not writable. Skips reconversion when the
+  /// the sibling directory is not writable or the sibling `.fst` is a file
+  /// WaveCrux did not write. Skips reconversion when the
   /// cached file's mtime ≥ source mtime AND its sidecar records the same
   /// source size.
   ///
@@ -526,6 +527,9 @@ class WaveformSourceNotifier extends _$WaveformSourceNotifier {
     final controller = ref.read(legacyConversionControllerProvider.notifier);
     final eventSink = ref.read(legacyConversionEventProvider.notifier);
 
+    // Mark the output as ours before the converter creates it, so a
+    // cancelled run's partial file is reconverted in place next time.
+    await cache.claim(sourcePath: sourcePath, fstPath: decision.fstPath);
     final progress = converter.convertPath(
       inPath: sourcePath,
       outPath: decision.fstPath,
