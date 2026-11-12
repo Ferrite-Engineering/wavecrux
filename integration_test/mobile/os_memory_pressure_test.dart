@@ -57,16 +57,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:wavecrux/domain/enums/device_class.dart';
+import 'package:wavecrux/domain/models/fold_state.dart';
 import 'package:wavecrux/domain/models/signal_filter.dart';
 import 'package:wavecrux/features/viewer/providers/mobile_memory_guard_provider.dart';
 import 'package:wavecrux/features/viewer/providers/signal_group_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
 import 'package:wavecrux/features/viewer/widgets/waveform_canvas.dart';
 import 'package:wavecrux/services/mobile/mobile_memory_guard_service.dart';
+import 'package:wavecrux/services/platform/fold_source.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
+import 'package:wavecrux/shared/layouts/fold_state_provider.dart';
 
 import '../helpers/app_driver.dart';
 import '_mobile_fixture.dart';
+
+/// A device with no hinge: the stream is empty, as on any phone or tablet
+/// without a fold. Stands in for [PlatformFoldSource], which would open the
+/// iOS-only event channel under the forced iOS platform.
+class _NoFoldSource implements FoldSource {
+  const _NoFoldSource();
+
+  @override
+  Stream<FoldState> watch() => const Stream<FoldState>.empty();
+}
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -96,7 +109,19 @@ void main() {
         // every run *and* on the fresh-emulator retry. Every other test in
         // this directory already loads the mobile-safe way; this was the one
         // holdout. See `_mobile_fixture.dart`'s header.
-        final load = await loadSyntheticVcd(tester);
+        //
+        // `foldSourceProvider` is stood in for with a fake: the platform
+        // source listens on the iOS-only `com.wavecrux/fold` channel whenever
+        // `defaultTargetPlatform` is iOS, and a desktop embedder answers that
+        // with `MissingPluginException` (red on Linux, macOS and Windows,
+        // audit S08). The override above forces a *reported* platform only, so
+        // the real channel must not be reached.
+        final load = await loadSyntheticVcd(
+          tester,
+          extraOverrides: [
+            foldSourceProvider.overrideWithValue(const _NoFoldSource()),
+          ],
+        );
 
         final root = load.rootContainer;
         expect(
