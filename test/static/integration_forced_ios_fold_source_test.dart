@@ -9,7 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// `defaultTargetPlatform` on a desktop runner must also stand in for the
 /// fold source.
 ///
-/// Background (audit S08): `PlatformFoldSource.watch()` opens the iOS-only
+/// Background: `PlatformFoldSource.watch()` opens the iOS-only
 /// `com.wavecrux/fold` event channel whenever `defaultTargetPlatform` is iOS.
 /// The weekly integration run is a desktop embedder, which answers that channel
 /// with `MissingPluginException`; the exception reaches the framework and

@@ -113,9 +113,9 @@ void main() {
         // `foldSourceProvider` is stood in for with a fake: the platform
         // source listens on the iOS-only `com.wavecrux/fold` channel whenever
         // `defaultTargetPlatform` is iOS, and a desktop embedder answers that
-        // with `MissingPluginException` (red on Linux, macOS and Windows,
-        // audit S08). The override above forces a *reported* platform only, so
-        // the real channel must not be reached.
+        // with `MissingPluginException` (the weekly integration run was red
+        // on Linux, macOS and Windows). The override above forces a
+        // *reported* platform only, so the real channel must not be reached.
         final load = await loadSyntheticVcd(
           tester,
           extraOverrides: [
