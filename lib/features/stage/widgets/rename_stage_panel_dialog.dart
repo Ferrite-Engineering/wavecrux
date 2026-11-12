@@ -33,6 +33,7 @@ class RenameStagePanelDialog extends StatefulWidget {
   }) {
     return showCruxDialog<String>(
       context: context,
+      barrierDismissible: false,
       builder: (context) => RenameStagePanelDialog(
         initialName: initialName,
         titleText: titleText,

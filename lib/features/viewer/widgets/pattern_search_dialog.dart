@@ -63,6 +63,7 @@ class PatternSearchDialog extends ConsumerStatefulWidget {
     return showCruxDialog<void>(
       context: context,
       navigator: ActiveTab.navigatorFor(context),
+      barrierDismissible: false,
       builder: (_) => const PatternSearchDialog(),
     );
   }

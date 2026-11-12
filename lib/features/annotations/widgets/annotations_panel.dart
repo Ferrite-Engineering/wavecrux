@@ -414,6 +414,7 @@ class _AnnotationsPanelState extends ConsumerState<AnnotationsPanel> {
   ) async {
     final tick = await showCruxDialog<int>(
       context: context,
+      barrierDismissible: false,
       builder: (ctx) => _AnchorTimeDialog(
         initialTick: annotation.sortTime,
         title: l10n.annotationsPanelSetTimeAction,

@@ -52,6 +52,7 @@ class SignalBindingPickerDialog extends ConsumerStatefulWidget {
     return showCruxDialog<SignalBindingPickerResult>(
       context: context,
       navigator: ActiveTab.navigatorFor(context),
+      barrierDismissible: false,
       builder: (_) => SignalBindingPickerDialog(
         pinName: pinName,
         pinDescription: pinDescription,
