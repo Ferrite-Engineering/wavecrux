@@ -5321,8 +5321,8 @@ none of the following regressed.
    shows the **full file path**, not just the display name.
 2. **Right-click the chip** (long-press on touch). The menu order is: a
    non-interactive **monospace full-path header** (per §3.1.8.14), **Duplicate
-   Tab**, **Move to New Window** (disabled, with the "multi-window stable"
-   tooltip), **Reveal in Finder/Explorer/Files** (label matches the host OS),
+   Tab** (no Move to New Window entry while multi-window is unavailable),
+   **Reveal in Finder/Explorer/Files** (label matches the host OS),
    then — when diagnostics are enabled on tablet/desktop — **Tab Diagnostics**,
    then **Close Tab** / **Close Other Tabs** / **Close Tabs to the Right**
    (the last two gated by tab count/position).
@@ -7205,7 +7205,7 @@ No special fixtures required; any VCD/FST/GHW file works. For multi-file tests, 
 3. A chip for a session with unsaved changes shows a small dot indicator.
 4. Press × on a chip — that tab closes. If it had unsaved state, a confirmation dialog appears.
 5. Closing the last non-welcome tab leaves one Welcome tab (never exits the app).
-6. Right-click (or long-press on tablet) a tab chip — context menu appears: Duplicate Tab, Move to New Window (disabled), Reveal in Finder/Explorer, Close Tab, Close Other Tabs, Close Tabs to the Right.
+6. Right-click (or long-press on tablet) a tab chip — context menu appears: Duplicate Tab, Reveal in Finder/Explorer, Close Tab, Close Other Tabs, Close Tabs to the Right.
 7. Drag a chip left or right past another chip — tab order updates.
 
 **Expected:** All affordances render without overflow. Touch targets are ≥ 44 dp on tablet.
@@ -7282,7 +7282,7 @@ wavecrux path/to/file_a.vcd path/to/file_b.fst
 
 **Step-by-step:**
 
-1. Right-click a tab chip → "Move to New Window". Verify the item is present but disabled (greyed out, tooltip: "Available when Flutter multi-window reaches stable").
+1. Right-click a tab chip. Verify the menu has no "Move to New Window" entry.
 2. If panel pop-out buttons exist in panel headers (Stage, transaction view, diagnostics), verify they are visible but disabled with the same tooltip.
 3. `kMultiWindowAvailable` is `false` — both affordances stay disabled at all times.
 

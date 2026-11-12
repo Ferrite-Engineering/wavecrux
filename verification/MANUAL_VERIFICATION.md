@@ -127,8 +127,8 @@
 
 - [ ] Open file → opens in a new tab (or replaces the Welcome tab if it is the only tab)
 - [ ] Tab switching preserves per-tab cursor, zoom, and signal arrangement
-- [ ] Tab context menu: Duplicate Tab, Move to New Window (disabled), Reveal in Finder/Explorer, Close Tab, Close Other Tabs, Close Tabs to the Right
-- [ ] "Move to New Window" is visible but disabled (`kMultiWindowAvailable = false`); tooltip explains
+- [ ] Tab context menu: Duplicate Tab, Reveal in Finder/Explorer, Close Tab, Close Other Tabs, Close Tabs to the Right
+- [ ] "Move to New Window" is absent from the menu (`kMultiWindowAvailable = false`)
 - [ ] Keyboard shortcuts work: close tab (Cmd/Ctrl+W), next/prev tab (Ctrl+Tab / Ctrl+Shift+Tab), jump to tab 1–9 (there is no new-tab shortcut)
 - [ ] All tab keyboard shortcuts appear in the command palette under the File category
 - [ ] Startup restoration disabled in Settings → relaunch starts with a single Welcome tab
