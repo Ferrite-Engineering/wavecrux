@@ -39,6 +39,13 @@ final foldPostureProvider = Provider<FoldPosture>(
   name: 'foldPostureProvider',
 );
 
+/// Areas the hardware covers on the current screen (the iPhone Duo's cover
+/// camera). Value-equal, so watchers rebuild only when the areas move.
+final foldOcclusionsProvider = Provider<FoldOcclusions>(
+  (ref) => ref.watch(foldStateProvider.select((s) => s.occlusions)),
+  name: 'foldOcclusionsProvider',
+);
+
 /// Whether the device has a hinge at all (iPhone Duo, Android foldables).
 final hasHingeProvider = Provider<bool>(
   (ref) => ref.watch(foldStateProvider.select((s) => s.hasHinge)),

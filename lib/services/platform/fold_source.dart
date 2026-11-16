@@ -44,8 +44,10 @@ class PlatformFoldSource implements FoldSource {
 /// Decodes one event from the native bridge.
 ///
 /// Shape: `{status: 'none'|'closed'|'partiallyOpen'|'fullyOpen',
-/// angle: double?, crease: [left, top, width, height]?}`, coordinates in the
-/// Flutter view's logical pixels. Anything malformed decodes to
+/// angle: double?, crease: [left, top, width, height]?,
+/// occlusions: [[left, top, width, height], ...]?}`, coordinates in the
+/// Flutter view's logical pixels. A malformed occlusion is dropped on its
+/// own. Anything else malformed decodes to
 /// [FoldState.none] rather than throwing: a bad event must never take the
 /// viewer's layout down with it.
 FoldState foldStateFromPlatformEvent(Object? event) {
@@ -58,19 +60,25 @@ FoldState foldStateFromPlatformEvent(Object? event) {
   };
   if (status == HingeStatus.none) return FoldState.none;
   final angle = event['angle'];
-  final crease = event['crease'];
-  Rect? rect;
-  if (crease is List && crease.length == 4 && crease.every((v) => v is num)) {
-    final v = crease.cast<num>().map((n) => n.toDouble()).toList();
-    if (v[2] > 0 && v[3] > 0 && v.every((n) => n.isFinite)) {
-      rect = Rect.fromLTWH(v[0], v[1], v[2], v[3]);
-    }
-  }
+  final occlusions = event['occlusions'];
   return FoldState(
     status: status,
     hingeAngle: angle is num && angle.isFinite ? angle.toDouble() : null,
-    crease: rect,
+    crease: _rectFromLtwh(event['crease']),
+    occlusions: occlusions is List
+        ? FoldOcclusions(occlusions.map(_rectFromLtwh).nonNulls.toList())
+        : FoldOcclusions.none,
   );
+}
+
+/// `[left, top, width, height]` with a positive, finite size, else null.
+Rect? _rectFromLtwh(Object? value) {
+  if (value is! List || value.length != 4 || !value.every((v) => v is num)) {
+    return null;
+  }
+  final v = value.cast<num>().map((n) => n.toDouble()).toList();
+  if (v[2] <= 0 || v[3] <= 0 || !v.every((n) => n.isFinite)) return null;
+  return Rect.fromLTWH(v[0], v[1], v[2], v[3]);
 }
 
 /// A partly open hinge at or above this angle counts as flat.

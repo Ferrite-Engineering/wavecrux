@@ -203,6 +203,28 @@
   return nil;
 }
 
+/// Active occlusion regions (cameras, sensor housings), each as
+/// `[left, top, width, height]` in the view's points, margins included.
+- (NSArray<NSArray<NSNumber *> *> *)currentOcclusions {
+  NSMutableArray<NSArray<NSNumber *> *> *out = [NSMutableArray array];
+#if WCX_HAS_HINGE_SDK
+  if (@available(iOS 27.1, *)) {
+    if (self.probe == nil) return out;
+    NSArray<UIViewReservedRegion *> *regions = [self.probe
+        reservedRegionsOfKind:[UIViewReservedRegionKind occlusionRegionKind]];
+    for (UIViewReservedRegion *region in regions) {
+      if (!region.isActive) continue;
+      CGRect f = region.frame;
+      if (f.size.width <= 0 || f.size.height <= 0) continue;
+      [out addObject:@[
+        @(f.origin.x), @(f.origin.y), @(f.size.width), @(f.size.height)
+      ]];
+    }
+  }
+#endif
+  return out;
+}
+
 - (void)emit {
   if (self.sink == nil) return;
   NSMutableDictionary *event = [NSMutableDictionary dictionary];
@@ -210,6 +232,8 @@
   if (self.angleDegrees != nil) event[@"angle"] = self.angleDegrees;
   NSArray<NSNumber *> *crease = [self currentCrease];
   if (crease != nil) event[@"crease"] = crease;
+  NSArray *occlusions = [self currentOcclusions];
+  if (occlusions.count > 0) event[@"occlusions"] = occlusions;
   if ([event isEqualToDictionary:self.lastSent ?: @{}]) return;
   self.lastSent = event;
   self.sink(event);

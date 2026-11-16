@@ -9,6 +9,25 @@
 part of 'viewer_screen.dart';
 
 extension _ViewerScreenFold on _ViewerScreenState {
+  /// The viewer's [SafeArea] without the side inset a hardware camera claims.
+  ///
+  /// On the iPhone Duo's cover screen the safe area reserves the whole edge
+  /// beside the camera (84 pt, top to bottom), which drew as a black strip.
+  /// The camera only covers the top corner, so while the platform reports
+  /// occlusions the side insets are dropped here and [FoldOcclusionClear]
+  /// keeps the toolbar clear of the corner itself. Top and bottom (the home
+  /// indicator) stay. With no occlusions this is the plain [SafeArea].
+  Widget _foldSafeArea({required Widget child}) {
+    final safe = SafeArea(child: child);
+    if (ref.watch(foldOcclusionsProvider).isEmpty) return safe;
+    return MediaQuery.removePadding(
+      context: context,
+      removeLeft: true,
+      removeRight: true,
+      child: safe,
+    );
+  }
+
   /// Tilt-to-zoom (Settings > Orientation & Display, off by default): in tabletop
   /// posture each tilt of the upright half beyond the dead band zooms the
   /// active tab's time axis around its cursor (the viewport centre when no

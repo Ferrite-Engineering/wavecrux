@@ -13,6 +13,7 @@
 
 import 'dart:async';
 
+import 'package:crux_toolbar/crux_toolbar.dart' show CruxToolbar;
 import 'package:crux_workspace/crux_workspace.dart' show CruxGlowingAppIcon;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,6 +42,7 @@ import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/services/panes/pane_container_manager.dart';
 import 'package:wavecrux/services/tabs/tab_container_manager.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
+import 'package:wavecrux/shared/layouts/fold_occlusion_clear.dart';
 import 'package:wavecrux/shared/layouts/fold_state_provider.dart';
 
 import '../helpers/fake_waveform_data_source.dart';
@@ -353,6 +355,55 @@ void main() {
           .set(const FoldState(status: HingeStatus.fullyOpen));
       await tester.pumpAndSettle();
       expect(find.byType(WaveCruxBottomDock).hitTestable(), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'iPhone Duo cover: no strip beside the camera, toolbar clear of it',
+    (tester) async {
+      // As measured on the device with the status bar hidden: the safe area
+      // claims the whole right edge (84 pt) for a camera region that covers
+      // only the top-right 84 x 82 pt corner.
+      const cover = Size(466, 678);
+      const camera = Rect.fromLTWH(382, 0, 84, 82);
+      tester.view.padding = const FakeViewPadding(right: 84, bottom: 34);
+      SharedPreferences.setMockInitialValues({});
+      await _pumpViewer(tester, size: cover);
+      final root = ProviderScope.containerOf(
+        tester.element(find.byType(ViewerScreen)),
+      );
+      root.read(_classProvider.notifier).set(DeviceClass.phone);
+      await tester.pumpAndSettle();
+      final toolbar = find.byWidgetPredicate((w) => w is CruxToolbar);
+      expect(
+        tester.getRect(find.byType(WaveformCanvas)).right,
+        lessThanOrEqualTo(382),
+        reason: 'before the bridge reports the camera, the plain safe area',
+      );
+
+      root
+          .read(foldStateProvider.notifier)
+          .set(
+            const FoldState(
+              status: HingeStatus.closed,
+              occlusions: FoldOcclusions([camera]),
+            ),
+          );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getRect(find.byType(WaveformCanvas)).right,
+        greaterThan(440),
+        reason: 'the waveform runs to the edge: no black strip',
+      );
+      final bar = tester.getRect(toolbar);
+      expect(bar.right, lessThanOrEqualTo(camera.left + 0.5));
+      expect(bar.bottom, greaterThanOrEqualTo(camera.bottom - 0.5));
+      expect(
+        tester.getRect(find.byType(FoldOcclusionClear)).width,
+        cover.width,
+        reason: "the toolbar's background still reaches the edge",
+      );
     },
   );
 

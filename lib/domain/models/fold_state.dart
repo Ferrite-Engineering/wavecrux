@@ -33,6 +33,46 @@ enum FoldPosture {
   book,
 }
 
+/// Screen areas the hardware covers (cameras, sensors), as the platform
+/// reports them: global logical pixels, the system's margin for interactive
+/// content included.
+///
+/// On the iPhone Duo's cover screen this is the camera corner (84 × 82 pt at
+/// the top right in portrait, top left in landscape), while the safe area
+/// claims that whole edge from top to bottom. Value-equal, so a layout that
+/// watches it rebuilds only when the regions move, not on every hinge update.
+@immutable
+class FoldOcclusions {
+  /// Wraps [rects].
+  const FoldOcclusions(this.rects);
+
+  /// No covered areas.
+  static const FoldOcclusions none = FoldOcclusions([]);
+
+  /// The covered areas.
+  final List<Rect> rects;
+
+  /// Whether there are none.
+  bool get isEmpty => rects.isEmpty;
+
+  @override
+  bool operator ==(Object other) {
+    if (other is! FoldOcclusions || other.rects.length != rects.length) {
+      return false;
+    }
+    for (var i = 0; i < rects.length; i++) {
+      if (other.rects[i] != rects[i]) return false;
+    }
+    return true;
+  }
+
+  @override
+  int get hashCode => Object.hashAll(rects);
+
+  @override
+  String toString() => 'FoldOcclusions($rects)';
+}
+
 /// The fold, as the layout needs it: hinge status, angle and the crease.
 ///
 /// Immutable. [FoldState.none] is the value on every device without a hinge,
@@ -41,7 +81,12 @@ enum FoldPosture {
 @immutable
 class FoldState {
   /// Creates a fold state.
-  const FoldState({required this.status, this.hingeAngle, this.crease});
+  const FoldState({
+    required this.status,
+    this.hingeAngle,
+    this.crease,
+    this.occlusions = FoldOcclusions.none,
+  });
 
   /// No hinge, no crease.
   static const FoldState none = FoldState(status: HingeStatus.none);
@@ -56,6 +101,10 @@ class FoldState {
   /// The crease band in global logical pixels (the iPhone Duo reports 40 pt:
   /// 20 either side of the fold line), or null when none is reported.
   final Rect? crease;
+
+  /// Areas the hardware covers on the current screen. Only the iPhone Duo's
+  /// native bridge reports these; elsewhere [FoldOcclusions.none].
+  final FoldOcclusions occlusions;
 
   /// Whether the device has a hinge at all.
   bool get hasHinge => status != HingeStatus.none;
@@ -78,10 +127,12 @@ class FoldState {
     double? hingeAngle,
     Rect? crease,
     bool clearCrease = false,
+    FoldOcclusions? occlusions,
   }) => FoldState(
     status: status ?? this.status,
     hingeAngle: hingeAngle ?? this.hingeAngle,
     crease: clearCrease ? null : (crease ?? this.crease),
+    occlusions: occlusions ?? this.occlusions,
   );
 
   @override
@@ -89,13 +140,15 @@ class FoldState {
       other is FoldState &&
       other.status == status &&
       other.hingeAngle == hingeAngle &&
-      other.crease == crease;
+      other.crease == crease &&
+      other.occlusions == occlusions;
 
   @override
-  int get hashCode => Object.hash(status, hingeAngle, crease);
+  int get hashCode => Object.hash(status, hingeAngle, crease, occlusions);
 
   @override
   String toString() =>
       'FoldState(status: ${status.name}, angle: $hingeAngle, '
-      'crease: $crease, posture: ${posture.name})';
+      'crease: $crease, posture: ${posture.name}'
+      '${occlusions.isEmpty ? '' : ', occlusions: ${occlusions.rects}'})';
 }

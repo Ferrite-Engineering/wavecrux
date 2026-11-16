@@ -162,6 +162,7 @@ import 'package:wavecrux/services/waveform_geom/lane_geometry.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
 import 'package:wavecrux/shared/layouts/fold_layout.dart';
 import 'package:wavecrux/shared/layouts/fold_local_crease.dart';
+import 'package:wavecrux/shared/layouts/fold_occlusion_clear.dart';
 import 'package:wavecrux/shared/layouts/fold_state_provider.dart';
 import 'package:wavecrux/shared/layouts/pane_defaults.dart';
 import 'package:wavecrux/shared/widgets/editor_host_boundary.dart';
@@ -767,7 +768,9 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
       // under the iPhone home indicator. Desktop platforms report zero
       // padding so this is a no-op there. SafeArea is placed outside the
       // IndexedStack so it also protects the ViewerTabBar above the stack.
-      body: SafeArea(
+      // On the iPhone Duo's cover the camera's edge inset is dropped; see
+      // _foldSafeArea.
+      body: _foldSafeArea(
         child: Actions(
           actions: {
             ShortcutActionIntent: CallbackAction<ShortcutActionIntent>(

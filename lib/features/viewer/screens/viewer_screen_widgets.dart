@@ -264,7 +264,17 @@ class _ScreenContent extends ConsumerWidget {
     // branch already wraps its whole column in that scope, so the toolbar there
     // is scoped by the outer UncontrolledProviderScope — wrapping again would
     // nest two scopes for the same container and crash on dispose).
-    final toolbar = _ActivePaneToolbar(onShortcutAction: onShortcutAction);
+    // Kept clear of the iPhone Duo's cover camera, with CruxToolbar's own
+    // background and rule painted under the band it adds.
+    final toolbar = FoldOcclusionClear(
+      decoration: BoxDecoration(
+        color:
+            CruxChromeColors.of(context)?.toolbarBackground ??
+            colorScheme.surfaceContainerHigh,
+        border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
+      ),
+      child: _ActivePaneToolbar(onShortcutAction: onShortcutAction),
+    );
 
     if (tabs.isEmpty) {
       return UncontrolledProviderScope(

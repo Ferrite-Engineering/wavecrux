@@ -15,6 +15,7 @@ import 'package:wavecrux/features/viewer/hinge_zoom.dart';
 import 'package:wavecrux/services/platform/fold_source.dart';
 import 'package:wavecrux/shared/layouts/fold_layout.dart';
 import 'package:wavecrux/shared/layouts/fold_local_crease.dart';
+import 'package:wavecrux/shared/layouts/fold_occlusion_clear.dart';
 import 'package:wavecrux/shared/layouts/fold_state_provider.dart';
 import 'package:wavecrux/shared/widgets/fold_feed.dart';
 
@@ -118,6 +119,170 @@ void main() {
         expect(s.crease, isNull, reason: '$crease');
       }
     });
+
+    test('occlusions decode, malformed ones dropped one by one', () {
+      // As measured on an iPhone Duo, cover portrait, status bar hidden.
+      final s = foldStateFromPlatformEvent({
+        'status': 'closed',
+        'angle': 0.0,
+        'occlusions': [
+          [399.67, 29.33, 37.0, 37.0],
+          [382.0, 0.0, 84.0, 82.0],
+          [0, 0, 0, 10],
+          'junk',
+        ],
+      });
+      expect(s.occlusions.rects, const [
+        Rect.fromLTWH(399.67, 29.33, 37, 37),
+        Rect.fromLTWH(382, 0, 84, 82),
+      ]);
+      expect(
+        foldStateFromPlatformEvent({'status': 'fullyOpen'}).occlusions,
+        FoldOcclusions.none,
+      );
+    });
+
+    test('occlusions compare by value, so equal readings are one state', () {
+      FoldState read() => foldStateFromPlatformEvent({
+        'status': 'closed',
+        'occlusions': [
+          [382.0, 0.0, 84.0, 82.0],
+        ],
+      });
+      expect(read(), read());
+      expect(read().hashCode, read().hashCode);
+    });
+  });
+
+  group('occlusionInsets', () {
+    // The iPhone Duo's cover camera region with the status bar hidden, and
+    // a 46 pt toolbar across the top of the 466 × 678 pt cover.
+    const toolbar = Size(466, 46);
+
+    test('cover portrait: band to clear 82 pt, content off the right', () {
+      final insets = occlusionInsets(
+        boxSize: toolbar,
+        contentHeight: 46,
+        occlusions: const [Rect.fromLTWH(382, 0, 84, 82)],
+      );
+      expect(insets, const EdgeInsets.fromLTRB(0, 36, 84, 0));
+    });
+
+    test('cover landscape: the corner is top left', () {
+      final insets = occlusionInsets(
+        boxSize: const Size(678, 46),
+        contentHeight: 46,
+        occlusions: const [Rect.fromLTWH(0, 0, 82, 84)],
+      );
+      expect(insets, const EdgeInsets.fromLTRB(82, 38, 0, 0));
+    });
+
+    test('stable once the band is added (box measured with it)', () {
+      final insets = occlusionInsets(
+        boxSize: const Size(466, 82),
+        contentHeight: 46,
+        occlusions: const [Rect.fromLTWH(382, 0, 84, 82)],
+      );
+      expect(insets, const EdgeInsets.fromLTRB(0, 36, 84, 0));
+    });
+
+    test('an occlusion inside the bar needs no band, only the side', () {
+      final insets = occlusionInsets(
+        boxSize: toolbar,
+        contentHeight: 46,
+        occlusions: const [Rect.fromLTWH(400, 5, 37, 37)],
+      );
+      expect(insets, const EdgeInsets.fromLTRB(0, 0, 66, 0));
+    });
+
+    test('occlusions below or beside the bar are ignored', () {
+      expect(
+        occlusionInsets(
+          boxSize: toolbar,
+          contentHeight: 46,
+          occlusions: const [
+            Rect.fromLTWH(0, 300, 84, 82),
+            Rect.fromLTWH(500, 0, 40, 40),
+          ],
+        ),
+        EdgeInsets.zero,
+      );
+    });
+  });
+
+  group('FoldOcclusionClear', () {
+    Future<ProviderContainer> pumpBar(WidgetTester tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          foldSourceProvider.overrideWithValue(
+            _FakeFoldSource(const Stream.empty()),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const Directionality(
+            textDirection: TextDirection.ltr,
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                width: 466,
+                child: FoldOcclusionClear(
+                  decoration: BoxDecoration(color: Color(0xFF202020)),
+                  child: SizedBox(key: Key('bar'), height: 46),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      return container;
+    }
+
+    testWidgets('without occlusions the bar is untouched', (tester) async {
+      await pumpBar(tester);
+      await tester.pump();
+      expect(
+        tester.getRect(find.byKey(const Key('bar'))),
+        const Rect.fromLTWH(0, 0, 466, 46),
+      );
+    });
+
+    testWidgets(
+      'on the closed Duo the bar drops below the camera and steps off it, '
+      'and comes back when the phone opens',
+      (tester) async {
+        final container = await pumpBar(tester);
+        container
+            .read(foldStateProvider.notifier)
+            .set(
+              const FoldState(
+                status: HingeStatus.closed,
+                occlusions: FoldOcclusions([Rect.fromLTWH(382, 0, 84, 82)]),
+              ),
+            );
+        await tester.pump();
+        await tester.pump();
+        expect(
+          tester.getRect(find.byKey(const Key('bar'))),
+          const Rect.fromLTWH(0, 36, 382, 46),
+        );
+
+        container
+            .read(foldStateProvider.notifier)
+            .set(
+              const FoldState(status: HingeStatus.fullyOpen, hingeAngle: 180),
+            );
+        await tester.pump();
+        await tester.pump();
+        expect(
+          tester.getRect(find.byKey(const Key('bar'))),
+          const Rect.fromLTWH(0, 0, 466, 46),
+        );
+      },
+    );
   });
 
   group('applyFlatBand', () {
