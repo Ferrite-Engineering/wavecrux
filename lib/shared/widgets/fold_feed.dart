@@ -6,6 +6,7 @@ import 'dart:ui' show DisplayFeature, DisplayFeatureState, DisplayFeatureType;
 
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/domain/models/fold_state.dart';
 import 'package:wavecrux/services/platform/fold_source.dart';
@@ -23,6 +24,9 @@ import 'package:wavecrux/shared/layouts/fold_state_provider.dart';
 /// sheets and popups read it through `DisplayFeatureSubScreen` and open in one
 /// half instead of across the fold. Flat and closed postures add nothing, so
 /// a dialog on a flat panel still uses the whole screen.
+///
+/// When the native bridge reports a hinge, the status bar is hidden for the
+/// rest of the session so the app fills both Duo screens edge to edge.
 ///
 /// Mount once near the app root, inside `MaterialApp.builder` next to
 /// `DisplaySizeFeed`. On a device without a hinge it pushes nothing and
@@ -43,6 +47,7 @@ class _FoldFeedState extends ConsumerState<FoldFeed> {
   FoldState _native = FoldState.none;
   FoldState _fromFeatures = FoldState.none;
   bool _flat = false;
+  bool _statusBarHidden = false;
 
   @override
   void initState() {
@@ -54,6 +59,7 @@ class _FoldFeedState extends ConsumerState<FoldFeed> {
         final banded = applyFlatBand(reading, wasFlat: _flat);
         _flat = banded.flat;
         final state = banded.state;
+        if (state.hasHinge) _hideStatusBarOnce();
         if (state == _native) return;
         // Debug builds only: the real crease and panel size, for checking a
         // new device against the layout's assumptions.
@@ -89,6 +95,24 @@ class _FoldFeedState extends ConsumerState<FoldFeed> {
   }
 
   FoldState get _effective => _native.hasHinge ? _native : _fromFeatures;
+
+  /// On the iPhone Duo the system puts the status bar in a column down the
+  /// right edge of both screens and reports it as an 84-pt right safe-area
+  /// inset over the full height, so every [SafeArea] in the app left a black
+  /// strip there. Apple's own Duo apps (Calculator) hide the status bar and
+  /// use the whole panel; hiding it removes the inset. The home indicator
+  /// stays. Only the native hinge source triggers this, so Android foldables
+  /// and every other iPhone and iPad keep their status bar.
+  void _hideStatusBarOnce() {
+    if (_statusBarHidden) return;
+    _statusBarHidden = true;
+    unawaited(
+      SystemChrome.setEnabledSystemUIMode(
+        SystemUiMode.manual,
+        overlays: const [SystemUiOverlay.bottom],
+      ),
+    );
+  }
 
   /// Riverpod forbids writing a provider during build; the write goes after
   /// the frame, as `DisplaySizeFeed` does.

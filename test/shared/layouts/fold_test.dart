@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:ui' show DisplayFeature, DisplayFeatureState, DisplayFeatureType;
 
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -359,6 +360,93 @@ void main() {
         expect(seen, isEmpty);
       },
     );
+
+    group('status bar', () {
+      late List<MethodCall> calls;
+      setUp(() {
+        calls = [];
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+              if (call.method.startsWith('SystemChrome.setEnabledSystemUI')) {
+                calls.add(call);
+              }
+              return null;
+            });
+      });
+      tearDown(() {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null);
+      });
+
+      Future<void> pumpFeed(
+        WidgetTester tester,
+        Stream<FoldState> events, {
+        List<DisplayFeature> features = const [],
+      }) async {
+        final container = ProviderContainer(
+          overrides: [
+            foldSourceProvider.overrideWithValue(_FakeFoldSource(events)),
+          ],
+        );
+        addTearDown(container.dispose);
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MediaQuery(
+              data: MediaQueryData(size: _upright, displayFeatures: features),
+              child: const FoldFeed(child: SizedBox()),
+            ),
+          ),
+        );
+        await tester.pump();
+      }
+
+      testWidgets(
+        'a native hinge (iPhone Duo) hides it once and keeps the home '
+        'indicator, so the right-edge status column leaves no inset',
+        (tester) async {
+          final controller = StreamController<FoldState>();
+          addTearDown(controller.close);
+          await pumpFeed(tester, controller.stream);
+          controller
+            ..add(const FoldState(status: HingeStatus.closed))
+            ..add(
+              const FoldState(status: HingeStatus.fullyOpen, hingeAngle: 180),
+            );
+          await tester.pump();
+          await tester.pump();
+          expect(calls, hasLength(1));
+          expect(
+            calls.single.method,
+            'SystemChrome.setEnabledSystemUIOverlays',
+          );
+          expect(calls.single.arguments, ['SystemUiOverlay.bottom']);
+        },
+      );
+
+      testWidgets('no hinge leaves it alone', (tester) async {
+        await pumpFeed(tester, const Stream.empty());
+        expect(calls, isEmpty);
+      });
+
+      testWidgets(
+        'an Android fold seen only through display features leaves it alone',
+        (tester) async {
+          await pumpFeed(
+            tester,
+            const Stream.empty(),
+            features: const [
+              DisplayFeature(
+                bounds: _horizontalCrease,
+                type: DisplayFeatureType.fold,
+                state: DisplayFeatureState.postureHalfOpened,
+              ),
+            ],
+          );
+          expect(calls, isEmpty);
+        },
+      );
+    });
   });
 
   group('FoldLocalCrease', () {
