@@ -202,8 +202,11 @@ class Axi4LiteDecoder implements ProtocolDecoder {
       if (!isVcdHigh(edgeVal)) continue; // only rising edges
       lastEdge = edgeTime;
 
+      // Sample what was on the bus just before the edge (see [preEdgeTime]).
+      final sampleTime = preEdgeTime(edgeTime);
+
       // During reset: clear any in-flight state and skip channel processing.
-      if (!isVcdHigh(query('aresetn', edgeTime))) {
+      if (!isVcdHigh(query('aresetn', sampleTime))) {
         pendingAw.clear();
         pendingW.clear();
         pendingAr.clear();
@@ -211,32 +214,32 @@ class Axi4LiteDecoder implements ProtocolDecoder {
       }
 
       // ── AW channel ────────────────────────────────────────────────────────
-      if (isVcdHigh(query('awvalid', edgeTime)) &&
-          isVcdHigh(query('awready', edgeTime))) {
+      if (isVcdHigh(query('awvalid', sampleTime)) &&
+          isVcdHigh(query('awready', sampleTime))) {
         pendingAw.add(
           _AwPhase(
             startTime: edgeTime,
-            addr: parseVcdVectorInt(query('awaddr', edgeTime)),
-            prot: parseVcdVectorInt(query('awprot', edgeTime)),
+            addr: parseVcdVectorInt(query('awaddr', sampleTime)),
+            prot: parseVcdVectorInt(query('awprot', sampleTime)),
           ),
         );
       }
 
       // ── W channel ─────────────────────────────────────────────────────────
-      if (isVcdHigh(query('wvalid', edgeTime)) &&
-          isVcdHigh(query('wready', edgeTime))) {
+      if (isVcdHigh(query('wvalid', sampleTime)) &&
+          isVcdHigh(query('wready', sampleTime))) {
         pendingW.add(
           _WPhase(
             captureTime: edgeTime,
-            data: parseVcdVectorInt(query('wdata', edgeTime)),
-            strb: parseVcdVectorInt(query('wstrb', edgeTime)),
+            data: parseVcdVectorInt(query('wdata', sampleTime)),
+            strb: parseVcdVectorInt(query('wstrb', sampleTime)),
           ),
         );
       }
 
       // ── B channel ─────────────────────────────────────────────────────────
-      if (isVcdHigh(query('bvalid', edgeTime)) &&
-          isVcdHigh(query('bready', edgeTime))) {
+      if (isVcdHigh(query('bvalid', sampleTime)) &&
+          isVcdHigh(query('bready', sampleTime))) {
         if (pendingAw.isEmpty || pendingW.isEmpty) {
           // A response before both halves of the write arrived. Whatever half
           // did arrive is consumed with it, so it is not also listed as
@@ -253,7 +256,7 @@ class Axi4LiteDecoder implements ProtocolDecoder {
           );
         } else {
           final respCode = _respCode(
-            parseVcdVectorInt(query('bresp', edgeTime)),
+            parseVcdVectorInt(query('bresp', sampleTime)),
           );
           final isSlvErr = respCode == 'SLVERR' || respCode == 'DECERR';
           final isExokay = respCode == 'EXOKAY';
@@ -280,20 +283,20 @@ class Axi4LiteDecoder implements ProtocolDecoder {
       }
 
       // ── AR channel ────────────────────────────────────────────────────────
-      if (isVcdHigh(query('arvalid', edgeTime)) &&
-          isVcdHigh(query('arready', edgeTime))) {
+      if (isVcdHigh(query('arvalid', sampleTime)) &&
+          isVcdHigh(query('arready', sampleTime))) {
         pendingAr.add(
           _ArPhase(
             startTime: edgeTime,
-            addr: parseVcdVectorInt(query('araddr', edgeTime)),
-            prot: parseVcdVectorInt(query('arprot', edgeTime)),
+            addr: parseVcdVectorInt(query('araddr', sampleTime)),
+            prot: parseVcdVectorInt(query('arprot', sampleTime)),
           ),
         );
       }
 
       // ── R channel ─────────────────────────────────────────────────────────
-      if (isVcdHigh(query('rvalid', edgeTime)) &&
-          isVcdHigh(query('rready', edgeTime))) {
+      if (isVcdHigh(query('rvalid', sampleTime)) &&
+          isVcdHigh(query('rready', sampleTime))) {
         if (pendingAr.isEmpty) {
           transactions.add(
             _makeViolation(
@@ -304,7 +307,7 @@ class Axi4LiteDecoder implements ProtocolDecoder {
           );
         } else {
           final respCode = _respCode(
-            parseVcdVectorInt(query('rresp', edgeTime)),
+            parseVcdVectorInt(query('rresp', sampleTime)),
           );
           final isSlvErr = respCode == 'SLVERR' || respCode == 'DECERR';
           final isExokay = respCode == 'EXOKAY';
@@ -315,7 +318,7 @@ class Axi4LiteDecoder implements ProtocolDecoder {
           ];
 
           final ar = pendingAr.removeAt(0);
-          final rdata = parseVcdVectorInt(query('rdata', edgeTime));
+          final rdata = parseVcdVectorInt(query('rdata', sampleTime));
 
           transactions.add(
             DecodedTransaction(

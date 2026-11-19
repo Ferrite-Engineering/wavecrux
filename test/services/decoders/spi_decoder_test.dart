@@ -810,19 +810,28 @@ void main() {
   // ── error detection ───────────────────────────────────────────────────────
 
   group('error detection', () {
-    test('MOSI change at sample edge is flagged as glitch', () {
-      // All 8 bits arrive on rising edges simultaneously (data changes at
-      // the same tick as the sample edge → glitch for every bit).
+    test('MOSI change at the sample edge reads the value before the edge', () {
+      // MOSI changes at the same tick as every rising sample edge, as a
+      // simulator launching the next bit with the clock does. The word is the
+      // bits in effect just before each edge, with no error: the value after
+      // the edge belongs to the next bit.
       final sclkChanges = <(int, String)>[];
-      final mosiChanges = <(int, String)>[];
-      // Build clock + simultaneous data changes
+      final mosiChanges = <(int, String)>[(0, '1')]; // bit 0, before edge 0
       for (var i = 0; i < 8; i++) {
         final rise = 10 + i * 20;
         final fall = 20 + i * 20;
         sclkChanges
           ..add((rise, '1'))
           ..add((fall, '0'));
-        mosiChanges.add((rise, i.isEven ? '1' : '0')); // change AT rising edge
+        // Launch bit i+1 AT the rising edge; the last launch is a junk 0.
+        mosiChanges.add((
+          rise,
+          i < 7
+              ? (i + 1).isEven
+                    ? '1'
+                    : '0'
+              : '0',
+        ));
       }
 
       final decoder = makeDecoder(withMiso: false, withCs: false);
@@ -835,8 +844,9 @@ void main() {
         }),
         makeChangesQuery({'sclk': sclkChanges, 'mosi': mosiChanges}),
       );
-      expect(txs.first.isError, isTrue);
-      expect(txs.first.errorMessage, contains('MOSI changes at sample edge'));
+      // Bits 1,0,1,0,1,0,1,0 MSB first.
+      expect(txs.first.fields['mosi'], '0xAA');
+      expect(txs.first.isError, isFalse);
     });
 
     test('incomplete word (CS deasserts mid-byte) sets isError', () {

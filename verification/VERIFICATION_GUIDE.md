@@ -116,7 +116,7 @@ All fixtures live under `verification/fixtures/` and are committed to the repo. 
 | `vcd/<*.expected.json>` | Companion known-answer JSON for each VCD above |
 | `protocol/spi/generated/spi_basic.vcd` + `.expected_transactions.json` | SPI: two simple Mode-0 transactions (legacy fixture; backs the hardcoded unit-test arrays) |
 | `protocol/spi/spi_mode{0,1,2,3}.vcd` + `.expected_transactions.json` | SPI: one fixture per CPOL/CPHA mode — two transactions each (1-byte + 2-byte) |
-| `protocol/spi/generated/spi_glitch.vcd` + `.expected_transactions.json` | SPI: Mode-0 with one MOSI change exactly on a sample edge — decoder flags `isError: true` with "MOSI changes at sample edge t=…" |
+| `protocol/spi/generated/spi_glitch.vcd` + `.expected_transactions.json` | SPI: Mode-0 with one MOSI change exactly on a sample edge — the decoder reads the value in effect just before the edge, so the second transaction decodes as the intended `0xC3` with no error |
 | `protocol/i2c/generated/i2c_basic.vcd` + `.expected_transactions.json` | I²C: legacy two-transaction fixture (write `0x55` to `0x48` ACK; address-NACK to `0x20`) |
 | `protocol/i2c/generated/i2c_full.vcd` + `.expected_transactions.json` | I²C: write ACK, read with final NACK (normal), address-NACK error, and a repeated-START write→read pair (5 transactions) |
 | `protocol/uart/generated/uart_basic.vcd` + `.expected_transactions.json` | UART: TX "Hi" (clean), TX "U" (framing error), RX "OK" — at 1 Mbaud, no parity |
@@ -758,7 +758,7 @@ Six committed fixtures under `protocol/spi/`:
 - `spi_mode1.vcd` — CPOL=0 CPHA=1, idle-low + sample-on-falling. Same two-transaction shape.
 - `spi_mode2.vcd` — CPOL=1 CPHA=0, idle-high + sample-on-falling.
 - `spi_mode3.vcd` — CPOL=1 CPHA=1, idle-high + sample-on-rising.
-- `spi_glitch.vcd` — Mode 0 timing with one MOSI transition exactly on a sample edge; the decoder must flag the second transaction as `isError: true` with `errorMessage: "MOSI changes at sample edge t=<tick>"`.
+- `spi_glitch.vcd` — Mode 0 timing with one MOSI transition exactly on a sample edge; the decoder samples the value in effect just before the edge, so the second transaction decodes as the intended `0xC3` with `isError: false`.
 
 Each fixture has a companion `<name>.expected_transactions.json` produced by `test/tool/generate_spi_fixtures_test.dart` (which runs the actual `SpiDecoder` against the handcrafted timeline, so the JSON is always consistent with the implementation).
 
@@ -775,7 +775,7 @@ Regenerate after any decoder change with: `flutter test test/tool/generate_spi_f
    - As a negative check, load `spi_mode0.vcd` and configure for Mode 2 — the decoded bytes should differ from the Mode 0 ground truth, demonstrating mode selection has an effect.
 5. Test MSB-first vs LSB-first bit order on `spi_mode0.vcd` — verify swapped output when toggled.
 6. Test with CS framing and without CS — both should work (the legacy `spi_basic.vcd` uses CS framing).
-7. Load `spi_glitch.vcd` and apply the SPI decoder with Mode 0. Verify the second transaction is flagged as `isError: true` with `errorMessage` containing "MOSI changes at sample edge". The label should be "SPI 0xD3" (note: the byte value differs from intended 0xC3 because the glitch flipped a bit during sampling).
+7. Load `spi_glitch.vcd` and apply the SPI decoder with Mode 0. Verify the second transaction decodes as "SPI 0xC3" with no error: MOSI changes at the same timestamp as the sampling edge, and the decoder reads the value that was on the line just before it.
 
 #### 5.2.4 Diagnostics-assisted verification
 
@@ -795,7 +795,7 @@ Regenerate after any decoder change with: `flutter test test/tool/generate_spi_f
 | Known-answer SPI byte decode | **WIDGET** (`test/services/decoders/spi_decoder_test.dart` — fixture round-trip) | Highest-value end-to-end test: load fixture → assert decoded bytes match expected list. |
 | All four CPOL/CPHA modes | **WIDGET** (`spi_decoder_test.dart` — parameterized over modes) | Easy to parameterize across modes. |
 | MSB/LSB bit order | **WIDGET** (`spi_decoder_test.dart`) | Easy to assert. |
-| Glitch error detection | **WIDGET** (`spi_decoder_test.dart`) | Known-answer error fixture. |
+| Data changing at the sampling edge decodes the pre-edge value | **WIDGET** (`spi_decoder_test.dart`) | Known-answer fixture. |
 | Wrong-bindings doesn't crash | **WIDGET** (`spi_decoder_test.dart`) | Robustness regression catch. |
 | Activation from picker → real FFI parse → 2 transactions in table | **INTEGRATION_TEST** (`integration_test/decoders/spi_integration_test.dart`) |  |
 

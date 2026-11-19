@@ -177,7 +177,6 @@ class SpiDecoder implements ProtocolDecoder {
             seg.$2,
             sclkChanges.where((c) => c.$1 >= seg.$1 && c.$1 < seg.$2).toList(),
             query,
-            changesQuery,
             sampleOnRising,
             msbFirst,
             wordSize,
@@ -191,7 +190,6 @@ class SpiDecoder implements ProtocolDecoder {
       endTime,
       sclkChanges,
       query,
-      changesQuery,
       sampleOnRising,
       msbFirst,
       wordSize,
@@ -238,7 +236,6 @@ class SpiDecoder implements ProtocolDecoder {
     int txEnd,
     List<(int, String)> sclkInRange,
     SignalValueQuery query,
-    SignalChangesQuery changesQuery,
     bool sampleOnRising,
     bool msbFirst,
     int wordSize,
@@ -251,14 +248,6 @@ class SpiDecoder implements ProtocolDecoder {
     ];
     if (sampleTimes.isEmpty) return [];
 
-    // Detect MOSI glitches: data transition coincides with a sample edge.
-    final mosiChangeTimes = changesQuery(
-      'mosi',
-      txStart,
-      txEnd,
-    ).map((c) => c.$1).toSet();
-    final glitchTimes = sampleTimes.where(mosiChangeTimes.contains).toList();
-
     // Accumulate sampled bits into words.
     final mosiWords = <int>[];
     final misoWords = <int>[];
@@ -267,8 +256,13 @@ class SpiDecoder implements ProtocolDecoder {
     var bitCount = 0;
 
     for (final t in sampleTimes) {
-      final mosiBit = _readBit(query('mosi', t));
-      final misoBit = hasMiso ? _readBit(query('miso', t)) : 0;
+      // The slave samples what was on the line just BEFORE the sampling edge.
+      // A data line that changes at the edge's own timestamp (a simulator
+      // launching the next bit with the clock, or a registered output) must
+      // not be read as the bit that edge captured; see [preEdgeTime].
+      final sampleTime = preEdgeTime(t);
+      final mosiBit = _readBit(query('mosi', sampleTime));
+      final misoBit = hasMiso ? _readBit(query('miso', sampleTime)) : 0;
 
       if (msbFirst) {
         mosiWord = (mosiWord << 1) | mosiBit;
@@ -320,7 +314,6 @@ class SpiDecoder implements ProtocolDecoder {
 
     final errors = <String>[
       if (hasPartial) 'Incomplete word: $bitCount of $wordSize bits',
-      for (final t in glitchTimes) 'MOSI changes at sample edge t=$t',
     ];
 
     return [

@@ -1,7 +1,7 @@
 [
   {
-    "startTime": 85000,
-    "endTime": 95000,
+    "startTime": 95000,
+    "endTime": 105000,
     "label": "[0x00000080] addi ra, zero, 291",
     "fields": {
       "mnemonic": "addi",
@@ -14,8 +14,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 95000,
-    "endTime": 105000,
+    "startTime": 105000,
+    "endTime": 115000,
     "label": "[0x00000084] addi sp, zero, 1110",
     "fields": {
       "mnemonic": "addi",
@@ -28,8 +28,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 105000,
-    "endTime": 115000,
+    "startTime": 115000,
+    "endTime": 125000,
     "label": "[0x00000088] add gp, ra, sp",
     "fields": {
       "mnemonic": "add",
@@ -42,8 +42,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 115000,
-    "endTime": 125000,
+    "startTime": 125000,
+    "endTime": 135000,
     "label": "[0x0000008C] sub tp, sp, ra",
     "fields": {
       "mnemonic": "sub",
@@ -56,8 +56,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 125000,
-    "endTime": 145000,
+    "startTime": 135000,
+    "endTime": 155000,
     "label": "[0x00000090] addi t0, zero, 512",
     "fields": {
       "mnemonic": "addi",
@@ -70,8 +70,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 145000,
-    "endTime": 165000,
+    "startTime": 155000,
+    "endTime": 175000,
     "label": "[0x00000094] sw gp, 0(t0)",
     "fields": {
       "mnemonic": "sw",
@@ -84,8 +84,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 165000,
-    "endTime": 185000,
+    "startTime": 175000,
+    "endTime": 195000,
     "label": "[0x00000098] lw t1, 0(t0)",
     "fields": {
       "mnemonic": "lw",
@@ -98,8 +98,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 185000,
-    "endTime": 205000,
+    "startTime": 195000,
+    "endTime": 215000,
     "label": "[0x0000009C] beq gp, t1, 8",
     "fields": {
       "mnemonic": "beq",
@@ -112,8 +112,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 205000,
-    "endTime": 225000,
+    "startTime": 215000,
+    "endTime": 235000,
     "label": "[0x000000A4] addi s0, zero, 90",
     "fields": {
       "mnemonic": "addi",
@@ -126,8 +126,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 225000,
-    "endTime": 245000,
+    "startTime": 235000,
+    "endTime": 255000,
     "label": "[0x000000A8] sb s0, 4(t0)",
     "fields": {
       "mnemonic": "sb",
@@ -140,8 +140,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 245000,
-    "endTime": 265000,
+    "startTime": 255000,
+    "endTime": 275000,
     "label": "[0x000000AC] lbu s1, 4(t0)",
     "fields": {
       "mnemonic": "lbu",
@@ -154,8 +154,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 265000,
-    "endTime": 285000,
+    "startTime": 275000,
+    "endTime": 295000,
     "label": "[0x000000B0] sh gp, 8(t0)",
     "fields": {
       "mnemonic": "sh",
@@ -168,8 +168,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 285000,
-    "endTime": 295000,
+    "startTime": 295000,
+    "endTime": 305000,
     "label": "[0x000000B4] lhu a0, 8(t0)",
     "fields": {
       "mnemonic": "lhu",
@@ -182,8 +182,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 295000,
-    "endTime": 305000,
+    "startTime": 305000,
+    "endTime": 315000,
     "label": "[0x000000B8] xor a1, gp, tp",
     "fields": {
       "mnemonic": "xor",
@@ -196,8 +196,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 305000,
-    "endTime": 315000,
+    "startTime": 315000,
+    "endTime": 325000,
     "label": "[0x000000BC] addi a5, zero, 3",
     "fields": {
       "mnemonic": "addi",
@@ -210,8 +210,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 315000,
-    "endTime": 335000,
+    "startTime": 325000,
+    "endTime": 345000,
     "label": "[0x000000C0] addi a5, a5, -1",
     "fields": {
       "mnemonic": "addi",
@@ -224,8 +224,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 335000,
-    "endTime": 355000,
+    "startTime": 345000,
+    "endTime": 365000,
     "label": "[0x000000C4] bne a5, zero, -4",
     "fields": {
       "mnemonic": "bne",
@@ -238,8 +238,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 355000,
-    "endTime": 375000,
+    "startTime": 365000,
+    "endTime": 385000,
     "label": "[0x000000C0] addi a5, a5, -1",
     "fields": {
       "mnemonic": "addi",
@@ -252,29 +252,15 @@
     "errorMessage": null
   },
   {
-    "startTime": 375000,
-    "endTime": 395000,
-    "label": "[0x000000C4] bne a5, zero, -4",
-    "fields": {
-      "mnemonic": "bne",
-      "disasm": "bne a5, zero, -4",
-      "raw": "0xFE079EE3",
-      "isa": "RV32I",
-      "pc": "0x000000C4"
-    },
-    "isError": false,
-    "errorMessage": null
-  },
-  {
-    "startTime": 395000,
+    "startTime": 385000,
     "endTime": 405000,
-    "label": "[0x000000C0] addi a5, a5, -1",
+    "label": "[0x000000C4] bne a5, zero, -4",
     "fields": {
-      "mnemonic": "addi",
-      "disasm": "addi a5, a5, -1",
-      "raw": "0xFFF78793",
+      "mnemonic": "bne",
+      "disasm": "bne a5, zero, -4",
+      "raw": "0xFE079EE3",
       "isa": "RV32I",
-      "pc": "0x000000C0"
+      "pc": "0x000000C4"
     },
     "isError": false,
     "errorMessage": null
@@ -282,6 +268,20 @@
   {
     "startTime": 405000,
     "endTime": 415000,
+    "label": "[0x000000C0] addi a5, a5, -1",
+    "fields": {
+      "mnemonic": "addi",
+      "disasm": "addi a5, a5, -1",
+      "raw": "0xFFF78793",
+      "isa": "RV32I",
+      "pc": "0x000000C0"
+    },
+    "isError": false,
+    "errorMessage": null
+  },
+  {
+    "startTime": 415000,
+    "endTime": 425000,
     "label": "[0x000000C4] bne a5, zero, -4",
     "fields": {
       "mnemonic": "bne",
@@ -294,8 +294,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 415000,
-    "endTime": 445000,
+    "startTime": 425000,
+    "endTime": 455000,
     "label": "[0x000000C8] ecall",
     "fields": {
       "mnemonic": "ecall",
@@ -308,8 +308,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 445000,
-    "endTime": 455000,
+    "startTime": 455000,
+    "endTime": 465000,
     "label": "[0x00000000] csrrs a2, mcause, zero",
     "fields": {
       "mnemonic": "csrrs",
@@ -322,8 +322,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 455000,
-    "endTime": 465000,
+    "startTime": 465000,
+    "endTime": 475000,
     "label": "[0x00000004] csrrs a3, mepc, zero",
     "fields": {
       "mnemonic": "csrrs",
@@ -336,8 +336,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 465000,
-    "endTime": 475000,
+    "startTime": 475000,
+    "endTime": 485000,
     "label": "[0x00000008] addi a4, zero, 42",
     "fields": {
       "mnemonic": "addi",
@@ -350,7 +350,7 @@
     "errorMessage": null
   },
   {
-    "startTime": 475000,
+    "startTime": 485000,
     "endTime": 3035000,
     "label": "[0x0000000C] wfi",
     "fields": {

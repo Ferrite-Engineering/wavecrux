@@ -114,7 +114,7 @@ Fixture: `vcd/parameter_multiselect.vcd`.
 - [ ] `protocol/spi/generated/spi_basic.vcd` decodes match `spi_basic.expected_transactions.json` — `[Coverage: WIDGET]` (`test/services/decoders/spi_decoder_test.dart` — fixture round-trip)
 - [ ] All four CPOL/CPHA modes verified — `[Coverage: WIDGET]` (`test/services/decoders/spi_decoder_test.dart` — parameterized over modes)
 - [ ] MSB-first vs LSB-first toggle effects observed — `[Coverage: WIDGET]` (`test/services/decoders/spi_decoder_test.dart`)
-- [ ] Glitch case flagged as error — `[Coverage: WIDGET]` (`test/services/decoders/spi_decoder_test.dart`)
+- [ ] Data changing at the sampling edge decodes the pre-edge value — `[Coverage: WIDGET]` (`test/services/decoders/spi_decoder_test.dart`)
 - [ ] Wrong bindings don't crash — `[Coverage: WIDGET]` (`test/services/decoders/spi_decoder_test.dart`)
 - [ ] SPI activates from picker → real FFI parse → transactions render in transaction-table panel — `[Coverage: INTEGRATION_TEST — pending]`
 - [ ] Captured fixture `nandland_spi_master_mode3_loopback.fst` (MIT-licensed nandland/spi-master `SPI_Master_With_Single_CS` in mode-3 self-loopback) decodes to 1 transaction matching the committed snapshot — `[Coverage: WIDGET]` (`test/services/decoders/spi_captured_fixtures_test.dart` — fixture auto-discovery sweep, <1 s)

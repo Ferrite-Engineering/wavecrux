@@ -123,7 +123,13 @@ class I2cDecoder implements ProtocolDecoder {
     final events = <_I2cEvent>[];
 
     for (final (time, sdaVal) in sdaChanges) {
-      final sclHigh = isVcdHigh(query('scl', time));
+      // START and STOP are SDA moving while SCL is held high. SCL must be
+      // high on both sides of the change: an SDA change that coincides with
+      // an SCL edge (a simulator changing both on one timestamp) is a data
+      // transition, not a bus condition.
+      final sclHigh =
+          isVcdHigh(query('scl', time)) &&
+          isVcdHigh(sampleBefore(query, 'scl', time));
       if (!sclHigh) continue;
 
       if (isVcdLow(sdaVal)) {
@@ -186,9 +192,12 @@ class I2cDecoder implements ProtocolDecoder {
     ];
     if (risingEdges.isEmpty) return null;
 
-    // Sample SDA at every rising SCL edge.
+    // Sample SDA at every rising SCL edge, with the value in effect just
+    // BEFORE it: a simulator that changes SDA at the same timestamp as the
+    // SCL edge is launching the next bit, not the one the edge captures (see
+    // [preEdgeTime]).
     final bits = risingEdges
-        .map((t) => isVcdHigh(query('sda', t)) ? 1 : 0)
+        .map((t) => isVcdHigh(sampleBefore(query, 'sda', t)) ? 1 : 0)
         .toList();
     if (bits.length < 9) {
       // Not enough bits for even a single byte + ACK.

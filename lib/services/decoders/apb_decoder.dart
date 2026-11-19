@@ -161,19 +161,22 @@ class ApbDecoder implements ProtocolDecoder {
     for (final (edgeTime, edgeVal) in clkChanges) {
       if (!isVcdHigh(edgeVal)) continue; // rising edges only
 
+      // Sample what was on the bus just before the edge (see [preEdgeTime]).
+      final sampleTime = preEdgeTime(edgeTime);
+
       // Synchronous reset: drop any in-flight state and skip this edge.
-      if (!isVcdHigh(query('presetn', edgeTime))) {
+      if (!isVcdHigh(query('presetn', sampleTime))) {
         state = _ApbState.idle;
         pending = null;
         unstable = false;
         continue;
       }
 
-      final psel = isVcdHigh(query('psel', edgeTime));
-      final penable = isVcdHigh(query('penable', edgeTime));
+      final psel = isVcdHigh(query('psel', sampleTime));
+      final penable = isVcdHigh(query('penable', sampleTime));
 
       // Always-ready when `pready` is unbound.
-      final pready = !hasPready || isVcdHigh(query('pready', edgeTime));
+      final pready = !hasPready || isVcdHigh(query('pready', sampleTime));
 
       // PENABLE without SELECT is a violation regardless of state.
       if (!psel && penable) {
@@ -196,14 +199,14 @@ class ApbDecoder implements ProtocolDecoder {
             // SETUP phase: capture transfer details.
             pending = _ApbPending(
               startTime: edgeTime,
-              addr: parseVcdVectorInt(query('paddr', edgeTime)),
-              isWrite: isVcdHigh(query('pwrite', edgeTime)),
-              wdata: parseVcdVectorInt(query('pwdata', edgeTime)),
+              addr: parseVcdVectorInt(query('paddr', sampleTime)),
+              isWrite: isVcdHigh(query('pwrite', sampleTime)),
+              wdata: parseVcdVectorInt(query('pwdata', sampleTime)),
               pstrb: hasPstrb
-                  ? parseVcdVectorInt(query('pstrb', edgeTime))
+                  ? parseVcdVectorInt(query('pstrb', sampleTime))
                   : null,
               pprot: hasPprot
-                  ? parseVcdVectorInt(query('pprot', edgeTime))
+                  ? parseVcdVectorInt(query('pprot', sampleTime))
                   : null,
             );
             unstable = false;
@@ -221,8 +224,8 @@ class ApbDecoder implements ProtocolDecoder {
             // SETUP → ACCESS. Verify bus stability against captured SETUP
             // values.
             final p = pending!;
-            final addrNow = parseVcdVectorInt(query('paddr', edgeTime));
-            final writeNow = isVcdHigh(query('pwrite', edgeTime));
+            final addrNow = parseVcdVectorInt(query('paddr', sampleTime));
+            final writeNow = isVcdHigh(query('pwrite', sampleTime));
             if (addrNow != p.addr || writeNow != p.isWrite) {
               unstable = true;
             }
@@ -232,6 +235,7 @@ class ApbDecoder implements ProtocolDecoder {
                 _completeTransaction(
                   pending: p,
                   endTime: edgeTime,
+                  sampleTime: sampleTime,
                   query: query,
                   hasPslverr: hasPslverr,
                   hasPstrb: hasPstrb,
@@ -274,8 +278,8 @@ class ApbDecoder implements ProtocolDecoder {
             unstable = false;
             state = _ApbState.idle;
           } else {
-            final addrNow = parseVcdVectorInt(query('paddr', edgeTime));
-            final writeNow = isVcdHigh(query('pwrite', edgeTime));
+            final addrNow = parseVcdVectorInt(query('paddr', sampleTime));
+            final writeNow = isVcdHigh(query('pwrite', sampleTime));
             if (addrNow != p.addr || writeNow != p.isWrite) {
               unstable = true;
             }
@@ -285,6 +289,7 @@ class ApbDecoder implements ProtocolDecoder {
                 _completeTransaction(
                   pending: p,
                   endTime: edgeTime,
+                  sampleTime: sampleTime,
                   query: query,
                   hasPslverr: hasPslverr,
                   hasPstrb: hasPstrb,
@@ -309,13 +314,14 @@ class ApbDecoder implements ProtocolDecoder {
   DecodedTransaction _completeTransaction({
     required _ApbPending pending,
     required int endTime,
+    required int sampleTime,
     required SignalValueQuery query,
     required bool hasPslverr,
     required bool hasPstrb,
     required bool hasPprot,
     required bool unstable,
   }) {
-    final isSlvErr = hasPslverr && isVcdHigh(query('pslverr', endTime));
+    final isSlvErr = hasPslverr && isVcdHigh(query('pslverr', sampleTime));
     final errors = <String>[
       if (isSlvErr) 'Slave error (PSLVERR)',
       if (unstable) 'PADDR/PWRITE changed during ACCESS phase',
@@ -347,7 +353,7 @@ class ApbDecoder implements ProtocolDecoder {
       );
     }
 
-    final rdata = parseVcdVectorInt(query('prdata', endTime));
+    final rdata = parseVcdVectorInt(query('prdata', sampleTime));
     final dataStr = _fmtData(rdata);
     final label = isSlvErr
         ? 'R $addrStr → $dataStr [SLVERR]'

@@ -22,7 +22,8 @@
 //   spi_mode2.vcd  CPOL=1 CPHA=0 — idle high, sample on falling
 //   spi_mode3.vcd  CPOL=1 CPHA=1 — idle high, sample on rising
 //   spi_glitch.vcd CPOL=0 CPHA=0 with one MOSI change exactly on a
-//                  sample edge — exercises the decoder's glitch detector.
+//                  sample edge — the decoder reads the value in effect
+//                  just before the edge, so the intended byte decodes.
 //
 // The legacy spi_basic.vcd (handcrafted, two Mode-0 transactions) is
 // preserved untouched so existing hardcoded test arrays still pass.

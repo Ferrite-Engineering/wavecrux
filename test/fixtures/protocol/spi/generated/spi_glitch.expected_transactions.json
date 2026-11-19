@@ -14,13 +14,13 @@
   {
     "startTime": 180,
     "endTime": 340,
-    "label": "SPI 0xD3",
+    "label": "SPI 0xC3",
     "fields": {
-      "mosi": "0xD3",
+      "mosi": "0xC3",
       "miso": "0x3C",
       "words": "1"
     },
-    "isError": true,
-    "errorMessage": "MOSI changes at sample edge t=250"
+    "isError": false,
+    "errorMessage": null
   }
 ]

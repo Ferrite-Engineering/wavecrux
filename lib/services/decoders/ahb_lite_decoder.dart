@@ -368,8 +368,11 @@ class AhbLiteDecoder implements ProtocolDecoder {
     var waitWarningFiredAt = -1;
 
     for (final edgeTime in risingEdges) {
+      // Sample what was on the bus just before the edge (see [preEdgeTime]).
+      final sampleTime = preEdgeTime(edgeTime);
+
       // ── reset ────────────────────────────────────────────────────────────
-      if (!isVcdHigh(query('hresetn', edgeTime))) {
+      if (!isVcdHigh(query('hresetn', sampleTime))) {
         if (burst != null) {
           transactions.add(burst.toParent());
           burst = null;
@@ -383,8 +386,8 @@ class AhbLiteDecoder implements ProtocolDecoder {
         continue;
       }
 
-      final hready = isVcdHigh(query('hready', edgeTime));
-      final hresp = isVcdHigh(query('hresp', edgeTime));
+      final hready = isVcdHigh(query('hready', sampleTime));
+      final hresp = isVcdHigh(query('hresp', sampleTime));
 
       // ── wait-state warning (violation 8) ─────────────────────────────────
       if (!hready) {
@@ -415,8 +418,8 @@ class AhbLiteDecoder implements ProtocolDecoder {
           }
 
           final dataVal = inFlight.isWrite
-              ? parseVcdVectorInt(query('hwdata', edgeTime))
-              : parseVcdVectorInt(query('hrdata', edgeTime));
+              ? parseVcdVectorInt(query('hwdata', sampleTime))
+              : parseVcdVectorInt(query('hrdata', sampleTime));
 
           final beat = _buildBeat(
             phase: inFlight,
@@ -459,17 +462,17 @@ class AhbLiteDecoder implements ProtocolDecoder {
       // After completing (or with no in-flight transfer), check this
       // edge's HTRANS. If NONSEQ/SEQ, immediately latch as the new
       // in-flight transfer.
-      final htrans = parseVcdVectorInt(query('htrans', edgeTime)) ?? 0;
+      final htrans = parseVcdVectorInt(query('htrans', sampleTime)) ?? 0;
       if (htrans == _htransNonseq || htrans == _htransSeq) {
-        final hwrite = isVcdHigh(query('hwrite', edgeTime));
-        final hsize = parseVcdVectorInt(query('hsize', edgeTime)) ?? 0;
-        final hburst = parseVcdVectorInt(query('hburst', edgeTime)) ?? 0;
-        final haddr = parseVcdVectorInt(query('haddr', edgeTime));
+        final hwrite = isVcdHigh(query('hwrite', sampleTime));
+        final hsize = parseVcdVectorInt(query('hsize', sampleTime)) ?? 0;
+        final hburst = parseVcdVectorInt(query('hburst', sampleTime)) ?? 0;
+        final haddr = parseVcdVectorInt(query('haddr', sampleTime));
         final hprot = hasHprot
-            ? parseVcdVectorInt(query('hprot', edgeTime))
+            ? parseVcdVectorInt(query('hprot', sampleTime))
             : null;
         final hmastlock = hasHmastlock
-            ? isVcdHigh(query('hmastlock', edgeTime))
+            ? isVcdHigh(query('hmastlock', sampleTime))
             : null;
 
         if (htrans == _htransSeq) {

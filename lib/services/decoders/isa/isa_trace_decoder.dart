@@ -6,6 +6,8 @@ import 'package:wavecrux/domain/interfaces/protocol_decoder.dart';
 import 'package:wavecrux/domain/models/decoded_transaction.dart';
 import 'package:wavecrux/domain/models/decoder_config.dart';
 import 'package:wavecrux/domain/models/timescale.dart';
+import 'package:wavecrux/services/decoders/decoder_value_helpers.dart'
+    show preEdgeTime;
 import 'package:wavecrux/services/decoders/isa/instruction_disassembler.dart';
 import 'package:wavecrux/services/decoders/isa/instruction_set.dart';
 import 'package:wavecrux/services/decoders/isa/isa_decoder_assets.dart';
@@ -120,13 +122,17 @@ abstract class IsaTraceDecoder implements ProtocolDecoder {
 
     for (final (edgeTime, edgeVal) in clkChanges) {
       if (!isHigh(edgeVal)) continue;
-      if (hasValid && !isHigh(query('valid', edgeTime))) continue;
 
-      final instrRaw = query('instruction', edgeTime);
+      // The instruction retired at this edge is the one that was on the trace
+      // port just before it (see [preEdgeTime]).
+      final sampleTime = preEdgeTime(edgeTime);
+      if (hasValid && !isHigh(query('valid', sampleTime))) continue;
+
+      final instrRaw = query('instruction', sampleTime);
       final instr = parseVectorInt(instrRaw);
       if (instr == null) continue; // x/z or unparseable; skip cycle
 
-      final pc = hasPc ? parseVectorInt(query('pc', edgeTime)) : null;
+      final pc = hasPc ? parseVectorInt(query('pc', sampleTime)) : null;
       final rawDisasm = disassembler.decode(instr, kIsaInstructionBitWidth);
       final disasm = rawDisasm == null
           ? null

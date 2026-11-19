@@ -30,6 +30,8 @@
 ///     whose values may arrive as their natural type or as a String from a
 ///     round-tripped `.wavecrux` session) to `int` / `String` / `bool`, with a
 ///     fallback for missing or uncoercible entries.
+///  2a. **Edge sampling** ([preEdgeTime], [sampleBefore]) — the time at which
+///     a clocked decoder must read a signal for a given rising edge.
 ///  3. **Field renderers** ([bytesToHex], [bytesToHexCapped], [joinCapped]) —
 ///     render recovered payloads into `DecodedTransaction.fields` entries. The
 ///     capped variants bound the retained string so a single multi-kilobyte
@@ -38,6 +40,9 @@
 ///
 /// Pure Dart — no Flutter imports, no decoder state.
 library;
+
+import 'package:wavecrux/domain/interfaces/protocol_decoder.dart'
+    show SignalValueQuery;
 
 /// Default payload cap, in bytes, for [bytesToHexCapped].
 ///
@@ -54,6 +59,26 @@ const int kDecoderPayloadHexMaxBytes = 2048;
 /// Sized on the same principle as [kDecoderPayloadHexMaxBytes]: 256 bus
 /// beats covers ordinary burst lengths, and caps a 1024-beat burst.
 const int kDecoderPayloadMaxParts = 256;
+
+/// The time at which a clocked decoder must read signals for the rising clock
+/// edge at [edgeTime]: the last tick strictly before the edge.
+///
+/// A synchronous design captures what was on the bus just BEFORE the edge.
+/// Registered RTL outputs change at the edge's own timestamp, and
+/// `SignalValueQuery` is "last change with time <= t", so a read at
+/// [edgeTime] returns the value launched by the edge (the next cycle's), not
+/// the value the edge captured. Reading at `edgeTime - 1` returns the value in
+/// effect just before the edge. Waveform times are integer ticks, so one tick
+/// earlier is exactly "strictly before".
+///
+/// Every decoder that walks rising clock edges must read its inputs at this
+/// time, not at the edge. Compute it once per edge and reuse it.
+int preEdgeTime(int edgeTime) => edgeTime - 1;
+
+/// Reads signal [name] as it was just before the rising clock edge at
+/// [edgeTime]: shorthand for `query(name, preEdgeTime(edgeTime))`.
+String? sampleBefore(SignalValueQuery query, String name, int edgeTime) =>
+    query(name, preEdgeTime(edgeTime));
 
 /// Strips an optional `b`/`B` binary prefix and surrounding whitespace,
 /// returning the bare digit string (possibly empty).

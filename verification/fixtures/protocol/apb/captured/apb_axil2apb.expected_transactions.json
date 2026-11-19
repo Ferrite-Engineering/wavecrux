@@ -1,7 +1,7 @@
 [
   {
-    "startTime": 85000,
-    "endTime": 95000,
+    "startTime": 95000,
+    "endTime": 105000,
     "label": "W 0x100 = 0xDEADBEEF",
     "fields": {
       "type": "Write",
@@ -15,8 +15,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 145000,
-    "endTime": 155000,
+    "startTime": 155000,
+    "endTime": 165000,
     "label": "W 0x104 = 0x12345678",
     "fields": {
       "type": "Write",
@@ -30,8 +30,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 205000,
-    "endTime": 215000,
+    "startTime": 215000,
+    "endTime": 225000,
     "label": "W 0x108 = 0xCAFEBABE",
     "fields": {
       "type": "Write",
@@ -45,8 +45,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 265000,
-    "endTime": 275000,
+    "startTime": 275000,
+    "endTime": 285000,
     "label": "W 0x10C = 0xA5A5A5A5",
     "fields": {
       "type": "Write",
@@ -60,8 +60,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 325000,
-    "endTime": 335000,
+    "startTime": 335000,
+    "endTime": 345000,
     "label": "R 0x100 → 0xDEADBEEF",
     "fields": {
       "type": "Read",
@@ -74,8 +74,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 385000,
-    "endTime": 395000,
+    "startTime": 395000,
+    "endTime": 405000,
     "label": "R 0x104 → 0x12345678",
     "fields": {
       "type": "Read",
@@ -88,8 +88,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 445000,
-    "endTime": 455000,
+    "startTime": 455000,
+    "endTime": 465000,
     "label": "R 0x108 → 0xCAFEBABE",
     "fields": {
       "type": "Read",
@@ -102,8 +102,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 505000,
-    "endTime": 515000,
+    "startTime": 515000,
+    "endTime": 525000,
     "label": "R 0x10C → 0xA5A5A5A5",
     "fields": {
       "type": "Read",
@@ -116,8 +116,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 565000,
-    "endTime": 575000,
+    "startTime": 575000,
+    "endTime": 585000,
     "label": "W 0x100 = 0x0000C0DE",
     "fields": {
       "type": "Write",
@@ -131,8 +131,8 @@
     "errorMessage": null
   },
   {
-    "startTime": 625000,
-    "endTime": 635000,
+    "startTime": 635000,
+    "endTime": 645000,
     "label": "R 0x100 → 0xDEADC0DE",
     "fields": {
       "type": "Read",

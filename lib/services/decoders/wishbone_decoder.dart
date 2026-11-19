@@ -343,8 +343,10 @@ class WishboneDecoder implements ProtocolDecoder {
     int? prevCyc;
 
     for (final edgeTime in risingEdges) {
+      // Sample what was on the bus just before the edge (see [preEdgeTime]).
+      final sampleTime = preEdgeTime(edgeTime);
       // Reset clears all in-flight state. Spec: rst is active-high.
-      if (isVcdHigh(query('rst', edgeTime))) {
+      if (isVcdHigh(query('rst', sampleTime))) {
         if (burst != null) {
           transactions.add(burst.toParent());
           burst = null;
@@ -353,11 +355,11 @@ class WishboneDecoder implements ProtocolDecoder {
         continue;
       }
 
-      final cyc = isVcdHigh(query('cyc', edgeTime)) ? 1 : 0;
-      final stb = isVcdHigh(query('stb', edgeTime)) ? 1 : 0;
-      final ackV = isVcdHigh(query('ack', edgeTime)) ? 1 : 0;
-      final errV = hasErr && isVcdHigh(query('err', edgeTime)) ? 1 : 0;
-      final rtyV = hasRty && isVcdHigh(query('rty', edgeTime)) ? 1 : 0;
+      final cyc = isVcdHigh(query('cyc', sampleTime)) ? 1 : 0;
+      final stb = isVcdHigh(query('stb', sampleTime)) ? 1 : 0;
+      final ackV = isVcdHigh(query('ack', sampleTime)) ? 1 : 0;
+      final errV = hasErr && isVcdHigh(query('err', sampleTime)) ? 1 : 0;
+      final rtyV = hasRty && isVcdHigh(query('rty', sampleTime)) ? 1 : 0;
 
       // Violation 3: stb asserted while cyc deasserted.
       if (stb == 1 && cyc == 0) {
@@ -405,12 +407,12 @@ class WishboneDecoder implements ProtocolDecoder {
       }
 
       // Sample addressing inputs once for this edge.
-      final adr = parseVcdVectorInt(query('adr', edgeTime));
-      final we = isVcdHigh(query('we', edgeTime)) ? 1 : 0;
-      final selV = hasSel ? parseVcdVectorInt(query('sel', edgeTime)) : null;
-      final datO = parseVcdVectorInt(query('dat_o', edgeTime));
-      final cti = hasCti ? parseVcdVectorInt(query('cti', edgeTime)) : null;
-      final bte = hasBte ? parseVcdVectorInt(query('bte', edgeTime)) : null;
+      final adr = parseVcdVectorInt(query('adr', sampleTime));
+      final we = isVcdHigh(query('we', sampleTime)) ? 1 : 0;
+      final selV = hasSel ? parseVcdVectorInt(query('sel', sampleTime)) : null;
+      final datO = parseVcdVectorInt(query('dat_o', sampleTime));
+      final cti = hasCti ? parseVcdVectorInt(query('cti', sampleTime)) : null;
+      final bte = hasBte ? parseVcdVectorInt(query('bte', sampleTime)) : null;
 
       // Violation 4: WE changes while CYC remains asserted (across edges).
       if (prevCyc == 1 && prevWe != null && we != prevWe) {
@@ -465,7 +467,7 @@ class WishboneDecoder implements ProtocolDecoder {
         final isWrite = we == 1;
         final dataAtBeat = isWrite
             ? datO
-            : parseVcdVectorInt(query('dat_i', edgeTime));
+            : parseVcdVectorInt(query('dat_i', sampleTime));
 
         // Determine cycle type for this beat.
         final cycleType = _b3CycleTypeFor(cti);
@@ -554,13 +556,13 @@ class WishboneDecoder implements ProtocolDecoder {
           data: dataAtBeat,
           term: term,
           sel: hasSel ? selV : null,
-          lock: hasLock ? (isVcdHigh(query('lock', edgeTime)) ? 1 : 0) : null,
+          lock: hasLock ? (isVcdHigh(query('lock', sampleTime)) ? 1 : 0) : null,
           cycleType: cycleType,
           burstId: burst?.id,
           beatIndex: burst != null ? burst.beats.length + 1 : null,
           cti: cti,
           bte: bte,
-          tags: _sampleTags(query, edgeTime),
+          tags: _sampleTags(query, sampleTime),
         );
         transactions.add(beat);
 
@@ -650,19 +652,21 @@ class WishboneDecoder implements ProtocolDecoder {
     var prevStall = 0;
 
     for (final edgeTime in risingEdges) {
-      if (isVcdHigh(query('rst', edgeTime))) {
+      // Sample what was on the bus just before the edge (see [preEdgeTime]).
+      final sampleTime = preEdgeTime(edgeTime);
+      if (isVcdHigh(query('rst', sampleTime))) {
         outstanding.clear();
         prevAdr = prevSel = prevDatO = prevWe = null;
         prevStb = prevStall = 0;
         continue;
       }
 
-      final cyc = isVcdHigh(query('cyc', edgeTime)) ? 1 : 0;
-      final stb = isVcdHigh(query('stb', edgeTime)) ? 1 : 0;
-      final stallV = isVcdHigh(query('stall', edgeTime)) ? 1 : 0;
-      final ackV = isVcdHigh(query('ack', edgeTime)) ? 1 : 0;
-      final errV = hasErr && isVcdHigh(query('err', edgeTime)) ? 1 : 0;
-      final rtyV = hasRty && isVcdHigh(query('rty', edgeTime)) ? 1 : 0;
+      final cyc = isVcdHigh(query('cyc', sampleTime)) ? 1 : 0;
+      final stb = isVcdHigh(query('stb', sampleTime)) ? 1 : 0;
+      final stallV = isVcdHigh(query('stall', sampleTime)) ? 1 : 0;
+      final ackV = isVcdHigh(query('ack', sampleTime)) ? 1 : 0;
+      final errV = hasErr && isVcdHigh(query('err', sampleTime)) ? 1 : 0;
+      final rtyV = hasRty && isVcdHigh(query('rty', sampleTime)) ? 1 : 0;
 
       // Violation 1: mutex on terminations.
       if (ackV + errV + rtyV > 1) {
@@ -698,10 +702,10 @@ class WishboneDecoder implements ProtocolDecoder {
         );
       }
 
-      final adr = parseVcdVectorInt(query('adr', edgeTime));
-      final we = isVcdHigh(query('we', edgeTime)) ? 1 : 0;
-      final selV = hasSel ? parseVcdVectorInt(query('sel', edgeTime)) : null;
-      final datO = parseVcdVectorInt(query('dat_o', edgeTime));
+      final adr = parseVcdVectorInt(query('adr', sampleTime));
+      final we = isVcdHigh(query('we', sampleTime)) ? 1 : 0;
+      final selV = hasSel ? parseVcdVectorInt(query('sel', sampleTime)) : null;
+      final datO = parseVcdVectorInt(query('dat_o', sampleTime));
 
       // Violation 5: signal change while STB asserted and STALL high.
       // The master must repeat its outputs across stalled cycles.
@@ -733,8 +737,10 @@ class WishboneDecoder implements ProtocolDecoder {
             adr: adr,
             datOutAtIssue: datO,
             sel: hasSel ? selV : null,
-            lock: hasLock ? (isVcdHigh(query('lock', edgeTime)) ? 1 : 0) : null,
-            tags: _sampleTags(query, edgeTime),
+            lock: hasLock
+                ? (isVcdHigh(query('lock', sampleTime)) ? 1 : 0)
+                : null,
+            tags: _sampleTags(query, sampleTime),
           ),
         );
       }
@@ -757,7 +763,7 @@ class WishboneDecoder implements ProtocolDecoder {
               : (errV == 1 ? _Term.err : _Term.rty);
           final dataResult = req.isWrite
               ? req.datOutAtIssue
-              : parseVcdVectorInt(query('dat_i', edgeTime));
+              : parseVcdVectorInt(query('dat_i', sampleTime));
           transactions.add(
             _buildBeat(
               startTime: req.startTime,
