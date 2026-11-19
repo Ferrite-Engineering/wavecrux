@@ -34,6 +34,32 @@ const Map<String, List<String>> _knownAliases = {
   'dm': ['d_m', 'dminus', 'usb_dm'],
 };
 
+/// Leaf-name tokens (split on `_`) that mark a signal as something ABOUT a
+/// clock rather than a clock: `clk_en`, `clock_enable`, `clk_rst`, `clk_locked`.
+/// The clock fallback in [DecoderAutoBindService.computeBindings] skips them.
+const Set<String> _notClockTokens = {
+  'en',
+  'ena',
+  'enable',
+  'enb',
+  'gate',
+  'rst',
+  'rstn',
+  'reset',
+  'resetn',
+  'sel',
+  'select',
+  'lock',
+  'locked',
+  'stable',
+  'ready',
+  'valid',
+  'req',
+  'ack',
+  'stop',
+  'running',
+};
+
 /// Computes a best-guess auto-binding of decoder signal inputs against the
 /// signals available in the loaded waveform.
 ///
@@ -55,6 +81,13 @@ const Map<String, List<String>> _knownAliases = {
 ///   suffix matches (e.g. `aclk` ↔ `clk`, `mosi` ↔ `sdo`, `dp` ↔ `d_p`).
 /// - **Tier D** — Levenshtein-distance-≤-2 fuzzy match against the binding
 ///   name on the leaf signal name. Handles typos and abbreviations.
+/// - **Clock fallback** — a clock the tiers above left unbound (a required
+///   1-bit binding whose name starts or ends with `clk` or `clock`: `aclk`,
+///   `clk`, `pclk`, `hclk`, `clk_i`) binds to a 1-bit signal whose leaf name
+///   starts or ends with `clk` or `clock` (`clk_80p0`, `clk_100mhz`,
+///   `sys_clk`, `core_clock`). The one in the same scope as the bus the other
+///   bindings resolved to wins; the rest are listed in
+///   [AutoBindCandidate.alternatives]. See [_clockFallbackMatch].
 /// - **Tier E** — no match. Returns an [AutoBindCandidate] with
 ///   [AutoBindConfidence.noMatch].
 class DecoderAutoBindService {
@@ -234,6 +267,34 @@ class DecoderAutoBindService {
       );
       if (match != null) {
         candidates[binding.name] = match;
+      }
+    }
+
+    // ── Clock fallback ──────────────────────────────────────────────────────
+    // A clock named by domain or frequency (`clk_80p0`) matches nothing above.
+    // Exact and alias matches have already had their say, so this only fills
+    // what is still empty, and never takes a signal another binding holds.
+
+    final claimedBeforeClock = {
+      for (final c in candidates.values)
+        if (c.signalRef != null) c.signalRef!,
+    };
+    final clockScope =
+        tierAOutcome.detectedScopePath ??
+        _dominantScope(candidates.values, variablesByRef);
+    for (final binding in definition.requiredSignals) {
+      if (candidates.containsKey(binding.name)) continue;
+      if (!unbound.contains(binding)) continue;
+      final match = _clockFallbackMatch(
+        binding: binding,
+        availableSignals: availableSignals.values,
+        claimedRefs: claimedBeforeClock,
+        busScopePath: clockScope,
+        busPrefix: tierAOutcome.detectedPrefix,
+      );
+      if (match != null) {
+        candidates[binding.name] = match;
+        if (match.signalRef != null) claimedBeforeClock.add(match.signalRef!);
       }
     }
 
@@ -610,6 +671,122 @@ class DecoderAutoBindService {
       }
     }
     return null;
+  }
+
+  // ── Clock fallback ────────────────────────────────────────────────────────
+
+  /// Whether [name] reads as a clock: it starts or ends with `clk` or `clock`
+  /// and is not a signal about a clock (`clk_en`, `clock_reset`).
+  static bool _isClockName(String name) {
+    final lower = name.toLowerCase();
+    final looksLikeClock =
+        lower.startsWith('clk') ||
+        lower.startsWith('clock') ||
+        lower.endsWith('clk') ||
+        lower.endsWith('clock');
+    if (!looksLikeClock) return false;
+    return !lower.split('_').any(_notClockTokens.contains);
+  }
+
+  /// Whether [binding] is a clock the decoder declares: named like a clock
+  /// (`aclk`, `clk`, `pclk`, `hclk`, `clk_i`) and one bit wide, or with no
+  /// width given (a plugin manifest's binding may leave it out).
+  static bool _isClockBinding(SignalBinding binding) =>
+      (binding.bitWidth == null || binding.bitWidth == 1) &&
+      _isClockName(binding.name);
+
+  /// The scope that holds the most of [candidates]' signals, or `null` when
+  /// nothing is bound yet. Stands in for the bus scope when Tier A found no
+  /// shared prefix to report.
+  String? _dominantScope(
+    Iterable<AutoBindCandidate> candidates,
+    Map<String, Variable> variablesByRef,
+  ) {
+    final counts = <String, int>{};
+    for (final c in candidates) {
+      final v = c.signalRef == null ? null : variablesByRef[c.signalRef!];
+      if (v == null) continue;
+      counts[v.scopePath] = (counts[v.scopePath] ?? 0) + 1;
+    }
+    if (counts.isEmpty) return null;
+    return (counts.entries.toList()..sort((a, b) {
+          final byCount = b.value.compareTo(a.value);
+          return byCount != 0 ? byCount : a.key.compareTo(b.key);
+        }))
+        .first
+        .key;
+  }
+
+  /// Binds a clock binding to a clock-named signal.
+  ///
+  /// Candidates are 1-bit signals whose leaf name starts or ends with `clk` or
+  /// `clock`, minus signals another binding already holds. Ranking, best first:
+  /// in [busScopePath], then leaf starting with [busPrefix], then path order
+  /// (so the choice is the same on every run). The others, up to three, go to
+  /// [AutoBindCandidate.alternatives]. When one candidate is not clearly better
+  /// than the next (same scope, same prefix standing) the match is reported as
+  /// [AutoBindConfidence.fuzzyMatch] instead of
+  /// [AutoBindConfidence.knownAlias], so a UI can ask the user to confirm.
+  AutoBindCandidate? _clockFallbackMatch({
+    required SignalBinding binding,
+    required Iterable<Variable> availableSignals,
+    required Set<String> claimedRefs,
+    required String? busScopePath,
+    required String? busPrefix,
+  }) {
+    if (!_isClockBinding(binding)) return null;
+
+    final prefixLower = busPrefix?.toLowerCase();
+    // 0 = bus scope and bus prefix, 1 = bus scope, 2 = anywhere else.
+    int rank(Variable v) {
+      if (busScopePath == null || v.scopePath != busScopePath) return 2;
+      if (prefixLower != null &&
+          prefixLower.isNotEmpty &&
+          v.name.toLowerCase().startsWith(prefixLower)) {
+        return 0;
+      }
+      return 1;
+    }
+
+    final hits = <Variable>[
+      for (final v in availableSignals)
+        if (!claimedRefs.contains(v.signalRef) &&
+            (v.bitWidth == null || v.bitWidth == 1) &&
+            _isClockName(v.name))
+          v,
+    ];
+    if (hits.isEmpty) return null;
+    hits.sort((a, b) {
+      final byRank = rank(a).compareTo(rank(b));
+      return byRank != 0 ? byRank : a.fullPath.compareTo(b.fullPath);
+    });
+
+    // Several names of one aliased signal are one candidate.
+    final seenRefs = <String>{};
+    final unique = [
+      for (final v in hits)
+        if (seenRefs.add(v.signalRef)) v,
+    ];
+
+    final best = unique.first;
+    final others = unique.skip(1).toList();
+    final tied = others.isNotEmpty && rank(others.first) == rank(best);
+    final where = rank(best) < 2 ? ' in the bus scope' : '';
+
+    return AutoBindCandidate(
+      signalRef: best.signalRef,
+      fullPath: best.fullPath,
+      confidence: tied
+          ? AutoBindConfidence.fuzzyMatch
+          : AutoBindConfidence.knownAlias,
+      matchReason:
+          "clock-named signal '${best.name}'$where for binding "
+          "'${binding.name}'"
+          '${others.isEmpty ? '' : ' (${others.length} other clock-named '
+                    'signal${others.length == 1 ? '' : 's'}: '
+                    '${others.take(3).map((v) => v.name).join(', ')})'}',
+      alternatives: [for (final v in others.take(3)) v.signalRef],
+    );
   }
 
   // ── Tier D ────────────────────────────────────────────────────────────────

@@ -6,6 +6,7 @@ import 'package:wavecrux/domain/enums/decoder_parameter_type.dart';
 import 'package:wavecrux/domain/enums/var_direction.dart';
 import 'package:wavecrux/domain/enums/var_type.dart';
 import 'package:wavecrux/domain/models/auto_bind_candidate.dart';
+import 'package:wavecrux/domain/models/auto_bind_result.dart';
 import 'package:wavecrux/domain/models/decoder_definition.dart';
 import 'package:wavecrux/domain/models/decoder_parameter.dart';
 import 'package:wavecrux/domain/models/signal_binding.dart';
@@ -727,6 +728,255 @@ void main() {
       expect(width(64), 8);
       expect(width(8), 1);
       expect(width(12), 2);
+    });
+  });
+  // A clock named by domain or frequency (`clk_80p0`, `sys_clk`) matches
+  // none of the name tiers; it binds through the clock fallback instead.
+  group('clock fallback', () {
+    const axisShaped = DecoderDefinition(
+      id: 'axis_shaped',
+      displayName: 'AXI-Stream (test shape)',
+      description: '',
+      requiredSignals: [
+        SignalBinding(name: 'aclk', description: '', bitWidth: 1),
+        SignalBinding(name: 'tvalid', description: '', bitWidth: 1),
+        SignalBinding(name: 'tdata', description: ''),
+      ],
+      optionalSignals: [
+        SignalBinding(name: 'tready', description: '', bitWidth: 1),
+        SignalBinding(name: 'tlast', description: '', bitWidth: 1),
+        SignalBinding(name: 'tkeep', description: ''),
+      ],
+    );
+
+    AutoBindResult bindAxis(List<Variable> vars) => service.computeBindings(
+      definition: axisShaped,
+      availableSignals: availableFromPaths(vars),
+      currentParameters: const {},
+    );
+
+    List<Variable> axisPorts(String prefix, {String scope = 'top'}) => [
+      makeVar('$scope.${prefix}tdata', bitWidth: 128),
+      makeVar('$scope.${prefix}tkeep', bitWidth: 16),
+      makeVar('$scope.${prefix}tlast'),
+      makeVar('$scope.${prefix}tvalid'),
+      makeVar('$scope.${prefix}tready'),
+    ];
+
+    test('the Pypeline port set binds aclk to clk_80p0', () {
+      final vars = [
+        makeVar('top.clk_80p0'),
+        ...axisPorts('encrypt_s_axis_'),
+        ...axisPorts('encrypt_m_axis_'),
+        ...axisPorts('decrypt_s_axis_'),
+        ...axisPorts('decrypt_m_axis_'),
+      ];
+      final result = bindAxis(vars);
+      final aclk = findCandidate(result.candidates, 'aclk');
+      expect(aclk.signalRef, 'top.clk_80p0');
+      expect(aclk.fullPath, 'top.clk_80p0');
+      expect(aclk.confidence, AutoBindConfidence.knownAlias);
+      expect(aclk.alternatives, isEmpty);
+      // The data and handshake signals still resolve on one of the buses.
+      for (final name in ['tdata', 'tvalid', 'tready', 'tlast', 'tkeep']) {
+        expect(
+          findCandidate(result.candidates, name).signalRef,
+          isNotNull,
+          reason: name,
+        );
+      }
+      // Four equally good buses are still reported as ambiguous.
+      expect(result.hasAmbiguity, isTrue);
+    });
+
+    test('an exact aclk still wins over a clock-named signal', () {
+      final vars = [
+        makeVar('top.clk_80p0'),
+        makeVar('top.aclk'),
+        ...axisPorts('s_axis_'),
+      ];
+      expect(
+        findCandidate(bindAxis(vars).candidates, 'aclk').signalRef,
+        'top.aclk',
+      );
+    });
+
+    test('a known alias (clk) still wins over a clock-named signal', () {
+      final vars = [
+        makeVar('top.clk_80p0'),
+        makeVar('top.clk'),
+        ...axisPorts('s_axis_'),
+      ];
+      final aclk = findCandidate(bindAxis(vars).candidates, 'aclk');
+      expect(aclk.signalRef, 'top.clk');
+      expect(aclk.confidence, AutoBindConfidence.knownAlias);
+      expect(aclk.matchReason, contains("alias 'clk'"));
+    });
+
+    test('prefix-match and suffix-match names both qualify', () {
+      for (final name in [
+        'clk_100mhz',
+        'sys_clk',
+        'core_clock',
+        'clock_main',
+        'CLK_80P0',
+      ]) {
+        final result = bindAxis([makeVar('top.$name'), ...axisPorts('s_')]);
+        expect(
+          findCandidate(result.candidates, 'aclk').signalRef,
+          'top.$name',
+          reason: name,
+        );
+      }
+    });
+
+    test('prefers the clock in the scope of the bound bus', () {
+      final vars = [
+        makeVar('other.sys_clk'),
+        makeVar('top.clk_80p0'),
+        makeVar('zzz.clk_1'),
+        ...axisPorts('s_axis_'),
+      ];
+      final aclk = findCandidate(bindAxis(vars).candidates, 'aclk');
+      expect(aclk.signalRef, 'top.clk_80p0');
+      // The others are listed, and the choice is clearly better than them.
+      expect(aclk.alternatives, ['other.sys_clk', 'zzz.clk_1']);
+      expect(aclk.confidence, AutoBindConfidence.knownAlias);
+    });
+
+    test('several clocks in the bus scope are listed as ambiguous', () {
+      final vars = [
+        makeVar('top.clk_80p0'),
+        makeVar('top.clk_100mhz'),
+        makeVar('top.sys_clk'),
+        ...axisPorts('s_axis_'),
+      ];
+      final aclk = findCandidate(bindAxis(vars).candidates, 'aclk');
+      // Path order decides, so the same trace always binds the same signal.
+      expect(aclk.signalRef, 'top.clk_100mhz');
+      expect(aclk.alternatives, ['top.clk_80p0', 'top.sys_clk']);
+      expect(aclk.confidence, AutoBindConfidence.fuzzyMatch);
+      expect(aclk.matchReason, contains('2 other clock-named signals'));
+    });
+
+    test('a bound-bus prefix breaks a tie between clocks in one scope', () {
+      final vars = [
+        makeVar('top.clk_80p0'),
+        makeVar('top.s_axis_clk'),
+        ...axisPorts('s_axis_'),
+      ];
+      expect(
+        findCandidate(bindAxis(vars).candidates, 'aclk').signalRef,
+        'top.s_axis_clk',
+      );
+    });
+
+    test('signals about a clock, and wide signals, are not clocks', () {
+      final vars = [
+        makeVar('top.clk_en'),
+        makeVar('top.clock_reset'),
+        makeVar('top.clk_locked'),
+        makeVar('top.clk_div', bitWidth: 8),
+        ...axisPorts('s_axis_'),
+      ];
+      final aclk = findCandidate(bindAxis(vars).candidates, 'aclk');
+      expect(aclk.confidence, AutoBindConfidence.noMatch);
+      expect(aclk.signalRef, isNull);
+    });
+
+    test('no clock-named signal leaves the clock unbound', () {
+      final aclk = findCandidate(
+        bindAxis(axisPorts('s_axis_')).candidates,
+        'aclk',
+      );
+      expect(aclk.confidence, AutoBindConfidence.noMatch);
+    });
+
+    test('a manually bound clock is left alone', () {
+      final vars = [
+        makeVar('top.clk_80p0'),
+        makeVar('top.sys_clk'),
+        ...axisPorts('s_axis_'),
+      ];
+      final result = service.computeBindings(
+        definition: axisShaped,
+        availableSignals: availableFromPaths(vars),
+        currentParameters: const {},
+        existingBindings: const {'aclk': 'top.sys_clk'},
+      );
+      final aclk = findCandidate(result.candidates, 'aclk');
+      expect(aclk.signalRef, 'top.sys_clk');
+      expect(aclk.matchReason, 'manually bound');
+    });
+
+    test('a clock another binding already took is not bound twice', () {
+      const twoClocks = DecoderDefinition(
+        id: 'two_clocks',
+        displayName: 'Two clocks',
+        description: '',
+        requiredSignals: [
+          SignalBinding(name: 'clk', description: '', bitWidth: 1),
+          SignalBinding(name: 'ref_clk', description: '', bitWidth: 1),
+        ],
+      );
+      final result = service.computeBindings(
+        definition: twoClocks,
+        availableSignals: availableFromPaths([makeVar('top.clk_80p0')]),
+        currentParameters: const {},
+      );
+      final refs = [
+        for (final c in result.candidates.values)
+          if (c.signalRef != null) c.signalRef,
+      ];
+      expect(refs, ['top.clk_80p0']);
+    });
+
+    test('an optional clock-named binding is not guessed', () {
+      const optionalClock = DecoderDefinition(
+        id: 'optional_clock',
+        displayName: 'Optional clock',
+        description: '',
+        requiredSignals: [
+          SignalBinding(name: 'data', description: '', bitWidth: 1),
+        ],
+        optionalSignals: [
+          SignalBinding(name: 'aclk', description: '', bitWidth: 1),
+        ],
+      );
+      final result = service.computeBindings(
+        definition: optionalClock,
+        availableSignals: availableFromPaths([
+          makeVar('top.data'),
+          makeVar('top.clk_80p0'),
+        ]),
+        currentParameters: const {},
+      );
+      expect(
+        findCandidate(result.candidates, 'aclk').confidence,
+        AutoBindConfidence.noMatch,
+      );
+    });
+
+    test('the open-core APB pclk binds to clk_100mhz', () {
+      final vars = [
+        makeVar('tb.clk_100mhz'),
+        makeVar('tb.presetn'),
+        makeVar('tb.psel'),
+        makeVar('tb.penable'),
+        makeVar('tb.pwrite'),
+        makeVar('tb.paddr', bitWidth: 32),
+        makeVar('tb.pwdata', bitWidth: 32),
+        makeVar('tb.prdata', bitWidth: 32),
+      ];
+      final result = service.computeBindings(
+        definition: apb,
+        availableSignals: availableFromPaths(vars),
+        currentParameters: const {},
+      );
+      expect(
+        findCandidate(result.candidates, 'pclk').signalRef,
+        'tb.clk_100mhz',
+      );
     });
   });
 }
