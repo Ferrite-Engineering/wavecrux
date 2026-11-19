@@ -46,12 +46,14 @@ DecodedTransaction _tx(
   String label, {
   Map<String, String> fields = const {},
   bool isError = false,
+  String? errorMessage,
 }) => DecodedTransaction(
   startTime: start,
   endTime: end,
   label: label,
   fields: fields,
   isError: isError,
+  errorMessage: errorMessage,
 );
 
 ActiveDecoder _decoder(
@@ -485,8 +487,48 @@ void main() {
       ];
       final csv = TransactionTablePanel.buildCsvContent(rows, ['mosi']);
       final header = csv.split('\n').first;
-      expect(header, startsWith('#,Decoder,Start,End,Label,Error'));
+      expect(
+        header,
+        startsWith('#,Decoder,Start,End,Label,Error,Error reason'),
+      );
       expect(header, contains('"mosi"'));
+    });
+
+    test('an error row carries its reason; other rows leave it empty', () {
+      TableTransaction row(int i, DecodedTransaction tx) => TableTransaction(
+        rowIndex: i,
+        decoderInstanceId: 'd0',
+        decoderDisplayName: 'AXI-Stream #1',
+        transaction: tx,
+      );
+      final csv = TransactionTablePanel.buildCsvContent(
+        [
+          row(1, _tx(0, 10, 'AXIS packet', fields: {'bytes': '4'})),
+          row(
+            2,
+            _tx(
+              20,
+              40,
+              'AXIS packet',
+              fields: {'bytes': '8'},
+              isError: true,
+              errorMessage: 'discontinuity, "TKEEP" 0',
+            ),
+          ),
+          row(3, _tx(50, 60, 'Bad', isError: true)),
+        ],
+        ['bytes'],
+      );
+      final lines = csv.trim().split('\n');
+      expect(lines[0], '#,Decoder,Start,End,Label,Error,Error reason,"bytes"');
+      expect(lines[1], '1,"AXI-Stream #1",0,10,"AXIS packet",false,"","4"');
+      expect(
+        lines[2],
+        '2,"AXI-Stream #1",20,40,"AXIS packet",true,"discontinuity, '
+        '""TKEEP"" 0","8"',
+      );
+      // An error without a message still has the column, just empty.
+      expect(lines[3], '3,"AXI-Stream #1",50,60,"Bad",true,"",""');
     });
 
     test('missing field for a row produces empty quoted cell', () {

@@ -60,6 +60,10 @@ class TransactionTablePanel extends ConsumerStatefulWidget {
 
   /// Builds the CSV string for [rows] with [fieldKeys] as dynamic columns.
   ///
+  /// The fixed columns are `#,Decoder,Start,End,Label,Error,Error reason`. The
+  /// reason column holds the decoder's message for an error row and is empty
+  /// for every other row.
+  ///
   /// All values are always quoted so that spreadsheet applications (Numbers,
   /// Excel) treat hex literals (0x...) as text rather than converting them
   /// to decimal.
@@ -67,7 +71,8 @@ class TransactionTablePanel extends ConsumerStatefulWidget {
     List<TableTransaction> rows,
     List<String> fieldKeys,
   ) {
-    final buffer = StringBuffer()..write('#,Decoder,Start,End,Label,Error');
+    final buffer = StringBuffer()
+      ..write('#,Decoder,Start,End,Label,Error,Error reason');
     for (final k in fieldKeys) {
       buffer.write(',${_csvEscape(k)}');
     }
@@ -81,7 +86,8 @@ class TransactionTablePanel extends ConsumerStatefulWidget {
         ..write('${tx.startTime},')
         ..write('${tx.endTime},')
         ..write('${_csvEscape(tx.label)},')
-        ..write('${tx.isError}');
+        ..write('${tx.isError},')
+        ..write(_csvEscape(tx.isError ? tx.errorMessage ?? '' : ''));
       for (final k in fieldKeys) {
         buffer.write(',${_csvEscape(tx.fields[k] ?? '')}');
       }

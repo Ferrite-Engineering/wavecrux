@@ -7,6 +7,7 @@
 // "R 0x08 → 0xFF" were read with the arrow as "?".
 
 import 'package:crux_a11y/crux_a11y_testing.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -441,6 +442,41 @@ void main() {
       await tester.pump();
       expect(h.sorted, [(TransactionSortColumn.startTime, true)]);
       expect(h.activated, isEmpty);
+    });
+  });
+
+  group('TransactionTableBody — the error reason', () {
+    testWidgets('an error row shows its reason when the label is hovered', (
+      tester,
+    ) async {
+      final h = _Harness()
+        ..rows.value = [
+          _row(1, 'AXIS packet (1 beats)'),
+          _row(
+            2,
+            'AXIS packet (3 beats)',
+            isError: true,
+            errorMessage: 'discontinuity',
+          ),
+        ];
+      await _pump(tester, harness: h);
+
+      expect(find.byType(Tooltip), findsOneWidget);
+
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+      await mouse.moveTo(tester.getCenter(find.text('AXIS packet (3 beats)')));
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
+
+      expect(find.text('discontinuity'), findsOneWidget);
+    });
+
+    testWidgets('an error without a reason has no tooltip', (tester) async {
+      final h = _Harness()..rows.value = [_row(1, 'Bad', isError: true)];
+      await _pump(tester, harness: h);
+      expect(find.byType(Tooltip), findsNothing);
     });
   });
 

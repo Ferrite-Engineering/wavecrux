@@ -576,6 +576,72 @@ void main() {
       },
     );
 
+    testWidgets(
+      'resting the mouse on an error transaction shows the reason under the '
+      'label; a clean transaction shows the label alone',
+      (tester) async {
+        const bad = DecodedTransaction(
+          startTime: 100,
+          endTime: 140,
+          label: 'AXIS packet (3 beats, 8 bytes)',
+          shortLabel: 'AXIS',
+          isError: true,
+          errorMessage: 'discontinuity',
+        );
+        const good = DecodedTransaction(
+          startTime: 300,
+          endTime: 340,
+          label: 'AXIS packet (1 beats, 4 bytes)',
+          shortLabel: 'AXIS',
+        );
+        await tester.pumpWidget(
+          _buildApp(
+            withSource: true,
+            overrides: [
+              activeDecodersProvider.overrideWith(
+                () => _FixedActiveDecodersNotifier([
+                  _makeDecoder(transactions: const [bad, good]),
+                ]),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final tooltip = find.byKey(const ValueKey('transaction-hover-tooltip'));
+        final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+        addTearDown(mouse.removePointer);
+        await mouse.addPointer(location: const Offset(400, 300));
+        await tester.pump();
+
+        // x=96 -> tick 120, inside the error transaction.
+        await mouse.moveTo(const Offset(96, 14));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(tooltip, findsOneWidget);
+        expect(
+          find.descendant(of: tooltip, matching: find.text(bad.label)),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: tooltip, matching: find.text('discontinuity')),
+          findsOneWidget,
+        );
+
+        // x=256 -> tick 320, inside the clean transaction.
+        await mouse.moveTo(const Offset(256, 14));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(
+          find.descendant(of: tooltip, matching: find.text(good.label)),
+          findsOneWidget,
+        );
+        expect(find.text('discontinuity'), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
     testWidgets('tap in gap between transaction blocks clears selection', (
       tester,
     ) async {

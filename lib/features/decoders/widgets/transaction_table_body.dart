@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:wavecrux/core/utils/speakable_text.dart';
+import 'package:wavecrux/domain/models/decoded_transaction.dart';
 import 'package:wavecrux/features/decoders/providers/transaction_table_provider.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 
@@ -527,6 +528,21 @@ class _TransactionTableBodyState extends State<TransactionTableBody> {
     );
   }
 
+  /// Shows an error row's reason when the pointer rests on its label.
+  ///
+  /// The reason is already in the row's spoken label, so the tooltip stays out
+  /// of semantics.
+  Widget _withErrorReason(DecodedTransaction tx, Widget child) {
+    final message = tx.errorMessage;
+    if (!tx.isError || message == null || message.isEmpty) return child;
+    return Tooltip(
+      message: message,
+      excludeFromSemantics: true,
+      waitDuration: const Duration(milliseconds: 400),
+      child: child,
+    );
+  }
+
   Widget _buildRow(
     int index,
     ThemeData theme,
@@ -609,22 +625,25 @@ class _TransactionTableBodyState extends State<TransactionTableBody> {
       ExcludeSemantics(child: Text('${tx.startTime}')),
       ExcludeSemantics(child: Text('${tx.endTime}')),
       ExcludeSemantics(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (tx.isError)
-              Padding(
-                padding: const EdgeInsets.only(right: 4),
-                child: Icon(
-                  Icons.error_outline,
-                  size: 14,
-                  color: theme.colorScheme.error,
+        child: _withErrorReason(
+          tx,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (tx.isError)
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: Icon(
+                    Icons.error_outline,
+                    size: 14,
+                    color: theme.colorScheme.error,
+                  ),
                 ),
+              Flexible(
+                child: Text(tx.label, overflow: TextOverflow.ellipsis),
               ),
-            Flexible(
-              child: Text(tx.label, overflow: TextOverflow.ellipsis),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       for (final key in widget.fieldKeys)
