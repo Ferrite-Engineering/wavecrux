@@ -40,6 +40,7 @@ import 'package:wavecrux/core/initial_workspace_path_provider.dart';
 import 'package:wavecrux/core/issue_reporter/wavecrux_issue_reporter_strings.dart';
 import 'package:wavecrux/core/mobile_metrics.dart';
 import 'package:wavecrux/core/platform/linux_desktop_identity.dart';
+import 'package:wavecrux/core/platform/owned_file_dialogs.dart';
 import 'package:wavecrux/core/platform_utils.dart';
 import 'package:wavecrux/core/policy/wavecrux_policy_keys.dart';
 import 'package:wavecrux/core/router.dart';
@@ -323,6 +324,9 @@ Future<bool> bootstrap({
   // file_picker's Linux dialogs need a desktop session's DBus portal, which a
   // remotely displayed host often lacks; the runner draws them with GTK.
   useGtkFileDialogsOnLinux();
+  // On Windows file_picker shows a dialog with no owner unless a call asks
+  // for one, and the dialog can open behind the window; own every dialog.
+  useOwnedFileDialogsOnWindows();
 
   // `--reset-eula` and `--reset-telemetry-consent` put this installation back
   // to "never answered" for the licence agreement and the telemetry
