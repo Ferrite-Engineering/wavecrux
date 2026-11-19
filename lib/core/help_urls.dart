@@ -42,6 +42,12 @@ abstract final class HelpUrls {
     'ethernet_rmii',
     'ethernet_gmii',
     'ethernet_rgmii',
+    'chacha20_poly1305',
+    'wireguard_ethernet_axis',
+    'wireguard_ethernet_gmii',
+    'wireguard_ethernet_mii',
+    'wireguard_ethernet_rmii',
+    'wireguard_ethernet_rgmii',
   };
 
   /// Returns the documentation URL for a decoder's help link.

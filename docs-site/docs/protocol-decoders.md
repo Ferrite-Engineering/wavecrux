@@ -145,6 +145,37 @@ The Pro catalog adds the full-spec bus protocols and the high-speed and networki
 | <span id="avalon_mm"></span>Avalon-MM | Intel/Altera memory-mapped: bursts, wait states, pipelined read responses, and byte enables. |
 | <span id="avalon_st"></span>Avalon-ST | Intel/Altera streaming: SOP/EOP framing, `empty`, channel multiplexing, and error signaling. |
 | <span id="ethernet_axis"></span><span id="ethernet_mii"></span><span id="ethernet_rmii"></span><span id="ethernet_gmii"></span>Ethernet front-ends (AXIS, MII, RMII, GMII) | Frame-layer decode at each physical-layer encoding. |
+| <span id="chacha20_poly1305"></span>ChaCha20-Poly1305 (AXI-Stream) | AEAD packets (RFC 8439) on an AXI4-Stream: the plaintext and the Poly1305 tag check for ciphertext + tag packets, or the ciphertext and tag a plaintext packet must produce. Key, nonce and additional data come from bound signals at the first beat, or from hex parameters. See [ChaCha20-Poly1305 and WireGuard](#chacha20-poly1305-and-wireguard). |
+| <span id="wireguard_ethernet_axis"></span><span id="wireguard_ethernet_gmii"></span><span id="wireguard_ethernet_mii"></span><span id="wireguard_ethernet_rmii"></span><span id="wireguard_ethernet_rgmii"></span>WireGuard (AXIS, GMII, MII, RMII, RGMII) | WireGuard messages in UDP over IPv4 or IPv6, stacked on the matching Ethernet decoder: message type, indices, counter, and with a key the decrypted payload and tag check. See [ChaCha20-Poly1305 and WireGuard](#chacha20-poly1305-and-wireguard). |
+
+## ChaCha20-Poly1305 and WireGuard <span class="tier tier-pro">Pro</span> { #chacha20-poly1305-and-wireguard }
+
+From WaveCrux 1.2, two Pro decoders show what encryption does to a bus. They share one implementation of ChaCha20-Poly1305 (RFC 8439) and need no setup beyond the keys.
+
+### ChaCha20-Poly1305 on an AXI-Stream { #chacha20-poly1305-axis }
+
+Each AXI-Stream packet is one message. Bind `aclk`, `tvalid`, `tdata` and `tlast` (and `tready` and `tkeep` if the design has them), then tell the decoder what the stream carries with **Stream carries**:
+
+- **Ciphertext + tag (decryptor input)** or **(encryptor output)**: the last 16 bytes of the packet are the Poly1305 tag. Each row shows the plaintext and whether the tag checks. A tag that does not match is an error row that quotes the tag the packet carries and the tag the key, nonce, additional data and ciphertext give; the plaintext is still shown, as a design that releases data before its verdict would.
+- **Plaintext (encryptor input)**: each row shows the ciphertext and tag the design should produce.
+
+The key, nonce and additional data are read at the packet's first beat, just before that beat's clock edge, from the `key` (256 bits), `nonce` (96 bits), `aad` and `aad_len` signals. Each is a little-endian integer: byte 0 is bits 7:0. If a signal is not bound, the decoder uses the hex typed into **Key**, **Nonce** or **AAD** instead. When `aad` is bound without `aad_len`, **AAD length** gives the length, and -1 means the whole bus.
+
+!!! warning "Keys typed into a parameter are saved with the session"
+    **Key**, **Nonce** and **AAD** are stored in the session file in clear text. Use test keys, not production secrets. Keys are never copied into the transaction table.
+
+### WireGuard { #wireguard }
+
+Add the WireGuard decoder that matches your Ethernet decoder (it is offered in the picker once that Ethernet decoder is active). It reads the UDP datagrams on **UDP port** (51820 by default; 0 reads every UDP datagram that looks like WireGuard), over IPv4 or IPv6, through up to two VLAN tags, and shows for each message:
+
+| Message | Shown |
+|---|---|
+| Handshake initiation, response, cookie reply | Type, sender and receiver index, and a size check against the fixed message length. |
+| Transport data | Receiver index, 64-bit counter and, with a key, the decrypted payload, the tag check, and the inner IP packet's addresses. An empty payload is a keepalive. |
+
+To decrypt transport data, give **Transport keys by receiver index** as `index=key` entries separated by semicolons, for example `0x1a2b3c4d=<64 hex digits>;0x5e6f7081=<64 hex digits>`. The index is the receiver index in the message, and the key is the 32-byte key its sender used. **Default transport key** covers indices that are not listed. Without a key a transport row says the tag was not checked. An entry that cannot be used is reported in an error row at the start of the trace and the others still work.
+
+Keys are stored in the session file in clear text, so use test keys.
 
 ## PCIe TLP analysis <span class="tier tier-pro">Pro</span> { #pcie-tlp-analysis }
 
