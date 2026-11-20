@@ -2568,7 +2568,7 @@ void main() {
       });
     }
 
-    // The keyboard route to the row menu right-click opens (D11): focus is in
+    // The keyboard route to the row menu right-click opens: focus is in
     // the list after a click, and the selected row's menu opens under it.
     for (final shortcut in ['Shift+F10', 'Menu key']) {
       testWidgets("$shortcut opens the selected row's context menu", (

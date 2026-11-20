@@ -1,8 +1,8 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
-// Wording canon for the menu and About labels the 2026-11 suite audit found
-// worded differently across the four products (D04, D05, D51, D52, D54). The
+// Wording canon for the menu and About labels that were worded differently
+// across the four products. The
 // canon: a label that opens a dialog ends in the ellipsis character in every
 // locale; "Cross-Probe Selection…" is hyphenated and capitalised like the other
 // Title Case cross-probe labels; "license" is the spelling in every English
@@ -15,7 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 const _locales = ['en', 'zh_CN', 'zh', 'ja', 'ko'];
 
-/// Menu labels that open a dialog or a picker (D04, D05).
+/// Menu labels that open a dialog or a picker.
 const _dialogOpeners = <String>[
   'shortcutActionOpenFile',
   'shortcutActionSaveSessionAs',
