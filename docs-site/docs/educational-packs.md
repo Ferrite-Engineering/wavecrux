@@ -24,11 +24,11 @@ A pack is just files, so there is no special importer to run. Once you have one,
 
 !!! note "No license needed"
 
-    Educational packs run entirely on the free Open Core viewer. Every feature a pack uses (signal browsing, cursors, markers, translate filters, FSM visualization, the Stage SDK and board widgets, and the Open Core protocol decoders) is free. The Education *tier* is a separate thing: it unlocks Pro features for coursework (see [Tiers & licensing](licensing.md)). The packs themselves do not require it.
+    Educational packs run entirely on the free Open Core products. Every WaveCrux feature a pack uses (signal browsing, cursors, markers, translate filters, FSM visualization, the Stage SDK and board widgets, and the Open Core protocol decoders) is free. The Education *tier* is a separate thing: it unlocks Pro features for coursework (see [Tiers & licensing](licensing.md)). The packs themselves do not require it.
 
 ## The catalog { #the-catalog }
 
-Twelve packs ship today, spanning a first-day introduction to advanced verification workflows. Levels are a rough guide to course placement, not a hard prerequisite chain.
+Twenty-four packs ship today, spanning a first-day introduction to advanced verification workflows. The first twelve are WaveCrux labs; the rest teach the other EDACrux tools (SimCrux, LintCrux and NetCrux) or take a bug across several of them. Levels are a rough guide to course placement, not a hard prerequisite chain.
 
 | Pack | Level | Focus |
 |---|---|---|
@@ -44,6 +44,18 @@ Twelve packs ship today, spanning a first-day introduction to advanced verificat
 | `debug-hunt` | Intermediate | Find an intentional bug using waveform diff |
 | `stage-showcase-basys3` | Intermediate | Bind a Basys 3 design to the Stage board widget |
 | `cocotb-driven-testbench` | Advanced | Cocotb log correlation with waveform events |
+| `fpga-timing-slow-path` | Intermediate | A first SimCrux Flow lab (from 1.2): read an open-FPGA-toolchain run's verdict, find the worst path, follow it to the RTL line |
+| `sky130-read-your-run` | Intermediate | A captured LibreLane sky130A run in SimCrux (from 1.2): the step that failed, the worst setup slack, the worst path. Findings, not signoff |
+| `lint-triage-101` | Intro | Reading a Verilator lint report in LintCrux and telling a latent bug from noise |
+| `module-tour` | Intermediate | Hierarchy and fan-out in a Verilog netlist, in NetCrux |
+| `mux-adder-walkthrough` | Intro | Reading RTL as structure: the mux and adder netlist, in NetCrux |
+| `regression-hello-world` | Intro | Your first Verilog regression dashboard, in SimCrux |
+| `flaky-test-hunt` | Intermediate | Seeds, reproducibility and a real overflow bug, in SimCrux |
+| `memory-controller-review` | Intermediate | Lint findings cross-probed into the schematic |
+| `uart-verification` | Intermediate | From a failing test to the waveform |
+| `spi-bringup` | Advanced | A one-bit sampling error found across three tools |
+| `cdc-soc-capstone` | Advanced | A 20-hour capstone: finding an unsynchronised clock-domain crossing |
+| `verification-methodology-capstone` | Advanced | A 20-hour capstone: a full verification pass over an ALU peripheral |
 
 !!! tip "For instructors"
 
