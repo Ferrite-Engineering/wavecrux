@@ -33,7 +33,7 @@ WaveCrux is localized in English, Simplified Chinese, Japanese, and Korean. The 
 
 ## Open your first waveform { #open-first-waveform }
 
-1. Choose **File → Open File**, or press ++cmd+o++ / ++ctrl+o++. On macOS, Windows and Linux you can instead drag the trace from your file manager onto the WaveCrux window: see [Dropping files onto the window](files-and-sessions.md#drop).
+1. Choose **File → Open File…**, or press ++cmd+o++ / ++ctrl+o++. On macOS, Windows and Linux you can instead drag the trace from your file manager onto the WaveCrux window: see [Dropping files onto the window](files-and-sessions.md#drop).
 2. Select a trace. The format is auto-detected on open: you do not pick a format.
 3. The viewer parses the file and shows the signal hierarchy. From there, add signals to the canvas and start navigating.
 
@@ -69,7 +69,7 @@ WaveCrux can send anonymous usage and error counts (which features get used, and
 
 ## Reporting issues { #reporting-issues }
 
-The fastest way to get something fixed is the built-in issue reporter, which is open to every tier: there is no badge on it and no license check in front of it. Open it from **Help → Submit Issue…**, the command palette, or the **Report Issue** button in the About box.
+The fastest way to get something fixed is the built-in issue reporter, which is open to every tier: there is no badge on it and no license check in front of it. Open it from **Help → Submit Issue…**, the command palette, or the **Submit Issue…** button in the About box.
 
 1. Give the issue a short summary describing what went wrong.
 2. Choose what to attach. WaveCrux assembles the diagnostic context for you: **App & Environment** (version and build, platform and OS, screen DPI, locale); **Session State** (counts and format names only: open tabs, file formats, signal counts, active decoders); a [diagnostics snapshot and recent log](interface.md#logs); and, on desktop, an optional **Screenshot** of the app window, saved to a file so you can attach it. Each category is a toggle, and a live preview shows exactly what will be sent, so nothing leaves your machine that you have not seen. File paths and file contents are left out. The log is always captured in full regardless of your [log-verbosity setting](interface.md#log-verbosity), so you never have to change a setting before reproducing a problem.

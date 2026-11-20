@@ -86,7 +86,7 @@ void main() {
     testWidgets('shows "Open File" action label', (tester) async {
       await tester.pumpWidget(_buildApp());
       await tester.pumpAndSettle();
-      expect(find.text('Open File'), findsOneWidget);
+      expect(find.text('Open File…'), findsOneWidget);
     });
 
     // "Command Palette" is intentionally hidden from the palette (a command
@@ -99,7 +99,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), 'open file');
       await tester.pumpAndSettle();
-      expect(find.text('Open File'), findsOneWidget);
+      expect(find.text('Open File…'), findsOneWidget);
     });
 
     // ── filtering ─────────────────────────────────────────────────────────────
@@ -113,7 +113,7 @@ void main() {
 
       expect(find.text('Zoom In'), findsOneWidget);
       // "Open File" should be gone since it doesn't match "zoom in".
-      expect(find.text('Open File'), findsNothing);
+      expect(find.text('Open File…'), findsNothing);
     });
 
     testWidgets('fuzzy match: "zmin" matches "Zoom In"', (tester) async {
@@ -228,7 +228,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // The first visible item in the unfiltered list is openFile ("Open File").
-      await tester.tap(find.text('Open File'));
+      await tester.tap(find.text('Open File…'));
       await tester.pumpAndSettle();
 
       expect(dispatched, isNotNull);
@@ -263,7 +263,7 @@ void main() {
       expect(find.byType(TextField), findsOneWidget);
 
       // Tap a known action label inside the dialog.
-      await tester.tap(find.text('Open File'));
+      await tester.tap(find.text('Open File…'));
       await tester.pumpAndSettle();
 
       // Dialog dismissed; search field gone.

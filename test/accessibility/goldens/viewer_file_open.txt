@@ -2,7 +2,7 @@
 1. [Details dock Values grouping] Hide Panel button
 2. [Panel dock grouping] Transactions button
 3. Statistics button collapsed
-4. [Toolbar grouping] Open File (Ctrl+O) button
+4. [Toolbar grouping] Open File… (Ctrl+O) button
 5. Save Session (Ctrl+S) button
 6. Close File (Ctrl+F4) button
 7. Search Signals (Ctrl+F) button
@@ -15,7 +15,7 @@
 14. Add Protocol Decoder (Ctrl+Shift+D) button
 15. Toggle Transaction Table (Ctrl+Shift+T) button
 16. Toggle Stage Panel (Ctrl+Shift+G) button
-17. App Diagnostics (Ctrl+Shift+M) button
+17. App Diagnostics… (Ctrl+Shift+M) button
 18. [Active pane grouping] sample.vcd button selected
 19. [sample.vcd button] Close sample.vcd button
 20. Show pane render stats button

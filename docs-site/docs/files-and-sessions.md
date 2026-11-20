@@ -22,11 +22,11 @@ Format is detected automatically when you open a file. Native formats are parsed
 
 ## Opening and reloading files { #opening }
 
-Open a waveform with **File → Open File** or ++cmd+o++ / ++ctrl+o++. The format is detected from the file itself, so the same command handles every input type above, as well as `.wavecrux` sessions and `.wavecruxpack` share bundles. On desktop you can also pass files on the command line, one tab per file. Recent files and recent workspaces appear on the empty canvas, so returning to a recent debug session is one click. From WaveCrux 1.2 a recent file that has been moved or deleted is greyed and marked "File not found"; opening it removes it from the list and tells you which file it was. Each row has its own remove button, and **File, then Clear Recent Files** (also in the command palette, and as a button under the list) empties the list.
+Open a waveform with **File → Open File…** or ++cmd+o++ / ++ctrl+o++. The format is detected from the file itself, so the same command handles every input type above, as well as `.wavecrux` sessions and `.wavecruxpack` share bundles. On desktop you can also pass files on the command line, one tab per file. Recent files and recent workspaces appear on the empty canvas, so returning to a recent debug session is one click. From WaveCrux 1.2 a recent file that has been moved or deleted is greyed and marked "File not found"; opening it removes it from the list and tells you which file it was. Each row has its own remove button, and **File, then Clear Recent Files** (also in the command palette, and as a button under the list) empties the list.
 
 ### Dropping files onto the window { #drop }
 
-On macOS, Windows and Linux you can drag files from Finder, Explorer or your file manager and drop them anywhere on the WaveCrux window, on the empty canvas or over a waveform you already have open. A green outline and a **Drop to open** card appear while you drag. A drop does exactly what **File → Open File** does with the same files: each waveform opens in its own new tab, FSDB gets the same conversion offer, and `.wavecrux` sessions, `.wavecruxpack` bundles and `<design>.crux-project` manifests open as they would from the picker. Several files dropped at once each get a tab. A file WaveCrux cannot read opens into the tab's load error, which says why.
+On macOS, Windows and Linux you can drag files from Finder, Explorer or your file manager and drop them anywhere on the WaveCrux window, on the empty canvas or over a waveform you already have open. A green outline and a **Drop to open** card appear while you drag. A drop does exactly what **File → Open File…** does with the same files: each waveform opens in its own new tab, FSDB gets the same conversion offer, and `.wavecrux` sessions, `.wavecruxpack` bundles and `<design>.crux-project` manifests open as they would from the picker. Several files dropped at once each get a tab. A file WaveCrux cannot read opens into the tab's load error, which says why.
 
 A dropped GTKWave `.gtkw` file is imported into the current tab, as **File → Import GTKWave Session** does. Drop a dump and its `.gtkw` together and the dump opens first, then the session is applied to it.
 
@@ -115,7 +115,7 @@ artifacts:
   simulation: simcrux.yaml
 ```
 
-Open it in any of the four products and that product opens the part it owns: WaveCrux loads the `waveform:` artifact, here `sim/uart_tx.vcd`. Every path is relative to the manifest's own directory, so the file travels with the repository. In WaveCrux, choose it in **File → Open File** (the picker lists `.crux-project` files alongside waveforms, sessions and packs), double-click it in Finder on macOS, or pass it on the command line: `wavecrux path/to/design/uart_tx.crux-project`, or the design folder itself, `wavecrux path/to/design`. A design folder holds exactly one manifest; if it holds more, WaveCrux names them and opens nothing.
+Open it in any of the four products and that product opens the part it owns: WaveCrux loads the `waveform:` artifact, here `sim/uart_tx.vcd`. Every path is relative to the manifest's own directory, so the file travels with the repository. In WaveCrux, choose it in **File → Open File…** (the picker lists `.crux-project` files alongside waveforms, sessions and packs), double-click it in Finder on macOS, or pass it on the command line: `wavecrux path/to/design/uart_tx.crux-project`, or the design folder itself, `wavecrux path/to/design`. A design folder holds exactly one manifest; if it holds more, WaveCrux names them and opens nothing.
 
 All four products also derive the same design identity from it, which means cross-probing between them works exactly as it does when you open each file by hand: the manifest is a shortcut, not a different mode.
 
@@ -138,7 +138,7 @@ A loaded waveform is raw signal data; a *session* is the arrangement you built a
 | Session | `.wavecrux` | A single-tab session: the waveform it belongs to, signals and groups with their display formats, cursor positions, named markers, zoom and scroll, panel layout, translate filters, decoders, annotations, and Stage panel configuration. Use it to hand one debug arrangement to a colleague, or to ship a pre-built session inside an educational pack. |
 | Workspace | `.wavecrux-workspace` | The entire multi-tab, multi-pane arrangement: all tabs, all panes, and the panel layout. For team sharing, version control, or organization-wide templates. Example: `team-debug.wavecrux-workspace`. |
 
-Save a session with **File → Save Session** (++cmd+s++ / ++ctrl+s++), and **Save Session As** with ++cmd+shift+s++ / ++ctrl+shift+s++.
+Save a session with **File → Save Session** (++cmd+s++ / ++ctrl+s++), and **Save Session As…** with ++cmd+shift+s++ / ++ctrl+shift+s++.
 
 When the waveform is in the session file's folder or below it, the session stores the waveform's path relative to that folder (from 1.1.1), so a session committed next to its dump opens from any checkout and stays that way when you save it again. A waveform anywhere else is stored by its full path.
 
@@ -148,9 +148,9 @@ Decoder and Stage bindings are saved with the hierarchical path of each bound si
 
 !!! note "In the browser"
 
-    A browser cannot hand WaveCrux back a path to a file it saved, so the browser build leaves out the commands that work with one: **Save Session**, **Save Session As**, the workspace commands (**New Workspace**, **Save Workspace As**, **Export Tab as Session…**) and **Generate Test VCD**. Use a desktop build for those. **Export Waveform…**, **Share Annotated Waveform…** and the other exports still work there: the file downloads under a default name (for example `export.vcd` or `waveform.png`) instead of opening a save dialog.
+    A browser cannot hand WaveCrux back a path to a file it saved, so the browser build leaves out the commands that work with one: **Save Session**, **Save Session As…**, the workspace commands (**New Workspace**, **Save Workspace As…**, **Export Tab as Session…**) and **Generate Test VCD**. Use a desktop build for those. **Export Waveform…**, **Share Annotated Waveform…** and the other exports still work there: the file downloads under a default name (for example `export.vcd` or `waveform.png`) instead of opening a save dialog.
 
-Workspaces are managed from the **File** menu (or the command palette). Build the arrangement first: open extra traces in new tabs with **File → Open File** (++cmd+o++ / ++ctrl+o++), each new file gets its own tab, and split the view into side-by-side panes with ++cmd+backslash++ / ++ctrl+backslash++. Then **Save Workspace As** writes the whole multi-tab, multi-pane arrangement to a `.wavecrux-workspace` file, **Open Workspace…** restores one, and **New Workspace** starts an empty one. To pull just the active tab out as a portable single session, use **Export Tab as Session…**.
+Workspaces are managed from the **File** menu (or the command palette). Build the arrangement first: open extra traces in new tabs with **File → Open File…** (++cmd+o++ / ++ctrl+o++), each new file gets its own tab, and split the view into side-by-side panes with ++cmd+backslash++ / ++ctrl+backslash++. Then **Save Workspace As…** writes the whole multi-tab, multi-pane arrangement to a `.wavecrux-workspace` file, **Open Workspace…** restores one, and **New Workspace** starts an empty one. To pull just the active tab out as a portable single session, use **Export Tab as Session…**.
 
 !!! note "Plain JSON, version-control friendly"
 

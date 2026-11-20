@@ -69,7 +69,7 @@ The complete default binding set is grouped below. Modifier shortcuts are shown 
 | Previous Tab | ++ctrl+shift+tab++ |
 | Jump to tab 1–9 | ++cmd+1++ … ++cmd+9++ / ++ctrl+1++ … ++ctrl+9++ |
 | Save Session | ++cmd+s++ / ++ctrl+s++ |
-| Save Session As | ++cmd+shift+s++ / ++ctrl+shift+s++ |
+| Save Session As… | ++cmd+shift+s++ / ++ctrl+shift+s++ |
 | Import GTKWave Session | ++cmd+i++ / ++ctrl+i++ |
 | Export Waveform… | ++cmd+e++ / ++ctrl+e++ |
 | Settings… | ++cmd+comma++ / ++ctrl+comma++ |
