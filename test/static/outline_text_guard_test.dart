@@ -115,8 +115,8 @@ void main() {
           'to onSurfaceVariant.',
     ),
     const CruxOutlineExemption(
-      file: 'lib/services/export/image_export_service.dart',
-      line: 73,
+      file: 'lib/services/export/svg_export_palette.dart',
+      line: 44,
       expectedTrimmed: 'gridStrong: _hex(scheme.outline),',
       reason:
           'the strong grid-line hex value in the SVG export palette, paired '

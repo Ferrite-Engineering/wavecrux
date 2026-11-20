@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_license/crux_license.dart';
 import 'package:crux_status_bar/crux_status_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -563,5 +564,141 @@ void main() {
         findsNothing,
       );
     });
+  });
+
+  // ── Educational licence chip ──────────────────────────────────────────────
+
+  group('StatusBar — educational licence chip', () {
+    const email = 'student@example.edu';
+
+    CruxLicenseStatus status(LicenseTier tier) => CruxLicenseStatus(
+      activation: CruxLicenseActivation.active,
+      grant: LicenseGrant(
+        issuerId: kEduLicenseIssuerId,
+        tier: tier,
+        products: CruxProduct.values.toSet(),
+        licenseId: 'lic-1',
+        email: email,
+        expiry: DateTime.utc(2027, 8, 2, 12),
+      ),
+    );
+
+    testWidgets('shows the EDU chip, the terms and the holder under EDU', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const StatusBar(),
+          overrides: [
+            licenseStatusProvider.overrideWithValue(status(LicenseTier.edu)),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CruxEduStatusChip), findsOneWidget);
+      expect(find.byType(EditionBadge), findsOneWidget);
+      expect(find.text('Non-commercial use · $email'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('sits in the trailing slot after the extension seam', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const StatusBar(),
+          overrides: [
+            licenseStatusProvider.overrideWithValue(status(LicenseTier.edu)),
+            statusBarTrailingWidgetsProvider.overrideWithValue(
+              const [Text('COLLAB', key: Key('collab-trailing'))],
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final bar = tester.widget<CruxStatusBar>(find.byType(CruxStatusBar));
+      expect(bar.trailing.last, isA<CruxEduStatusChip>());
+      final seam = tester.getTopLeft(find.byKey(const Key('collab-trailing')));
+      final chip = tester.getTopLeft(find.byType(CruxEduStatusChip));
+      expect(chip.dx, greaterThan(seam.dx));
+    });
+
+    testWidgets('the chip uses the bar text style and is tappable', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const StatusBar(),
+          overrides: [
+            licenseStatusProvider.overrideWithValue(status(LicenseTier.edu)),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final bar = tester.widget<CruxStatusBar>(find.byType(CruxStatusBar));
+      final chip = tester.widget<CruxEduStatusChip>(
+        find.byType(CruxEduStatusChip),
+      );
+      expect(chip.textStyle, bar.textStyle);
+      expect(chip.onTap, isNotNull);
+    });
+
+    final silent = <String, CruxLicenseStatus>{
+      'open core': CruxLicenseStatus.openCore,
+      'Pro': status(LicenseTier.pro),
+      'Enterprise': status(LicenseTier.enterprise),
+    };
+    for (final MapEntry(key: name, value: licence) in silent.entries) {
+      testWidgets('shows nothing at $name', (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            const StatusBar(),
+            overrides: [licenseStatusProvider.overrideWithValue(licence)],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(EditionBadge), findsNothing);
+        expect(find.textContaining('Non-commercial'), findsNothing);
+        expect(find.textContaining(email), findsNothing);
+      });
+    }
+
+    testWidgets('shows nothing with no licence provider override', (
+      tester,
+    ) async {
+      // The open core never overrides licenseStatusProvider.
+      await tester.pumpWidget(_wrap(const StatusBar()));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EditionBadge), findsNothing);
+      expect(find.textContaining('Non-commercial'), findsNothing);
+    });
+
+    for (final locale in _locales) {
+      testWidgets('renders under EDU in $locale without exceptions', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _wrap(
+            const StatusBar(),
+            locale: locale,
+            overrides: [
+              licenseStatusProvider.overrideWithValue(status(LicenseTier.edu)),
+              timeMapperProvider.overrideWith(_LoadedTimeMapper.new),
+              cursorStateProvider.overrideWith(_BothCursors.new),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(EditionBadge), findsOneWidget);
+        expect(find.textContaining(email), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    }
   });
 }

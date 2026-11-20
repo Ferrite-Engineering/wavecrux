@@ -743,6 +743,8 @@ void _widgetTests() {
           // viewer's palette and its time formatter.
           palette: any(named: 'palette'),
           formatTime: any(named: 'formatTime'),
+          // The educational-licence mark: null at every other tier.
+          eduMark: any(named: 'eduMark'),
         ),
       ).thenAnswer((_) async {});
 
@@ -814,6 +816,8 @@ void _widgetTests() {
           // viewer's palette and its time formatter.
           palette: any(named: 'palette'),
           formatTime: any(named: 'formatTime'),
+          // The educational-licence mark: null at every other tier.
+          eduMark: any(named: 'eduMark'),
         ),
       ).called(1);
       expect(find.byType(SnackBar), findsOneWidget);

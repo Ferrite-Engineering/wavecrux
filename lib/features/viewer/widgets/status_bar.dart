@@ -1,14 +1,18 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_license/crux_license.dart';
 import 'package:crux_status_bar/crux_status_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:wavecrux/core/license/wavecrux_edu_notice_strings.dart';
+import 'package:wavecrux/core/license/wavecrux_license_badge_strings.dart';
 import 'package:wavecrux/core/mobile_metrics.dart';
 import 'package:wavecrux/core/providers/status_bar_trailing_widgets_provider.dart';
 import 'package:wavecrux/domain/enums/device_class.dart';
 import 'package:wavecrux/domain/models/signal_group.dart';
 import 'package:wavecrux/features/cursors/providers/cursor_providers.dart';
+import 'package:wavecrux/features/settings/open_license_settings.dart';
 import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.dart';
 import 'package:wavecrux/features/viewer/providers/panel_layout_provider.dart';
 import 'package:wavecrux/features/viewer/providers/time_providers.dart';
@@ -256,7 +260,7 @@ class StatusBar extends ConsumerWidget {
     // desktop statistics toggle (segmentsTrailing), the geometrically-centered
     // bottom-panel chevron (center), and the trailing group — signal-load
     // indicator, the open-core/Pro `statusBarTrailingWidgetsProvider` slot, and
-    // the value-column chevron.
+    // the educational-licence chip.
     return CruxStatusBar(
       height: metrics.statusBarHeight,
       textStyle: textStyle,
@@ -330,6 +334,16 @@ class StatusBar extends ConsumerWidget {
         // when it has nothing to show, so the slot is weightless when idle.
         for (final trailing in ref.watch(statusBarTrailingWidgetsProvider))
           trailing,
+        // Educational licence: the EDU chip, "Non-commercial use" and the
+        // holder's address. Renders SizedBox.shrink() for every other tier,
+        // so open core (whose licenseStatusProvider is always open core) and
+        // the paid tiers never see it. A click opens Settings → License.
+        CruxEduStatusChip(
+          onTap: openLicenseSettings,
+          strings: WaveCruxEduNoticeStrings(l10n),
+          badgeStrings: WaveCruxLicenseBadgeStrings(l10n),
+          textStyle: textStyle,
+        ),
         // No right chevron on any device class: the right dock's strip owns
         // collapse on desktop/tablet, and on phone there is no values pane at
         // all — values render inline at the cursor via

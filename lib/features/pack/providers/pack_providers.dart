@@ -4,6 +4,7 @@
 import 'dart:typed_data';
 
 import 'package:crux_ide_layout/crux_ide_layout.dart';
+import 'package:crux_license/crux_license.dart' show licenseStatusProvider;
 import 'package:crux_telemetry/crux_telemetry.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import 'package:logging/logging.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:wavecrux/core/license/wavecrux_edu_notice_strings.dart';
 import 'package:wavecrux/core/providers/browser_download_provider.dart';
 import 'package:wavecrux/core/providers/system_dialog_provider.dart';
 import 'package:wavecrux/domain/models/annotation.dart';
@@ -182,6 +184,10 @@ class SharePackNotifier extends _$SharePackNotifier {
         repaintKey: waveformRepaintKey,
         // Resolved here, before the capture's async gap.
         previewBackground: Theme.of(context).colorScheme.surface,
+        previewEduMark: waveCruxEduExportMark(
+          ref.read(licenseStatusProvider),
+          l10n,
+        ),
       );
       final writer = ref.read(packWriterProvider);
       if (download != null) {
@@ -239,6 +245,7 @@ class SharePackNotifier extends _$SharePackNotifier {
     required bool stripAuthorNames,
     required GlobalKey? repaintKey,
     required Color previewBackground,
+    String? previewEduMark,
   }) async {
     final source = ref.read(waveformSourceProvider).value!;
     final snapshot = ref.read(sessionProvider.notifier).snapshot();
@@ -264,7 +271,14 @@ class SharePackNotifier extends _$SharePackNotifier {
         signalCount: config.signalRefs.length,
         annotationCount: annotations.length,
       ),
-      previewPng: await _capturePreview(repaintKey, previewBackground),
+      // Only the preview is marked under an educational licence: it is the
+      // image people look at. The session, the VCD and the README are read
+      // back by WaveCrux and stay exactly as any other licence writes them.
+      previewPng: await _capturePreview(
+        repaintKey,
+        previewBackground,
+        eduMark: previewEduMark,
+      ),
     );
   }
 
@@ -277,8 +291,9 @@ class SharePackNotifier extends _$SharePackNotifier {
   /// author happened to have notes toggled off misrepresents what is inside.
   Future<Uint8List?> _capturePreview(
     GlobalKey? repaintKey,
-    Color background,
-  ) async {
+    Color background, {
+    String? eduMark,
+  }) async {
     if (repaintKey == null) return null;
     final visibility = ref.read(annotationsVisibleProvider.notifier);
     final wasVisible = visibility.visible;
@@ -294,7 +309,7 @@ class SharePackNotifier extends _$SharePackNotifier {
           // boundary, and this is the image that sells the app: a preview with
           // transparent gaps shows white boxes anywhere it lands on a light
           // ground, which is most mail clients.
-          .capturePng(repaintKey, background: background);
+          .capturePng(repaintKey, background: background, eduMark: eduMark);
     } on ImageCaptureException {
       // A pack without a preview is still a complete, openable pack. Failing
       // the whole share because a boundary was not mounted would be the wrong

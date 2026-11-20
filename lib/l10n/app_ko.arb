@@ -4461,6 +4461,12 @@
   "@tierBadgeEduSemantic": {
     "description": "Accessibility / screen reader label expanding the abbreviated EDU edition badge"
   },
+  "eduNoticeStatusLabel": "비상업적 사용",
+  "eduNoticeTooltipHolder": "{email}의 교육용 라이선스입니다.",
+  "eduNoticeTooltipNoHolder": "교육용 라이선스입니다.",
+  "eduNoticeTooltipTerms": "비상업적 교육, 학습 및 연구 목적으로만 사용할 수 있습니다.",
+  "eduNoticeTooltipValidUntil": "{date}까지 유효합니다.",
+  "eduNoticeExportMark": "{productName} 교육용으로 제작 · 비상업적 사용 전용",
   "upgradeDialogTitle": "업그레이드 필요",
   "@upgradeDialogTitle": {
     "description": "Title of the shared upgrade-required dialog shown post-beta when the user activates a Pro/Enterprise action their license tier does not include"

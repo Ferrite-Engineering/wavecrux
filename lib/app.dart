@@ -67,9 +67,9 @@ import 'package:wavecrux/features/eula/wavecrux_eula_overrides.dart';
 import 'package:wavecrux/features/issue_reporter/wavecrux_issue_reporter_overrides.dart';
 import 'package:wavecrux/features/links/widgets/open_link_confirm_dialog.dart';
 import 'package:wavecrux/features/menu_bar/widgets/desktop_menu_bar.dart';
+import 'package:wavecrux/features/settings/open_license_settings.dart';
 import 'package:wavecrux/features/settings/providers/orientation_lock_provider.dart';
 import 'package:wavecrux/features/settings/providers/settings_providers.dart';
-import 'package:wavecrux/features/settings/screens/settings_screen.dart';
 import 'package:wavecrux/features/stage/bundle/custom_widget_bundle_provider.dart';
 import 'package:wavecrux/features/stage/providers/stage_startup_render_gate_provider.dart';
 import 'package:wavecrux/features/stage/widgets/primitives/builtin_stage_widgets.dart';
@@ -791,21 +791,6 @@ Future<bool> bootstrap({
     ),
   );
   return false;
-}
-
-/// Opens Settings at the License category, for the licence-expiry strip.
-///
-/// The strip sits above the root navigator, so it opens Settings from that
-/// navigator's context, the same way the menu bar's actions find one.
-void _openLicenseSettings() {
-  final context = rootNavigatorKey.currentContext;
-  if (context == null) return;
-  unawaited(
-    SettingsScreen.openAdaptive(
-      context,
-      initialCategoryId: kCruxLicenseCategoryId,
-    ),
-  );
 }
 
 /// Root application widget.
@@ -2012,7 +1997,7 @@ class _WaveCruxAppState extends ConsumerState<WaveCruxApp>
                                         // status and the strings.
                                         child: CruxLicenseExpiryGate(
                                           onOpenLicenseSettings:
-                                              _openLicenseSettings,
+                                              openLicenseSettings,
                                           sizing: CruxBetaExpirySizing(
                                             iconSize: bannerMetrics.iconSize,
                                             touchTarget:

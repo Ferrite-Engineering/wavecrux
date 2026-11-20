@@ -6,7 +6,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart' show ColorScheme;
+import 'package:crux_license/crux_license.dart' show paintCruxEduExportMark;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
@@ -17,7 +17,10 @@ import 'package:wavecrux/domain/models/signal_change.dart';
 import 'package:wavecrux/domain/models/signal_group.dart';
 import 'package:wavecrux/domain/models/variable.dart';
 import 'package:wavecrux/services/annotations/annotation_witness_service.dart';
+import 'package:wavecrux/services/export/svg_export_palette.dart';
 import 'package:wavecrux/services/waveform_geom/time_mapper.dart';
+
+export 'package:wavecrux/services/export/svg_export_palette.dart';
 
 /// Radius of an annotation's numbered dot in an exported SVG.
 const double _kSvgDotRadius = 9;
@@ -36,62 +39,9 @@ const double _kSvgLineHeight = 13;
 /// balloon dragged below the last lane ends flush with the viewBox without it.
 const double _kSvgDocumentMargin = 8;
 
-/// The colours an SVG export draws with.
-///
-/// **Why this exists.** The emitter used to bake ten hex literals, so an export
-/// never looked like the app it came from — a blue-tinted document out of a
-/// neutral-dark viewer, with every annotation in one fixed blue. The last of
-/// those is the one that mattered: an annotation's colour *is* its author in a
-/// collaborative session, so a single baked accent flattens a room's worth of
-/// attribution into one indistinguishable hue the moment it is exported.
-///
-/// Defaults reproduce the old literals exactly, so a caller that supplies
-/// nothing — a test, or a headless path with no theme in scope — emits the
-/// document it always did.
-class SvgExportPalette {
-  const SvgExportPalette({
-    this.background = '#1a1a2e',
-    this.rulerBand = '#252540',
-    this.laneBand = '#1e1e32',
-    this.gridStrong = '#555577',
-    this.gridWeak = '#333355',
-    this.mutedText = '#8888bb',
-    this.text = '#e6e6f0',
-    this.annotationDefault = '#7AA2F7',
-  });
-
-  /// Builds a palette from the live theme, so the document matches the viewer.
-  ///
-  /// [annotationDefault] takes the theme's primary because that is exactly what
-  /// the canvas gives a note carrying no colour of its own — see
-  /// `AnnotationOverlay._colorFor`. A note that *does* carry one keeps it; this
-  /// only decides the fallback.
-  factory SvgExportPalette.fromScheme(ColorScheme scheme) => SvgExportPalette(
-    background: _hex(scheme.surface),
-    rulerBand: _hex(scheme.surfaceContainerHighest),
-    laneBand: _hex(scheme.surfaceContainerHigh),
-    gridStrong: _hex(scheme.outline),
-    gridWeak: _hex(scheme.outlineVariant),
-    mutedText: _hex(scheme.onSurfaceVariant),
-    text: _hex(scheme.onSurface),
-    annotationDefault: _hex(scheme.primary),
-  );
-
-  final String background;
-  final String rulerBand;
-  final String laneBand;
-  final String gridStrong;
-  final String gridWeak;
-  final String mutedText;
-  final String text;
-  final String annotationDefault;
-
-  static String _hex(Color c) {
-    final argb = c.toARGB32();
-    final rgb = (argb & 0xFFFFFF).toRadixString(16).padLeft(6, '0');
-    return '#$rgb';
-  }
-}
+/// Height of the band an SVG export grows by to carry the educational-licence
+/// mark, so the mark never overlaps a lane.
+const double _kSvgEduMarkBand = 18;
 
 /// Exports the waveform view as a raster (PNG) or vector (SVG) image.
 ///
@@ -120,10 +70,16 @@ class ImageExportService {
   /// concentrated in the top strip, which reads as white boxes anywhere the
   /// image lands on a light ground. Passing the viewer's own surface colour
   /// keeps a dark-theme export dark.
+  ///
+  /// [eduMark], when non-null, is painted bottom-right over the capture: the
+  /// line that says an image was made under an educational licence (see
+  /// `cruxEduExportMark`). Scaled by [pixelRatio] so it reads the same size
+  /// at every export resolution.
   Future<Uint8List> capturePng(
     GlobalKey boundaryKey, {
     double pixelRatio = 2.0,
     Color? background,
+    String? eduMark,
   }) async {
     final renderObject = boundaryKey.currentContext?.findRenderObject();
     if (renderObject is! RenderRepaintBoundary) {
@@ -133,8 +89,13 @@ class ImageExportService {
       );
     }
     var image = await renderObject.toImage(pixelRatio: pixelRatio);
-    if (background != null) {
-      final flattened = _composite(image, background);
+    if (background != null || eduMark != null) {
+      final flattened = _composite(
+        image,
+        background,
+        eduMark: eduMark,
+        scale: pixelRatio,
+      );
       image.dispose();
       image = flattened;
     }
@@ -155,11 +116,13 @@ class ImageExportService {
     String path, {
     double pixelRatio = 2.0,
     Color? background,
+    String? eduMark,
   }) async {
     final bytes = await capturePng(
       boundaryKey,
       pixelRatio: pixelRatio,
       background: background,
+      eduMark: eduMark,
     );
     try {
       final file = File(path);
@@ -170,12 +133,18 @@ class ImageExportService {
     }
   }
 
-  /// Draws [image] over an opaque [background] of the same size.
+  /// Draws [image] over an opaque [background] of the same size, then
+  /// [eduMark] bottom-right when there is one.
   ///
   /// Synchronous `Picture` rasterisation rather than a second async hop: the
   /// caller is already awaiting, and `toImageSync` keeps the whole capture on
   /// one frame's worth of GPU work.
-  ui.Image _composite(ui.Image image, Color background) {
+  ui.Image _composite(
+    ui.Image image,
+    Color? background, {
+    String? eduMark,
+    double scale = 1,
+  }) {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
     final size = Rect.fromLTWH(
@@ -184,9 +153,19 @@ class ImageExportService {
       image.width.toDouble(),
       image.height.toDouble(),
     );
-    canvas
-      ..drawRect(size, Paint()..color = background)
-      ..drawImage(image, Offset.zero, Paint());
+    if (background != null) {
+      canvas.drawRect(size, Paint()..color = background);
+    }
+    canvas.drawImage(image, Offset.zero, Paint());
+    if (eduMark != null) {
+      paintCruxEduExportMark(
+        canvas,
+        size.size,
+        eduMark,
+        fontSize: 11 * scale,
+        margin: 6 * scale,
+      );
+    }
     final picture = recorder.endRecording();
     final out = picture.toImageSync(image.width, image.height);
     picture.dispose();
@@ -218,6 +197,7 @@ class ImageExportService {
         const <String, AnnotationStatus>{},
     SvgExportPalette palette = const SvgExportPalette(),
     String Function(int tick)? formatTime,
+    String? eduMark,
   }) {
     final visibleStart = timeMapper.visibleStartTime;
     final visibleEnd = timeMapper.visibleEndTime;
@@ -258,10 +238,15 @@ class ImageExportService {
       laneAreaHeight,
       palette,
     );
-    final documentHeight = math.max(
+    final contentHeight = math.max(
       svgHeight,
       annotationBottom + _kSvgDocumentMargin,
     );
+    // The educational-licence mark gets a band of its own below everything
+    // else, so it never sits on top of a lane or a balloon.
+    final documentHeight = eduMark == null
+        ? contentHeight
+        : contentHeight + _kSvgEduMarkBand;
 
     final buf = StringBuffer()
       ..write(_buildSvgHeader(svgWidth, documentHeight, palette))
@@ -290,8 +275,11 @@ class ImageExportService {
           palette,
         ),
       )
-      ..write(annotationSvg)
-      ..writeln('</svg>');
+      ..write(annotationSvg);
+    if (eduMark != null) {
+      buf.write(_buildSvgEduMark(eduMark, svgWidth, documentHeight, palette));
+    }
+    buf.writeln('</svg>');
     return buf.toString();
   }
 
@@ -312,6 +300,7 @@ class ImageExportService {
         const <String, AnnotationStatus>{},
     SvgExportPalette palette = const SvgExportPalette(),
     String Function(int tick)? formatTime,
+    String? eduMark,
   }) async {
     final content = generateSvg(
       source: source,
@@ -327,6 +316,7 @@ class ImageExportService {
       annotationStatuses: annotationStatuses,
       palette: palette,
       formatTime: formatTime,
+      eduMark: eduMark,
     );
     try {
       final file = File(path);
@@ -338,6 +328,19 @@ class ImageExportService {
   }
 
   // ── SVG builders ──────────────────────────────────────────────────────────────
+
+  /// The educational-licence mark: one small line, right-aligned in the band
+  /// [generateSvg] adds below the content. A `<text>` element rather than a
+  /// comment or metadata, because the point is that a reader sees it.
+  String _buildSvgEduMark(
+    String mark,
+    double width,
+    double height,
+    SvgExportPalette p,
+  ) =>
+      '<text class="crux-edu-mark" x="${width - 6}" y="${height - 6}"'
+      ' font-size="11" fill="${p.mutedText}" text-anchor="end">'
+      '${_escapeXml(mark)}</text>\n';
 
   String _buildSvgHeader(double width, double height, SvgExportPalette p) =>
       '<?xml version="1.0" encoding="UTF-8"?>\n'

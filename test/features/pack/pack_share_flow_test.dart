@@ -14,6 +14,7 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:crux_ide_layout/crux_ide_layout.dart';
+import 'package:crux_license/crux_license.dart';
 import 'package:crux_telemetry/crux_telemetry.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,6 +35,7 @@ import 'package:wavecrux/features/viewer/providers/export_providers.dart';
 import 'package:wavecrux/features/viewer/providers/time_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
+import 'package:wavecrux/services/export/image_export_service.dart';
 import 'package:wavecrux/services/pack/pack_disclosure.dart';
 import 'package:wavecrux/services/pack/wavecrux_pack_spec.dart';
 import 'package:wavecrux/services/pack/wavecrux_pack_writer.dart';
@@ -85,6 +87,25 @@ class _CapturingPackWriter implements WaveCruxPackWriter {
     if (contents.previewPng == null) return null;
     capturedPreviewPath = '$packPath.png';
     return File(capturedPreviewPath!);
+  }
+}
+
+/// Records the mark the preview capture was asked to paint; returns a
+/// stand-in PNG, since the flow under test is the decision, not the pixels.
+class _CapturingImages extends ImageExportService {
+  _CapturingImages();
+
+  final marks = <String?>[];
+
+  @override
+  Future<Uint8List> capturePng(
+    GlobalKey boundaryKey, {
+    double pixelRatio = 2.0,
+    Color? background,
+    String? eduMark,
+  }) async {
+    marks.add(eduMark);
+    return Uint8List.fromList(const [0x89, 0x50, 0x4E, 0x47]);
   }
 }
 
@@ -525,6 +546,108 @@ void main() {
       );
       expect(find.text('Pack written to $name'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('educational licence', () {
+    const mark = 'Made with WaveCrux Educational · Non-commercial use only';
+
+    CruxLicenseStatus status(LicenseTier tier) => CruxLicenseStatus(
+      activation: CruxLicenseActivation.active,
+      grant: LicenseGrant(
+        issuerId: kEduLicenseIssuerId,
+        tier: tier,
+        products: CruxProduct.values.toSet(),
+        licenseId: 'lic-1',
+        email: 'student@example.edu',
+        expiry: DateTime.utc(2027, 8, 2, 12),
+      ),
+    );
+
+    Future<(_CapturingPackWriter, _CapturingImages)> runShare(
+      WidgetTester tester,
+      CruxLicenseStatus licence,
+    ) async {
+      final writer = _CapturingPackWriter();
+      final images = _CapturingImages();
+      final repaintKey = GlobalKey();
+      await tester.pumpWidget(
+        _wrap(
+          RepaintBoundary(
+            key: repaintKey,
+            child: Consumer(
+              builder: (context, ref, _) => TextButton(
+                onPressed: () => ref
+                    .read(sharePackProvider.notifier)
+                    .shareAnnotatedWaveform(
+                      context,
+                      waveformRepaintKey: repaintKey,
+                    ),
+                child: const Text('Share'),
+              ),
+            ),
+          ),
+          overrides: [
+            ..._baseOverrides(
+              source: _source,
+              annotations: [_note()],
+              writer: writer,
+            ),
+            licenseStatusProvider.overrideWithValue(licence),
+            imageExportServiceProvider.overrideWithValue(images),
+          ],
+        ),
+      );
+      await _tapShare(tester);
+      await tester.tap(find.text('Share…'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      return (writer, images);
+    }
+
+    String withoutDate(String vcd) =>
+        vcd.split('\n').where((l) => !l.startsWith(r'$date')).join('\n');
+
+    testWidgets('the preview carries the mark under EDU', (tester) async {
+      final (writer, images) = await runShare(
+        tester,
+        status(LicenseTier.edu),
+      );
+
+      expect(images.marks, [mark]);
+      expect(writer.captured!.previewPng, isNotNull);
+      expect(writer.capturedPreviewPath, isNotNull);
+    });
+
+    for (final (name, licence) in [
+      ('Pro', status(LicenseTier.pro)),
+      ('open core', CruxLicenseStatus.openCore),
+    ]) {
+      testWidgets('the preview carries no mark at $name', (tester) async {
+        final (_, images) = await runShare(tester, licence);
+
+        expect(images.marks, [null]);
+      });
+    }
+
+    testWidgets('the session, the VCD and the README are never marked', (
+      tester,
+    ) async {
+      final (eduWriter, _) = await runShare(tester, status(LicenseTier.edu));
+      final edu = eduWriter.captured!;
+      final (openWriter, _) = await runShare(
+        tester,
+        CruxLicenseStatus.openCore,
+      );
+      final open = openWriter.captured!;
+
+      for (final text in [edu.sessionJson, edu.waveformVcd, edu.readme]) {
+        expect(text, isNot(contains('Educational')));
+        expect(text, isNot(contains('Non-commercial')));
+      }
+      expect(edu.sessionJson, open.sessionJson);
+      expect(withoutDate(edu.waveformVcd), withoutDate(open.waveformVcd));
+      expect(edu.readme, open.readme);
     });
   });
 

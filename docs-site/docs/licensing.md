@@ -15,3 +15,27 @@ Throughout this guide, a badge beside a heading or feature name marks the tier i
 needs: <span class="tier tier-pro">Pro</span>,
 <span class="tier tier-enterprise">Enterprise</span> or
 <span class="tier tier-edu">EDU</span>. Anything without a badge is Open Core.
+
+## Educational licenses <span class="tier tier-edu">EDU</span>
+
+An educational license is free and for non-commercial teaching, learning and
+research only. WaveCrux says so in two places while it runs on one.
+
+**The status bar.** At the right end of the status bar, an EDU chip is followed
+by **Non-commercial use** and the email address the license was issued to.
+Hover over it for the terms and the date the license is valid until; click it
+to open **Settings → License**. The chip appears only with an educational
+license: Open Core, Pro and Enterprise show nothing there.
+
+**Images you export.** Images carry a small line in the bottom-right corner:
+*Made with WaveCrux Educational · Non-commercial use only*. That covers:
+
+- **PNG Image** and **SVG Vector** from **Export Waveform…**. An SVG grows by
+  a thin band at the bottom to hold the line, so it never covers a signal.
+- The preview image of **Share Annotated Waveform…**, both inside the pack and
+  the copy saved beside it.
+
+Data that a tool reads back is never marked, so it opens and parses exactly as
+it would under any other license: VCD and SAIF exports, the session and
+waveform inside a share pack, sessions and workspaces, CSV and JSON exports,
+keymaps and themes.

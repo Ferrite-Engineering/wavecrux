@@ -65,6 +65,7 @@ class _CapturingImageExportService implements ImageExportService {
         const <String, AnnotationStatus>{},
     SvgExportPalette palette = const SvgExportPalette(),
     String Function(int tick)? formatTime,
+    String? eduMark,
   }) async {
     this.palette = palette;
     this.formatTime = formatTime;

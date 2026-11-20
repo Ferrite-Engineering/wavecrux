@@ -4643,6 +4643,48 @@
   "@tierBadgeEduSemantic": {
     "description": "Accessibility / screen reader label expanding the abbreviated EDU edition badge"
   },
+  "eduNoticeStatusLabel": "Non-commercial use",
+  "@eduNoticeStatusLabel": {
+    "description": "Status-bar text beside the EDU chip while WaveCrux runs on an educational license. The license holder's email address follows it after a middle dot."
+  },
+  "eduNoticeTooltipHolder": "Educational license for {email}.",
+  "@eduNoticeTooltipHolder": {
+    "description": "First sentence of the status-bar EDU chip's tooltip and screen-reader label: whose educational license this is.",
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "student@example.edu"
+      }
+    }
+  },
+  "eduNoticeTooltipNoHolder": "Educational license.",
+  "@eduNoticeTooltipNoHolder": {
+    "description": "First sentence of the status-bar EDU chip's tooltip when the license records no email address."
+  },
+  "eduNoticeTooltipTerms": "For non-commercial teaching, learning and research only.",
+  "@eduNoticeTooltipTerms": {
+    "description": "Second sentence of the status-bar EDU chip's tooltip: the educational license's terms of use."
+  },
+  "eduNoticeTooltipValidUntil": "Valid until {date}.",
+  "@eduNoticeTooltipValidUntil": {
+    "description": "Last sentence of the status-bar EDU chip's tooltip: the license's expiry date (yyyy-MM-dd).",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "2027-08-02"
+      }
+    }
+  },
+  "eduNoticeExportMark": "Made with {productName} Educational · Non-commercial use only",
+  "@eduNoticeExportMark": {
+    "description": "Line stamped bottom-right on images (PNG, SVG) exported under an educational license. productName is the product's name, e.g. WaveCrux.",
+    "placeholders": {
+      "productName": {
+        "type": "String",
+        "example": "WaveCrux"
+      }
+    }
+  },
   "upgradeDialogTitle": "Upgrade Required",
   "@upgradeDialogTitle": {
     "description": "Title of the upgrade dialog shown when an insufficient tier activates a gated feature. Title Case, tier-neutral: the badge beside it and the body name the tier."

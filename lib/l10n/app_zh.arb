@@ -4461,6 +4461,12 @@
   "@tierBadgeEduSemantic": {
     "description": "Accessibility / screen reader label expanding the abbreviated EDU edition badge"
   },
+  "eduNoticeStatusLabel": "非商业用途",
+  "eduNoticeTooltipHolder": "{email} 的教育版许可。",
+  "eduNoticeTooltipNoHolder": "教育版许可。",
+  "eduNoticeTooltipTerms": "仅限非商业性质的教学、学习和研究使用。",
+  "eduNoticeTooltipValidUntil": "有效期至 {date}。",
+  "eduNoticeExportMark": "使用 {productName} 教育版制作 · 仅限非商业用途",
   "upgradeDialogTitle": "需要升级",
   "@upgradeDialogTitle": {
     "description": "Title of the shared upgrade-required dialog shown post-beta when the user activates a Pro/Enterprise action their license tier does not include"

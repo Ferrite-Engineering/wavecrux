@@ -6,12 +6,14 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:crux_ide_layout/crux_ide_layout.dart';
+import 'package:crux_license/crux_license.dart' show licenseStatusProvider;
 import 'package:crux_telemetry/crux_telemetry.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:wavecrux/core/license/wavecrux_edu_notice_strings.dart';
 import 'package:wavecrux/core/providers/browser_download_provider.dart';
 import 'package:wavecrux/core/providers/system_dialog_provider.dart';
 import 'package:wavecrux/core/theme/wavecrux_colors.dart';
@@ -77,7 +79,11 @@ final saveFilePickerProvider = Provider<SaveFilePicker>(
   (ref) => defaultSaveFilePicker,
 );
 
-/// Drives all export actions (VCD, PNG, SVG) for the waveform viewer.
+/// Drives all export actions (VCD, SAIF, PNG, SVG) for the waveform viewer.
+///
+/// Under an educational licence the images (PNG, SVG) carry a small "Made
+/// with WaveCrux Educational" mark; the data exports (VCD, SAIF) are written
+/// byte-for-byte as under any other licence, because a tool reads them back.
 ///
 /// Call [showExportDialog] with a [BuildContext] to open the export settings
 /// dialog and trigger the file-save flow. The notifier holds no persistent
@@ -343,6 +349,11 @@ class ExportNotifier extends _$ExportNotifier {
     // Resolved before the frame wait below, so the capture cannot reach for a
     // theme across an async gap.
     final captureBackground = Theme.of(context).colorScheme.surface;
+    // Null unless the licence is educational; then the image says so.
+    final eduMark = waveCruxEduExportMark(
+      ref.read(licenseStatusProvider),
+      L10N.of(context),
+    );
 
     try {
       if (hideForCapture) {
@@ -361,6 +372,7 @@ class ExportNotifier extends _$ExportNotifier {
             repaintKey,
             pixelRatio: result.pixelRatio,
             background: captureBackground,
+            eduMark: eduMark,
           ),
         );
       } else {
@@ -369,6 +381,7 @@ class ExportNotifier extends _$ExportNotifier {
           path,
           pixelRatio: result.pixelRatio,
           background: captureBackground,
+          eduMark: eduMark,
         );
       }
       _recordExportCompleted(ExportFormat.png);
@@ -453,6 +466,11 @@ class ExportNotifier extends _$ExportNotifier {
       final annotationStatuses = includeAnnotations
           ? ref.read(annotationStatusesProvider)
           : const <String, AnnotationStatus>{};
+      // Null unless the licence is educational; then the document says so.
+      final eduMark = waveCruxEduExportMark(
+        ref.read(licenseStatusProvider),
+        L10N.of(context),
+      );
 
       final service = ref.read(imageExportServiceProvider);
       if (download != null) {
@@ -466,6 +484,7 @@ class ExportNotifier extends _$ExportNotifier {
           formatTime: formatTime,
           annotations: annotations,
           annotationStatuses: annotationStatuses,
+          eduMark: eduMark,
         );
         await download(fileName: fileName, bytes: utf8.encode(document));
       } else {
@@ -480,6 +499,7 @@ class ExportNotifier extends _$ExportNotifier {
           formatTime: formatTime,
           annotations: annotations,
           annotationStatuses: annotationStatuses,
+          eduMark: eduMark,
         );
       }
       _recordExportCompleted(ExportFormat.svg);
