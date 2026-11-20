@@ -1819,6 +1819,7 @@ class _GroupTileState extends State<_GroupTile> {
     );
     final newName = await showCruxDialog<String>(
       context: context,
+      barrierDismissible: false,
       builder: (ctx) => CruxDialog(
         title: l10n.signalGroupRenameDialogTitle,
         content: TextField(
