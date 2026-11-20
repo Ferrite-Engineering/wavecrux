@@ -4298,7 +4298,7 @@
   "@cocotbLogPanelTitle": {
     "description": "Title of the cocotb log panel that displays parsed log entries time-correlated with the waveform"
   },
-  "cocotbLogEmpty": "Cocotb ログが読み込まれていません。ファイル > Cocotb ログを読み込む を使用してログファイルを開いてください。",
+  "cocotbLogEmpty": "Cocotb ログが読み込まれていません。ツール > Cocotb ログを読み込む を使用してログファイルを開いてください。",
   "@cocotbLogEmpty": {
     "description": "Empty state shown in the cocotb log panel when no log file has been loaded"
   },

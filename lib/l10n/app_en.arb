@@ -4440,7 +4440,7 @@
   "@cocotbLogPanelTitle": {
     "description": "Title of the cocotb log panel that displays parsed log entries time-correlated with the waveform"
   },
-  "cocotbLogEmpty": "No cocotb log loaded. Use File > Load Cocotb Log to open a log file.",
+  "cocotbLogEmpty": "No cocotb log loaded. Use Tools > Load Cocotb Log to open a log file.",
   "@cocotbLogEmpty": {
     "description": "Empty state shown in the cocotb log panel when no log file has been loaded"
   },

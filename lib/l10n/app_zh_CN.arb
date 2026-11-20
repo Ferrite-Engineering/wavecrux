@@ -4298,7 +4298,7 @@
   "@cocotbLogPanelTitle": {
     "description": "Title of the cocotb log panel that displays parsed log entries time-correlated with the waveform"
   },
-  "cocotbLogEmpty": "未加载 cocotb 日志。使用 文件 > 加载 Cocotb 日志 打开日志文件。",
+  "cocotbLogEmpty": "未加载 cocotb 日志。使用 工具 > 加载 Cocotb 日志 打开日志文件。",
   "@cocotbLogEmpty": {
     "description": "Empty state shown in the cocotb log panel when no log file has been loaded"
   },

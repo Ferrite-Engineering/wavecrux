@@ -4298,7 +4298,7 @@
   "@cocotbLogPanelTitle": {
     "description": "Title of the cocotb log panel that displays parsed log entries time-correlated with the waveform"
   },
-  "cocotbLogEmpty": "Cocotb 로그가 로드되지 않았습니다. 파일 > Cocotb 로그 로드를 사용하여 로그 파일을 여십시오.",
+  "cocotbLogEmpty": "Cocotb 로그가 로드되지 않았습니다. 도구 > Cocotb 로그 로드를 사용하여 로그 파일을 여십시오.",
   "@cocotbLogEmpty": {
     "description": "Empty state shown in the cocotb log panel when no log file has been loaded"
   },
