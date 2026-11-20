@@ -21,6 +21,7 @@
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:wavecrux/app.dart';
@@ -130,7 +131,14 @@ class SyntheticVcdLoad {
 /// reports `AsyncData<non-null>` so callers can immediately operate on
 /// real waveform data. Returns the file path plus the root and active-tab
 /// containers.
-Future<SyntheticVcdLoad> loadSyntheticVcd(WidgetTester tester) async {
+///
+/// [extraOverrides] are root-scope provider overrides handed to `bootstrap`,
+/// for a test that forces a mobile `defaultTargetPlatform` on a desktop runner
+/// and must stand in for a platform source the desktop embedder lacks.
+Future<SyntheticVcdLoad> loadSyntheticVcd(
+  WidgetTester tester, {
+  List<Override> extraOverrides = const [],
+}) async {
   // Tests share one application-support dir and run sequentially. Start from a
   // clean slate so leaked workspace/session state — or a leftover restore-guard
   // sentinel — from a prior test can't pollute this launch (e.g. trigger the
@@ -145,7 +153,7 @@ Future<SyntheticVcdLoad> loadSyntheticVcd(WidgetTester tester) async {
       'mobile_scalar_basics.vcd';
   await File(filePath).writeAsString(_scalarBasicsVcd);
   await seedFirstLaunchAnswers();
-  await bootstrap(args: [filePath]);
+  await bootstrap(args: [filePath], extraOverrides: extraOverrides);
   await tester.pump();
   // Settle the initial frames; the loop below is the real wait for the
   // background-isolate FFI parse (which schedules no frames until it
