@@ -130,6 +130,8 @@ Future<Map<String, List<int>>> _export(
   required CruxLicenseStatus licence,
   required String formatLabel,
   ImageExportService? images,
+  Locale? locale,
+  String exportLabel = 'Export…',
 }) async {
   final downloads = <String, List<int>>{};
   final repaintKey = GlobalKey();
@@ -152,6 +154,7 @@ Future<Map<String, List<int>>> _export(
           imageExportServiceProvider.overrideWithValue(images),
       ],
       child: MaterialApp(
+        locale: locale,
         localizationsDelegates: L10N.localizationsDelegates,
         supportedLocales: L10N.supportedLocales,
         home: Scaffold(
@@ -176,7 +179,7 @@ Future<Map<String, List<int>>> _export(
   await tester.pump(const Duration(milliseconds: 300));
   await tester.tap(find.text(formatLabel));
   await tester.pump();
-  await tester.tap(find.text('Export…'));
+  await tester.tap(find.text(exportLabel));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 300));
   await tester.pump();
@@ -200,6 +203,22 @@ void main() {
       final svg = utf8.decode(out['waveform.svg']!);
       expect(svg, contains('class="crux-edu-mark"'));
       expect(svg, contains(_mark));
+    });
+
+    testWidgets('carries the English mark under a Japanese locale', (
+      tester,
+    ) async {
+      // Exported files travel, so the mark does not follow the UI language.
+      final out = await _export(
+        tester,
+        licence: _licences['EDU']!,
+        locale: const Locale('ja'),
+        formatLabel: 'SVGベクター',
+        exportLabel: 'エクスポート…',
+      );
+
+      final svg = utf8.decode(out['waveform.svg']!);
+      expect(svg, contains('>$_mark</text>'));
     });
 
     for (final name in ['Pro', 'open core']) {

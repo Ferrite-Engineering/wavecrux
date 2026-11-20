@@ -100,16 +100,20 @@ void main() {
     });
 
     for (final locale in _locales) {
-      testWidgets('is localized and carries the product name in $locale', (
+      testWidgets('is localized in $locale, the export mark stays English', (
         tester,
       ) async {
         final l10n = await _l10nFor(tester, locale);
         final strings = WaveCruxEduNoticeStrings(l10n);
 
         expect(strings.statusLabel, isNotEmpty);
-        expect(strings.exportMark('WaveCrux'), contains('WaveCrux'));
-        expect(strings.exportMark('WaveCrux'), isNot(contains('—')));
         expect(strings.statusLabel, isNot(contains('—')));
+        // Exported files travel, so the mark is the same English line in
+        // every locale.
+        expect(
+          strings.exportMark('WaveCrux'),
+          'Made with WaveCrux Educational · Non-commercial use only',
+        );
         if (locale.languageCode != 'en') {
           expect(
             strings.statusLabel,
@@ -121,26 +125,17 @@ void main() {
   });
 
   group('waveCruxEduExportMark', () {
-    testWidgets('marks an educational licence, in WaveCrux’s name', (
-      tester,
-    ) async {
-      final l10n = await _l10nFor(tester, const Locale('en'));
-
+    test('marks an educational licence, in English and WaveCrux’s name', () {
       expect(
-        waveCruxEduExportMark(_status(LicenseTier.edu), l10n),
+        waveCruxEduExportMark(_status(LicenseTier.edu)),
         'Made with WaveCrux Educational · Non-commercial use only',
       );
     });
 
-    testWidgets('is null for open core, Pro and Enterprise', (tester) async {
-      final l10n = await _l10nFor(tester, const Locale('en'));
-
-      expect(waveCruxEduExportMark(CruxLicenseStatus.openCore, l10n), isNull);
-      expect(waveCruxEduExportMark(_status(LicenseTier.pro), l10n), isNull);
-      expect(
-        waveCruxEduExportMark(_status(LicenseTier.enterprise), l10n),
-        isNull,
-      );
+    test('is null for open core, Pro and Enterprise', () {
+      expect(waveCruxEduExportMark(CruxLicenseStatus.openCore), isNull);
+      expect(waveCruxEduExportMark(_status(LicenseTier.pro)), isNull);
+      expect(waveCruxEduExportMark(_status(LicenseTier.enterprise)), isNull);
     });
   });
 }

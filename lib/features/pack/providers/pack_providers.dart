@@ -184,10 +184,7 @@ class SharePackNotifier extends _$SharePackNotifier {
         repaintKey: waveformRepaintKey,
         // Resolved here, before the capture's async gap.
         previewBackground: Theme.of(context).colorScheme.surface,
-        previewEduMark: waveCruxEduExportMark(
-          ref.read(licenseStatusProvider),
-          l10n,
-        ),
+        previewEduMark: waveCruxEduExportMark(ref.read(licenseStatusProvider)),
       );
       final writer = ref.read(packWriterProvider);
       if (download != null) {

@@ -24,11 +24,15 @@ research only. WaveCrux says so in two places while it runs on one.
 **The status bar.** At the right end of the status bar, an EDU chip is followed
 by **Non-commercial use** and the email address the license was issued to.
 Hover over it for the terms and the date the license is valid until; click it
-to open **Settings → License**. The chip appears only with an educational
-license: Open Core, Pro and Enterprise show nothing there.
+to open **Settings → License**; it is also reachable with ++tab++ and opens
+with ++enter++ or ++space++. The chip appears only with an educational
+license: Open Core shows nothing there, and Pro and Enterprise show their
+PRO or ENT badge instead.
 
 **Images you export.** Images carry a small line in the bottom-right corner:
-*Made with WaveCrux Educational · Non-commercial use only*. That covers:
+*Made with WaveCrux Educational · Non-commercial use only*. The line is in
+English whatever language WaveCrux is set to, because exported files travel.
+That covers:
 
 - **PNG Image** and **SVG Vector** from **Export Waveform…**. An SVG grows by
   a thin band at the bottom to hold the line, so it never covers a signal.

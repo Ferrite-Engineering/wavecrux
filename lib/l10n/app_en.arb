@@ -4675,16 +4675,6 @@
       }
     }
   },
-  "eduNoticeExportMark": "Made with {productName} Educational · Non-commercial use only",
-  "@eduNoticeExportMark": {
-    "description": "Line stamped bottom-right on images (PNG, SVG) exported under an educational license. productName is the product's name, e.g. WaveCrux.",
-    "placeholders": {
-      "productName": {
-        "type": "String",
-        "example": "WaveCrux"
-      }
-    }
-  },
   "upgradeDialogTitle": "Upgrade Required",
   "@upgradeDialogTitle": {
     "description": "Title of the upgrade dialog shown when an insufficient tier activates a gated feature. Title Case, tier-neutral: the badge beside it and the body name the tier."

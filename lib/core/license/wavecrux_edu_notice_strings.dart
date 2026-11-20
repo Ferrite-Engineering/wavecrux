@@ -10,8 +10,11 @@ import 'package:wavecrux/l10n/generated/l10n.dart';
 const String kWaveCruxEduMarkProductName = 'WaveCrux';
 
 /// Adapter satisfying `crux_license`'s [CruxEduNoticeStrings] from WaveCrux's
-/// ARB-generated [L10N]: the status-bar EDU chip's label and tooltip, and the
-/// mark stamped on images exported under an educational licence.
+/// ARB-generated [L10N]: the status-bar EDU chip's label and tooltip.
+///
+/// The export mark is not localized: exported files travel, so every export
+/// carries the same English line whatever the exporting machine's locale (see
+/// [waveCruxEduExportMark]).
 ///
 /// The tooltip is built from whole sentences (holder, terms, expiry) rather
 /// than one message with optional parts, so each locale orders the words
@@ -47,17 +50,16 @@ class WaveCruxEduNoticeStrings extends CruxEduNoticeStrings {
 
   @override
   String exportMark(String productName) =>
-      _l10n.eduNoticeExportMark(productName);
+      const CruxEduNoticeStringsEn().exportMark(productName);
 }
 
-/// The mark to stamp on an image exported under [status], localized through
-/// [l10n], or `null` when the licence is not educational.
+/// The mark to stamp on an image exported under [status], or `null` when the
+/// licence is not educational.
+///
+/// Always English: an exported image travels to readers in any locale, so it
+/// says the same thing everywhere.
 ///
 /// For exports a person looks at (PNG, SVG). Never for data a tool reads
 /// back: VCD, SAIF, CSV, JSON and session files stay exactly as written.
-String? waveCruxEduExportMark(CruxLicenseStatus status, L10N l10n) =>
-    cruxEduExportMark(
-      status,
-      kWaveCruxEduMarkProductName,
-      strings: WaveCruxEduNoticeStrings(l10n),
-    );
+String? waveCruxEduExportMark(CruxLicenseStatus status) =>
+    cruxEduExportMark(status, kWaveCruxEduMarkProductName);

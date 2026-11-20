@@ -350,10 +350,8 @@ class ExportNotifier extends _$ExportNotifier {
     // theme across an async gap.
     final captureBackground = Theme.of(context).colorScheme.surface;
     // Null unless the licence is educational; then the image says so.
-    final eduMark = waveCruxEduExportMark(
-      ref.read(licenseStatusProvider),
-      L10N.of(context),
-    );
+    // In English whatever the locale: the image travels.
+    final eduMark = waveCruxEduExportMark(ref.read(licenseStatusProvider));
 
     try {
       if (hideForCapture) {
@@ -467,10 +465,8 @@ class ExportNotifier extends _$ExportNotifier {
           ? ref.read(annotationStatusesProvider)
           : const <String, AnnotationStatus>{};
       // Null unless the licence is educational; then the document says so.
-      final eduMark = waveCruxEduExportMark(
-        ref.read(licenseStatusProvider),
-        L10N.of(context),
-      );
+      // In English whatever the locale: the document travels.
+      final eduMark = waveCruxEduExportMark(ref.read(licenseStatusProvider));
 
       final service = ref.read(imageExportServiceProvider);
       if (download != null) {

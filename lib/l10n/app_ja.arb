@@ -4466,7 +4466,6 @@
   "eduNoticeTooltipNoHolder": "教育用ライセンス。",
   "eduNoticeTooltipTerms": "非商用の教育・学習・研究目的でのみ使用できます。",
   "eduNoticeTooltipValidUntil": "有効期限は {date} です。",
-  "eduNoticeExportMark": "{productName} 教育版で作成 · 非商用利用に限る",
   "upgradeDialogTitle": "アップグレードが必要です",
   "@upgradeDialogTitle": {
     "description": "Title of the shared upgrade-required dialog shown post-beta when the user activates a Pro/Enterprise action their license tier does not include"

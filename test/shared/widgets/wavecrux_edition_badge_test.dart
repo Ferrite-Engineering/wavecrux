@@ -78,6 +78,50 @@ void main() {
       expect(find.text('PRO'), findsNothing);
     });
 
+    // The status bar's EDU statement is CruxEduStatusChip; the status-bar
+    // variant of this badge stays silent at EDU so there is only one.
+    group('statusBar variant', () {
+      testWidgets('renders nothing at EDU', (tester) async {
+        await tester.pumpWidget(
+          _harness(
+            const WaveCruxEditionBadge.statusBar(),
+            tier: LicenseTier.edu,
+          ),
+        );
+        expect(find.byType(EditionBadge), findsNothing);
+        expect(find.text('EDU'), findsNothing);
+      });
+
+      testWidgets('renders nothing at Open Core', (tester) async {
+        await tester.pumpWidget(
+          _harness(
+            const WaveCruxEditionBadge.statusBar(),
+            tier: LicenseTier.openCore,
+          ),
+        );
+        expect(find.text('PRO'), findsNothing);
+        expect(find.text('ENT'), findsNothing);
+      });
+
+      testWidgets('still renders PRO and ENT', (tester) async {
+        await tester.pumpWidget(
+          _harness(
+            const WaveCruxEditionBadge.statusBar(),
+            tier: LicenseTier.pro,
+          ),
+        );
+        expect(find.text('PRO'), findsOneWidget);
+
+        await tester.pumpWidget(
+          _harness(
+            const WaveCruxEditionBadge.statusBar(),
+            tier: LicenseTier.enterprise,
+          ),
+        );
+        expect(find.text('ENT'), findsOneWidget);
+      });
+    });
+
     testWidgets('locale sweep — renders without exceptions in en/zh_CN/ja/ko', (
       tester,
     ) async {
