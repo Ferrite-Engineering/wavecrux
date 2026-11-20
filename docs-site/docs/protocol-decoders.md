@@ -243,6 +243,36 @@ From 1.1, each TLP is checked against the transaction rules of the PCI Express B
 
 **Check Read-After-Write Ordering** flags a memory read whose completion data differs from an earlier posted write to the same address on the same link direction: the read passed the write (§2.4.1). It is off by default, because registers with side effects, such as write-1-to-clear or read-only bits, read back differently by design. It is a best-effort check from one link.
 
+From 1.2, two more checks:
+
+- **The TLP Digest.** A TLP with TD set carries a one-DW digest (ECRC) after its payload (§2.2.3). Some PCIe cores pass the digest to the user interface and some strip it, so a TD=1 TLP one DW longer than its header and Length announce reports that DW in an `ecrc` field and leaves it out of the payload, and a TD=1 TLP of exactly that length is taken as stripped. Neither is flagged. With `tlp_keep` unbound on a wide bus, a core that strips the digest can show an unused lane of the last beat as `ecrc`; bind `tlp_keep` to avoid that.
+- **Fmt and Type.** A Type that the Fmt does not define (§2.2.1, Table 2-3) is flagged as a reserved Type: for example an I/O, configuration or completion TLP with a 4 DW header, a Message with a 3 DW header, or an AtomicOp without data. The deprecated TCfgRd and TCfgWr are flagged too. AtomicOps are named `FetchAdd32`, `Swap64`, `CAS32` and so on.
+
+### Checker rule IDs { #pcie-rule-ids }
+
+From 1.2, a PCIe finding that matches a rule of the checker in the [openPCIE](https://github.com/chili-chips/openPCIE) Artix-7 Root Complex model by Chili.CHIPS ends in that rule's ID, such as `[TL.REQ-4KB]` or `[DL.ACK-LAT]`, so the findings of both tools on the same capture can be joined on the ID instead of compared as text. The IDs and their PCI Express Base Specification 2.1 sections are that checker's. A PCIe TLP transaction also carries its IDs in a `rule` field, which **Export** *decoder* **as JSON…** writes with the other fields.
+
+| Finding | Rule |
+|---|---|
+| A reserved Fmt or Type, or a deprecated Type | `TL.FMT-TYPE` |
+| A Length that does not match the payload, a payload above Max_Payload_Size, a read above Max_Read_Request_Size | `TL.LENGTH` |
+| A 64-bit address header below 4 GB | `TL.REQ-ADDR` |
+| A request that crosses a 4 KB boundary | `TL.REQ-4KB` |
+| First or Last DW Byte Enables | `TL.REQ-BE` |
+| An unexpected completion | `TL.CPL-MATCH` |
+| A reserved completion status, a successful completion to a read without data, a completion with data to a write | `TL.CPL-STATUS` |
+| A byte count or lower address mismatch | `TL.CPL-FIELDS` |
+| A completion timeout, or a completion after it | `TL.CPL-ALL` |
+| A read that passed a posted write | `TL.ORDER` |
+| An Ack above the limit, or no Ack (PCIe Link tab) | `DL.ACK-LAT` |
+| A Nak (PCIe Link tab) | `DL.NAK` |
+| A replay timer expiry the transmitter ignored (PCIe Link tab) | `DL.REPLAY` |
+| Header or data credits exceeded (PCIe Link tab) | `FC.EP-CREDITS` |
+| An InitFC sequence finding (PCIe Link tab) | `FC.INIT-ORDER` |
+| Credits exhausted with no UpdateFC (PCIe Link tab) | `FC.UPDATE-PERIOD` |
+
+A truncated header, a reused tag, an unsuccessful completion status (UR, CRS, CA), a TLP Prefix and a replay without a retrain match no rule of that checker and carry no ID.
+
 ### Bus statistics and JSON export { #pcie-tlp-statistics }
 
 From 1.1, the transaction table's **More export options** menu has **Show statistics for** *decoder* for each PCIe TLP decoder. It opens the **Bus Statistics** tab in the bottom dock on that decoder. Choose the **Decoder** at the top of the tab, and the range to measure: **Whole trace**, **Visible range**, or **Between cursors** (place the primary and secondary cursors first). The tab shows:
@@ -290,7 +320,7 @@ From WaveCrux 1.2, the **Flow control** table counts the credits each side's TLP
 - A TLP takes one header credit. A TLP with a payload also takes one data credit for every 4 DW (16 bytes) of its Length field, rounded up. A replay does not take credits again.
 - The limit is the receiver's first InitFC1 and then each UpdateFC. A value of zero means infinite credits. InitFC2 values are ignored, as the receiver ignores them, and so is a DLLP with a bad CRC.
 - A TLP that goes beyond the limit is flagged, with the header and data counters compared as the specification does: 8 bits for headers and 12 bits for data, so a limit that wraps still works. Only the first overrun of a stretch is listed.
-- Credits that run out and get no UpdateFC within 30 microseconds, the specification's UpdateFC interval, are flagged as starvation. This needs the trace's timescale. It marks a stall, not necessarily a violation, because a receiver that has freed nothing has nothing to send.
+- Credits that run out and get no UpdateFC within 45 microseconds, the specification's UpdateFC interval of 30 microseconds with its tolerance of +50%, are flagged as starvation. This needs the trace's timescale. It marks a stall, not necessarily a violation, because a receiver that has freed nothing has nothing to send.
 - Each side's InitFC1 and InitFC2 DLLPs must go P, NP, Cpl and round again for every virtual channel. The table flags an out-of-order DLLP, a first InitFC1 that is not P in a trace that shows the link coming up, and an InitFC1 that follows InitFC2 without the link going down between.
 
 The table has a row per direction, virtual channel and credit type with the credits advertised, the credits consumed and the number of UpdateFC DLLPs, followed by a row for each finding. A trace that starts after the link came up has no InitFC1 to count from, so its credits are not checked. A TLP whose type the decoder could not name is left out. When a trace has several virtual channels, only traffic class 0, which is always on VC0, is placed on a channel, because the traffic class to channel map is configuration the trace does not carry.
@@ -300,11 +330,21 @@ The table has a row per direction, virtual channel and credit type with the cred
 From WaveCrux 1.2, the **Replay** table checks each direction's TLPs against the Data Link Layer's replay rules in section 3.5.2.1 of the PCI Express Base Specification, with a Data Link Layer decoder on both sides.
 
 - The REPLAY_TIMER limit for an x1 link is three times the Ack Transmission Latency Limit for the line rate and **Max payload**. At 128 bytes that is 711 symbol times at 2.5 GT/s and 864 at 5.0 GT/s. The table's summary row for each direction states the limit it used.
-- The timer starts at the end of a TLP when none is running. It restarts when an Ack or Nak acknowledges some but not all outstanding TLPs, and when the transmitter replays. It stops when every TLP is acknowledged. A TLP still unacknowledged past the limit, with no replay since, when the next Ack, Nak or new TLP starts or the trace ends, is flagged: the transmitter ignored the timer's expiry. This needs the trace's timescale.
+- The timer starts at the end of a TLP when none is running. It restarts when an Ack or Nak acknowledges some but not all outstanding TLPs, and when the transmitter replays. It stops when every TLP is acknowledged. The limit has a tolerance of +100%, so a TLP still unacknowledged past twice the limit, with no replay since, when the next Ack, Nak or new TLP starts or the trace ends, is flagged: the transmitter ignored the timer's expiry. This needs the trace's timescale.
 - The specification adds an adjustment for a receiver in L0s. WaveCrux does not apply it. Instead, time that either side spent outside L0 (L0s, Recovery, and the training states) is not counted, so the check can only be more lenient than the specification, never stricter.
 - REPLAY_NUM is a two-bit counter. Each replay counts, and a burst of replayed TLPs is one replay. An Ack or Nak that acknowledges a TLP resets the count. The fourth replay without such forward progress rolls the counter over, and the link has to retrain first, so the table flags a fourth replay, and every fourth after it, that no Recovery state of the transmitting side precedes.
 
 The table has a summary row for each direction and a row for each finding, and the summary above the table counts replays and findings.
+
+### Exporting the analysis as JSON { #pcie-link-json }
+
+From 1.2, **More export options > Export PCIe link analysis for** *decoder* **as JSON…** saves the analysis with that decoder's side as **Side A**, under the **Max payload** and **Rate** set in the PCIe Link tab. The file holds the sides (their decoders, role, Link and Lane numbers, N_FTS and speed changes), the settings, the summary, and every row of the five tables. Times are in ticks, and the file states the timescale. Each finding has:
+
+- `kind` (or `outcome` for an Ack/Nak row): a fixed machine name such as `headerOverrun`, `starvation`, `timerIgnored` or `noAck`, so a script never matches translated text.
+- Its times, and its side or direction (`A>B` for TLPs Side A sent).
+- `message`, and `detail` where the table has one, as the PCIe Link tab shows them, in the language WaveCrux runs in.
+- `section`: the PCI Express Base Specification 2.1 section.
+- `rule`: the checker rule ID, when the finding matches one (see [Checker rule IDs](#pcie-rule-ids)).
 
 ## Enterprise decoders <span class="tier tier-enterprise">Enterprise</span> { #enterprise-decoders }
 
