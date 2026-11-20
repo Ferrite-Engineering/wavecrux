@@ -312,11 +312,10 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
     return null;
   }
 
-  Future<Map<String, dynamic>?> _handleShutdown() async {
-    // Send the response first, then stop the server after a brief delay.
-    Future.delayed(const Duration(milliseconds: 50), stopServer);
-    return null;
-  }
+  /// Acknowledges `shutdown`. The server closes the sending client's
+  /// connection once the reply is out; the listener stays up, so the next
+  /// client can connect.
+  Future<Map<String, dynamic>?> _handleShutdown() async => null;
 
   /// Adds variables (or all variables in a scope) to the viewer.
   ///

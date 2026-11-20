@@ -451,6 +451,56 @@ void main() {
       final ids = msgs.map((m) => m['id'] as int).toSet();
       expect(ids, {1, 2});
     });
+
+    // Clients written against Surfer send `shutdown` every time they finish,
+    // and Surfer ends only that client's session. A server that stopped
+    // listening turned remote control off for whoever connected next.
+    test('shutdown answers, ends that session, and keeps listening', () async {
+      final first = await connect();
+      await first.next();
+      final other = await connect();
+      await other.next();
+      expect(server.connectedClients, 2);
+
+      first.send({
+        'type': 'command',
+        'id': 9,
+        'command': 'shutdown',
+        'data': <String, dynamic>{},
+      });
+      final reply = await first.next();
+      expect(reply['type'], 'response');
+      expect(reply['id'], 9);
+      await first.awaitClose();
+
+      expect(server.isRunning, isTrue);
+      expect(server.connectedClients, 1);
+      expect(other.isClosed, isFalse);
+
+      final next = await connect();
+      final greeting = await next.next();
+      expect(greeting['type'], 'greeting');
+    });
+
+    test('frames queued behind shutdown are not dispatched', () async {
+      final ws = await connect();
+      await ws.next();
+      ws
+        ..send({
+          'type': 'command',
+          'id': 1,
+          'command': 'shutdown',
+          'data': <String, dynamic>{},
+        })
+        ..send({
+          'type': 'command',
+          'id': 2,
+          'command': 'load',
+          'data': <String, dynamic>{},
+        });
+      await ws.awaitClose();
+      expect(receivedCommands, ['shutdown']);
+    });
   });
 
   // ── spec envelope ───────────────────────────────────────────────────────────
@@ -527,6 +577,21 @@ void main() {
       await ws.next(); // greeting
       return ws;
     }
+
+    test('shutdown acks, ends that session, and keeps listening', () async {
+      final ws = await connect();
+      ws.send({'type': 'command', 'command': 'shutdown'});
+      final msg = await ws.next();
+      expect(msg['type'], 'response');
+      expect(msg['command'], 'ack');
+      await ws.awaitClose();
+
+      expect(server.isRunning, isTrue);
+      expect(server.connectedClients, 0);
+      final again = await connect();
+      again.send({'type': 'command', 'command': 'set_cursor', 'timestamp': 5});
+      expect((await again.next())['type'], 'response');
+    });
 
     test('id-less command with top-level params dispatches and acks', () async {
       final ws = await connect();

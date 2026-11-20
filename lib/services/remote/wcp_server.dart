@@ -83,6 +83,10 @@ class _WcpConnection {
   /// Latched to `true` once the client sends an id-less (spec-envelope)
   /// command; controls how broadcast events are shaped for this connection.
   bool usesSpecEnvelope = false;
+
+  /// Latched once the client has sent `shutdown`: the connection is closing,
+  /// so frames still queued behind it are not dispatched.
+  bool ended = false;
 }
 
 // ── Server ────────────────────────────────────────────────────────────────────
@@ -347,6 +351,7 @@ class WcpServer {
 
   Future<void> _handleMessage(_WcpConnection conn, List<int> bytes) async {
     final socket = conn.socket;
+    if (conn.ended) return;
     Map<String, dynamic> msg;
     try {
       final decoded = jsonDecode(utf8.decode(bytes));
@@ -420,6 +425,7 @@ class WcpServer {
         ..remove('type')
         ..remove('command');
       await _dispatchSpec(socket, command, params);
+      _endSessionIfShutdown(conn, command);
       return;
     }
 
@@ -448,6 +454,18 @@ class WcpServer {
         ? rawData
         : <String, dynamic>{};
     await _dispatchIdDialect(socket, command, id, data);
+    _endSessionIfShutdown(conn, command);
+  }
+
+  /// `shutdown` ends the session of the client that sent it, as it does in
+  /// Surfer: the reply has been written, so the connection closes once it has
+  /// gone out, and the server keeps listening for the next client. Clients
+  /// written against Surfer send it every time they finish, so stopping the
+  /// listener here would turn remote control off for whoever connects next.
+  void _endSessionIfShutdown(_WcpConnection conn, String command) {
+    if (command != 'shutdown') return;
+    conn.ended = true;
+    _disconnectAfterFlush(conn.socket);
   }
 
   void _handleClientGreeting(Socket socket, Map<String, dynamic> msg) {

@@ -1716,13 +1716,19 @@ void main() {
       expect((list['data'] as Map)['items'] as List, isEmpty);
     });
 
-    test('shutdown returns a response then stops the server', () async {
+    test('shutdown returns a response and leaves the server running', () async {
       final ws = await connect();
       final msg = await send(ws, 'shutdown');
       expect(msg['type'], 'response');
-      // The server stops ~50 ms later; give it time and assert it is down.
+      // The old behaviour stopped the server ~50 ms after the reply.
       await Future<void>.delayed(const Duration(milliseconds: 150));
-      expect(container.read(remoteControlProvider).isRunning, isFalse);
+      final state = container.read(remoteControlProvider);
+      expect(state.isRunning, isTrue);
+      expect(state.connectedClients, 0);
+
+      // A second client can still connect.
+      final again = await connect();
+      expect(again, isNotNull);
     });
   });
 }
