@@ -1,6 +1,8 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'dart:ui' as ui;
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -69,6 +71,80 @@ class _InitializedTimeMapperNotifier extends TimeMapperNotifier {
     endTime: 1000,
     viewportWidth: 800,
   );
+}
+
+/// [TimeMapperNotifier] fit-all over [0, endTime] at the ruler's own width.
+class _FitTimeMapperNotifier extends TimeMapperNotifier {
+  _FitTimeMapperNotifier(this._endTime, this._width);
+
+  final int _endTime;
+  final double _width;
+
+  @override
+  TimeMapper build() =>
+      TimeMapper.fitAll(startTime: 0, endTime: _endTime, viewportWidth: _width);
+}
+
+/// Pumps the ruler in a [width] px canvas over [0, endTime] ns.
+Future<void> _pumpRuler(
+  WidgetTester tester, {
+  required double width,
+  required int endTime,
+}) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        timeMapperProvider.overrideWith(
+          () => _FitTimeMapperNotifier(endTime, width),
+        ),
+        currentTimescaleProvider.overrideWith(
+          (ref) => const Timescale(factor: 1, unit: TimescaleUnit.nanoSeconds),
+        ),
+      ],
+      child: MaterialApp(
+        localizationsDelegates: L10N.localizationsDelegates,
+        supportedLocales: L10N.supportedLocales,
+        home: Scaffold(
+          body: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: width,
+              height: 200,
+              child: const TimeRulerWidget(),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+  expect(tester.takeException(), isNull);
+}
+
+/// The rectangles of every text paragraph the ruler paints, in paint order.
+List<Rect> _paintedLabels(WidgetTester tester) {
+  final paint = tester
+      .widgetList<CustomPaint>(
+        find.descendant(
+          of: find.byType(TimeRulerWidget),
+          matching: find.byType(CustomPaint),
+        ),
+      )
+      .firstWhere(
+        (p) => p.painter.runtimeType.toString() == '_TimeRulerPainter',
+      );
+  final canvas = TestRecordingCanvas();
+  paint.painter!.paint(canvas, paint.size);
+  return [
+    for (final call in canvas.invocations)
+      if (call.invocation.memberName == #drawParagraph)
+        () {
+          final paragraph =
+              call.invocation.positionalArguments[0] as ui.Paragraph;
+          final offset = call.invocation.positionalArguments[1] as Offset;
+          return offset & Size(paragraph.longestLine, paragraph.height);
+        }(),
+  ];
 }
 
 // ── test suite ────────────────────────────────────────────────────────────────
@@ -950,6 +1026,53 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    // ── labels never overlap ─────────────────────────────────────────────────
+    //
+    // A 70 ns trace on a canvas about 120 px wide: the ruler used to paint
+    // every label it would paint at full width, so they printed on top of each
+    // other. The painter's paragraphs are recorded and their rectangles
+    // compared, so the check follows the real font and layout.
+
+    for (final width in const [60.0, 120.0, 200.0, 400.0, 800.0]) {
+      testWidgets(
+        'no two time labels overlap on a ${width.round()} px canvas',
+        (tester) async {
+          await _pumpRuler(tester, width: width, endTime: 70);
+          final labels = _paintedLabels(tester);
+          expect(labels, isNotEmpty);
+          for (var i = 0; i < labels.length; i++) {
+            for (var j = i + 1; j < labels.length; j++) {
+              expect(
+                labels[i].overlaps(labels[j]),
+                isFalse,
+                reason: '${labels[i]} overlaps ${labels[j]} at $width px',
+              );
+            }
+          }
+          for (final rect in labels) {
+            expect(rect.left, greaterThanOrEqualTo(0));
+            expect(rect.right, lessThanOrEqualTo(width));
+          }
+        },
+      );
+    }
+
+    testWidgets('a narrow canvas keeps the first label', (tester) async {
+      await _pumpRuler(tester, width: 120, endTime: 70);
+      final labels = _paintedLabels(tester);
+      expect(labels.first.left, lessThan(20));
+    });
+
+    testWidgets('a wide canvas still labels every major tick', (tester) async {
+      await _pumpRuler(tester, width: 800, endTime: 70);
+      final majors = TimeRulerData.compute(
+        TimeMapper.fitAll(startTime: 0, endTime: 70, viewportWidth: 800),
+        800,
+        timescale: const Timescale(factor: 1, unit: TimescaleUnit.nanoSeconds),
+      ).ticks.where((t) => t.isMajor && t.x >= 0).length;
+      expect(_paintedLabels(tester), hasLength(majors));
+    });
 
     // ── zoom affects tick density ────────────────────────────────────────────
 

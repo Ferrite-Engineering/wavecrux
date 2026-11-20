@@ -47,6 +47,9 @@ const double _majorTickTop = _tickBottom - _majorTickH; // 26.0
 const double _minorTickTop = _tickBottom - _minorTickH; // 31.0
 const double _borderY = 35.5;
 
+// Clear space kept between two time labels.
+const double _labelGap = 6;
+
 // Cursor / marker indicator geometry is now driven by [MobileMetrics] —
 // see [_TimeRulerPainter.cursorHalfW] / [_TimeRulerPainter.markerHalfW].
 //
@@ -763,6 +766,10 @@ class _TimeRulerPainter extends CustomPainter {
       ..color = palette.minorTick
       ..strokeWidth = 1.0;
 
+    // Ticks are sorted by x, so labels are visited left to right. The right
+    // edge of the last label kept is what the next one must clear.
+    var lastLabelRight = double.negativeInfinity;
+
     for (final tick in rulerData.ticks) {
       final x = tick.x;
       if (x < -1 || x > width + 1) continue;
@@ -774,7 +781,13 @@ class _TimeRulerPainter extends CustomPainter {
           majorPaint,
         );
         if (tick.label != null) {
-          _paintLabel(canvas, width, x, tick.label!);
+          lastLabelRight = _paintLabel(
+            canvas,
+            width,
+            x,
+            tick.label!,
+            lastLabelRight,
+          );
         }
       } else {
         canvas.drawLine(
@@ -786,7 +799,21 @@ class _TimeRulerPainter extends CustomPainter {
     }
   }
 
-  void _paintLabel(Canvas canvas, double width, double x, String label) {
+  /// Paints [label] centred on [x] unless it would touch the previous label,
+  /// and returns the right edge to clear for the next one: the new label's,
+  /// or [previousRight] when this one was skipped.
+  ///
+  /// Labels are as wide as their text, not as wide as the tick spacing, so on
+  /// a narrow canvas the ruler keeps every label it has room for and drops
+  /// the ones in between. The first label that fits is always kept. The tick
+  /// marks themselves stay.
+  double _paintLabel(
+    Canvas canvas,
+    double width,
+    double x,
+    String label,
+    double previousRight,
+  ) {
     final tp = TextPainter(
       text: TextSpan(text: label, style: labelStyle),
       textDirection: TextDirection.ltr,
@@ -800,15 +827,17 @@ class _TimeRulerPainter extends CustomPainter {
     // below ~50 dp during the resize transition. Tick marks still draw;
     // only the textual time label is suppressed.
     final maxLx = width - tp.width - 2.0;
-    if (maxLx < 2.0) return;
+    if (maxLx < 2.0) return previousRight;
     // Center label on tick; clamp to ruler bounds with a 2 px margin.
     final lx = (x - tp.width / 2.0).clamp(2.0, maxLx);
+    if (lx < previousRight + _labelGap) return previousRight;
     // Top of label just above the major tick, but not above the indicator zone.
     final ly = math.max(
       _indicatorZoneBottom,
       _majorTickTop - tp.height - 1.0,
     );
     tp.paint(canvas, Offset(lx, ly));
+    return lx + tp.width;
   }
 
   // ── cursor indicator ────────────────────────────────────────────────────────

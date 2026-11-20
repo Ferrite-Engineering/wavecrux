@@ -73,6 +73,21 @@ void main() {
         });
       }
 
+      // A few microseconds out of a 3.7 ms run, just past 2 ms: the major
+      // ticks are microseconds apart and none may read "2 ms".
+      for (final (start, end, width) in const [
+        (2000000000, 2000005000, 900.0),
+        (2000000000, 2000005000, 1900.0),
+        (2001200000, 2001207000, 1200.0),
+      ]) {
+        test('a few µs inside a 3.7 ms run: $start..$end ps', () {
+          final got = labels(start, end, width);
+          expect(got.length, greaterThan(2));
+          expect(got.toSet().length, got.length, reason: '$got');
+          expect(got, everyElement(isNot('2 ms')));
+        });
+      }
+
       test('the labels carry the spacing digits', () {
         final got = labels(74592000, 74692000, 1200);
         expect(got, containsAll(<String>['74.60 µs', '74.62 µs']));

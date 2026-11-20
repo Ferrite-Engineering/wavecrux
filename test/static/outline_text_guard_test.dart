@@ -90,7 +90,7 @@ void main() {
     ),
     const CruxOutlineExemption(
       file: 'lib/features/viewer/widgets/time_ruler_widget.dart',
-      line: 479,
+      line: 482,
       expectedTrimmed: 'borderColor: colorScheme.outline,',
       reason:
           'a CustomPainter constructor argument, assigned to Paint.color '
