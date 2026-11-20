@@ -2568,6 +2568,51 @@ void main() {
       });
     }
 
+    // The keyboard route to the row menu right-click opens (D11): focus is in
+    // the list after a click, and the selected row's menu opens under it.
+    for (final shortcut in ['Shift+F10', 'Menu key']) {
+      testWidgets("$shortcut opens the selected row's context menu", (
+        tester,
+      ) async {
+        final c = desktopContainer();
+        c.read(signalGroupsProvider.notifier).addSignals([
+          for (final n in ['a', 'b', 'c']) _v(n),
+        ]);
+        await pumpPanel(tester, c);
+
+        await clickName(tester, 'b');
+        expect(find.text(l10n.signalListCopyPath), findsNothing);
+
+        if (shortcut == 'Menu key') {
+          await tester.sendKeyEvent(LogicalKeyboardKey.contextMenu);
+        } else {
+          await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+          await tester.sendKeyEvent(LogicalKeyboardKey.f10);
+          await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+        }
+        await tester.pumpAndSettle();
+        expect(find.text(l10n.signalListCopyPath), findsOneWidget);
+      });
+    }
+
+    testWidgets('a bare F10 or a menu key with no selection opens no menu', (
+      tester,
+    ) async {
+      final c = desktopContainer();
+      c.read(signalGroupsProvider.notifier).addSignals([_v('a'), _v('b')]);
+      await pumpPanel(tester, c);
+
+      await clickName(tester, 'a');
+      await tester.sendKeyEvent(LogicalKeyboardKey.f10);
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.signalListCopyPath), findsNothing);
+
+      c.read(selectedVariablesProvider.notifier).clear();
+      await tester.sendKeyEvent(LogicalKeyboardKey.contextMenu);
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.signalListCopyPath), findsNothing);
+    });
+
     testWidgets('Delete with nothing selected removes nothing', (tester) async {
       final c = desktopContainer();
       c.read(signalGroupsProvider.notifier).addSignals([_v('a'), _v('b')]);
