@@ -211,17 +211,12 @@ class WaveCruxPaneHost extends ConsumerWidget {
         onTap: () => unawaited(_duplicateTab(ref, tab)),
         child: Text(l10n.tabContextMenuDuplicateTab),
       ),
-      // Always present but disabled until Flutter multi-window reaches stable.
-      PopupMenuItem<Object>(
-        enabled: crux.kMultiWindowAvailable,
-        child: Tooltip(
-          message: crux.kMultiWindowAvailable
-              ? ''
-              : l10n.viewerTabBarMultiWindowUnavailableTooltip,
-          triggerMode: TooltipTriggerMode.manual,
+      // Omitted until Flutter multi-window reaches stable: a menu offers
+      // nothing it cannot do.
+      if (crux.kMultiWindowAvailable)
+        PopupMenuItem<Object>(
           child: Text(l10n.tabContextMenuMoveToNewWindow),
         ),
-      ),
       if (filePath != null)
         PopupMenuItem<Object>(
           onTap: () => _revealInFilesystem(filePath),

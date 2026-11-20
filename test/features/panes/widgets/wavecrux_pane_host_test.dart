@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'package:crux_theme/crux_theme.dart';
+import 'package:crux_workspace/crux_workspace.dart' as crux;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -333,5 +334,10 @@ void main() {
     // The standard close action and the Duplicate action are present.
     expect(find.text('Close Tab'), findsOneWidget);
     expect(find.text('Duplicate Tab'), findsOneWidget);
+    // Multi-window is unavailable, so the menu does not offer to use it.
+    expect(
+      find.text('Move to New Window'),
+      crux.kMultiWindowAvailable ? findsOneWidget : findsNothing,
+    );
   });
 }
