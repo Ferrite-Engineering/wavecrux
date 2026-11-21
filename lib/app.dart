@@ -238,6 +238,10 @@ ProviderContainer? get lastBootstrapRootContainer =>
     _lastBootstrapRootContainer;
 ProviderContainer? _lastBootstrapRootContainer;
 
+/// Releases the single-instance claim on an orderly quit; set by [bootstrap]
+/// when this process is the running instance.
+AppLifecycleListener? _singleInstanceExitListener;
+
 /// Entry-point body shared by the open-core `lib/main.dart` and the
 /// Pro overlay's `lib/main.dart` (through [runWaveCrux]).
 /// Open-core runs `bootstrap(args: args)`; the Pro overlay adds
@@ -318,6 +322,14 @@ Future<bool> bootstrap({
 
   // Required before any platform-channel calls or await in main.
   WidgetsFlutterBinding.ensureInitialized();
+  // The running instance gives up its claim on an orderly quit, so the next
+  // launch finds no socket, advert or lock left behind. This call is also
+  // what keeps the claim's lock held at all in a release build: see
+  // [releaseSingleInstanceOnExit] before removing it.
+  if (claim is SingleInstancePrimary) {
+    _singleInstanceExitListener?.dispose();
+    _singleInstanceExitListener = releaseSingleInstanceOnExit(claim);
+  }
   // Over X forwarding from XQuartz the engine reads Backspace, Escape, Return
   // and Tab as printable keys; this turns them back into the control keys.
   installLinuxKeyEventRepair();

@@ -215,6 +215,49 @@ void main() {
     });
   }
 
+  test('an exit request, as a window close or a termination signal sends '
+      'it, releases the running instance and lets the exit go ahead', () async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    final primary = await _instance(dir).claim() as SingleInstancePrimary;
+    addTearDown(primary.close);
+    final listener = releaseSingleInstanceOnExit(primary);
+    addTearDown(listener.dispose);
+    final advert = File('$dir${Platform.pathSeparator}wc.test.json');
+    expect(advert.existsSync(), isTrue);
+
+    // What the engine sends Dart when it is asked to quit.
+    final reply = Completer<Object?>();
+    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .handlePlatformMessage(
+          SystemChannels.platform.name,
+          SystemChannels.platform.codec.encodeMethodCall(
+            const MethodCall('System.requestAppExit'),
+          ),
+          (data) => reply.complete(
+            data == null
+                ? null
+                : SystemChannels.platform.codec.decodeEnvelope(data),
+          ),
+        );
+
+    expect(await reply.future, {'response': 'exit'});
+    expect(advert.existsSync(), isFalse, reason: 'the advert left with it');
+    if (!Platform.isWindows) {
+      expect(
+        FileSystemEntity.typeSync(
+          '$dir${Platform.pathSeparator}wc.test.sock',
+          followLinks: false,
+        ),
+        FileSystemEntityType.notFound,
+        reason: 'the socket left with it',
+      );
+    }
+    // The lock is free again: the next launch becomes the running instance.
+    final next = await _instance(dir).claim();
+    expect(next, isA<SingleInstancePrimary>());
+    await (next as SingleInstancePrimary).close();
+  });
+
   test('macOS reads the native channel, never the forwarded stream', () async {
     TestWidgetsFlutterBinding.ensureInitialized();
     final messenger =
