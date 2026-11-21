@@ -1,6 +1,10 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'dart:async';
+
+import 'package:flutter/gestures.dart'
+    show computePanSlop, kDoubleTapSlop, kDoubleTapTimeout, kPrimaryButton;
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:markdown/markdown.dart' as md;
@@ -61,9 +65,13 @@ class AnnotationMarkdown extends StatefulWidget {
   /// A tap on the text itself (not on a link). Handled inside the selection
   /// area on purpose: the area's own tap recognizer sits deeper than any
   /// ancestor's and would otherwise swallow the tap before the row saw it.
+  ///
+  /// Called on the release of a press that did not move, without waiting to
+  /// see whether a second tap follows.
   final VoidCallback? onTap;
 
-  /// A double tap on the text itself, for the same reason as [onTap].
+  /// A second tap on the text close in time and place to the first, for the
+  /// same reason as [onTap]. The first tap has already called [onTap].
   final VoidCallback? onDoubleTap;
 
   @override
@@ -79,10 +87,29 @@ class _AnnotationMarkdownState extends State<AnnotationMarkdown> {
     skipTraversal: true,
   );
 
+  // Set by a link's own Listener, which runs before the text's (deepest
+  // first), so a press on a link is never also a row tap.
+  bool _pressOnLink = false;
+
   @override
   void dispose() {
     _focus.dispose();
     super.dispose();
+  }
+
+  void _markLinkPress() => _pressOnLink = true;
+
+  bool _takeLinkPress() {
+    final onLink = _pressOnLink;
+    _pressOnLink = false;
+    return onLink;
+  }
+
+  // Any press on the text gives it keyboard focus, so Cmd/Ctrl+C reaches the
+  // selection whichever gesture made it. The area focuses itself only when
+  // its own recognizer wins a single press.
+  void _focusOnPress(PointerDownEvent _) {
+    if (!_focus.hasFocus) _focus.requestFocus();
   }
 
   @override
@@ -115,17 +142,30 @@ class _AnnotationMarkdownState extends State<AnnotationMarkdown> {
     );
     // SelectionArea rather than the package's `selectable` mode: it keeps the
     // link widgets selectable as text and gives one selection across blocks.
+    //
+    // Taps are read from raw pointer events (AnnotationTapListener), not a
+    // GestureDetector: a tap or double tap recognizer around the area
+    // competes with its selection recognizer. A click was won by the tap, so
+    // the text never took focus, and a selection begun with a click (click
+    // then drag, a trackpad tap-and-drag) was left on screen with nothing
+    // behind it to copy. Cmd/Ctrl+C then went unhandled.
     return SelectionArea(
       focusNode: _focus,
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
+      child: AnnotationTapListener(
+        onPointerDown: _focusOnPress,
+        ignorePress: _takeLinkPress,
         onTap: widget.onTap,
         onDoubleTap: widget.onDoubleTap,
         child: MarkdownBody(
           data: widget.text,
           styleSheet: sheet,
           softLineBreak: true,
-          builders: {'a': _NoteLinkBuilder(onLinkFailed: widget.onLinkFailed)},
+          builders: {
+            'a': _NoteLinkBuilder(
+              onLinkFailed: widget.onLinkFailed,
+              onPress: _markLinkPress,
+            ),
+          },
           imageBuilder: (uri, title, alt) => Text(alt ?? '', style: base),
         ),
       ),
@@ -136,9 +176,12 @@ class _AnnotationMarkdownState extends State<AnnotationMarkdown> {
 /// Draws an `a` element as plain text when its destination is not allowed,
 /// and as a focusable link when it is.
 class _NoteLinkBuilder extends MarkdownElementBuilder {
-  _NoteLinkBuilder({this.onLinkFailed});
+  _NoteLinkBuilder({required this.onPress, this.onLinkFailed});
 
   final VoidCallback? onLinkFailed;
+
+  /// Tells the text a press landed on a link, so it is not also a row tap.
+  final VoidCallback onPress;
 
   @override
   Widget? visitElementAfterWithContext(
@@ -157,11 +200,14 @@ class _NoteLinkBuilder extends MarkdownElementBuilder {
       color: Theme.of(context).colorScheme.primary,
       decoration: TextDecoration.underline,
     );
-    return _NoteLink(
-      label: label,
-      uri: uri,
-      style: linkStyle,
-      onLinkFailed: onLinkFailed,
+    return Listener(
+      onPointerDown: (_) => onPress(),
+      child: _NoteLink(
+        label: label,
+        uri: uri,
+        style: linkStyle,
+        onLinkFailed: onLinkFailed,
+      ),
     );
   }
 }
@@ -202,5 +248,131 @@ class _NoteLink extends StatelessWidget {
         child: Text(label, style: style),
       ),
     ),
+  );
+}
+
+/// Reports taps and double taps from raw pointer events.
+///
+/// Unlike a GestureDetector it joins no gesture arena, so it never competes
+/// with a [SelectionArea] for a press. A tap or double tap recognizer above or
+/// inside a selection area takes single clicks from it (the area is then
+/// never focused) and breaks a selection begun with a click: the highlight
+/// stays on screen, the area has nothing to copy, and Cmd/Ctrl+C goes
+/// unhandled.
+///
+/// Nested listeners do not both count one press: the deepest one that sees
+/// it claims it, so a row can carry one around its whole body while the text
+/// inside carries its own.
+///
+/// A tap is a primary-button press released within the pan slop of where it
+/// went down. [onTap] is called on its release, without waiting to see whether
+/// a second tap follows; a second tap within the double tap timeout and slop
+/// calls [onDoubleTap] instead.
+class AnnotationTapListener extends StatefulWidget {
+  /// Creates the listener.
+  const AnnotationTapListener({
+    required this.child,
+    this.onTap,
+    this.onDoubleTap,
+    this.onPointerDown,
+    this.ignorePress,
+    super.key,
+  });
+
+  /// The widget the taps land on.
+  final Widget child;
+
+  /// A single tap.
+  final VoidCallback? onTap;
+
+  /// The second of two taps close in time and place.
+  final VoidCallback? onDoubleTap;
+
+  /// Every pointer press on [child], tap or not.
+  final ValueChanged<PointerDownEvent>? onPointerDown;
+
+  /// Asked on each press; true means the press is not a tap (it belongs to a
+  /// control inside [child] that handles it).
+  final bool Function()? ignorePress;
+
+  @override
+  State<AnnotationTapListener> createState() => _AnnotationTapListenerState();
+}
+
+class _AnnotationTapListenerState extends State<AnnotationTapListener> {
+  // Pointers already claimed by a deeper listener. Listeners on one hit path
+  // receive a press deepest first.
+  static final Set<int> _claimed = <int>{};
+
+  int? _pointer;
+  int? _claimedHere;
+  Offset _downAt = Offset.zero;
+  // A timer, as the framework's recognizers use, rather than event time
+  // stamps.
+  Timer? _doubleTapWindow;
+  Offset _lastTapAt = Offset.zero;
+
+  @override
+  void dispose() {
+    _release();
+    _doubleTapWindow?.cancel();
+    super.dispose();
+  }
+
+  void _release() {
+    final pointer = _claimedHere;
+    if (pointer != null) _claimed.remove(pointer);
+    _claimedHere = null;
+  }
+
+  void _down(PointerDownEvent event) {
+    widget.onPointerDown?.call(event);
+    final ignored = widget.ignorePress?.call() ?? false;
+    _pointer = null;
+    if (!_claimed.add(event.pointer)) return;
+    _release();
+    _claimedHere = event.pointer;
+    if (ignored || event.buttons != kPrimaryButton) return;
+    _pointer = event.pointer;
+    _downAt = event.position;
+  }
+
+  void _move(PointerMoveEvent event) {
+    if (event.pointer != _pointer) return;
+    // Past the slop it is a drag, which selects text and is not a tap.
+    if ((event.position - _downAt).distance >
+        computePanSlop(event.kind, null)) {
+      _pointer = null;
+    }
+  }
+
+  void _up(PointerUpEvent event) {
+    if (event.pointer == _claimedHere) _release();
+    if (event.pointer != _pointer) return;
+    _pointer = null;
+    final isDouble =
+        (_doubleTapWindow?.isActive ?? false) &&
+        (event.position - _lastTapAt).distance <= kDoubleTapSlop;
+    _doubleTapWindow?.cancel();
+    if (isDouble) {
+      _doubleTapWindow = null;
+      widget.onDoubleTap?.call();
+    } else {
+      _doubleTapWindow = Timer(kDoubleTapTimeout, () {});
+      _lastTapAt = event.position;
+      widget.onTap?.call();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Listener(
+    onPointerDown: _down,
+    onPointerMove: _move,
+    onPointerUp: _up,
+    onPointerCancel: (event) {
+      if (event.pointer == _claimedHere) _release();
+      _pointer = null;
+    },
+    child: widget.child,
   );
 }

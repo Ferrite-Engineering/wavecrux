@@ -9870,7 +9870,10 @@ unreachable.
     phone and tablet width too.
 33. **Select and copy.** Drag across the rendered note and press Cmd/Ctrl+C
     (long-press on phone); paste elsewhere: the text arrives without the
-    `**` and backtick marks. Tab does **not** stop on the text itself.
+    `**` and backtick marks. Repeat with a selection begun by a click: click
+    the text once, then press again and drag (or tap and drag on a
+    trackpad). It copies the same way, with no alert sound. Tab does **not**
+    stop on the text itself.
 34. **Links.** Hover the link: a tooltip shows the full URL. Nothing opens on
     hover. Click it: the system browser opens that URL. Tab to the link (it
     is a stop), press **Enter**, then again with **Space**: both open it.

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'package:crux_ide_layout/crux_ide_layout.dart' show CruxDesktopTokens;
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -482,7 +483,7 @@ void main() {
     testWidgets('tapping the row text still selects the note', (tester) async {
       await _pumpPanel(tester, [_ann('a1', 'short note')]);
       await tester.tap(find.text('short note'));
-      // The double-tap window (edit) has to lapse before the tap resolves.
+      // The tap selects on release; the pump lets the double-tap window lapse.
       await tester.pump(const Duration(milliseconds: 400));
       final row = tester.widget<Container>(
         find
@@ -493,6 +494,146 @@ void main() {
             .first,
       );
       expect((row.decoration as BoxDecoration?)?.border, isNotNull);
+    });
+
+    group('select and copy (desktop)', () {
+      // Verification guide §22.28 step 33, which failed on a macOS build:
+      // the drag showed a highlight and Cmd+C beeped, copying nothing. A tap
+      // and a double tap recognizer around the selectable text (the text's
+      // own GestureDetector and the row's InkWell) competed with the
+      // selection recognizer, so a click never focused the text and a
+      // selection begun with a click had nothing behind it to copy; and
+      // selecting the row remounted the text, dropping focus. Each case here
+      // ends with the platform's own copy chord through the real key path.
+      const note = 'Handshake **stalls** after `req` rises';
+      const desktops = TargetPlatformVariant({
+        TargetPlatform.macOS,
+        TargetPlatform.linux,
+        TargetPlatform.windows,
+      });
+
+      Future<List<String>> copy(WidgetTester tester) async {
+        final copied = <String>[];
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'Clipboard.setData') {
+              final args = call.arguments as Map<Object?, Object?>;
+              copied.add(args['text']! as String);
+            }
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          ),
+        );
+        // Cmd on macOS, Ctrl elsewhere: the chord a user presses.
+        final modifier = defaultTargetPlatform == TargetPlatform.macOS
+            ? LogicalKeyboardKey.metaLeft
+            : LogicalKeyboardKey.controlLeft;
+        await tester.sendKeyDownEvent(modifier);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyC);
+        await tester.sendKeyUpEvent(modifier);
+        await tester.pump();
+        return copied;
+      }
+
+      Finder text() => find.textContaining('Handshake', findRichText: true);
+
+      Future<void> drag(WidgetTester tester, Offset from, Offset to) async {
+        final gesture = await tester.startGesture(
+          from,
+          kind: PointerDeviceKind.mouse,
+        );
+        await tester.pump(const Duration(milliseconds: 40));
+        for (var i = 1; i <= 10; i++) {
+          await gesture.moveTo(Offset.lerp(from, to, i / 10)!);
+          await tester.pump(const Duration(milliseconds: 30));
+        }
+        await gesture.up();
+        await tester.pump(const Duration(milliseconds: 400));
+      }
+
+      testWidgets('a drag across the note copies its text without marks', (
+        tester,
+      ) async {
+        await _pumpPanel(tester, [_ann('a1', note)], desktop: true);
+        await drag(
+          tester,
+          tester.getTopLeft(text()) + const Offset(1, 6),
+          tester.getTopRight(text()) + const Offset(-1, 6),
+        );
+        final copied = await copy(tester);
+        expect(copied, ['Handshake stalls after req rises']);
+      }, variant: desktops);
+
+      testWidgets('a selection begun with a click copies', (tester) async {
+        // Click, then press again and drag: a double click held into a drag,
+        // or a trackpad's tap-and-drag. This is the gesture that left a
+        // highlight with nothing to copy.
+        await _pumpPanel(tester, [_ann('a1', note)], desktop: true);
+        final word = tester.getTopLeft(text()) + const Offset(20, 6);
+        final click = await tester.startGesture(
+          word,
+          kind: PointerDeviceKind.mouse,
+        );
+        await tester.pump(const Duration(milliseconds: 40));
+        await click.up();
+        await tester.pump(const Duration(milliseconds: 100));
+        await drag(
+          tester,
+          word,
+          tester.getTopRight(text()) + const Offset(-1, 6),
+        );
+        final copied = await copy(tester);
+        expect(copied, ['Handshake stalls after req rises']);
+      }, variant: desktops);
+
+      testWidgets('a click focuses the text and selecting the row keeps it', (
+        tester,
+      ) async {
+        await _pumpPanel(tester, [_ann('a1', note)], desktop: true);
+        final area = find.byType(SelectableRegion);
+        final before = tester.state(area);
+        await tester.tap(text(), kind: PointerDeviceKind.mouse);
+        await tester.pump(const Duration(milliseconds: 400));
+        // The tap selected the row...
+        final row = tester.widget<Container>(
+          find
+              .descendant(
+                of: find.byKey(const ValueKey('annotation-row-a1')),
+                matching: find.byType(Container),
+              )
+              .first,
+        );
+        expect((row.decoration as BoxDecoration?)?.border, isNotNull);
+        // ...without rebuilding the text from scratch, and the text holds
+        // keyboard focus, so a selection made now is the one Cmd/Ctrl+C
+        // reaches.
+        expect(identical(tester.state(area), before), isTrue);
+        expect(
+          FocusManager.instance.primaryFocus?.debugLabel,
+          'annotation text',
+        );
+        await drag(
+          tester,
+          tester.getTopLeft(text()) + const Offset(1, 6),
+          tester.getTopRight(text()) + const Offset(-1, 6),
+        );
+        expect(await copy(tester), ['Handshake stalls after req rises']);
+      }, variant: desktops);
+
+      testWidgets('Tab still does not stop on the text', (tester) async {
+        await _pumpPanel(tester, [_ann('a1', note)], desktop: true);
+        final node = Focus.of(
+          tester.element(text()),
+        );
+        expect(node.skipTraversal, isTrue);
+        expect(node.debugLabel, 'annotation text');
+      }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
     });
 
     testWidgets('the stored text is untouched', (tester) async {

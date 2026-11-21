@@ -765,6 +765,13 @@ class _Row extends StatelessWidget {
     // press of it hung for a third of a second before the menu appeared. Same
     // family as the 5.9.1 defect where a tap recognizer beside a pan one cost
     // every drag its first slop-distance of travel.
+    //
+    // The InkWell itself carries no `onDoubleTap` either: around the note's
+    // selectable text, a double tap recognizer broke any selection begun with
+    // a click (the highlight stayed, Cmd/Ctrl+C copied nothing). Double tap to
+    // edit is read from raw pointer events instead, by an
+    // [AnnotationTapListener] around the body, which joins no gesture arena.
+    // The text inside claims its own presses (see [AnnotationMarkdown]).
     final menuEntries = <CruxMenuEntry>[
       for (final action in menu)
         CruxMenuItem(
@@ -786,12 +793,18 @@ class _Row extends StatelessWidget {
       // text: a note can be selected and drifted at once, and those two facts
       // have to stay separately legible — the same rule the canvas ring
       // follows.
+      //
+      // Never null, though: a null decoration drops the DecoratedBox, which
+      // changes the row's shape and remounts everything inside it. A row tap
+      // selects the row, and that tap often belongs to the gesture that
+      // selects the note's text (a click, then a drag), so the remount took
+      // the text's focus and its selection with it.
       decoration: selected
           ? BoxDecoration(
               color: color.withValues(alpha: 0.12),
               border: Border(left: BorderSide(color: color, width: 3)),
             )
-          : null,
+          : const BoxDecoration(),
       padding: EdgeInsets.symmetric(
         horizontal: 10,
         vertical: rowHeight > 0 ? 5 : 6,
@@ -800,108 +813,112 @@ class _Row extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: InkWell(
-              onTap: onTap,
+            child: AnnotationTapListener(
               onDoubleTap: onEdit,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 18,
-                    height: 18,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: color,
-                    ),
-                    child: Text(
-                      '$number',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: scheme.surface,
+              child: InkWell(
+                onTap: onTap,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 18,
+                      height: 18,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: color,
+                      ),
+                      child: Text(
+                        '$number',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.surface,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // The note's text as Markdown. Here only: the canvas
-                        // balloon keeps drawing the raw text.
-                        AnnotationMarkdown(
-                          key: ValueKey('annotation-row-text-${annotation.id}'),
-                          text: annotation.text,
-                          onTap: onTap,
-                          onDoubleTap: onEdit,
-                          onLinkFailed: () => showCruxInfoSnack(
-                            context,
-                            l10n.annotationsPanelLinkOpenFailed,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // The note's text as Markdown. Here only: the canvas
+                          // balloon keeps drawing the raw text.
+                          AnnotationMarkdown(
+                            key: ValueKey(
+                              'annotation-row-text-${annotation.id}',
+                            ),
+                            text: annotation.text,
+                            onTap: onTap,
+                            onDoubleTap: onEdit,
+                            onLinkFailed: () => showCruxInfoSnack(
+                              context,
+                              l10n.annotationsPanelLinkOpenFailed,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            Text(
-                              timeLabel,
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: scheme.onSurfaceVariant,
-                              ),
-                            ),
-                            if (annotation.rowId != null) ...[
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  annotation.rowId!,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: scheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              ),
-                            ],
-                            const SizedBox(width: 6),
-                            Text(
-                              annotation.authorName.isEmpty
-                                  ? unattributed
-                                  : annotation.authorName,
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: scheme.onSurfaceVariant,
-                              ),
-                            ),
-                            if (lockedTooltip != null) ...[
-                              const SizedBox(width: 4),
-                              Tooltip(
-                                message: lockedTooltip,
-                                child: Icon(
-                                  Icons.lock_outline,
-                                  size: 11,
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Text(
+                                timeLabel,
+                                style: TextStyle(
+                                  fontSize: 10,
                                   color: scheme.onSurfaceVariant,
                                 ),
                               ),
-                            ],
-                            if (drifted) ...[
+                              if (annotation.rowId != null) ...[
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    annotation.rowId!,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: scheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                              ],
                               const SizedBox(width: 6),
                               Text(
-                                driftedLabel,
-                                style: const TextStyle(
+                                annotation.authorName.isEmpty
+                                    ? unattributed
+                                    : annotation.authorName,
+                                style: TextStyle(
                                   fontSize: 10,
-                                  color: kAnnotationDriftedColor,
-                                  fontWeight: FontWeight.w600,
+                                  color: scheme.onSurfaceVariant,
                                 ),
                               ),
+                              if (lockedTooltip != null) ...[
+                                const SizedBox(width: 4),
+                                Tooltip(
+                                  message: lockedTooltip,
+                                  child: Icon(
+                                    Icons.lock_outline,
+                                    size: 11,
+                                    color: scheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                              if (drifted) ...[
+                                const SizedBox(width: 6),
+                                Text(
+                                  driftedLabel,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: kAnnotationDriftedColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ],
-                          ],
-                        ),
-                      ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

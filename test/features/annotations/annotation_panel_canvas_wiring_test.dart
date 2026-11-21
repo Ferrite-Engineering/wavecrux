@@ -241,9 +241,10 @@ void main() {
     expect(container.read(annotationSelectedProvider), isNull);
 
     await tester.tap(find.byKey(const ValueKey('annotation-row-a1')));
-    // The row carries onDoubleTap as well, so a single tap does not resolve
-    // until that timeout expires — and a pending timer schedules no frames, so
-    // `pumpAndSettle` alone returns before it fires.
+    // The double tap window is still open after this tap (double tap to edit
+    // is timed from raw pointer events); letting it lapse keeps the next
+    // tap from counting as a second one. A pending timer schedules no frames,
+    // so `pumpAndSettle` alone would not wait it out.
     await tester.pump(kDoubleTapTimeout);
     await tester.pumpAndSettle();
 
