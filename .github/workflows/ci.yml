@@ -654,6 +654,15 @@ jobs:
       - name: Generate l10n
         run: flutter gen-l10n
 
+      # rive_native downloads its prebuilt Windows libraries at CMake configure
+      # time and does not notice when the unzip leaves nothing behind (the
+      # runner's Windows PowerShell 5.1 did exactly that), which surfaces as
+      # LNK1181 on rive_native.lib. Fetch and verify them first.
+      - name: Fetch rive_native Windows libraries
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: ./scripts/ensure_rive_native_windows.ps1
+
       - name: Build ${{ matrix.target }} (release)
         run: flutter build ${{ matrix.target }} --release
 

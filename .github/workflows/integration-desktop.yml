@@ -181,6 +181,15 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # `flutter test -d windows` links rive_native, whose prebuilt Windows
+      # libraries are otherwise fetched at CMake configure time by a setup tool
+      # that does not notice an unzip that extracted nothing. A warm pub cache
+      # hides this; a cold one does not. Fetch and verify them first.
+      - name: Fetch rive_native Windows libraries
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: ./scripts/ensure_rive_native_windows.ps1
+
       # integration_test/remote_control/wcp_add_signal_cli_subprocess_test.dart
       # spawns the real `wavecrux-ctl` CLI as a subprocess (`dart run`), which
       # needs its own resolved `.dart_tool/` — that nested package's
