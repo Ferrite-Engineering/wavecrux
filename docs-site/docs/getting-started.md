@@ -8,7 +8,7 @@ The same `wellen` Rust engine parses on every platform (native FFI on desktop an
 
 | Platform | Versions | How you get it |
 |---|---|---|
-| Linux | x86_64 | Native binary from the [downloads page](https://wavecrux.app/download). No webview wrapper. |
+| Linux | x86_64; from WaveCrux 1.2, glibc 2.28 or later (RHEL, Rocky Linux and AlmaLinux 8 and 9, Ubuntu 22.04 and later, Debian 12); before 1.2, glibc 2.34 | Native binary from the [downloads page](https://wavecrux.app/download), or `.deb` and `.rpm` for managed fleets. No webview wrapper. |
 | macOS | Universal, 12.0+ (Intel + Apple Silicon) | Native binary from the [downloads page](https://wavecrux.app/download). |
 | Windows | 10 / 11, x86_64 | Native binary from the [downloads page](https://wavecrux.app/download). |
 | iOS / iPadOS | 16+ | Native app from the App Store. |
@@ -24,6 +24,12 @@ Desktop and mobile builds are native binaries, not webview wrappers. Installers 
 !!! warning "Web requires WebAssembly"
 
     The browser build compiles the same Rust engine to WebAssembly, with full VCD, FST, and GHW parity: it is not a stripped-down demo. If the WebAssembly module fails to load, the canvas shows a "WebAssembly is required" message; there is no fallback parser.
+
+### Linux over a remote display {#linux-remote}
+
+On a remote X session (VNC, X forwarding, ETX or NX) or a virtual machine without 3D support there is often no OpenGL. From WaveCrux 1.2 the app checks for it at startup and, when there is none, draws with the software renderer and prints one line on stderr saying so; setting `FLUTTER_LINUX_RENDERER=opengl` keeps OpenGL. Before 1.2 the window stayed empty on such a display. WaveCrux also needs the EGL and OpenGL ES libraries (`libEGL.so.1`, `libGLESv2.so.2`, from Mesa); the `.deb` and `.rpm` declare them from 1.2.
+
+From WaveCrux 1.2 typing works over `ssh -X` from a client that keeps OpenSSH's default of untrusted X forwarding, as macOS does. Before 1.2 the first key press there ended the app, and `ssh -Y` avoided it. From WaveCrux 1.2, Backspace, Escape, Return and Tab work in text fields over X forwarding from a Mac (XQuartz). Some Ctrl+letter shortcuts can still act as a different letter there.
 
 ## First launch { #first-launch }
 
@@ -56,6 +62,19 @@ The full format coverage (including auto-reload behavior, session import, and ex
 On iOS, iPadOS, and Android the usual way to open a trace is **Open with WaveCrux**, from Files, Mail, a chat app, a cloud drive, or AirDrop. The system file picker, with iCloud Drive, Google Drive and other document providers, is the other path. File-type associations are registered for `.vcd`, `.fst`, `.ghw`, `.lxt`, `.lxt2` and `.wavecrux` (and, on Android, `.wavecruxpack`), so those files offer WaveCrux directly. A received file is copied into the app's own storage before it opens.
 
 Mobile devices have tighter memory budgets than desktops. A large-file warning appears before loading above a threshold, 100 MB on phones and 250 MB on tablets, and a memory guard watches the app's memory use and the system's memory-pressure callbacks, unloading signal data that is loaded but not shown in the signal list to keep the app within the device budget.
+
+### Foldable phones, from 1.2 { #foldables }
+
+On a foldable phone (the iPhone Duo, and Android foldables) WaveCrux follows the fold.
+
+- **Closed**, on the cover screen, you get the phone layout: one waveform pane, with the signal tree in a drawer.
+- **Open flat**, the inner screen gets the tablet layout: docks around the waveform, and Stage. Open past about 160° counts as flat, so a slight bend in the hand does not change the layout. The cursor, zoom and loaded signals stay where they were when you open or close the phone, and the trace is not read again.
+- **Half-folded like a laptop**, with the inner screen upright, the bottom dock fills the upright half and the waveform the flat half, under your hands, so you scrub the cursor with a thumb and watch the board above react. If the tab has a Stage panel, Stage comes to the front. **Waveform on the Flat Half (Foldables)** (`Settings → Orientation & Display`, on by default) swaps the two. The side docks step aside and come back as you left them when the phone goes flat.
+- **Half-folded like a book**, with the inner screen sideways, a split puts one pane on each side of the crease. Split with **Split Pane Right** in the tab bar, as on a tablet.
+- **A flip phone half-folded** (Galaxy Z Flip, Razr) gets the same split, Stage included. Closed or flat, a flip phone keeps the phone layout.
+- Dialogs open beside the crease, not across it.
+
+**Tilt to Zoom (Foldables)** (`Settings → Orientation & Display`, off by default, shown only on a phone that reports its hinge angle) zooms the time axis around the cursor as you tilt the upright half in laptop posture: towards you zooms in, away zooms out. About 15° of tilt doubles or halves the zoom.
 
 ## Usage statistics and privacy { #telemetry }
 

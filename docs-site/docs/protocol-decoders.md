@@ -311,6 +311,8 @@ With a Data Link Layer decoder on both sides, the **Ack/Nak** table pairs each T
 
 Each latency is compared with the Ack Transmission Latency Limit in section 3.5.3.1 of the PCI Express Base Specification for an x1 link, the line rate, and **Max payload**. Max payload defaults to 128 bytes, the Device Control default; at 128 bytes the limit is 237 symbol times at 2.5 GT/s and 288 at 5.0 GT/s. The table marks an Ack above the limit, a TLP that a Nak asked to be replayed, a replay, and a TLP with no Ack. A TLP with a bad LCRC or a sequence error is left out, because the receiver does not acknowledge it. The summary counts TLPs, Acks above the limit, Naks and replays, with the shortest, mean and longest latency.
 
+From WaveCrux 1.2, the symbol times count only time the link was in L0, and an Ack sent straight after a TLP or DLLP that side was already sending when the limit ran out is within the limit.
+
 **Rate** is **Detect** by default: the serial decoders' symbol lock gives it, and so does a speed change. A PIPE interface carries no rate, so choose 2.5 or 5.0 GT/s for a PIPE trace.
 
 ### Flow control { #pcie-link-flow-control }
@@ -333,6 +335,7 @@ From WaveCrux 1.2, the **Replay** table checks each direction's TLPs against the
 - The timer starts at the end of a TLP when none is running. It restarts when an Ack or Nak acknowledges some but not all outstanding TLPs, and when the transmitter replays. It stops when every TLP is acknowledged. The limit has a tolerance of +100%, so a TLP still unacknowledged past twice the limit, with no replay since, when the next Ack, Nak or new TLP starts or the trace ends, is flagged: the transmitter ignored the timer's expiry. This needs the trace's timescale.
 - The specification adds an adjustment for a receiver in L0s. WaveCrux does not apply it. Instead, time that either side spent outside L0 (L0s, Recovery, and the training states) is not counted, so the check can only be more lenient than the specification, never stricter.
 - REPLAY_NUM is a two-bit counter. Each replay counts, and a burst of replayed TLPs is one replay. An Ack or Nak that acknowledges a TLP resets the count. The fourth replay without such forward progress rolls the counter over, and the link has to retrain first, so the table flags a fourth replay, and every fourth after it, that no Recovery state of the transmitting side precedes.
+- A TLP sent again after every TLP was acknowledged is a duplicate: it does not start the timer and is not counted as a replay.
 
 The table has a summary row for each direction and a row for each finding, and the summary above the table counts replays and findings.
 
