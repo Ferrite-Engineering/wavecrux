@@ -16,6 +16,7 @@ import 'package:wavecrux/core/shortcuts/action_tier_label.dart';
 import 'package:wavecrux/core/shortcuts/shortcut_action.dart';
 import 'package:wavecrux/domain/enums/device_class.dart';
 import 'package:wavecrux/features/diagnostics/providers/diagnostics_providers.dart';
+import 'package:wavecrux/features/menu_bar/edit_commands.dart';
 import 'package:wavecrux/features/menu_bar/widgets/desktop_menu_bar.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
 import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
@@ -212,7 +213,14 @@ void main() {
       await tester.pumpWidget(_wrap(onAction: _noop));
       await tester.pumpAndSettle();
       final bar = tester.widget<PlatformMenuBar>(find.byType(PlatformMenuBar));
-      final leafLabels = _allLeafItems(bar).map((e) => e.label).toSet();
+      final l10n = L10N.of(tester.element(find.byType(PlatformMenuBar)));
+      // The macOS Edit menu also carries the standard Cut / Copy / Paste /
+      // Select All, which are the system's commands and not actions of the
+      // catalog; edit_commands_test.dart covers them.
+      final editLabels = {for (final c in EditCommand.values) c.label(l10n)};
+      final leafLabels = _allLeafItems(
+        bar,
+      ).map((e) => e.label).where((l) => !editLabels.contains(l)).toSet();
       // Every menu-visible action (per the single source of truth) should map
       // to a leaf label. We check by count to avoid l10n coupling. Visibility
       // is independent of file/diagnostics state on desktop, so any desktop

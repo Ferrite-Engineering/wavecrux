@@ -14,6 +14,7 @@ import 'package:wavecrux/core/shortcuts/action_tier_label.dart';
 import 'package:wavecrux/core/shortcuts/menu_layout.dart';
 import 'package:wavecrux/core/shortcuts/shortcut_action.dart';
 import 'package:wavecrux/core/shortcuts/shortcut_bindings_provider.dart';
+import 'package:wavecrux/features/menu_bar/edit_commands.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/shared/widgets/wavecrux_icon_image.dart';
 
@@ -65,19 +66,49 @@ class DesktopMenuBar extends ConsumerWidget {
     final bindings = ref.watch(shortcutBindingsProvider);
     final isMacOS = Theme.of(context).platform == TargetPlatform.macOS;
 
-    return CruxDesktopMenuBar<ShortcutAction>(
-      layout: kMenuLayout,
-      appActions: kAppMenuActions,
+    return CruxDesktopMenuBar<Object>(
+      layout: _layout,
+      appActions: _appActions,
       categoryLabel: (category) => category.label(l10n),
       categoryAcceleratorLabel: (category) => category.acceleratorLabel(l10n),
       windowMenuLabel: l10n.menuWindow,
-      labelOf: (action) =>
+      labelOf: (item) => switch (item) {
+        EditCommand() => item.label(l10n),
+        final ShortcutAction action =>
           _label(action, l10n, isMacOS: isMacOS) +
-          tierLabelSuffix(descriptorFor(action).requiredTier, l10n),
-      shortcutOf: (action) => bindings[action],
-      isVisible: (action) => isActionVisibleIn(action, ActionSurface.menu, ctx),
-      isEnabled: (action) => isActionEnabled(action, ctx),
-      onAction: onAction,
+              tierLabelSuffix(descriptorFor(action).requiredTier, l10n),
+        _ => '',
+      },
+      shortcutOf: (item) => switch (item) {
+        EditCommand() => item.activator,
+        final ShortcutAction action => bindings[action],
+        _ => null,
+      },
+      isVisible: (item) => switch (item) {
+        // The standard Edit commands are the macOS menu's. The Windows and
+        // Linux menu is a row of in-window buttons that takes the focus when
+        // it opens, so a Copy there would have no selection to copy; the
+        // keys work in the focused widget on those platforms already.
+        EditCommand() => isMacOS,
+        final ShortcutAction action => isActionVisibleIn(
+          action,
+          ActionSurface.menu,
+          ctx,
+        ),
+        _ => false,
+      },
+      // Always enabled: a greyed item is skipped as a key equivalent, and the
+      // key then falls through to the alert sound the item exists to prevent.
+      isEnabled: (item) => switch (item) {
+        EditCommand() => true,
+        final ShortcutAction action => isActionEnabled(action, ctx),
+        _ => false,
+      },
+      onAction: (item) => switch (item) {
+        EditCommand() => performEditCommand(item),
+        final ShortcutAction action => onAction(action),
+        _ => null,
+      },
       // States the edition in force, disabled, above `About WaveCrux`.
       // Null at Open Core, so this is safe to pass unconditionally: the
       // Pro overlay supplies the licence status that gives it a value.
@@ -89,6 +120,27 @@ class DesktopMenuBar extends ConsumerWidget {
       child: child,
     );
   }
+
+  /// [kMenuLayout] with the standard Edit commands ahead of the product's own
+  /// Edit actions, as the macOS convention puts them.
+  ///
+  /// The shared menu bar is generic over what an item is, so the product's
+  /// [ShortcutAction]s and the [EditCommand]s share one layout of [Object]s.
+  static final CruxMenuLayout<Object> _layout = {
+    for (final entry in kMenuLayout.entries)
+      entry.key: [
+        if (entry.key == ActionCategory.edit) <Object>[...EditCommand.values],
+        for (final group in entry.value) <Object>[...group],
+      ],
+  };
+
+  static final CruxAppMenuActions<Object> _appActions =
+      CruxAppMenuActions<Object>(
+        about: kAppMenuActions.about,
+        checkForUpdates: kAppMenuActions.checkForUpdates,
+        settings: kAppMenuActions.settings,
+        quit: kAppMenuActions.quit,
+      );
 
   /// The action's localized label, with the one platform-dependent override.
   ///

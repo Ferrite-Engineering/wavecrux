@@ -25,6 +25,7 @@ import 'package:wavecrux/core/shortcuts/action_tier_label.dart';
 import 'package:wavecrux/core/shortcuts/shortcut_action.dart';
 import 'package:wavecrux/domain/enums/device_class.dart';
 import 'package:wavecrux/features/command_palette/widgets/command_palette_dialog.dart';
+import 'package:wavecrux/features/menu_bar/edit_commands.dart';
 import 'package:wavecrux/features/menu_bar/widgets/desktop_menu_bar.dart';
 import 'package:wavecrux/features/viewer/widgets/viewer_toolbar.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
@@ -127,10 +128,15 @@ void main() {
         diagnosticsEnabled: true,
       );
       final (bar, l10n) = await pumpMenu(tester, ctx);
-      final expected = groupedActionsFor(
-        ActionSurface.menu,
-        ctx,
-      ).values.expand((x) => x).map((a) => _menuLabel(a, l10n)).toSet();
+      // The standard Edit commands are the system's, not catalog actions
+      // (edit_commands_test.dart covers them).
+      final expected = {
+        ...groupedActionsFor(
+          ActionSurface.menu,
+          ctx,
+        ).values.expand((x) => x).map((a) => _menuLabel(a, l10n)),
+        for (final c in EditCommand.values) c.label(l10n),
+      };
       expect(_leafItems(bar).map((e) => e.label).toSet(), equals(expected));
     });
 
