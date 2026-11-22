@@ -6,9 +6,11 @@ import 'dart:async';
 import 'package:flutter/gestures.dart'
     show computePanSlop, kDoubleTapSlop, kDoubleTapTimeout, kPrimaryButton;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show SelectedContent;
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:markdown/markdown.dart' as md;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:wavecrux/features/menu_bar/edit_commands.dart';
 
 /// Opens a note's link in the system browser.
 ///
@@ -93,9 +95,16 @@ class _AnnotationMarkdownState extends State<AnnotationMarkdown> {
 
   @override
   void dispose() {
+    EditSelectionRegistry.instance.forget(this);
     _focus.dispose();
     super.dispose();
   }
+
+  // Tells the Edit menu what is selected here, so its Copy reaches the
+  // selection even when no key press found its way to the text. The area
+  // reports null when its selection clears, as it does on losing focus.
+  void _reportSelection(SelectedContent? content) =>
+      EditSelectionRegistry.instance.report(this, content?.plainText);
 
   void _markLinkPress() => _pressOnLink = true;
 
@@ -151,6 +160,7 @@ class _AnnotationMarkdownState extends State<AnnotationMarkdown> {
     // behind it to copy. Cmd/Ctrl+C then went unhandled.
     return SelectionArea(
       focusNode: _focus,
+      onSelectionChanged: _reportSelection,
       child: AnnotationTapListener(
         onPointerDown: _focusOnPress,
         ignorePress: _takeLinkPress,

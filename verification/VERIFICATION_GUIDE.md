@@ -9872,8 +9872,10 @@ unreachable.
     (long-press on phone); paste elsewhere: the text arrives without the
     `**` and backtick marks. Repeat with a selection begun by a click: click
     the text once, then press again and drag (or tap and drag on a
-    trackpad). It copies the same way, with no alert sound. Tab does **not**
-    stop on the text itself.
+    trackpad). It copies the same way, with no alert sound. On macOS, open
+    the **Edit** menu with a selection made: **Cut**, **Copy**, **Paste** and
+    **Select All** lead it, and **Copy** copies the selection. Tab does
+    **not** stop on the text itself.
 34. **Links.** Hover the link: a tooltip shows the full URL. Nothing opens on
     hover. Click it: the system browser opens that URL. Tab to the link (it
     is a stop), press **Enter**, then again with **Space**: both open it.

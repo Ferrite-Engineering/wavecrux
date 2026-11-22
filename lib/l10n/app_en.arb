@@ -7224,6 +7224,22 @@
   "@menuWindow": {
     "description": "Title of the standard macOS Window menu (Minimize / Zoom / Toggle Full Screen)"
   },
+  "menuEditCut": "Cut",
+  "@menuEditCut": {
+    "description": "Cut item of the macOS Edit menu (Cmd+X)"
+  },
+  "menuEditCopy": "Copy",
+  "@menuEditCopy": {
+    "description": "Copy item of the macOS Edit menu (Cmd+C). Copies the selected text, for example a selection in a rendered annotation"
+  },
+  "menuEditPaste": "Paste",
+  "@menuEditPaste": {
+    "description": "Paste item of the macOS Edit menu (Cmd+V)"
+  },
+  "menuEditSelectAll": "Select All",
+  "@menuEditSelectAll": {
+    "description": "Select All item of the macOS Edit menu (Cmd+A)"
+  },
   "shortcutActionExit": "Exit",
   "@shortcutActionExit": {
     "description": "Windows/Linux label for the quit action, shown at the bottom of the File menu. macOS uses shortcutActionQuit (\"Quit WaveCrux\") in the application menu instead."
