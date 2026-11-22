@@ -4,6 +4,7 @@
 import 'package:crux_license/crux_license.dart';
 import 'package:crux_menu_bar/crux_menu_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/core/license/wavecrux_edition_line_strings.dart';
 import 'package:wavecrux/core/shortcuts/action_category.dart';
@@ -14,6 +15,7 @@ import 'package:wavecrux/core/shortcuts/action_tier_label.dart';
 import 'package:wavecrux/core/shortcuts/menu_layout.dart';
 import 'package:wavecrux/core/shortcuts/shortcut_action.dart';
 import 'package:wavecrux/core/shortcuts/shortcut_bindings_provider.dart';
+import 'package:wavecrux/features/annotations/providers/active_tab_annotation_copy_provider.dart';
 import 'package:wavecrux/features/menu_bar/edit_commands.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/shared/widgets/wavecrux_icon_image.dart';
@@ -45,7 +47,7 @@ import 'package:wavecrux/shared/widgets/wavecrux_icon_image.dart';
 /// behaviour belongs to the *layout*, never to the chrome; phone and tablet
 /// reach these commands through the overflow menu at the trailing edge of
 /// `ViewerToolbar`, which the descriptors' `overflow` surface feeds.
-class DesktopMenuBar extends ConsumerWidget {
+class DesktopMenuBar extends ConsumerStatefulWidget {
   /// Creates the WaveCrux desktop menu bar.
   const DesktopMenuBar({
     required this.onAction,
@@ -60,11 +62,58 @@ class DesktopMenuBar extends ConsumerWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DesktopMenuBar> createState() => _DesktopMenuBarState();
+}
+
+class _DesktopMenuBarState extends ConsumerState<DesktopMenuBar> {
+  /// Watches focus and text selection for the macOS Edit menu's enablement;
+  /// null on the other platforms, whose menu carries no Edit commands.
+  ///
+  /// [PlatformMenuBar] sends the menu to the system only when it rebuilds, so
+  /// an item that should enable or grey needs a rebuild. The watcher notifies
+  /// only when an item's state would change, not on every keystroke.
+  EditAvailabilityWatcher? _editWatcher;
+
+  late final CopyAnnotationAction _copyAnnotation = CopyAnnotationAction(
+    () => ref.read(activeTabAnnotationCopyTextProvider),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final isMacOS = Theme.of(context).platform == TargetPlatform.macOS;
+    if (isMacOS && _editWatcher == null) {
+      _editWatcher = EditAvailabilityWatcher()..addListener(_editChanged);
+    } else if (!isMacOS && _editWatcher != null) {
+      _editWatcher!.dispose();
+      _editWatcher = null;
+    }
+  }
+
+  void _editChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _editWatcher?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = L10N.of(context);
     final ctx = ref.watch(actionContextProvider);
     final bindings = ref.watch(shortcutBindingsProvider);
     final isMacOS = Theme.of(context).platform == TargetPlatform.macOS;
+    // Whether an annotation is selected, not its text: the text is read when
+    // Copy runs, so editing the note does not rebuild the menu.
+    final annotationSelected = ref.watch(
+      activeTabAnnotationCopyTextProvider.select((text) => text != null),
+    );
+    final edit =
+        _editWatcher?.availability(annotationSelected: annotationSelected) ??
+        const EditAvailability();
 
     return CruxDesktopMenuBar<Object>(
       layout: _layout,
@@ -97,16 +146,21 @@ class DesktopMenuBar extends ConsumerWidget {
         ),
         _ => false,
       },
-      // Always enabled: a greyed item is skipped as a key equivalent, and the
-      // key then falls through to the alert sound the item exists to prevent.
+      // Enabled only when the command would do something, as in any Mac
+      // app. A greyed item is skipped as a key equivalent, so its key falls
+      // through to the alert sound: the system's signal that there is
+      // nothing to copy, cut, paste or select.
       isEnabled: (item) => switch (item) {
-        EditCommand() => true,
+        EditCommand() => edit.isEnabled(item),
         final ShortcutAction action => isActionEnabled(action, ctx),
         _ => false,
       },
       onAction: (item) => switch (item) {
-        EditCommand() => performEditCommand(item),
-        final ShortcutAction action => onAction(action),
+        EditCommand() => performEditCommand(
+          item,
+          annotationText: ref.read(activeTabAnnotationCopyTextProvider),
+        ),
+        final ShortcutAction action => widget.onAction(action),
         _ => null,
       },
       // States the edition in force, disabled, above `About WaveCrux`.
@@ -117,7 +171,26 @@ class DesktopMenuBar extends ConsumerWidget {
         WaveCruxEditionLineStrings(l10n),
       ),
       logo: const WaveCruxIconImage(size: 18),
-      child: child,
+      // On Windows and Linux, Ctrl+C on a selected annotation copies it. The
+      // binding sits below the framework's text-editing shortcuts, so it
+      // hears the key first; its action is enabled only when Copy would copy
+      // a note's selection or the selected annotation, so with a text field
+      // focused the key goes on to the field. macOS gets the same from the
+      // Edit menu's Copy.
+      child: isMacOS
+          ? widget.child
+          : Shortcuts(
+              shortcuts: const <ShortcutActivator, Intent>{
+                SingleActivator(LogicalKeyboardKey.keyC, control: true):
+                    CopyAnnotationIntent(),
+              },
+              child: Actions(
+                actions: <Type, Action<Intent>>{
+                  CopyAnnotationIntent: _copyAnnotation,
+                },
+                child: widget.child,
+              ),
+            ),
     );
   }
 
