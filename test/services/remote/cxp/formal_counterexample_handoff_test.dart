@@ -176,6 +176,149 @@ void main() {
     );
   });
 
+  // SimCrux's "Cross-probe to > WaveCrux" sends the trace, its coordinate and
+  // the `formal.` keys, and no list of signals to show ("Debug in WaveCrux"
+  // sends one first). The tab it opened had the cursor on the failing step and
+  // an empty canvas.
+  testWidgets('a formal trace sent without signals to show opens with its '
+      'signals on the canvas', (tester) async {
+    final harness = await _handOff(
+      tester,
+      handshake,
+      coordinate: formalStep(6),
+      metadata: const <String, Object?>{
+        cxpFormalPropertyKindMetadataKey: 'assert',
+      },
+    );
+    expect(harness.result.honored, isTrue);
+    expect(harness.cursorTime, 60);
+    final paths = [
+      for (final e in harness.tab.read(signalGroupsProvider).entries)
+        e.signalPath,
+    ];
+    expect(paths, isNotEmpty, reason: 'the canvas is not empty');
+    expect(paths, contains('handshake_imm.req'));
+  });
+
+  testWidgets('formal metadata alone, with no coordinate, also fills the '
+      'canvas', (tester) async {
+    final harness = await _handOff(
+      tester,
+      handshake,
+      metadata: const <String, Object?>{
+        cxpFormalPropertyKindMetadataKey: 'assert',
+      },
+    );
+    expect(
+      harness.tab.read(signalGroupsProvider).entries,
+      isNotEmpty,
+    );
+  });
+
+  testWidgets('a trace that is not formal is not filled in: it opens with an '
+      'empty canvas as before', (tester) async {
+    final harness = await _handOff(tester, handshake);
+    expect(harness.tab.read(signalGroupsProvider).entries, isEmpty);
+  });
+
+  testWidgets('suggested signals are what a formal trace shows when it was '
+      'sent with them, not everything', (tester) async {
+    final harness = await _handOff(
+      tester,
+      handshake,
+      coordinate: formalStep(6),
+      suggested: const ['handshake_imm.req'],
+    );
+    final paths = [
+      for (final e in harness.tab.read(signalGroupsProvider).entries)
+        e.signalPath,
+    ];
+    expect(paths, ['handshake_imm.req']);
+  });
+
+  testWidgets('a cross-probe of a trace that is already open brings that tab '
+      'forward and moves its cursor, with no second tab', (tester) async {
+    final trace = ElementId(kind: ElementKind.source, path: handshake);
+    late List<String?> before;
+    final harness = await _handOff(
+      tester,
+      handshake,
+      // "Debug in WaveCrux" first: the trace and the signals to show.
+      suggested: const ['handshake_imm.*'],
+      beforeFollow: (tab) async {
+        before = [
+          for (final e in tab.read(signalGroupsProvider).entries) e.signalPath,
+        ];
+      },
+      // Then the cross-probe of the same row.
+      follow: _FollowUp(trace, const <String, Object?>{
+        cxpFormalPropertyKindMetadataKey: 'assert',
+      }, formalStep(6)),
+    );
+    expect(harness.result.honored, isTrue);
+    expect(harness.openTabCount, 1, reason: 'no duplicate tab');
+    expect(harness.cursorTime, 60);
+    expect(before, isNotEmpty);
+    expect(
+      [
+        for (final e in harness.tab.read(signalGroupsProvider).entries)
+          e.signalPath,
+      ],
+      before,
+      reason: 'the tab keeps the signals it had',
+    );
+  });
+
+  testWidgets('a second tab of another trace is still opened beside the '
+      'first', (tester) async {
+    final harness = await _handOff(
+      tester,
+      handshake,
+      follow: _FollowUp(
+        ElementId(kind: ElementKind.source, path: eqy),
+        const <String, Object?>{},
+        formalStep(1),
+      ),
+    );
+    expect(harness.openTabCount, 2);
+  });
+
+  testWidgets('a tab the user arranged is not refilled by a second '
+      'cross-probe', (tester) async {
+    final trace = ElementId(kind: ElementKind.source, path: handshake);
+    late int arranged;
+    final harness = await _handOff(
+      tester,
+      handshake,
+      coordinate: formalStep(6),
+      beforeFollow: (tab) async {
+        tab.read(signalGroupsProvider.notifier).removeSignal(0);
+        arranged = tab.read(signalGroupsProvider).entries.length;
+      },
+      follow: _FollowUp(trace, const <String, Object?>{}, formalStep(6)),
+    );
+    expect(harness.openTabCount, 1);
+    expect(harness.tab.read(signalGroupsProvider).entries, hasLength(arranged));
+  });
+
+  testWidgets('hints left unused by a hand-off into an open tab do not leak '
+      'into the next trace opened', (tester) async {
+    final trace = ElementId(kind: ElementKind.source, path: handshake);
+    final harness = await _handOff(
+      tester,
+      handshake,
+      coordinate: formalStep(6),
+      follow: _FollowUp(trace, const <String, Object?>{}, formalStep(6)),
+      // Hints stashed for the second request, which opens nothing new.
+      suggestedBeforeFollow: const ['handshake_imm.req'],
+    );
+    expect(
+      harness.stashedSuggestions,
+      isEmpty,
+      reason: 'the stash is emptied even when it was not used',
+    );
+  });
+
   // CXP §9.3.2: a signal highlight may carry `crux.time_ps`, and when it also
   // carries a coordinate the coordinate is the more specific request and wins
   // the cursor.
@@ -285,9 +428,19 @@ void main() {
 
 /// What one hand-off produced.
 class _Harness {
-  _Harness(this.result, this.tab);
+  _Harness(this.result, this.tab, this.root);
 
   final CruxCxpHandlerResult result;
+
+  /// The app's root container.
+  final ProviderContainer root;
+
+  /// How many tabs are open.
+  int get openTabCount => root.read(tabListProvider).length;
+
+  /// What is stashed for the next trace to open.
+  List<String> get stashedSuggestions =>
+      root.read(cxpSuggestedSignalsProvider.notifier).take();
 
   /// The active tab's container after the hand-off.
   final ProviderContainer tab;
@@ -319,6 +472,8 @@ Future<_Harness> _handOff(
   Map<String, Object?> metadata = const <String, Object?>{},
   _FollowUp? follow,
   Future<void> Function(ProviderContainer tab)? beforeFollow,
+  List<String> suggested = const <String>[],
+  List<String> suggestedBeforeFollow = const <String>[],
 }) async {
   final tcm = TabContainerManager(
     extraTabOverrides: [
@@ -338,6 +493,10 @@ Future<_Harness> _handOff(
     root.dispose();
   });
   final result = await tester.runAsync(() async {
+    // What the `notify_selection` ahead of the highlight stashes.
+    if (suggested.isNotEmpty) {
+      root.read(cxpSuggestedSignalsProvider.notifier).set(suggested);
+    }
     var result = await dispatchCxpHighlight(
       root.read(_refProvider),
       element ?? ElementId(kind: ElementKind.source, path: path),
@@ -348,6 +507,11 @@ Future<_Harness> _handOff(
       await beforeFollow?.call(
         tcm.containerFor(root.read(activeTabIdProvider)),
       );
+      if (suggestedBeforeFollow.isNotEmpty) {
+        root
+            .read(cxpSuggestedSignalsProvider.notifier)
+            .set(suggestedBeforeFollow);
+      }
       result = await dispatchCxpHighlight(
         root.read(_refProvider),
         follow.element,
@@ -358,7 +522,11 @@ Future<_Harness> _handOff(
     await root.wavecruxWorkspace.flushPendingSave();
     return result;
   });
-  return _Harness(result!, tcm.containerFor(root.read(activeTabIdProvider)));
+  return _Harness(
+    result!,
+    tcm.containerFor(root.read(activeTabIdProvider)),
+    root,
+  );
 }
 
 /// Mounts the root messenger the inbound path localizes and announces
