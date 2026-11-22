@@ -73,6 +73,8 @@ The panel is the list view of everything on the trace, in time order. Open it wi
 
 From WaveCrux 1.2, the panel draws each note's text as Markdown. A longer note can carry paragraphs, **bold** and *italic*, `inline code`, fenced code blocks, bulleted and numbered lists, and links, and it reads as formatted text in the list. The text is selectable, so you can copy a code block or a sentence out of a note.
 
+From WaveCrux 1.2.1 you can copy a whole note. Select it (click its row, or its balloon on the canvas) without selecting any text, and press ++cmd+c++ on macOS or ++ctrl+c++ on Windows and Linux; on macOS **Edit ▸ Copy** does the same. You get one line with the time as the row shows it and, for a note on a signal, the signal's path, then the note exactly as written, Markdown included. Selected text always wins: with text highlighted in a note or a text field, Copy copies that text instead. The macOS **Edit** menu greys **Cut**, **Copy**, **Paste** and **Select All** when they have nothing to act on.
+
 - **Writing a note is unchanged.** You still type plain text in place on the canvas, and no title is added. Markdown is something you write into that text, not a different editor.
 - **The canvas keeps drawing the raw text.** The balloon, the arrow and the band never render Markdown, so a note that carries formatting marks shows those marks on the waveform.
 - **Nothing is stored differently.** The note is the same `text` field in the `.wavecrux` session and in a `.wavecruxpack`. A note written before 1.2 reads the same in the panel unless it happens to contain Markdown syntax, such as `*stars*` or a line that starts with `-`.
