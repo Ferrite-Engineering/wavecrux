@@ -12,6 +12,7 @@ import 'package:wavecrux/core/mobile_metrics.dart';
 import 'package:wavecrux/core/providers/collaboration_service_provider.dart';
 import 'package:wavecrux/core/theme/annotation_colors.dart';
 import 'package:wavecrux/domain/models/annotation.dart';
+import 'package:wavecrux/features/annotations/annotation_clipboard.dart';
 import 'package:wavecrux/features/annotations/providers/annotation_authoring_provider.dart';
 import 'package:wavecrux/features/annotations/providers/annotation_layers_provider.dart';
 import 'package:wavecrux/features/annotations/providers/annotation_providers.dart';
@@ -472,13 +473,9 @@ class _AnnotationsPanelState extends ConsumerState<AnnotationsPanel> {
     );
   }
 
+  // Shared with Copy, so a copied note reads as its row does.
   String _timeLabel(Annotation a, TimeFormatService formatter) =>
-      switch (a.anchor) {
-        PointAnchor(:final time) => formatter.format(time),
-        RangeAnchor(:final earliest, :final latest) =>
-          '${formatter.format(earliest)} – '
-              '${formatter.format(latest)}',
-      };
+      annotationTimeLabel(a, formatter);
 }
 
 class _Toolbar extends StatelessWidget {

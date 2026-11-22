@@ -9872,10 +9872,26 @@ unreachable.
     (long-press on phone); paste elsewhere: the text arrives without the
     `**` and backtick marks. Repeat with a selection begun by a click: click
     the text once, then press again and drag (or tap and drag on a
-    trackpad). It copies the same way, with no alert sound. On macOS, open
-    the **Edit** menu with a selection made: **Cut**, **Copy**, **Paste** and
-    **Select All** lead it, and **Copy** copies the selection. Tab does
+    trackpad). It copies the same way, with no alert sound. Tab does
     **not** stop on the text itself.
+
+    **Copy a selected note.** Click a note's row (or its balloon on the
+    canvas) without selecting any text, and press Cmd/Ctrl+C (on macOS, also
+    **Edit ▸ Copy**). Paste elsewhere: one line with the time as the row
+    shows it (a range reads `start – end`) and, for a note on a signal, the
+    signal path two spaces after it, then the note exactly as written,
+    Markdown marks included, and no author. A text selection wins: with text
+    highlighted in a note, or selected in a text field, Copy copies that text
+    instead. In a text field with nothing selected, Cmd/Ctrl+C does not copy
+    the note.
+
+    **The macOS Edit menu.** **Cut**, **Copy**, **Paste** and **Select All**
+    lead it, and each is greyed when it has nothing to act on. With only the
+    waveform focused and no note selected, all four are grey and Cmd+C gives
+    the alert sound. Select a note: **Copy** enables. Click into a text field:
+    **Paste** and **Select All** enable, then **Cut** and **Copy** once text
+    is selected in it. Click a rendered note's text: **Select All** enables,
+    **Paste** and **Cut** stay grey.
 34. **Links.** Hover the link: a tooltip shows the full URL. Nothing opens on
     hover. Click it: the system browser opens that URL. Tab to the link (it
     is a stop), press **Enter**, then again with **Space**: both open it.
