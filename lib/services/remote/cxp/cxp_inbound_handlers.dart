@@ -88,7 +88,12 @@ Future<CruxCxpHandlerResult> dispatchCxpHighlight(
   Map<String, Object?> metadata = const <String, Object?>{},
   CxpStreamCoordinate? coordinate,
 ]) async {
-  final outcome = await _dispatchCxpHighlight(ref, element, metadata);
+  final outcome = await _dispatchCxpHighlight(
+    ref,
+    element,
+    metadata,
+    coordinate,
+  );
   // The optional `crux.time_ps` (CXP §9.3.2) moves the cursor to a time on the
   // signal just brought into view. It runs before the coordinate below, which
   // is the more specific request and must win the cursor.
@@ -536,6 +541,7 @@ Future<_ElementOutcome> _dispatchCxpHighlight(
   Ref ref,
   ElementId element,
   Map<String, Object?> metadata,
+  CxpStreamCoordinate? coordinate,
 ) async {
   // `ElementKind` is an open wire type; switch on the retained
   // `KnownElementKind` mirror so this stays an exhaustive switch, and let
@@ -552,7 +558,7 @@ Future<_ElementOutcome> _dispatchCxpHighlight(
     case KnownElementKind.marker:
       return _ElementOutcome(await _highlightMarker(ref, element.path));
     case KnownElementKind.source:
-      return await _highlightSource(ref, element.path, metadata);
+      return await _highlightSource(ref, element.path, metadata, coordinate);
     case KnownElementKind.rule:
     case KnownElementKind.test:
     case KnownElementKind.breakpoint:
@@ -972,11 +978,16 @@ const CxpPathContainment _kSourceHandoffFloor = CxpPathContainment();
 /// AND activates the tab, and the waveform is then loaded into that tab's own
 /// container via the same [WaveformSourceNotifier.openFile] path File→Open
 /// uses (`viewer_screen` `_openPath`), so convert-on-open, sandbox-bookmark,
-/// and viewer-reset behaviour stays identical to a normal open.
+/// and viewer-reset behaviour stays identical to a normal open. A trace that
+/// is already open in some tab is not opened again: that tab is brought
+/// forward ([_openWaveformInNewTab]).
 ///
 /// If a `notify_selection` preceded this open (the "which signals to show"
 /// hint the dispatcher sends first), its suggested signals are resolved
-/// against the freshly-loaded source and placed on the new tab's canvas.
+/// against the freshly-loaded source and placed on the new tab's canvas. A
+/// formal trace that arrives with no such hint gets every signal instead
+/// ([_applyDefaultFormalSignals]). An existing tab that already shows signals
+/// keeps them.
 ///
 /// Any other source path is an RTL source citation (e.g. a `.v:line:col` lint
 /// location a LintCrux cross-probe sends, or RTL source-code navigation). The
@@ -1006,6 +1017,7 @@ Future<_ElementOutcome> _highlightSource(
   Ref ref,
   String path,
   Map<String, Object?> metadata,
+  CxpStreamCoordinate? coordinate,
 ) async {
   final lower = path.toLowerCase();
   final isWaveform = _waveformExtensions.any(lower.endsWith);
@@ -1029,29 +1041,82 @@ Future<_ElementOutcome> _highlightSource(
       CruxCxpHandlerResult(honored: false, reason: refusal),
     );
   }
-  final tabId = await ref.wavecruxWorkspace.openFile(path);
+  // A trace that is already open is brought forward, not opened a second
+  // time: a "Debug in WaveCrux" followed by a cross-probe of the same row
+  // names the same file twice, and the second must land in the first's tab.
+  final opened = await _openWaveformInNewTab(ref, path);
+  final tabId = ref.read(activeTabIdProvider);
   final container = ref.read(tabContainerManagerProvider).containerFor(tabId);
-  await container.read(waveformSourceProvider.notifier).openFile(path);
-  final loaded = container.read(waveformSourceProvider);
-  if (loaded is AsyncError) {
-    return const _ElementOutcome(
+  if (!opened.loaded) {
+    return _ElementOutcome(
       // The error text carries the path it failed on, so a fixed phrase goes
       // on the wire (CXP §9.11).
-      CruxCxpHandlerResult(
+      const CruxCxpHandlerResult(
         honored: false,
         reason: 'failed to open the waveform',
       ),
-      // The tab exists — it just holds an error. Nothing may be mounted into
-      // it: there is no trace to bind against.
-      openedTab: true,
+      // A tab this hand-off created exists — it just holds an error. Nothing
+      // may be mounted into it: there is no trace to bind against.
+      openedTab: opened.openedTab,
     );
   }
-  _applySuggestedSignals(ref, container, loaded.value);
-  _applyEqyPairing(container, loaded.value, metadata);
-  // This is the SimCrux counterexample hand-off's own path, and it always
-  // creates a tab: a `source` element names a file to OPEN, never a place in
-  // something already open.
-  return const _ElementOutcome(CruxCxpHandlerResult.ok, openedTab: true);
+  final source = container.read(waveformSourceProvider).value;
+  // A tab this hand-off created, or one the user left with nothing on its
+  // canvas, is filled in. A tab that already shows signals is the user's own
+  // arrangement and is left as it is; the stash is still emptied so the
+  // hints of this hand-off do not leak into a later one.
+  final fresh =
+      opened.openedTab || container.read(signalGroupsProvider).entries.isEmpty;
+  if (fresh) {
+    _applySuggestedSignals(ref, container, source);
+    _applyEqyPairing(container, source, metadata);
+    _applyDefaultFormalSignals(container, source, metadata, coordinate);
+  } else {
+    ref.read(cxpSuggestedSignalsProvider.notifier).take();
+  }
+  return _ElementOutcome(CruxCxpHandlerResult.ok, openedTab: opened.openedTab);
+}
+
+/// The most signals [_applyDefaultFormalSignals] puts on a canvas.
+///
+/// A formal trace is a few hundred signals; the cap only keeps a hand-off of
+/// an unusually large design from filling the canvas with all of it.
+const int kFormalDefaultSignalLimit = 1000;
+
+/// Puts the trace's signals on the canvas of a formal hand-off that arrived
+/// without a list of signals to show.
+///
+/// "Debug in WaveCrux" sends one (`<scope>.*` for each top scope of the
+/// trace, ahead of the highlight); the cross-probe of a formal row sends the
+/// trace, its coordinate and the `formal.` keys and nothing more, so its tab
+/// opened with a cursor on the failing step and an empty canvas. A formal
+/// trace is the solver's whole answer, small by construction, and the point of
+/// opening it is to read it, so with nothing suggested every signal is shown.
+///
+/// A no-op unless the hand-off is formal (a `formal.trace_step` coordinate, or
+/// a registered `formal.` metadata key) and the canvas is still empty, which
+/// leaves a suggested list, an equivalence arrangement and any other trace
+/// untouched.
+void _applyDefaultFormalSignals(
+  ProviderContainer container,
+  WaveformDataSource? source,
+  Map<String, Object?> metadata,
+  CxpStreamCoordinate? coordinate,
+) {
+  if (source == null) return;
+  final formal =
+      (coordinate != null &&
+          FormalStreamCoordinateResolver.implementsStream(
+            coordinate.streamId,
+          )) ||
+      metadata.keys.any((key) => key.startsWith('formal.'));
+  if (!formal) return;
+  if (container.read(signalGroupsProvider).entries.isNotEmpty) return;
+  final all = source.findVariables(const SignalFilter());
+  if (all.isEmpty) return;
+  container
+      .read(signalGroupsProvider.notifier)
+      .addSignals(all.take(kFormalDefaultSignalLimit).toList());
 }
 
 /// Arranges an equivalence-check trace on the tab [container] holds: the

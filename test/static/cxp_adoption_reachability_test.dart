@@ -107,8 +107,8 @@ void main() {
     for (final call in <String>[
       'FormalStreamCoordinateResolver.implementsStream(',
       'const FormalStreamCoordinateResolver().resolve(',
-      '_highlightSource(ref, element.path, metadata)',
-      '_applyEqyPairing(container, loaded.value, metadata)',
+      '_highlightSource(ref, element.path, metadata, coordinate)',
+      '_applyEqyPairing(container, source, metadata)',
       'EqyTracePairing.arrange(',
       '.prependArrangement(',
     ]) {
