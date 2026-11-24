@@ -181,6 +181,16 @@ void main() {
         // The visible (panel-added) signal must be spared.
         expect(source.isSignalLoaded(clk.signalRef), isTrue);
 
+        // The signal reads as unloaded as soon as `unloadSignal` flips it, a
+        // few async hops before the guard publishes its result (the pass
+        // awaits the unload, then writes the level and the count). Wait for
+        // the published state itself rather than sampling it in that gap.
+        await pumpUntil(
+          tester,
+          () =>
+              root.read(mobileMemoryGuardProvider).pressureLevel ==
+              MemoryPressureLevel.critical,
+        );
         final after = root.read(mobileMemoryGuardProvider);
         expect(after.pressureLevel, MemoryPressureLevel.critical);
         expect(after.lastUnloadedCount, greaterThan(0));

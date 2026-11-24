@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wavecrux/domain/models/annotation.dart';
 import 'package:wavecrux/domain/models/timescale.dart';
@@ -58,7 +59,24 @@ class ActiveTabAnnotationCopyText extends Notifier<String?> {
       return annotationClipboardText([annotation], formatter);
     }
 
-    void update() => state = compute();
+    // A tab-container provider can notify while a widget is mounting (a
+    // widget that watches this provider flushes the tab's providers on its
+    // first build), and Riverpod forbids writing a provider mid-build. Inside
+    // the frame the write waits for its end; outside it stays synchronous.
+    var pending = false;
+    void update() {
+      if (SchedulerBinding.instance.schedulerPhase ==
+          SchedulerPhase.persistentCallbacks) {
+        if (pending) return;
+        pending = true;
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          pending = false;
+          if (ref.mounted) state = compute();
+        });
+        return;
+      }
+      state = compute();
+    }
 
     final subs = <ProviderSubscription<Object?>>[
       container.listen<String?>(annotationSelectedProvider, (_, _) => update()),

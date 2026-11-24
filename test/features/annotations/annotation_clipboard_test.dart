@@ -1,6 +1,8 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wavecrux/domain/enums/timescale_unit.dart';
@@ -221,6 +223,46 @@ void main() {
       tab.read(annotationsProvider.notifier).remove('n1');
       await settle();
       expect(root.read(activeTabAnnotationCopyTextProvider), isNull);
+    });
+
+    testWidgets('a change that lands while a frame is building waits for the '
+        'end of the frame', (tester) async {
+      await tester.pumpWidget(const SizedBox());
+      final sub = root.listen(activeTabAnnotationCopyTextProvider, (_, _) {});
+      final tab = tcm.containerFor(root.read(activeTabIdProvider));
+      tab
+          .read(annotationsProvider.notifier)
+          .add(note('n1', const PointAnchor(time: 1, rowId: 'top.a')));
+
+      // A persistent frame callback runs in the phase where widgets build,
+      // which is where a StatusBar mounting flushes the tab's providers and
+      // reaches this provider's listeners.
+      var fired = false;
+      String? duringFrame = 'unset';
+      SchedulerBinding.instance.addPersistentFrameCallback((_) {
+        if (fired) return;
+        fired = true;
+        tab.read(annotationSelectedProvider.notifier).selected = 'n1';
+        duringFrame = root.read(activeTabAnnotationCopyTextProvider);
+      });
+      tester.binding.scheduleFrame();
+      await tester.pump();
+
+      expect(fired, isTrue);
+      expect(duringFrame, isNull, reason: 'not written mid-frame');
+      expect(root.read(activeTabAnnotationCopyTextProvider), '1 ticks  top.a');
+
+      // Tear down inside the body: disposing a container schedules a timer
+      // that flutter_test wants gone before the body returns.
+      sub.close();
+      tcm.dispose();
+      root.dispose();
+      await tester.pump(const Duration(seconds: 1));
+      tcm = TabContainerManager();
+      root = ProviderContainer(
+        overrides: [tabContainerManagerProvider.overrideWithValue(tcm)],
+      );
+      tcm.init(root);
     });
 
     test('another tab selecting an annotation does not bleed in', () {
