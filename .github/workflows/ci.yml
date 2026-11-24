@@ -375,6 +375,20 @@ jobs:
               sys.exit(f"::error::{len(skipped)} tests skipped, above the ceiling of {ceiling}. The list above says why; an engine or service that stopped being installed shows up here first.")
           PY
 
+      # tool/wavecrux_ctl is its own package (the WCP client and the
+      # `wavecrux_ctl` commands). The root `flutter test` does not reach
+      # `tool/`, so without this step a regression in the client or a command
+      # stays green. Linux only, like the count check above.
+      - name: Resolve tool/wavecrux_ctl deps (Linux)
+        if: runner.os == 'Linux'
+        run: dart pub get
+        working-directory: tool/wavecrux_ctl
+
+      - name: Run tool/wavecrux_ctl tests (Linux)
+        if: runner.os == 'Linux'
+        run: dart test
+        working-directory: tool/wavecrux_ctl
+
       - name: Run tests (macOS)
         if: runner.os == 'macOS'
         run: flutter test --reporter github
