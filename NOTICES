@@ -872,7 +872,7 @@ only direct dev dependencies as such, so the shipped subset
 cannot be computed exactly, and over-listing is the safe side
 of an attribution question.
 
-  Apache-2.0 7,  BSD-3-Clause 122,  MIT 28,  MPL-2.0 1,  SDK 49
+  Apache-2.0 7,  BSD-3-Clause 122,  MIT 28,  MPL-2.0 1,  SDK 50
 
   _fe_analyzer_shared                          99.0.0           BSD-3-Clause
   analyzer                                     12.1.0           BSD-3-Clause
@@ -919,6 +919,7 @@ of an attribution question.
   crux_keybindings                             0.3.0            SDK
   crux_license                                 0.13.0           SDK
   crux_linux_integration                       0.1.0            SDK
+  crux_mcp                                     0.1.0            SDK
   crux_menu_bar                                0.1.0            SDK
   crux_policy                                  0.2.0            SDK
   crux_project                                 0.1.1            SDK
