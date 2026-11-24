@@ -45,6 +45,16 @@ void main() {
       expect(branding.copyrightYear, isNotEmpty);
     });
 
+    test('default copyright year is the build year, never a literal', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final branding = container.read(applicationBrandingProvider);
+
+      // No BUILD_YEAR dart-define in a test run, so the current year.
+      expect(branding.copyrightYear, equals(DateTime.now().year.toString()));
+    });
+
     test('overrideWith replaces branding (white-label override pattern)', () {
       const whiteLabel = ApplicationBranding(
         companyName: 'Acme Corp',

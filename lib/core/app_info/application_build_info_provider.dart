@@ -14,9 +14,9 @@ part 'application_build_info_provider.g.dart';
 /// Provides [ApplicationBuildInfo] for the running WaveCrux instance.
 ///
 /// Version and build number come from `package_info_plus` (reads the platform
-/// bundle at runtime). Git SHA, Flutter/Dart versions, OS, and architecture
-/// come from the generated `build_info.dart` written by CI; locally they fall
-/// back to `"dev"` constants in [build_info_fallback.dart].
+/// bundle at runtime). Git SHA, architecture and Flutter version come from the
+/// release build's `--dart-define`s (see [build_info_fallback.dart]); a local
+/// build reads `"dev"`.
 ///
 /// This provider is overridable by the Pro overlay to supply Pro-specific build
 /// metadata if needed. The About dialog reads only from this provider.

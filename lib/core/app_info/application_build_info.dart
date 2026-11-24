@@ -6,9 +6,9 @@ import 'package:meta/meta.dart';
 /// Immutable snapshot of version, build, and platform metadata for the
 /// running WaveCrux instance.
 ///
-/// Populated from the generated `build_info.dart` file (refreshed by CI via
-/// `tool/generate_build_info.dart`). Locally the generator writes fallback
-/// "dev" values so the About box always has something to display.
+/// Populated from the release build's `--dart-define`s (read in
+/// `build_info_fallback.dart`). A local build reads "dev" so the About box
+/// always has something to display.
 @immutable
 final class ApplicationBuildInfo {
   const ApplicationBuildInfo({

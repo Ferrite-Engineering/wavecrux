@@ -3,6 +3,7 @@
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:wavecrux/core/app_info/application_branding.dart';
+import 'package:wavecrux/core/app_info/build_info_fallback.dart';
 
 part 'application_branding_provider.g.dart';
 
@@ -13,11 +14,11 @@ part 'application_branding_provider.g.dart';
 /// deployments that need a different company name, logo, or website URL.
 @Riverpod(keepAlive: true)
 ApplicationBranding applicationBranding(Ref ref) {
-  return const ApplicationBranding(
+  return ApplicationBranding(
     companyName: 'Ferrite Engineering',
     logoAsset: 'assets/branding/ferrite_engineering_logo.png',
     logoSquareAsset: 'assets/branding/ferrite_engineering_logo_square.png',
-    copyrightYear: '2025',
+    copyrightYear: resolveCopyrightYear(kBuildYear),
     websiteUrl: 'https://ferriteengineering.com',
   );
 }
