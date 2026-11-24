@@ -145,6 +145,11 @@ class WaveCommandContext {
 
   /// How a reader failure ends a command.
   final ReaderFailureMap mapFailure;
+
+  /// The `--license-file` the `mcp` server was started with, for a command
+  /// that reads a licence; null on the command line, where each command
+  /// takes its own flag. The four commands of this library read none.
+  String? licenseFile;
 }
 
 /// One subcommand: its MCP tool, its flags, and the document it writes.
@@ -268,7 +273,10 @@ void _addLimit(ArgParser parser, String help) =>
     parser.addOption('limit', help: help, valueHelp: 'n');
 
 /// The file at [file] opened, or the document that says why it is not.
-Future<(WaveFile?, McpDocument?)> _open(
+///
+/// Public so that a command defined outside this library opens, refuses and
+/// maps a reader failure exactly as these four do.
+Future<(WaveFile?, McpDocument?)> openWaveForCommand(
   WaveCommandContext context,
   String command,
   String file,
@@ -318,7 +326,7 @@ Future<(WaveFile?, McpDocument?)> _open(
 
 /// The location of [signal] at [tick] in [file], with its link; a place
 /// location and a warning when the name cannot travel in a link.
-(McpLocation, McpDiagnostic?) _signalLocation(
+(McpLocation, McpDiagnostic?) waveSignalLocation(
   String file,
   String signal,
   int tick,
@@ -375,7 +383,10 @@ List<McpDiagnostic> _asErrors(List<McpDiagnostic> warnings) => <McpDiagnostic>[
     McpDiagnostic.error(w.code, w.message, fix: w.fix, location: w.location),
 ];
 
-Future<McpDocument> _guarded(
+/// Runs [body], and maps anything the reader throws while it runs to the
+/// document [context.mapFailure] gives; a [WaveUsageException] passes
+/// through.
+Future<McpDocument> guardWaveCommand(
   WaveCommandContext context,
   String command,
   String file,
@@ -429,9 +440,9 @@ class InfoCommand extends WaveCommand {
   @override
   Future<McpDocument> run(WaveCommandContext context, ArgResults args) async {
     final file = _onePositional(args, 'waveform file');
-    final (wave, failed) = await _open(context, name, file);
+    final (wave, failed) = await openWaveForCommand(context, name, file);
     if (failed != null) return failed;
-    return await _guarded(context, name, file, () async {
+    return await guardWaveCommand(context, name, file, () async {
       final source = wave!.source;
       final roots = source.rootScopes;
       final listed = <Scope>[
@@ -564,9 +575,9 @@ class SearchCommand extends WaveCommand {
       fallback: kSearchLimitDefault,
       max: kSearchLimitMax,
     );
-    final (wave, failed) = await _open(context, name, file);
+    final (wave, failed) = await openWaveForCommand(context, name, file);
     if (failed != null) return failed;
-    return await _guarded(context, name, file, () async {
+    return await guardWaveCommand(context, name, file, () async {
       final answer = SignalSearchAnswer.search(
         rootScopes: wave!.source.rootScopes,
         query: query,
@@ -694,7 +705,7 @@ class ValuesCommand extends WaveCommand {
       fallback: kValuesLimitDefault,
       max: kValuesLimitMax,
     );
-    final (wave, failed) = await _open(context, name, file);
+    final (wave, failed) = await openWaveForCommand(context, name, file);
     if (failed != null) return failed;
     final source = wave!.source;
     final timescale = source.timescale;
@@ -708,7 +719,7 @@ class ValuesCommand extends WaveCommand {
     }
     final queryTick = atTick ?? from!;
 
-    return await _guarded(context, name, file, () async {
+    return await guardWaveCommand(context, name, file, () async {
       final (variables, warnings) = _resolve(wave, file, names, queryTick);
       if (variables.isEmpty) {
         return McpDocument(
@@ -773,7 +784,7 @@ class ValuesCommand extends WaveCommand {
       final signals = <Map<String, Object?>>[];
       for (final v in variables) {
         await source.loadSignal(v.signalRef);
-        final (location, linkWarning) = _signalLocation(
+        final (location, linkWarning) = waveSignalLocation(
           file,
           v.fullPath,
           locationTick,
@@ -892,7 +903,7 @@ class TransitionsCommand extends WaveCommand {
       fallback: kTransitionsLimitDefault,
       max: kTransitionsLimitMax,
     );
-    final (wave, failed) = await _open(context, name, file);
+    final (wave, failed) = await openWaveForCommand(context, name, file);
     if (failed != null) return failed;
     final source = wave!.source;
     final from = parseTicks(fromText, source.timescale, flag: '--from');
@@ -901,7 +912,7 @@ class TransitionsCommand extends WaveCommand {
       throw WaveUsageException('`--from $fromText` is after `--to $toText`');
     }
 
-    return await _guarded(context, name, file, () async {
+    return await guardWaveCommand(context, name, file, () async {
       final (variables, warnings) = _resolve(wave, file, names, from);
       if (variables.isEmpty) {
         return McpDocument(
@@ -938,7 +949,11 @@ class TransitionsCommand extends WaveCommand {
             );
           }
         }
-        final (location, linkWarning) = _signalLocation(file, v.fullPath, from);
+        final (location, linkWarning) = waveSignalLocation(
+          file,
+          v.fullPath,
+          from,
+        );
         if (linkWarning != null) diagnostics.add(linkWarning);
         signals.add(<String, Object?>{
           ...answer.toJson(),

@@ -31,8 +31,9 @@ const String kWaveCruxMcpInstructions =
     'Cite each finding with the link in its location, which opens the '
     'signal at that time in WaveCrux for a person to check.';
 
-/// The `--license-file` help: the open-core tools need no licence.
-const String _licenseHelp =
+/// The `--license-file` help of the open-core binary: its tools need no
+/// licence.
+const String kWaveCruxOpenCoreLicenseHelp =
     'A licence file for the tools that need one. The four tools of this '
     'binary are free and read none.';
 
@@ -40,15 +41,21 @@ const String _licenseHelp =
 class WaveCruxCli {
   /// A command line serving [commands], opening files through [cache].
   ///
-  /// [telemetry] makes the `mcp` server's counter; by default the one that
-  /// sends under the consent the desktop app recorded (never when `CI` is
-  /// set). [mapFailure] exists for the mutation proof only.
+  /// [telemetry] makes the `mcp` server's counter, once the server's
+  /// arguments are read (so it may ask for [WaveCommandContext.licenseFile]);
+  /// by default the one that sends under the consent the desktop app
+  /// recorded (never when `CI` is set). [instructions] is the paragraph
+  /// `initialize` returns and [licenseHelp] the `mcp --license-file` help:
+  /// another edition serving more commands gives its own. [mapFailure]
+  /// exists for the mutation proof only.
   WaveCruxCli({
     List<WaveCommand>? commands,
     WaveFileCache? cache,
     this.program = kWaveCruxProgram,
+    this.instructions = kWaveCruxMcpInstructions,
+    this.licenseHelp = kWaveCruxOpenCoreLicenseHelp,
     McpExitCodes? exitCodes,
-    McpTelemetry? Function()? telemetry,
+    FutureOr<McpTelemetry?> Function()? telemetry,
     ReaderFailureMap mapFailure = classifyReaderFailure,
   }) : commands = List<WaveCommand>.unmodifiable(
          commands ?? openCoreWaveCommands(),
@@ -67,13 +74,19 @@ class WaveCruxCli {
   /// The program the documents name.
   final McpProgram program;
 
+  /// The `instructions` paragraph the server's `initialize` returns.
+  final String instructions;
+
+  /// The help of `mcp --license-file`.
+  final String licenseHelp;
+
   /// The exit code of each outcome.
   final McpExitCodes exitCodes;
 
   /// Where files are opened.
   final WaveCommandContext commandContext;
 
-  final McpTelemetry? Function() _telemetry;
+  final FutureOr<McpTelemetry?> Function() _telemetry;
 
   WaveCommand? _command(String name) {
     for (final c in commands) {
@@ -214,7 +227,7 @@ class WaveCruxCli {
   McpServer server({required String root, McpTelemetry? telemetry}) =>
       McpServer(
         program: program,
-        instructions: kWaveCruxMcpInstructions,
+        instructions: instructions,
         tools: <McpTool>[for (final c in commands) c.tool],
         confinement: Confinement(root),
         telemetry: telemetry,
@@ -240,7 +253,7 @@ class WaveCruxCli {
         valueHelp: 'dir',
         defaultsTo: Directory.current.path,
       )
-      ..addOption('license-file', help: _licenseHelp, valueHelp: 'path')
+      ..addOption('license-file', help: licenseHelp, valueHelp: 'path')
       ..addFlag('help', abbr: 'h', negatable: false, help: 'This text.');
     final ArgResults parsed;
     try {
@@ -270,7 +283,8 @@ class WaveCruxCli {
       return exitCodes.usageError;
     }
     final root = parsed.option('root')!;
-    final server = this.server(root: root, telemetry: _telemetry());
+    commandContext.licenseFile = parsed.option('license-file');
+    final server = this.server(root: root, telemetry: await _telemetry());
     final problem = server.confinement.rootProblem();
     if (problem != null) {
       err.writeln('${program.name} mcp: $problem');

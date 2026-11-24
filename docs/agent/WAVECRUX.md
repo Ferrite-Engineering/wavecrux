@@ -58,6 +58,28 @@ Use `transitions` rather than sampling with `values` when you need to know
 what happened between two times: it returns every change, including a pulse
 shorter than any sampling step.
 
+## advise (Pro)
+
+The Pro binary, `wavecrux_pro`, serves the same four tools and a fifth,
+`advise`, started the same way (`wavecrux_pro mcp --root <dir>`). Its
+description starts with "Pro." and it is listed whatever the licence.
+
+| Tool | Returns | Limits |
+|---|---|---|
+| `advise` | The Debug Advisor's rule-based findings at one time (`at`): X propagation, clock-domain crossing, stuck-at and setup/hold proximity, most confident first, each with a `confidence`, a `message` in English and a `location` with its link. Given a `signal` that is X at `at`, also an `xTrace`: same-scope signals that went X at or before it | `limit`: default 50, at most 200 |
+
+**A finding is a heuristic, not a verdict.** Each one says what a rule
+noticed and how confident it is; the X trace lists signals that went X at
+about the same time in the same scope, which is not proof that one caused
+another. Check a finding in the waveform (its link) before you report it as
+a fact, and say that it came from a heuristic when you do.
+
+`advise` reads a licence on every call: `--license-file` given to `mcp`,
+then the `WAVECRUX_LICENSE_FILE` environment variable, then the
+organisation's `.crux-policy.json`. Without a licence that admits Pro it
+answers `licence_error` (exit code 77) with a `licence.tier_required`
+diagnostic whose `fix` names those three places, and nothing is read.
+
 ## Times
 
 Every time in a document is a whole number of **ticks** of the file's
@@ -84,7 +106,7 @@ order:
 | `schema_version` | `1` |
 | `tool` | `{"name": "wavecrux", "version": ...}` |
 | `command` | The command or tool that ran |
-| `outcome` | `completed` when there is an answer; otherwise `usage_error`, `input_error` or `engine_error` |
+| `outcome` | `completed` when there is an answer; otherwise `usage_error`, `input_error`, `engine_error` or, for `advise`, `licence_error` |
 | `engines` | `[{"name": "wellen", ...}]` once the file was handed to the reader |
 | `design` | Always `null` for WaveCrux |
 | `body` | The answer, or `null` when there is none |
@@ -101,6 +123,7 @@ says what went wrong and `fix`, when present, what to do. The tool result's
 | `usage_error` | 64 | A bad or missing input, a path outside the root, a time between ticks |
 | `input_error` | 65 | No such file, a file the reader refused, no signal by any name given |
 | `engine_error` | 3 | The reader hung or failed |
+| `licence_error` | 77 | `advise` without a licence that admits Pro |
 
 **Warnings qualify an answer.** A signal name that is not in the file is a
 `signal.not_found` warning, and the other signals are still answered. Do not

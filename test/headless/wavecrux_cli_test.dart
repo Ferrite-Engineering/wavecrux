@@ -8,6 +8,7 @@
 @TestOn('vm')
 library;
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:crux_mcp/crux_mcp.dart';
@@ -69,6 +70,52 @@ void main() {
       final (code, _, err) = await _run(<String>['mcp', '--root', dump]);
       expect(code, 64);
       expect(err, contains('is not a directory'));
+    });
+
+    test('mcp hands its --license-file to the commands and the counter, '
+        'before the counter is made', () async {
+      String? seenByTelemetry;
+      late final WaveCruxCli cli;
+      cli = WaveCruxCli(
+        telemetry: () async {
+          seenByTelemetry = cli.commandContext.licenseFile;
+          return null;
+        },
+        instructions: 'Another edition.',
+        licenseHelp: 'Read by another edition.',
+      );
+      final output = StreamController<List<int>>();
+      final written = output.stream.toList();
+      final out = StringBuffer();
+      final code = await cli.run(
+        <String>['mcp', '--root', p.dirname(dump), '--license-file', '/l.key'],
+        out: out,
+        err: StringBuffer(),
+        input: const Stream<List<int>>.empty(),
+        output: output.sink,
+      );
+      await output.close();
+      await written;
+      expect(code, 0);
+      expect(seenByTelemetry, '/l.key');
+      expect(cli.commandContext.licenseFile, '/l.key');
+      expect(
+        cli.server(root: p.dirname(dump)).instructions,
+        'Another edition.',
+      );
+      await cli.run(
+        <String>['mcp', '--help'],
+        out: out,
+        err: StringBuffer(),
+      );
+      expect(out.toString(), contains('Read by another edition.'));
+    });
+
+    test('a command run from the command line reads no server licence', () {
+      expect(
+        WaveCruxCli(telemetry: () => null).commandContext.licenseFile,
+        isNull,
+      );
     });
 
     test('a missing file exits 65 with its document', () async {
