@@ -166,6 +166,21 @@ class TransitionsAnswer {
   /// Whether some changes were not returned.
   bool get truncated => changes.length > returned.length;
 
+  /// Where to start the next window to continue a truncated answer: the tick
+  /// after the last change returned, or [start] when none was. Null when
+  /// nothing was left out.
+  int? get nextFrom {
+    if (!truncated) return null;
+    return returned.isEmpty ? start : returned.last.time + 1;
+  }
+
+  /// Whether the limit fell among several changes at one tick, so that
+  /// continuing from [nextFrom] skips the changes at that tick not returned.
+  bool get splitsLastTick =>
+      truncated &&
+      returned.isNotEmpty &&
+      changes[returned.length].time == returned.last.time;
+
   /// The answer as the assistant's `getTransitionsInWindow` tool gives it.
   Map<String, Object?> toJson() => <String, Object?>{
     'signal': variable.fullPath,
@@ -180,6 +195,14 @@ class TransitionsAnswer {
       for (final c in returned)
         <String, Object?>{'time': c.time, 'value': c.value},
     ],
+  };
+
+  /// The answer for a caller that pages: [toJson] and `next_from`, as the
+  /// `transitions` command and WCP's `wavecrux.getTransitionsInWindow` give
+  /// each signal.
+  Map<String, Object?> toPagedJson() => <String, Object?>{
+    ...toJson(),
+    'next_from': nextFrom,
   };
 }
 

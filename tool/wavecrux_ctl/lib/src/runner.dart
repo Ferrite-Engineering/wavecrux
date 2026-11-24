@@ -49,6 +49,7 @@ class WavecruxCtlRunner extends CommandRunner<void> {
     addCommand(FitCommand(output: out, factory: factory));
     addCommand(SignalsCommand(output: out, factory: factory));
     addCommand(ValueCommand(output: out, factory: factory));
+    addCommand(TransitionsCommand(output: out, factory: factory));
     addCommand(HierarchyCommand(output: out, factory: factory));
     addCommand(StatusCommand(output: out, factory: factory));
   }

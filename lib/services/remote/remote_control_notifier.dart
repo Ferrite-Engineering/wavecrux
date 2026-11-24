@@ -27,9 +27,11 @@ import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart
 import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
 import 'package:wavecrux/services/remote/wcp_server.dart';
 import 'package:wavecrux/services/tabs/tab_container_manager.dart';
+import 'package:wavecrux/services/wave_session/wave_queries.dart';
 
 part 'remote_control_notifier.g.dart';
 part 'wcp_displayed_items.dart';
+part 'wcp_transitions.dart';
 
 /// The same logger the WCP server reports its own faults on.
 final _log = Logger('wavecrux.wcp');
@@ -221,6 +223,8 @@ class RemoteControlNotifier extends _$RemoteControlNotifier {
         return await _handleAddMarkers(data);
       case 'wavecrux.getValueAt':
         return await _handleGetValueAt(data);
+      case 'wavecrux.getTransitionsInWindow':
+        return await _handleGetTransitionsInWindow(data);
       case 'wavecrux.getHierarchy':
         return await _handleGetHierarchy();
       case 'wavecrux.getState':

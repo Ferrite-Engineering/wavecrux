@@ -58,6 +58,17 @@ Use `transitions` rather than sampling with `values` when you need to know
 what happened between two times: it returns every change, including a pulse
 shorter than any sampling step.
 
+## The running app over WCP
+
+A script already driving an open WaveCrux window over WCP (Settings, Remote
+Control) can ask the same question of the file in the active tab with
+`wavecrux.getTransitionsInWindow`: `signal_paths` (at most 32), `start` and
+`end` in whole ticks, and an optional `limit` (default 200, at most 10000).
+Each signal's entry is the `transitions` entry without its `location`. One
+reply carries at most 20000 changes; with many signals the `limit` it applied
+is lower, and each signal cut short gives `next_from`. From a terminal:
+`wavecrux-ctl transitions top.irq --from 0 --to 100`.
+
 ## advise (Pro)
 
 The Pro binary, `wavecrux_pro`, serves the same four tools and a fifth,

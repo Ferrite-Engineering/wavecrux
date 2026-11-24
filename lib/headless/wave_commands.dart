@@ -933,21 +933,16 @@ class TransitionsCommand extends WaveCommand {
           end: to,
           limit: limit,
         );
-        int? nextFrom;
-        if (answer.truncated) {
-          final last = answer.returned.last.time;
-          nextFrom = last + 1;
-          if (answer.changes[answer.returned.length].time == last) {
-            diagnostics.add(
-              McpDiagnostic.warning(
-                'transitions.same_tick_split',
-                '`${v.fullPath}` changes more than once at tick $last and '
-                    'the limit fell among them; next_from starts after that '
-                    'tick, so ask again with a higher limit to see every '
-                    'change at it',
-              ),
-            );
-          }
+        if (answer.splitsLastTick) {
+          diagnostics.add(
+            McpDiagnostic.warning(
+              'transitions.same_tick_split',
+              '`${v.fullPath}` changes more than once at tick '
+                  '${answer.returned.last.time} and the limit fell among '
+                  'them; next_from starts after that tick, so ask again '
+                  'with a higher limit to see every change at it',
+            ),
+          );
         }
         final (location, linkWarning) = waveSignalLocation(
           file,
@@ -956,8 +951,7 @@ class TransitionsCommand extends WaveCommand {
         );
         if (linkWarning != null) diagnostics.add(linkWarning);
         signals.add(<String, Object?>{
-          ...answer.toJson(),
-          'next_from': nextFrom,
+          ...answer.toPagedJson(),
           'location': location,
         });
       }

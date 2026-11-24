@@ -145,6 +145,44 @@ void main() {
       expect(answer.truncated, isTrue);
     });
 
+    test('next_from is the tick after the last change returned', () async {
+      final answer = await transitionsInWindow(
+        _source(),
+        _clk,
+        start: 0,
+        end: 40,
+        limit: 3,
+      );
+      expect(answer.nextFrom, 11);
+      expect(answer.splitsLastTick, isFalse);
+      expect(answer.toPagedJson()['next_from'], 11);
+      final whole = await transitionsInWindow(
+        _source(),
+        _clk,
+        start: 0,
+        end: 40,
+        limit: 7,
+      );
+      expect(whole.nextFrom, isNull);
+      expect(whole.toPagedJson(), <String, Object?>{
+        ...whole.toJson(),
+        'next_from': null,
+      });
+    });
+
+    test('with nothing returned, next_from is the start', () async {
+      final answer = await transitionsInWindow(
+        _source(),
+        _clk,
+        start: 6,
+        end: 40,
+        limit: 0,
+      );
+      expect(answer.truncated, isTrue);
+      expect(answer.nextFrom, 6);
+      expect(answer.splitsLastTick, isFalse);
+    });
+
     test('a start after the end is refused', () {
       expect(
         () => transitionsInWindow(_source(), _clk, start: 9, end: 3, limit: 1),

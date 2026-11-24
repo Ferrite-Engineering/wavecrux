@@ -120,7 +120,7 @@ void main() {
       expect(opts.containsKey('json'), isTrue);
     });
 
-    test('all 11 subcommands are registered', () {
+    test('all 12 subcommands are registered', () {
       final runner = WavecruxCtlRunner();
       final names = runner.commands.keys.toSet();
       expect(
@@ -135,9 +135,51 @@ void main() {
           'fit',
           'signals',
           'value',
+          'transitions',
           'hierarchy',
           'status',
         ]),
+      );
+    });
+
+    test('transitions requires a signal path', () async {
+      final runner = WavecruxCtlRunner(output: _BufferSink());
+      await expectLater(
+        runner.run(['transitions', '--from', '0', '--to', '10']),
+        throwsA(isA<UsageException>()),
+      );
+    });
+
+    test('transitions requires --from and --to', () async {
+      final runner = WavecruxCtlRunner(output: _BufferSink());
+      await expectLater(
+        runner.run(['transitions', 'top.clk', '--from', '0']),
+        throwsA(isA<UsageException>()),
+      );
+      await expectLater(
+        runner.run(['transitions', 'top.clk', '--to', '10']),
+        throwsA(isA<UsageException>()),
+      );
+    });
+
+    test('transitions requires integer ticks and limit', () async {
+      final runner = WavecruxCtlRunner(output: _BufferSink());
+      await expectLater(
+        runner.run(['transitions', 'top.clk', '--from', '1ns', '--to', '10']),
+        throwsA(isA<UsageException>()),
+      );
+      await expectLater(
+        runner.run([
+          'transitions',
+          'top.clk',
+          '--from',
+          '0',
+          '--to',
+          '10',
+          '--limit',
+          'many',
+        ]),
+        throwsA(isA<UsageException>()),
       );
     });
 
@@ -448,6 +490,67 @@ void main() {
       expect(mock.received.first['command'], 'wavecrux.getValueAt');
       expect((mock.received.first['data'] as Map)['time'], 300);
     });
+
+    test(
+      'transitions sends wavecrux.getTransitionsInWindow with every path',
+      () async {
+        final mock = await _startMockServer(
+          (cmd) => _wcpResponse(cmd, {'signals': <Object?>[]}),
+        );
+        final runner = WavecruxCtlRunner(output: _BufferSink());
+        await runner.run([
+          '--port',
+          '${mock.server.port}',
+          'transitions',
+          'top.clk',
+          'top.irq',
+          '--from',
+          '10',
+          '--to',
+          '20',
+          '--limit',
+          '5',
+        ]);
+        await mock.server.close();
+
+        expect(
+          mock.received.single['command'],
+          'wavecrux.getTransitionsInWindow',
+        );
+        expect(mock.received.single['data'], {
+          'signal_paths': ['top.clk', 'top.irq'],
+          'start': 10,
+          'end': 20,
+          'limit': 5,
+        });
+      },
+    );
+
+    test(
+      'transitions without --limit leaves the default to WaveCrux',
+      () async {
+        final mock = await _startMockServer(
+          (cmd) => _wcpResponse(cmd, {'signals': <Object?>[]}),
+        );
+        final runner = WavecruxCtlRunner(output: _BufferSink());
+        await runner.run([
+          '--port',
+          '${mock.server.port}',
+          'transitions',
+          'top.clk',
+          '--from',
+          '0',
+          '--to',
+          '40',
+        ]);
+        await mock.server.close();
+
+        expect(
+          (mock.received.single['data'] as Map).containsKey('limit'),
+          isFalse,
+        );
+      },
+    );
   });
 
   // ── Output formatting ──────────────────────────────────────────────────────
@@ -505,6 +608,52 @@ void main() {
       expect(out.output, contains('/a/b.vcd'));
       expect(out.output, contains('100 ticks'));
       expect(out.output, contains('2'));
+    });
+
+    test('transitions prints each change and where to go on', () async {
+      final mock = await _startMockServer(
+        (cmd) => _wcpResponse(cmd, {
+          'window': {'start': 10, 'end': 20},
+          'limit': 1,
+          'truncated': true,
+          'same_tick_split': <String>[],
+          'signals': [
+            {
+              'signal': 'top.irq',
+              'valueAtStart': '0',
+              'transitionCount': 2,
+              'returned': 1,
+              'truncated': true,
+              'transitions': [
+                {'time': 12, 'value': '1'},
+              ],
+              'next_from': 13,
+            },
+          ],
+        }),
+      );
+      final out = _BufferSink();
+      final runner = WavecruxCtlRunner(output: out);
+      await runner.run([
+        '--port',
+        '${mock.server.port}',
+        'transitions',
+        'top.irq',
+        '--from',
+        '10',
+        '--to',
+        '20',
+        '--limit',
+        '1',
+      ]);
+      await mock.server.close();
+
+      expect(
+        out.output,
+        'top.irq (at start: 0)\n'
+        '  12  1\n'
+        '  1 of 2; more from tick 13\n',
+      );
     });
 
     test('signals formats as ID/PATH table', () async {

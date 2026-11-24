@@ -361,6 +361,73 @@ class ValueCommand extends WavecruxCommand {
   }
 }
 
+// ── transitions ───────────────────────────────────────────────────────────────
+
+/// Prints every value change of signals in a tick window.
+class TransitionsCommand extends WavecruxCommand {
+  TransitionsCommand({required super.output, required super.factory}) {
+    argParser
+      ..addOption('from', help: 'First tick of the window.', valueHelp: 'tick')
+      ..addOption(
+        'to',
+        help: 'End of the window, not included.',
+        valueHelp: 'tick',
+      )
+      ..addOption(
+        'limit',
+        help: 'Changes per signal: default 200, at most 10000.',
+        valueHelp: 'n',
+      );
+  }
+
+  @override
+  String get name => 'transitions';
+
+  @override
+  String get description =>
+      'Print every value change of signals between two ticks, with each '
+      "signal's value at the first.";
+
+  @override
+  String get invocation =>
+      'wavecrux-ctl [options] transitions <signal_path> [...] '
+      '--from <tick> --to <tick> [--limit <n>]';
+
+  @override
+  Future<void> run() async {
+    final paths = argResults!.rest;
+    if (paths.isEmpty) usageException('Expected at least one signal path.');
+    final from = _tick('from');
+    final to = _tick('to');
+    final rawLimit = argResults!['limit'] as String?;
+    int? limit;
+    if (rawLimit != null) {
+      limit = int.tryParse(rawLimit);
+      if (limit == null) usageException('--limit must be a whole number.');
+    }
+
+    await withClient((client) async {
+      final result = await client.call('wavecrux.getTransitionsInWindow', {
+        'signal_paths': paths,
+        'start': from,
+        'end': to,
+        'limit': ?limit,
+      });
+      emitResult(result, Formatter.formatTransitions);
+    });
+  }
+
+  int _tick(String option) {
+    final raw = argResults![option] as String?;
+    if (raw == null) usageException('Expected --$option <tick>.');
+    final tick = int.tryParse(raw);
+    if (tick == null) {
+      usageException('--$option must be an integer (simulation ticks).');
+    }
+    return tick;
+  }
+}
+
 // ── hierarchy ─────────────────────────────────────────────────────────────────
 
 /// Prints the design hierarchy as a tree.

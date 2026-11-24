@@ -109,6 +109,35 @@ class Formatter {
     return '$path @ tick $time: $value';
   }
 
+  /// Formats a `wavecrux.getTransitionsInWindow` response data map: each
+  /// signal with its value at the start, then one line per change, then how
+  /// to continue when it was cut short.
+  static String formatTransitions(Map<String, dynamic> result) {
+    final sb = StringBuffer();
+    final signals = result['signals'] as List<dynamic>? ?? [];
+    for (final s in signals.cast<Map<String, dynamic>>()) {
+      sb.writeln('${s['signal']} (at start: ${s['valueAtStart'] ?? '-'})');
+      final transitions = s['transitions'] as List<dynamic>? ?? [];
+      for (final t in transitions.cast<Map<String, dynamic>>()) {
+        sb.writeln('  ${t['time']}  ${t['value']}');
+      }
+      if (s['truncated'] == true) {
+        sb.writeln(
+          '  ${s['returned']} of ${s['transitionCount']}; '
+          'more from tick ${s['next_from']}',
+        );
+      }
+    }
+    final split = result['same_tick_split'] as List<dynamic>? ?? [];
+    for (final path in split) {
+      sb.writeln(
+        '$path changes more than once at its last tick returned; '
+        'ask again with a higher --limit to see every change at it',
+      );
+    }
+    return sb.toString().trimRight();
+  }
+
   /// Returns the raw JSON of [result], for use with --json.
   static String rawJson(Map<String, dynamic> result) => jsonEncode(result);
 }

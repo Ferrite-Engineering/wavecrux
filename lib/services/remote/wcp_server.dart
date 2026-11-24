@@ -181,6 +181,7 @@ class WcpServer {
     'focus_item',
     'add_markers',
     'wavecrux.getValueAt',
+    'wavecrux.getTransitionsInWindow',
     'wavecrux.getHierarchy',
     'wavecrux.getState',
     'wavecrux.setActiveTab',
