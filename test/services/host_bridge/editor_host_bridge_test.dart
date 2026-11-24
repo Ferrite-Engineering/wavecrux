@@ -230,6 +230,51 @@ void main() {
     });
   });
 
+  group('inbound request_highlight time', () {
+    test('a bare tick time moves the cursor to that tick', () async {
+      // The `wavecrux://` link grammar's `t=42`: ticks, no `crux.time_ps`.
+      final container = makeContainer(
+        source: FakeWaveformDataSource(scopes: [buildScope()]),
+      );
+      final transport = FakeHostBridgeTransport();
+      final bridge = EditorHostBridge(
+        ref: container.read(_refProvider),
+        channel: transport,
+      )..start();
+      addTearDown(bridge.dispose);
+
+      await bridge.handleFrame(
+        frameOf(CxpMessageKind.requestHighlight, <String, Object?>{
+          'element': <String, Object?>{'kind': 'signal', 'path': 'top.clk'},
+          'time': '42',
+        }),
+      );
+
+      expect(container.read(cursorStateProvider).primaryCursorTime, 42);
+      expect(postedOfType<RequestHighlightAck>(transport).single.honored, true);
+    });
+
+    test('without a time the cursor is left alone', () async {
+      final container = makeContainer(
+        source: FakeWaveformDataSource(scopes: [buildScope()]),
+      );
+      final transport = FakeHostBridgeTransport();
+      final bridge = EditorHostBridge(
+        ref: container.read(_refProvider),
+        channel: transport,
+      )..start();
+      addTearDown(bridge.dispose);
+
+      await bridge.handleFrame(
+        frameOf(CxpMessageKind.requestHighlight, <String, Object?>{
+          'element': <String, Object?>{'kind': 'signal', 'path': 'top.clk'},
+        }),
+      );
+
+      expect(container.read(cursorStateProvider).primaryCursorTime, isNull);
+    });
+  });
+
   group('inbound theme tokens', () {
     // Settles `appSettingsProvider` before returning: `cruxColorThemeProvider`
     // (via `WaveCruxCruxColorThemeNotifier.build`) watches it, so a frame

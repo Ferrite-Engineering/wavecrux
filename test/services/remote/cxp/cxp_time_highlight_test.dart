@@ -17,6 +17,7 @@ import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.da
 import 'package:wavecrux/features/viewer/providers/time_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
 import 'package:wavecrux/services/remote/cxp/cxp_inbound_handlers.dart';
+import 'package:wavecrux/services/remote/cxp/wavecrux_cxp_request_handler.dart';
 
 import '../../../helpers/cxp_test_overrides.dart';
 import '../../../helpers/fake_waveform_data_source.dart';
@@ -76,7 +77,14 @@ void main() {
       kind: ElementKind.signal,
       path: 'top.clk',
     ),
-  }) => dispatchCxpHighlight(container.read(_refProvider), element, metadata);
+    CxpTime? time,
+  }) => dispatchCxpHighlight(
+    container.read(_refProvider),
+    element,
+    metadata,
+    null,
+    time,
+  );
 
   int? cursor(ProviderContainer c) =>
       c.read(cursorStateProvider).primaryCursorTime;
@@ -254,6 +262,165 @@ void main() {
 
     expect(result.honored, isTrue);
     expect(cursor(container), isNull);
+  });
+
+  group('the time field (CXP 9.3.3)', () {
+    test(
+      'a bare tick count lands on that tick, in the dump own unit',
+      () async {
+        // The dump is 1 ns per tick, so the expected cursor is the count itself
+        // (spec: "42" on a 10 ns trace is 420 ns; here the unit is 1 ns).
+        final container = makeContainer();
+        addTearDown(container.dispose);
+
+        final result = await highlight(
+          container,
+          const {},
+          time: CxpTime.ticks(42),
+        );
+
+        expect(result.honored, isTrue);
+        expect(result.reason, isNull);
+        expect(cursor(container), 42);
+      },
+    );
+
+    test('a tick count needs no timescale', () async {
+      final container = makeContainer(timescale: null);
+      addTearDown(container.dispose);
+
+      final result = await highlight(
+        container,
+        const {},
+        time: CxpTime.ticks(42),
+      );
+
+      expect(result.reason, isNull);
+      expect(cursor(container), 42);
+    });
+
+    test('a tick count on a 10 ns dump is a tick, not 10 ticks', () async {
+      final container = makeContainer(
+        timescale: const Timescale(
+          factor: 10,
+          unit: TimescaleUnit.nanoSeconds,
+        ),
+      );
+      addTearDown(container.dispose);
+
+      await highlight(container, const {}, time: CxpTime.ticks(42));
+
+      expect(cursor(container), 42);
+    });
+
+    test(
+      'a time with a unit converts: 420 ns on a 10 ns dump is tick 42',
+      () async {
+        final container = makeContainer(
+          timescale: const Timescale(
+            factor: 10,
+            unit: TimescaleUnit.nanoSeconds,
+          ),
+        );
+        addTearDown(container.dispose);
+
+        await highlight(container, const {}, time: CxpTime.parse('420ns'));
+
+        expect(cursor(container), 42);
+      },
+    );
+
+    test('a half tick rounds up', () async {
+      final container = makeContainer();
+      addTearDown(container.dispose);
+
+      // 41.5 ns on a 1 ns dump: 41.5 rounds half up to 42.
+      await highlight(container, const {}, time: CxpTime.parse('41500ps'));
+
+      expect(cursor(container), 42);
+    });
+
+    test('time beats crux.time_ps when both are sent', () async {
+      final container = makeContainer();
+      addTearDown(container.dispose);
+
+      await highlight(
+        container,
+        {timeKey: 300000},
+        time: CxpTime.parse('7ns'),
+      );
+
+      expect(cursor(container), 7);
+    });
+
+    test(
+      'the CXP request handler carries the field from the request',
+      () async {
+        final container = makeContainer();
+        addTearDown(container.dispose);
+        final handler = WaveCruxCxpRequestHandler(container.read(_refProvider));
+
+        final timed = await handler.highlight(
+          RequestHighlight(
+            element: const ElementId(kind: ElementKind.signal, path: 'top.clk'),
+            time: CxpTime.ticks(42),
+          ),
+          const PeerIdentity(
+            peerId: 'netcrux-1-2',
+            productName: 'netcrux',
+            productVersion: '1.0.0',
+          ),
+        );
+
+        expect(timed.honored, isTrue);
+        expect(cursor(container), 42);
+      },
+    );
+
+    test('without it the cursor stays where it was', () async {
+      final container = makeContainer();
+      addTearDown(container.dispose);
+
+      final result = await highlight(container, const {});
+
+      expect(result.honored, isTrue);
+      expect(result.reason, isNull);
+      expect(cursor(container), isNull);
+    });
+
+    test(
+      'past the dump it clamps and says so; the highlight is kept',
+      () async {
+        final container = makeContainer();
+        addTearDown(container.dispose);
+
+        final result = await highlight(
+          container,
+          const {},
+          time: CxpTime.ticks(5000),
+        );
+
+        expect(result.honored, isTrue);
+        expect(result.reason, contains('nearest end'));
+        expect(cursor(container), 1000);
+      },
+    );
+
+    test('a time with a unit on a dump with no timescale is declined, not '
+        'guessed', () async {
+      final container = makeContainer(timescale: null);
+      addTearDown(container.dispose);
+
+      final result = await highlight(
+        container,
+        const {},
+        time: CxpTime.parse('7ns'),
+      );
+
+      expect(result.honored, isTrue);
+      expect(result.reason, contains('no timescale'));
+      expect(cursor(container), isNull);
+    });
   });
 
   group('scrolls the cursor into view', () {

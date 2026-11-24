@@ -1,6 +1,7 @@
 // Copyright 2026 Ferrite Engineering LLC
 // SPDX-License-Identifier: Apache-2.0
 
+import 'package:crux_cxp/crux_cxp.dart' show CxpTime;
 import 'package:flutter/foundation.dart';
 import 'package:wavecrux/domain/enums/timescale_unit.dart';
 import 'package:wavecrux/domain/models/timescale.dart';
@@ -26,6 +27,55 @@ class CxpTimeResolution {
 
   /// What the sender is told about the time, if anything.
   final String? reason;
+}
+
+/// Converts the `time` field of a `request_highlight` (CXP §9.3.3) to a tick
+/// of a waveform that declares [timescale] and spans `[startTime, endTime]`
+/// ticks, or, when [time] is null, the `crux.time_ps` entry of [metadata]
+/// ([resolveCxpTimePs]). `time` wins when both are present.
+///
+/// A bare tick count is already in the waveform's own unit and needs no
+/// timescale; a time with a unit is converted with the timescale, rounding to
+/// the nearest tick with a half tick up. Never throws and never refuses the
+/// highlight: a time outside the waveform is clamped to the nearest end with a
+/// reason, and a time with a unit on a waveform with no timescale is declined
+/// with a reason.
+CxpTimeResolution? resolveCxpTime(
+  CxpTime? time,
+  Map<String, Object?> metadata, {
+  required Timescale? timescale,
+  required int startTime,
+  required int endTime,
+}) {
+  if (time == null) {
+    return resolveCxpTimePs(
+      metadata,
+      timescale: timescale,
+      startTime: startTime,
+      endTime: endTime,
+    );
+  }
+  final BigInt? ticks;
+  if (time.isTicks) {
+    ticks = time.mantissa;
+  } else {
+    final exponent = timescale?.unit.exponent;
+    ticks = exponent == null || timescale == null
+        ? null
+        : time.toTicks(unitExponent: exponent, factor: timescale.factor);
+  }
+  if (ticks == null) {
+    return const CxpTimeResolution.declined(
+      'the time was not applied: the open waveform declares no timescale',
+    );
+  }
+  if (ticks < BigInt.from(startTime)) {
+    return CxpTimeResolution.placed(startTime, reason: _clamped);
+  }
+  if (ticks > BigInt.from(endTime)) {
+    return CxpTimeResolution.placed(endTime, reason: _clamped);
+  }
+  return CxpTimeResolution.placed(ticks.toInt());
 }
 
 /// Converts the `crux.time_ps` entry of [metadata] to a tick of a waveform that

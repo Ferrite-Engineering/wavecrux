@@ -72,9 +72,10 @@ part 'cxp_inbound_handlers.g.dart';
 /// * A kind this build does not know at all (the wire type is open, so a
 ///   newer peer may send one) — same graceful honored=false reply.
 ///
-/// A signal-like element may carry `crux.time_ps` in [metadata] (CXP §9.3.2):
-/// once the element is honoured, the primary cursor moves to that time and is
-/// scrolled into view. See [_applyTimeMetadata].
+/// A signal-like element may carry [time] (CXP §9.3.3) or, failing that,
+/// `crux.time_ps` in [metadata] (§9.3.2): once the element is honoured, the
+/// primary cursor moves to that time and is scrolled into view. `time` wins
+/// when both are present. See [_applyTimeMetadata].
 ///
 /// Failure modes:
 /// * No file loaded → `honored: false`, `reason: "no waveform file loaded"`.
@@ -87,6 +88,7 @@ Future<CruxCxpHandlerResult> dispatchCxpHighlight(
   ElementId element, [
   Map<String, Object?> metadata = const <String, Object?>{},
   CxpStreamCoordinate? coordinate,
+  CxpTime? time,
 ]) async {
   final outcome = await _dispatchCxpHighlight(
     ref,
@@ -94,10 +96,17 @@ Future<CruxCxpHandlerResult> dispatchCxpHighlight(
     metadata,
     coordinate,
   );
-  // The optional `crux.time_ps` (CXP §9.3.2) moves the cursor to a time on the
-  // signal just brought into view. It runs before the coordinate below, which
-  // is the more specific request and must win the cursor.
-  final timed = _applyTimeMetadata(ref, element, metadata, outcome.result);
+  // The optional `time` field (CXP §9.3.3), or failing that the `crux.time_ps`
+  // key (§9.3.2), moves the cursor to a time on the signal just brought into
+  // view. It runs before the coordinate below, which is the more specific
+  // request and must win the cursor.
+  final timed = _applyTimeMetadata(
+    ref,
+    element,
+    metadata,
+    time,
+    outcome.result,
+  );
   // `element` said what to open; the optional CXP §9.9 coordinate says
   // where to land inside it. Applied after the element, because a coordinate
   // is resolved against the trace the element just opened.
@@ -144,13 +153,15 @@ CruxCxpHandlerResult _applyTimeMetadata(
   Ref ref,
   ElementId element,
   Map<String, Object?> metadata,
+  CxpTime? time,
   CruxCxpHandlerResult elementResult,
 ) {
   if (!elementResult.honored) return elementResult;
   if (!_timedKinds.contains(element.kind.known)) return elementResult;
   final source = readActive(ref, waveformSourceProvider).value;
   if (source == null) return elementResult;
-  final resolution = resolveCxpTimePs(
+  final resolution = resolveCxpTime(
+    time,
     metadata,
     timescale: source.timescale,
     startTime: source.startTime,

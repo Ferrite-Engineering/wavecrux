@@ -27,6 +27,7 @@ class WaveCruxCxpRequestHandler extends CruxCxpRequestHandler {
     request.element,
     request.metadata,
     request.coordinate,
+    request.time,
   );
 
   @override

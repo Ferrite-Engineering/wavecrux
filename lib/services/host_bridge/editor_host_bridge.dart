@@ -269,6 +269,7 @@ class EditorHostBridge {
         message.element,
         message.metadata,
         message.coordinate,
+        message.time,
       );
       postCxp(
         RequestHighlightAck(
