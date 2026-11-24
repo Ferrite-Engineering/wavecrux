@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "tool": {
+    "name": "wavecrux",
+    "version": "0.0.0"
+  },
+  "command": "search",
+  "outcome": "completed",
+  "engines": [
+    {
+      "name": "wellen",
+      "version": "0.25",
+      "path": null
+    }
+  ],
+  "design": null,
+  "body": {
+    "query": "*",
+    "mode": "glob",
+    "matchCount": 6,
+    "returned": 2,
+    "truncated": true,
+    "signals": [
+      {
+        "signalRef": "0",
+        "path": "top.clk",
+        "bitWidth": 1,
+        "varType": "wire",
+        "direction": "unknown"
+      },
+      {
+        "signalRef": "1",
+        "path": "top.rst_n",
+        "bitWidth": 1,
+        "varType": "wire",
+        "direction": "unknown"
+      }
+    ]
+  },
+  "diagnostics": []
+}

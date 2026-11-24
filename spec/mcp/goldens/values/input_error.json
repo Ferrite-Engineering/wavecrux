@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "tool": {
+    "name": "wavecrux",
+    "version": "0.0.0"
+  },
+  "command": "values",
+  "outcome": "input_error",
+  "engines": [
+    {
+      "name": "wellen",
+      "version": "0.25",
+      "path": null
+    }
+  ],
+  "design": null,
+  "body": null,
+  "diagnostics": [
+    {
+      "severity": "error",
+      "code": "signal.not_found",
+      "message": "no signal `top.nope` in `/spec/fixtures/handshake.vcd`",
+      "fix": "find its full path with `wavecrux search`",
+      "location": {
+        "file": "/spec/fixtures/handshake.vcd",
+        "time": {
+          "at": 0,
+          "unit": "tick"
+        }
+      }
+    }
+  ]
+}

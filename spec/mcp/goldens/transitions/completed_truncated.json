@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "tool": {
+    "name": "wavecrux",
+    "version": "0.0.0"
+  },
+  "command": "transitions",
+  "outcome": "completed",
+  "engines": [
+    {
+      "name": "wellen",
+      "version": "0.25",
+      "path": null
+    }
+  ],
+  "design": null,
+  "body": {
+    "window": {
+      "start": 5,
+      "end": 40
+    },
+    "signals": [
+      {
+        "signal": "top.clk",
+        "signalRef": "0",
+        "bitWidth": 1,
+        "window": {
+          "start": 5,
+          "end": 40
+        },
+        "valueAtStart": "1",
+        "transitionCount": 7,
+        "returned": 2,
+        "truncated": true,
+        "transitions": [
+          {
+            "time": 5,
+            "value": "1"
+          },
+          {
+            "time": 10,
+            "value": "0"
+          }
+        ],
+        "next_from": 11,
+        "location": {
+          "file": "/spec/fixtures/handshake.vcd",
+          "signal": "top.clk",
+          "time": {
+            "at": 5,
+            "unit": "tick"
+          },
+          "link": "wavecrux://open?file=%2Fspec%2Ffixtures%2Fhandshake.vcd&signal=top.clk&t=5"
+        }
+      }
+    ]
+  },
+  "diagnostics": []
+}

@@ -1,0 +1,51 @@
+$version hand-written fixture for the wavecrux command line and MCP goldens $end
+$timescale 1ns $end
+$scope module top $end
+$var wire 1 ! clk $end
+$var wire 1 " rst_n $end
+$var wire 4 # count $end
+$var wire 1 $ valid $end
+$scope module u_sink $end
+$var wire 1 % ready $end
+$var wire 8 & data $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+#0
+$dumpvars
+0!
+0"
+bxxxx #
+x$
+z%
+bxxxxxxxx &
+$end
+#5
+1!
+#10
+0!
+1"
+b0000 #
+0$
+0%
+b00000000 &
+#15
+1!
+b0001 #
+#20
+0!
+1$
+b10100101 &
+#25
+1!
+b0010 #
+1%
+#30
+0!
+0$
+#35
+1!
+b0011 #
+0%
+#40
+0!

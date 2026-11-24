@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "body of wavecrux transitions --json and of the transitions tool",
+  "description": "Each signal entry is the in-app assistant's getTransitionsInWindow result, plus next_from and location. The window is half-open: a change at end is not in it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["window", "signals"],
+  "properties": {
+    "window": {"$ref": "#/$defs/window"},
+    "signals": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["signal", "signalRef", "bitWidth", "window", "valueAtStart", "transitionCount", "returned", "truncated", "transitions", "next_from", "location"],
+        "properties": {
+          "signal": {"type": "string"},
+          "signalRef": {"type": "string"},
+          "bitWidth": {"type": ["integer", "null"]},
+          "window": {"$ref": "#/$defs/window"},
+          "valueAtStart": {"type": ["string", "null"]},
+          "transitionCount": {"type": "integer", "minimum": 0},
+          "returned": {"type": "integer", "minimum": 0},
+          "truncated": {"type": "boolean"},
+          "transitions": {
+            "type": "array",
+            "maxItems": 10000,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["time", "value"],
+              "properties": {
+                "time": {"type": "integer", "minimum": 0},
+                "value": {"type": "string"}
+              }
+            }
+          },
+          "next_from": {"type": ["integer", "null"], "minimum": 0},
+          "location": {"anyOf": [{"$ref": "#/$defs/signal"}, {"$ref": "#/$defs/place"}]}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end"],
+      "properties": {
+        "start": {"type": "integer", "minimum": 0},
+        "end": {"type": "integer", "minimum": 0}
+      }
+    },
+    "time": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["at", "unit"],
+      "properties": {
+        "at": {"type": "integer", "minimum": 0},
+        "unit": {"const": "tick"}
+      }
+    },
+    "place": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "time"],
+      "properties": {
+        "file": {"type": "string"},
+        "time": {"$ref": "#/$defs/time"}
+      }
+    },
+    "signal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "signal", "time", "link"],
+      "properties": {
+        "file": {"type": "string"},
+        "signal": {"type": "string"},
+        "time": {"$ref": "#/$defs/time"},
+        "link": {"type": "string", "pattern": "^wavecrux://open\\?file=[^&]+&signal=[^&]+&t=[0-9]+$"}
+      }
+    }
+  }
+}

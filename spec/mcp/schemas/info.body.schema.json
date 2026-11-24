@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "body of wavecrux info --json and of the info tool",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["file", "format", "timescale", "start", "end", "signal_count", "scope_count", "scopes", "truncated", "location"],
+  "properties": {
+    "file": {"type": "string"},
+    "format": {"type": "string"},
+    "timescale": {
+      "anyOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["display", "seconds_per_tick"],
+          "properties": {
+            "display": {"type": "string"},
+            "seconds_per_tick": {"type": "number"}
+          }
+        }
+      ]
+    },
+    "start": {"type": "integer", "minimum": 0},
+    "end": {"type": "integer", "minimum": 0},
+    "signal_count": {"type": "integer", "minimum": 0},
+    "scope_count": {"type": "integer", "minimum": 0},
+    "scopes": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "signal_count"],
+        "properties": {
+          "path": {"type": "string"},
+          "signal_count": {"type": "integer", "minimum": 0}
+        }
+      }
+    },
+    "truncated": {"type": "boolean"},
+    "location": {"$ref": "#/$defs/place"}
+  },
+  "$defs": {
+    "place": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "time"],
+      "properties": {
+        "file": {"type": "string"},
+        "time": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["at", "unit"],
+          "properties": {
+            "at": {"type": "integer", "minimum": 0},
+            "unit": {"const": "tick"}
+          }
+        }
+      }
+    }
+  }
+}

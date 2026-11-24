@@ -1,0 +1,30 @@
+{
+  "root": "spec/fixtures",
+  "golden_root": "/spec/fixtures",
+  "golden_version": "0.0.0",
+  "cases": [
+    {"golden": "info/completed.json", "tool": "info", "arguments": {"file": "handshake.vcd"}},
+    {"golden": "info/usage_error.json", "tool": "info", "door": "mcp", "arguments": {"file": "../outside.vcd"}},
+    {"golden": "info/input_error.json", "tool": "info", "arguments": {"file": "missing.vcd"}},
+    {"golden": "info/engine_error.json", "tool": "info", "reader": "times_out", "arguments": {"file": "handshake.vcd"}},
+
+    {"golden": "search/completed.json", "tool": "search", "arguments": {"file": "handshake.vcd", "query": "data"}},
+    {"golden": "search/completed_truncated.json", "tool": "search", "arguments": {"file": "handshake.vcd", "query": "*", "glob": true, "limit": 2}},
+    {"golden": "search/usage_error.json", "tool": "search", "arguments": {"file": "handshake.vcd", "query": "data", "limit": 501}},
+    {"golden": "search/input_error.json", "tool": "search", "arguments": {"file": "missing.vcd", "query": "data"}},
+    {"golden": "search/engine_error.json", "tool": "search", "reader": "times_out", "arguments": {"file": "handshake.vcd", "query": "data"}},
+
+    {"golden": "values/completed_at.json", "tool": "values", "arguments": {"file": "handshake.vcd", "signals": ["top.valid", "top.u_sink.ready"], "at": "20ns"}},
+    {"golden": "values/completed_clock.json", "tool": "values", "arguments": {"file": "handshake.vcd", "signals": ["top.count", "top.u_sink.data", "top.nope"], "clock": "top.clk", "from": 0, "to": 40, "limit": 3}},
+    {"golden": "values/usage_error.json", "tool": "values", "arguments": {"file": "handshake.vcd", "signals": ["top.valid"], "at": 5, "clock": "top.clk"}},
+    {"golden": "values/input_error.json", "tool": "values", "arguments": {"file": "handshake.vcd", "signals": ["top.nope"], "at": 0}},
+    {"golden": "values/engine_error.json", "tool": "values", "reader": "times_out", "arguments": {"file": "handshake.vcd", "signals": ["top.valid"], "at": 0}},
+
+    {"golden": "transitions/completed.json", "tool": "transitions", "arguments": {"file": "handshake.vcd", "signals": ["top.count", "top.u_sink.ready"], "from": 0, "to": "30ns"}},
+    {"golden": "transitions/completed_truncated.json", "tool": "transitions", "arguments": {"file": "handshake.vcd", "signals": ["top.clk"], "from": 5, "to": 40, "limit": 2}},
+    {"golden": "transitions/usage_error.json", "tool": "transitions", "arguments": {"file": "handshake.vcd", "signals": ["top.clk"], "from": "1.5ns", "to": 10}},
+    {"golden": "transitions/usage_error_missing_field.json", "tool": "transitions", "door": "mcp", "arguments": {"file": "handshake.vcd", "signals": ["top.clk"], "from": 0}},
+    {"golden": "transitions/input_error.json", "tool": "transitions", "arguments": {"file": "missing.vcd", "signals": ["top.clk"], "from": 0, "to": 10}},
+    {"golden": "transitions/engine_error.json", "tool": "transitions", "reader": "times_out", "arguments": {"file": "handshake.vcd", "signals": ["top.clk"], "from": 0, "to": 10}}
+  ]
+}

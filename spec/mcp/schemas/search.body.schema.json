@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "body of wavecrux search --json and of the search tool: the in-app assistant's searchSignal result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["query", "mode", "matchCount", "returned", "truncated", "signals"],
+  "properties": {
+    "query": {"type": "string"},
+    "mode": {"enum": ["substring", "glob"]},
+    "matchCount": {"type": "integer", "minimum": 0},
+    "returned": {"type": "integer", "minimum": 0},
+    "truncated": {"type": "boolean"},
+    "signals": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["signalRef", "path", "bitWidth", "varType", "direction"],
+        "properties": {
+          "signalRef": {"type": "string"},
+          "path": {"type": "string"},
+          "bitWidth": {"type": ["integer", "null"]},
+          "varType": {"type": "string"},
+          "direction": {"type": "string"}
+        }
+      }
+    }
+  }
+}

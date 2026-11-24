@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "tool": {
+    "name": "wavecrux",
+    "version": "0.0.0"
+  },
+  "command": "search",
+  "outcome": "usage_error",
+  "engines": [],
+  "design": null,
+  "body": null,
+  "diagnostics": [
+    {
+      "severity": "error",
+      "code": "usage",
+      "message": "`--limit 501` is a whole number from 1 to 500",
+      "fix": null,
+      "location": null
+    }
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "tool": {
+    "name": "wavecrux",
+    "version": "0.0.0"
+  },
+  "command": "transitions",
+  "outcome": "completed",
+  "engines": [
+    {
+      "name": "wellen",
+      "version": "0.25",
+      "path": null
+    }
+  ],
+  "design": null,
+  "body": {
+    "window": {
+      "start": 0,
+      "end": 30
+    },
+    "signals": [
+      {
+        "signal": "top.count",
+        "signalRef": "2",
+        "bitWidth": 4,
+        "window": {
+          "start": 0,
+          "end": 30
+        },
+        "valueAtStart": "xxxx",
+        "transitionCount": 4,
+        "returned": 4,
+        "truncated": false,
+        "transitions": [
+          {
+            "time": 0,
+            "value": "xxxx"
+          },
+          {
+            "time": 10,
+            "value": "0000"
+          },
+          {
+            "time": 15,
+            "value": "0001"
+          },
+          {
+            "time": 25,
+            "value": "0010"
+          }
+        ],
+        "next_from": null,
+        "location": {
+          "file": "/spec/fixtures/handshake.vcd",
+          "signal": "top.count",
+          "time": {
+            "at": 0,
+            "unit": "tick"
+          },
+          "link": "wavecrux://open?file=%2Fspec%2Ffixtures%2Fhandshake.vcd&signal=top.count&t=0"
+        }
+      },
+      {
+        "signal": "top.u_sink.ready",
+        "signalRef": "4",
+        "bitWidth": 1,
+        "window": {
+          "start": 0,
+          "end": 30
+        },
+        "valueAtStart": "z",
+        "transitionCount": 3,
+        "returned": 3,
+        "truncated": false,
+        "transitions": [
+          {
+            "time": 0,
+            "value": "z"
+          },
+          {
+            "time": 10,
+            "value": "0"
+          },
+          {
+            "time": 25,
+            "value": "1"
+          }
+        ],
+        "next_from": null,
+        "location": {
+          "file": "/spec/fixtures/handshake.vcd",
+          "signal": "top.u_sink.ready",
+          "time": {
+            "at": 0,
+            "unit": "tick"
+          },
+          "link": "wavecrux://open?file=%2Fspec%2Ffixtures%2Fhandshake.vcd&signal=top.u_sink.ready&t=0"
+        }
+      }
+    ]
+  },
+  "diagnostics": []
+}

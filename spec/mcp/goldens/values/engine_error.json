@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "tool": {
+    "name": "wavecrux",
+    "version": "0.0.0"
+  },
+  "command": "values",
+  "outcome": "engine_error",
+  "engines": [
+    {
+      "name": "wellen",
+      "version": "0.25",
+      "path": null
+    }
+  ],
+  "design": null,
+  "body": null,
+  "diagnostics": [
+    {
+      "severity": "error",
+      "code": "engine.timeout",
+      "message": "wellen did not finish reading `/spec/fixtures/handshake.vcd` in time",
+      "fix": null,
+      "location": null
+    }
+  ]
+}

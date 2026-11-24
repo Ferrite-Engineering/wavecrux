@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "tool": {
+    "name": "wavecrux",
+    "version": "0.0.0"
+  },
+  "command": "values",
+  "outcome": "completed",
+  "engines": [
+    {
+      "name": "wellen",
+      "version": "0.25",
+      "path": null
+    }
+  ],
+  "design": null,
+  "body": {
+    "times": [
+      5,
+      15,
+      25
+    ],
+    "clock": "top.clk",
+    "truncated": true,
+    "next_from": 26,
+    "signals": [
+      {
+        "path": "top.count",
+        "bitWidth": 4,
+        "values": [
+          "xxxx",
+          "0001",
+          "0010"
+        ],
+        "location": {
+          "file": "/spec/fixtures/handshake.vcd",
+          "signal": "top.count",
+          "time": {
+            "at": 5,
+            "unit": "tick"
+          },
+          "link": "wavecrux://open?file=%2Fspec%2Ffixtures%2Fhandshake.vcd&signal=top.count&t=5"
+        }
+      },
+      {
+        "path": "top.u_sink.data",
+        "bitWidth": 8,
+        "values": [
+          "xxxxxxxx",
+          "00000000",
+          "10100101"
+        ],
+        "location": {
+          "file": "/spec/fixtures/handshake.vcd",
+          "signal": "top.u_sink.data",
+          "time": {
+            "at": 5,
+            "unit": "tick"
+          },
+          "link": "wavecrux://open?file=%2Fspec%2Ffixtures%2Fhandshake.vcd&signal=top.u_sink.data&t=5"
+        }
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "severity": "warning",
+      "code": "signal.not_found",
+      "message": "no signal `top.nope` in `/spec/fixtures/handshake.vcd`",
+      "fix": "find its full path with `wavecrux search`",
+      "location": {
+        "file": "/spec/fixtures/handshake.vcd",
+        "time": {
+          "at": 0,
+          "unit": "tick"
+        }
+      }
+    }
+  ]
+}

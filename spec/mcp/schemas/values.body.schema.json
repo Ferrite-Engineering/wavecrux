@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "body of wavecrux values --json and of the values tool",
+  "description": "values[i] is the signal's value at times[i]: the value recorded at that tick, after every change at it; null where nothing was recorded by then.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["times", "clock", "truncated", "next_from", "signals"],
+  "properties": {
+    "times": {"type": "array", "maxItems": 5000, "items": {"type": "integer", "minimum": 0}},
+    "clock": {"type": ["string", "null"]},
+    "truncated": {"type": "boolean"},
+    "next_from": {"type": ["integer", "null"], "minimum": 0},
+    "signals": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "bitWidth", "values", "location"],
+        "properties": {
+          "path": {"type": "string"},
+          "bitWidth": {"type": ["integer", "null"]},
+          "values": {"type": "array", "items": {"type": ["string", "null"]}},
+          "location": {"anyOf": [{"$ref": "#/$defs/signal"}, {"$ref": "#/$defs/place"}]}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "time": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["at", "unit"],
+      "properties": {
+        "at": {"type": "integer", "minimum": 0},
+        "unit": {"const": "tick"}
+      }
+    },
+    "place": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "time"],
+      "properties": {
+        "file": {"type": "string"},
+        "time": {"$ref": "#/$defs/time"}
+      }
+    },
+    "signal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "signal", "time", "link"],
+      "properties": {
+        "file": {"type": "string"},
+        "signal": {"type": "string"},
+        "time": {"$ref": "#/$defs/time"},
+        "link": {"type": "string", "pattern": "^wavecrux://open\\?file=[^&]+&signal=[^&]+&t=[0-9]+$"}
+      }
+    }
+  }
+}

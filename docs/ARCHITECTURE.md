@@ -942,6 +942,19 @@ Open core calls `loadFromBundle` in exactly two places: `app.dart` (registers th
 
 **RISC-V is the only architecture open core bundles.** The `architecture` parameter and the `IsaTraceDecoder` split keep the namespace from being welded to one ISA: an overlay can ship curated tables for another architecture under its own asset directory and register an `IsaTraceDecoder` subclass for it, and users can extend the RISC-V decoder with their own tables.
 
+### 6.8 The headless binary and `wavecrux mcp` (`lib/headless/`)
+
+`bin/wavecrux.dart` is a second entry point beside the app: a command-line binary with no Flutter in its import closure, built by `tool/build_cli.sh` (`dart build cli`, then the wellen FFI library copied into the bundle's `lib/`). It has four reading subcommands, `info`, `search`, `values` and `transitions`, each writing one JSON document with `--json`, and `mcp`, which serves the same four to an agent as Model Context Protocol tools on stdio.
+
+- **One implementation of each answer.** The waveform queries live in `lib/services/wave_session/wave_queries.dart`: `SignalSearchAnswer` (the in-app assistant's `searchSignal` body), `transitionsInWindow` (its `getTransitionsInWindow` body), `risingEdges` and `WaveSignalIndex`. The assistant's tools in `lib/services/ai/tools/viewer_navigation_tools.dart` read the loaded source from their providers and call these; the command line opens the file through the same `WellenProvider` and calls the same functions. The file is Flutter-free on purpose, as are `lib/services/waveform/wellen_provider_io.dart`, its isolate orchestrator, `display_changes.dart` and `lib/native/wellen_ffi_library_io.dart`, which the binary reads waveforms through.
+- **The document and the server** come from `crux_mcp` (crux-shared): the eight-member envelope, the six outcomes and the suite's exit codes (0, 1, 64, 65, 3, 77), the stdio transport, the tool table that generates both the `inputSchema` and the argument vector, path confinement under `--root`, the `wavecrux://` link builder and the `mcp.tool_call` counter. `lib/headless/wave_commands.dart` holds the four commands; `lib/headless/wavecrux_cli.dart` the command line and the server. Every tool call runs the command's own code with its argument vector plus `--json`, so a tool's text is byte for byte what the command writes.
+- **Two open files per process.** `WaveFileCache` (`lib/headless/wave_file_cache.dart`) keeps the two most recently used files, keyed by canonical path, size and modification time.
+- **Failures are never answers.** `classifyReaderFailure` maps what the reader threw to `input_error` (a file wellen refused or could not read) or `engine_error` (a hang, a worker that could not start, anything else); `test/headless/reader_failure_test.dart` carries its mutation proof.
+- **The library beside the binary.** `openWellenFfiLibrary` looks beside the executable and in `../lib/` after the bare name, so the bundle runs wherever it is unpacked.
+- **Guards.** `test/static/headless_cli_closure_test.dart` walks the binary's imports: no Flutter, and nothing of the in-app assistant or a model client. `test/headless/spec_goldens_test.dart` holds every tool to its golden documents and schemas under `spec/mcp/`, the tool's text to the command's stdout, and every link to the app's own link reader. `test/headless/mcp_server_test.dart` holds the definitions to the MCP tool contracts' text and budget, and refuses paths outside the root without opening them.
+
+The agent-facing description (when to call each tool, how to read the documents, how to cite) is `docs/agent/WAVECRUX.md`.
+
 ---
 
 ## 8. Coding Standards & Conventions

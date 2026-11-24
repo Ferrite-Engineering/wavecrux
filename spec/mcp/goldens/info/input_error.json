@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "tool": {
+    "name": "wavecrux",
+    "version": "0.0.0"
+  },
+  "command": "info",
+  "outcome": "input_error",
+  "engines": [],
+  "design": null,
+  "body": null,
+  "diagnostics": [
+    {
+      "severity": "error",
+      "code": "input.not_found",
+      "message": "`/spec/fixtures/missing.vcd` is not a file",
+      "fix": null,
+      "location": null
+    }
+  ]
+}

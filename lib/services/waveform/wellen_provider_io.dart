@@ -16,7 +16,7 @@ import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
-import 'package:flutter/foundation.dart';
+import 'package:meta/meta.dart';
 
 import 'package:wavecrux/domain/enums/scope_type.dart';
 import 'package:wavecrux/domain/enums/timescale_unit.dart';

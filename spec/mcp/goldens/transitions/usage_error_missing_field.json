@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "tool": {
+    "name": "wavecrux",
+    "version": "0.0.0"
+  },
+  "command": "transitions",
+  "outcome": "usage_error",
+  "engines": [],
+  "design": null,
+  "body": null,
+  "diagnostics": [
+    {
+      "severity": "error",
+      "code": "usage",
+      "message": "`to` is required for transitions",
+      "fix": null,
+      "location": null
+    }
+  ]
+}

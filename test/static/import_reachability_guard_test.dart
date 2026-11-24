@@ -30,11 +30,11 @@ import 'import_graph.dart';
 ///
 /// [ImportGraph] follows `import`, `export` and `part` from the entry points,
 /// taking every branch of a conditional import. The entry points are the
-/// program's real ones: `lib/main.dart` is the only `main` in `lib/`, it is
-/// also the web entry, there is no `bin/`, and no isolate is started from a
-/// URI or a `vm:entry-point` pragma — the worker isolates are spawned from
-/// functions in files the walk already reaches. The last test below keeps that
-/// claim honest.
+/// programs' real ones: `lib/main.dart` is the only `main` in `lib/` and also
+/// the web entry; `bin/wavecrux.dart` is the headless command line; and no
+/// isolate is started from a URI or a `vm:entry-point` pragma — the worker
+/// isolates are spawned from functions in files the walk already reaches. The
+/// last tests below keep that claim honest.
 ///
 /// ## Why an allowlist
 ///
@@ -96,6 +96,9 @@ const _exemptions = <_Exemption>[
   ),
 ];
 
+/// The programs this package builds: the app, and the headless command line.
+const _entryPoints = <String>['lib/main.dart', 'bin/wavecrux.dart'];
+
 void main() {
   late ImportGraph graph;
   late List<String> libFiles;
@@ -104,7 +107,7 @@ void main() {
     graph = ImportGraph.walk(
       root: '.',
       packageName: 'wavecrux',
-      entryPoints: const ['lib/main.dart'],
+      entryPoints: _entryPoints,
     );
     libFiles = graph.libraryFiles();
   });
@@ -122,7 +125,8 @@ void main() {
         isEmpty,
         reason:
             'These files are not imported, exported or included as a part by '
-            'anything lib/main.dart loads, so the app never runs them. A test '
+            'anything lib/main.dart or bin/wavecrux.dart loads, so no program '
+            'runs them. A test '
             'that imports one directly keeps passing; that is how dead code '
             'stays green.\n'
             'Delete the file (and any test that only tested it), wire it in, '
@@ -162,6 +166,7 @@ void main() {
     expect(graph.reached.length, greaterThan(700));
     expect(libFiles.length, greaterThan(700));
     expect(graph.reached, contains('lib/app.dart'));
+    expect(graph.reached, contains('lib/headless/wavecrux_cli.dart'));
     // Every branch of a conditional export is reached, the default included.
     expect(
       graph.reached,
@@ -197,6 +202,16 @@ void main() {
           'Add these as entry points of the walk above:\n'
           '${extraRoots.join('\n')}',
     );
+  });
+
+  test('every bin/ program is an entry point of the walk', () {
+    final programs = [
+      for (final f in Directory('bin').listSync())
+        if (f is File && f.path.endsWith('.dart'))
+          'bin/${f.uri.pathSegments.last}',
+    ];
+    expect(programs, isNotEmpty);
+    expect(_entryPoints, containsAll(programs));
   });
 }
 

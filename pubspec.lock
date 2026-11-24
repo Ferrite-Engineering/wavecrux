@@ -34,7 +34,7 @@ packages:
     source: hosted
     version: "4.5.2"
   args:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: args
       sha256: d0481093c50b1da8910eb0bb301626d4d8eb7284aa739614d2b394ee09e3ea04
@@ -337,6 +337,13 @@ packages:
     dependency: "direct main"
     description:
       path: "crux-shared/packages/crux_linux_integration"
+      relative: true
+    source: path
+    version: "0.1.0"
+  crux_mcp:
+    dependency: "direct main"
+    description:
+      path: "crux-shared/packages/crux_mcp"
       relative: true
     source: path
     version: "0.1.0"

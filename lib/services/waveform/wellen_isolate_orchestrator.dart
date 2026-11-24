@@ -30,7 +30,6 @@
 import 'dart:async';
 import 'dart:isolate';
 
-import 'package:flutter/foundation.dart';
 import 'package:meta/meta.dart';
 
 /// Signature for spawning the worker isolate.

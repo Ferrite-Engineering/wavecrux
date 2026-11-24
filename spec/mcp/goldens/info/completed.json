@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "tool": {
+    "name": "wavecrux",
+    "version": "0.0.0"
+  },
+  "command": "info",
+  "outcome": "completed",
+  "engines": [
+    {
+      "name": "wellen",
+      "version": "0.25",
+      "path": null
+    }
+  ],
+  "design": null,
+  "body": {
+    "file": "/spec/fixtures/handshake.vcd",
+    "format": "VCD",
+    "timescale": {
+      "display": "1ns",
+      "seconds_per_tick": 1e-9
+    },
+    "start": 0,
+    "end": 40,
+    "signal_count": 6,
+    "scope_count": 2,
+    "scopes": [
+      {
+        "path": "top",
+        "signal_count": 6
+      },
+      {
+        "path": "top.u_sink",
+        "signal_count": 2
+      }
+    ],
+    "truncated": false,
+    "location": {
+      "file": "/spec/fixtures/handshake.vcd",
+      "time": {
+        "at": 0,
+        "unit": "tick"
+      }
+    }
+  },
+  "diagnostics": []
+}

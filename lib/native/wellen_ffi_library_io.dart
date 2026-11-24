@@ -73,7 +73,15 @@ ffi.DynamicLibrary openWellenFfiLibrary({
   try {
     return opener(fileName);
   } on Object {
-    // Fall through to the test/dev fallbacks below.
+    // Fall through to the command-line and test/dev fallbacks below.
+  }
+
+  // The headless `wavecrux` binary: the library ships beside it, or in the
+  // `lib/` directory next to its `bin/` (the `dart build cli` bundle shape).
+  for (final candidate in wellenFfiBesideExecutable(
+    Platform.resolvedExecutable,
+  )) {
+    if (File(candidate).existsSync()) return opener(candidate);
   }
 
   final path = wellenFfiDevBuildPath();
@@ -82,6 +90,19 @@ ffi.DynamicLibrary openWellenFfiLibrary({
   // Last resort — retry the bare name so the caller sees the original
   // "image not found" / "library cannot be opened" platform error.
   return opener(fileName);
+}
+
+/// Where the headless binary at [executable] looks for the wellen FFI
+/// library, in order: beside the executable, then in `../lib/` (a
+/// `bundle/bin/wavecrux` beside `bundle/lib/`).
+List<String> wellenFfiBesideExecutable(String executable) {
+  final fileName = wellenFfiLibraryFileName();
+  final dir = File(executable).parent;
+  final sep = Platform.pathSeparator;
+  return <String>[
+    '${dir.path}$sep$fileName',
+    '${dir.parent.path}${sep}lib$sep$fileName',
+  ];
 }
 
 /// The first existing `cargo build` output of the wellen FFI library under

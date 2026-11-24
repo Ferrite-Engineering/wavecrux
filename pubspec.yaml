@@ -13,6 +13,9 @@ dependencies:
   # zip-style bundles. The bundle loader is part of the open-core Stage
   # widget SDK capability (free — see ARCHITECTURE §10).
   archive: ^4.0.0
+  # The headless `wavecrux` command line (`bin/wavecrux.dart`) parses its
+  # subcommands with it. Already resolved through build_runner; BSD-3-Clause.
+  args: ^2.7.0
   # The canvas's scroll-load throttle reads `clock.now()` rather than
   # `DateTime.now()`, so widget tests on fake time see mid-gesture refreshes.
   clock: ^1.1.3
@@ -138,6 +141,11 @@ dependencies:
   # the native macOS PlatformMenuBar or the in-window VS Code-style menu bar on
   # Windows/Linux, with shared separator grouping, platform-idiomatic
   # About/Settings/Quit placement, and the native key-equivalent guard.
+  # The suite's MCP server core, pure Dart: `wavecrux mcp`'s stdio transport,
+  # its tool table, the `--json` document the four subcommands write, the
+  # `wavecrux://` link builder and path confinement (lib/headless/).
+  crux_mcp:
+    path: ./crux-shared/packages/crux_mcp
   crux_menu_bar:
     path: ./crux-shared/packages/crux_menu_bar
   crux_policy:

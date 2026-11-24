@@ -27,7 +27,6 @@
 import 'dart:collection';
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:wavecrux/domain/interfaces/waveform_data_source.dart';
 import 'package:wavecrux/domain/models/signal_change.dart';
 import 'package:wavecrux/services/waveform/compact_changes.dart';
@@ -154,7 +153,11 @@ final class DisplayChanges extends ListBase<SignalChange> {
   /// Times in a `Uint64List` on native, which keeps large ticks unboxed; the
   /// web has no 64-bit typed array (see [CompactChanges.times]).
   static List<int> _newTimes(int n) =>
-      kIsWeb ? List<int>.filled(n, 0) : Uint64List(n);
+      _kIsWeb ? List<int>.filled(n, 0) : Uint64List(n);
+
+  /// Flutter's `kIsWeb`, spelled without Flutter so the headless command line
+  /// (whose closure has no `dart:ui`) can read waveforms through this file.
+  static const bool _kIsWeb = bool.fromEnvironment('dart.library.js_interop');
 
   static List<int> _gather(List<int> times, List<int> picks) {
     final n = picks.length;

@@ -15,8 +15,8 @@ import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.da
 import 'package:wavecrux/features/viewer/providers/time_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
 import 'package:wavecrux/services/ai/ai_tool.dart';
-import 'package:wavecrux/services/signal_query/signal_search_service.dart';
 import 'package:wavecrux/services/signal_query/x_trace_service.dart';
+import 'package:wavecrux/services/wave_session/wave_queries.dart';
 
 /// The open-core viewer-navigation AI tools.
 ///
@@ -78,34 +78,17 @@ AiTool _searchSignalTool() => AiTool(
         : SearchMode.substring;
     final limit = _asInt(args['limit']) ?? 50;
 
-    final variables = SignalSearchService.flattenVariables(source.rootScopes);
-    final results = SignalSearchService.search(
-      variables: variables,
+    final answer = SignalSearchAnswer.search(
+      rootScopes: source.rootScopes,
       query: query,
       mode: mode,
+      limit: limit,
     );
-    final limited = results.take(limit).toList();
 
     return AiToolResult.ok(
-      <String, Object?>{
-        'query': query,
-        'mode': mode.name,
-        'matchCount': results.length,
-        'returned': limited.length,
-        'truncated': results.length > limited.length,
-        'signals': <Map<String, Object?>>[
-          for (final r in limited)
-            <String, Object?>{
-              'signalRef': r.variable.signalRef,
-              'path': r.variable.fullPath,
-              'bitWidth': r.variable.bitWidth,
-              'varType': r.variable.varType.name,
-              'direction': r.variable.direction.name,
-            },
-        ],
-      },
+      answer.toJson(),
       citations: <AiCoordinate>[
-        for (final r in limited)
+        for (final r in answer.returned)
           AiCoordinate(
             signalRef: r.variable.signalRef,
             signalPath: r.variable.fullPath,
@@ -160,28 +143,18 @@ AiTool _getTransitionsInWindowTool() => AiTool(
     final (lo, hi) = _ordered(start, end);
     final limit = _asInt(args['limit']) ?? 200;
 
-    await source.loadSignal(variable.signalRef);
-    final changes = source.changesInRange(variable.signalRef, lo, hi);
-    final limited = changes.take(limit).toList();
-    final valueAtStart = source.valueAt(variable.signalRef, lo);
+    final answer = await transitionsInWindow(
+      source,
+      variable,
+      start: lo,
+      end: hi,
+      limit: limit,
+    );
 
     return AiToolResult.ok(
-      <String, Object?>{
-        'signal': variable.fullPath,
-        'signalRef': variable.signalRef,
-        'bitWidth': variable.bitWidth,
-        'window': <String, Object?>{'start': lo, 'end': hi},
-        'valueAtStart': valueAtStart,
-        'transitionCount': changes.length,
-        'returned': limited.length,
-        'truncated': changes.length > limited.length,
-        'transitions': <Map<String, Object?>>[
-          for (final c in limited)
-            <String, Object?>{'time': c.time, 'value': c.value},
-        ],
-      },
+      answer.toJson(),
       citations: <AiCoordinate>[
-        for (final c in limited)
+        for (final c in answer.returned)
           AiCoordinate(
             signalRef: variable.signalRef,
             signalPath: variable.fullPath,
@@ -476,13 +449,11 @@ WaveformDataSource? _source(Ref ref) => ref.read(waveformSourceProvider).value;
 
 /// Resolves a signal argument that may be either a [Variable.signalRef] or a
 /// full hierarchical path.
-Variable? _resolveVariable(Ref ref, String signal) {
-  // Prefer the path-keyed map: paths are unique per hierarchy row, whereas
-  // FST aliasing can map one signalRef onto many rows.
-  final byPath = ref.read(signalVariablesByPathProvider)[signal];
-  if (byPath != null) return byPath;
-  return ref.read(signalVariablesMapProvider)[signal];
-}
+Variable? _resolveVariable(Ref ref, String signal) => resolveSignal(
+  ref.read(signalVariablesByPathProvider),
+  ref.read(signalVariablesMapProvider),
+  signal,
+);
 
 /// The signals a selection-context call applies to: an explicit list (resolved
 /// from refs/paths) or the current tree selection.

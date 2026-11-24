@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "The document every wavecrux --json command writes and every tool of wavecrux mcp returns",
+  "description": "Eight members, always present, in this order. body is given per command by <command>.body.schema.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "tool", "command", "outcome", "engines", "design", "body", "diagnostics"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"const": "wavecrux"},
+        "version": {"type": "string"}
+      }
+    },
+    "command": {"enum": ["info", "search", "values", "transitions", null]},
+    "outcome": {"enum": ["completed", "failed_gate", "usage_error", "input_error", "engine_error", "licence_error"]},
+    "engines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "version", "path"],
+        "properties": {
+          "name": {"const": "wellen"},
+          "version": {"type": "string"},
+          "path": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "design": {"type": "null"},
+    "body": {"type": ["object", "null"]},
+    "diagnostics": {"type": "array", "items": {"$ref": "#/$defs/diagnostic"}}
+  },
+  "$defs": {
+    "diagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["severity", "code", "message", "fix", "location"],
+      "properties": {
+        "severity": {"enum": ["error", "warning", "note"]},
+        "code": {"type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$"},
+        "message": {"type": "string"},
+        "fix": {"type": ["string", "null"]},
+        "location": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/place"}, {"$ref": "#/$defs/signal"}]}
+      }
+    },
+    "time": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["at", "unit"],
+      "properties": {
+        "at": {"type": "integer", "minimum": 0},
+        "unit": {"const": "tick"}
+      }
+    },
+    "place": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "time"],
+      "properties": {
+        "file": {"type": "string"},
+        "time": {"$ref": "#/$defs/time"}
+      }
+    },
+    "signal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "signal", "time", "link"],
+      "properties": {
+        "file": {"type": "string"},
+        "signal": {"type": "string"},
+        "time": {"$ref": "#/$defs/time"},
+        "link": {"type": "string", "pattern": "^wavecrux://open\\?file=[^&]+&signal=[^&]+&t=[0-9]+$"}
+      }
+    }
+  }
+}

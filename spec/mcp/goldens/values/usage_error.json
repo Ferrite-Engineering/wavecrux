@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "tool": {
+    "name": "wavecrux",
+    "version": "0.0.0"
+  },
+  "command": "values",
+  "outcome": "usage_error",
+  "engines": [],
+  "design": null,
+  "body": null,
+  "diagnostics": [
+    {
+      "severity": "error",
+      "code": "usage",
+      "message": "give --at, or --clock with --from and --to",
+      "fix": null,
+      "location": null
+    }
+  ]
+}

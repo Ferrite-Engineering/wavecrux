@@ -47,6 +47,8 @@
 import 'dart:io';
 
 import 'package:crux_license/crux_license.dart';
+import 'package:crux_mcp/crux_mcp.dart'
+    show kMcpDurationBuckets, kMcpToolCallEvent, kMcpToolCallOutcomes;
 import 'package:crux_telemetry/crux_telemetry.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wavecrux/domain/enums/ai_provider.dart';
@@ -55,6 +57,7 @@ import 'package:wavecrux/domain/enums/search_mode.dart';
 import 'package:wavecrux/domain/enums/waveform_format.dart';
 import 'package:wavecrux/domain/interfaces/debug_advisor_service.dart';
 import 'package:wavecrux/features/viewer/widgets/export_dialog.dart';
+import 'package:wavecrux/headless/wavecrux_cli.dart';
 import 'package:wavecrux/services/telemetry/telemetry_event_catalog.dart';
 
 /// The ingestion Worker's `EVENT_NAME`.
@@ -117,6 +120,8 @@ const Set<String> _proOnlyEvents = <String>{
 const Set<String> _sharedEvents = <String>{
   'app.uncaught_error',
   'app.unclean_shutdown',
+  // `crux_mcp`'s `McpTelemetry`, once per tool call of `wavecrux mcp`.
+  'mcp.tool_call',
 };
 
 void main() {
@@ -330,6 +335,21 @@ void main() {
     );
     expect(entry.propertyKeys, isEmpty);
     expect(_sharedEvents, contains(kTelemetryUncleanShutdownEvent));
+  });
+
+  test("mcp.tool_call carries crux_mcp's vocabulary and the served tools", () {
+    // Recorded by `crux_mcp`, not by a call site here, so the lists are the
+    // package's: a token the package records that the catalog lacks would
+    // be a value the catalog never declared.
+    final entry = catalog.firstWhere((e) => e.name == kMcpToolCallEvent);
+    expect(entry.propertyKeys.toSet(), <String>{'tool', 'outcome', 'duration'});
+    expect(entry.enumeratedValues['outcome']!.toSet(), kMcpToolCallOutcomes);
+    expect(entry.enumeratedValues['duration'], kMcpDurationBuckets);
+    final served = WaveCruxCli(
+      telemetry: () => null,
+    ).commands.map((c) => c.tool.name);
+    expect(entry.enumeratedValues['tool'], containsAll(served));
+    expect(_sharedEvents, contains(kMcpToolCallEvent));
   });
 
   test('app.uncaught_error carries the shared counter vocabulary', () {
