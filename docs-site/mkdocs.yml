@@ -78,6 +78,7 @@ nav:
       - Sigrok bridge: sigrok-bridge.md
       - Automation & collaboration: automation-and-collaboration.md
       - Use in VS Code: vscode.md
+      - For coding agents: agents.md
   - Administration:
       - Org-wide configuration: administration.md
       - Policy file reference: https://edacrux.app/policy-reference
