@@ -2421,6 +2421,18 @@
       }
     }
   },
+  "decoderAutoBindRvfiHint": "이 신호들은 명령어 페치 버스가 아니라 RVFI 리타이어먼트 번들로 보이므로 이 디코더로는 바인딩할 수 없습니다. {widgetName} 스테이지 위젯은 21개의 RVFI 채널을 한 번에 바인딩합니다. 스테이지 패널에서 추가한 뒤 {actionName}을(를) 선택하세요.",
+  "@decoderAutoBindRvfiHint": {
+    "description": "Note in the decoder auto-bind preview when the loaded signals are an RVFI bundle and the decoder finds no instruction bus; widgetName is the RVFI Commit Inspector's display name and actionName is its Auto-bind RVFI channels label",
+    "placeholders": {
+      "widgetName": {
+        "type": "String"
+      },
+      "actionName": {
+        "type": "String"
+      }
+    }
+  },
   "decoderAutoBindAmbiguousBanner": "여러 버스 접두사가 동등하게 가능합니다. 하나를 선택하여 계속하세요.",
   "@decoderAutoBindAmbiguousBanner": {
     "description": "Warning banner shown when the auto-bind algorithm flags more than one bus prefix as equally viable"

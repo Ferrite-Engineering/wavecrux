@@ -228,6 +228,17 @@ Future<WaveCruxLinkOutcome> openWaveCruxLink(
     if (match == null) {
       signalNotFound = true;
     } else {
+      // Load the signal's changes before the row exists, so the Values column
+      // has a value on the first frame the row is built: otherwise it shows
+      // a dash until the canvas gets round to loading the signal.
+      if (!source.isSignalLoaded(match.signalRef)) {
+        try {
+          await source.loadSignal(match.signalRef);
+        } on Object {
+          // A signal the source will not load is shown as the canvas shows
+          // it; the link still selects it.
+        }
+      }
       _addAndSelect(root, opened.tab, match);
     }
   }

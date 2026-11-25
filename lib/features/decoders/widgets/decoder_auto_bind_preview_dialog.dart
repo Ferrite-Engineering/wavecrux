@@ -12,7 +12,13 @@ import 'package:wavecrux/domain/models/signal_binding.dart';
 import 'package:wavecrux/domain/models/variable.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/services/decoders/decoder_auto_bind_service.dart';
+import 'package:wavecrux/services/riscv/rvfi_detection_service.dart';
 import 'package:wavecrux/shared/layouts/device_class_provider.dart';
+
+/// How many distinct RVFI channels one scope must hold before the decoder
+/// preview calls it a retirement bundle. A lone `rvfi_valid` could be anything;
+/// valid, order, insn and the pc channels together are not an instruction bus.
+const int kRvfiBundleChannelThreshold = 4;
 
 /// Result of a preview dialog interaction.
 ///
@@ -94,11 +100,34 @@ class _DecoderAutoBindPreviewDialogState
   late AutoBindResult _result;
   String? _selectedPrefix;
 
+  /// True when the offered signals are an RVFI retirement bundle: several
+  /// canonical `rvfi_*` channels in one scope. Fixed for the dialog's life,
+  /// since the offered signals do not change while it is open.
+  late final bool _looksLikeRvfi;
+
   @override
   void initState() {
     super.initState();
     _result = _compute();
+    _looksLikeRvfi =
+        const RvfiDetectionService()
+            .detect(widget.availableSignals)
+            .report
+            .found
+            .length >=
+        kRvfiBundleChannelThreshold;
   }
+
+  /// The hint applies when a required pin found nothing: the decoder cannot
+  /// bind a retirement bundle, and a bare "No match" reads as a failure.
+  bool get _showRvfiHint =>
+      _looksLikeRvfi &&
+      widget.definition.requiredSignals.any(
+        (b) =>
+            (_result.candidates[b.name]?.confidence ??
+                AutoBindConfidence.noMatch) ==
+            AutoBindConfidence.noMatch,
+      );
 
   AutoBindResult _compute() {
     return widget.service.computeBindings(
@@ -202,6 +231,20 @@ class _DecoderAutoBindPreviewDialogState
                   unmatchedCount,
                   _result.candidates.length,
                 ),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontSize: metrics.bodyText,
+                ),
+              ),
+            ),
+          if (_showRvfiHint)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                l10n.decoderAutoBindRvfiHint(
+                  l10n.stageRiscvCommitDisplayName,
+                  l10n.stageRvfiAutoBindTitle,
+                ),
+                key: const ValueKey('decoderAutoBindRvfiHint'),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontSize: metrics.bodyText,
                 ),

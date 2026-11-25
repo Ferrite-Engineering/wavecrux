@@ -2554,6 +2554,18 @@
       }
     }
   },
+  "decoderAutoBindRvfiHint": "These signals look like an RVFI retirement bundle, not an instruction-fetch bus, so this decoder cannot bind them. The {widgetName} Stage widget binds all 21 RVFI channels at once: add it from the Stage panel and choose {actionName}.",
+  "@decoderAutoBindRvfiHint": {
+    "description": "Note in the decoder auto-bind preview when the loaded signals are an RVFI bundle and the decoder finds no instruction bus; widgetName is the RVFI Commit Inspector's display name and actionName is its Auto-bind RVFI channels label",
+    "placeholders": {
+      "widgetName": {
+        "type": "String"
+      },
+      "actionName": {
+        "type": "String"
+      }
+    }
+  },
   "decoderAutoBindAmbiguousBanner": "Multiple bus prefixes look equally plausible. Pick one to continue.",
   "@decoderAutoBindAmbiguousBanner": {
     "description": "Warning banner shown when the auto-bind algorithm flags more than one bus prefix as equally viable"

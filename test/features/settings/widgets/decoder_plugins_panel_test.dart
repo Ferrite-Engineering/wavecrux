@@ -4,6 +4,8 @@
 import 'dart:io';
 
 import 'package:crux_a11y/crux_a11y.dart';
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, debugDefaultTargetPlatformOverride;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -94,6 +96,59 @@ void main() {
     registerFallbackValue(const AppSettings());
     decoderPluginsAppSupportDirectory = () async => Directory.systemTemp;
     decoderPluginsLaunchUrl = (_) async => true;
+    decoderPluginsRevealDirectory = (_) async => true;
+  });
+
+  // ── Opening the plugin directory ───────────────────────────────────────────
+
+  group('Open plugin directory', () {
+    tearDown(() {
+      decoderPluginsRevealDirectory = (_) async => true;
+    });
+
+    Future<void> openDirectory(WidgetTester tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      try {
+        await tester.pumpWidget(
+          _wrap(
+            initialSettings: const AppSettings().copyWith(
+              pluginSafetyAcknowledged: true,
+            ),
+            loader: _FakePluginLoader(const <DecoderPluginInfo>[]),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Open plugin directory'));
+        await tester.pumpAndSettle();
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    }
+
+    testWidgets('reveals the folder, not a link', (tester) async {
+      final revealed = <String>[];
+      decoderPluginsRevealDirectory = (path) async {
+        revealed.add(path);
+        return true;
+      };
+      await openDirectory(tester);
+      expect(revealed, hasLength(1));
+      expect(
+        revealed.single,
+        anyOf(endsWith('wavecrux/decoders'), endsWith(r'WaveCrux\decoders')),
+      );
+    });
+
+    testWidgets('the panel shows its own error when the reveal throws', (
+      tester,
+    ) async {
+      decoderPluginsRevealDirectory = (_) async => throw StateError('boom');
+      await openDirectory(tester);
+      expect(
+        find.textContaining('Could not open plugin directory'),
+        findsOneWidget,
+      );
+    });
   });
 
   setUp(() {

@@ -185,6 +185,18 @@ void main() {
       }
     });
 
+    test('a stray quote in the file name is not echoed', () {
+      final refused = waveCruxLinkOutcomeMessage(
+        l10n,
+        const WaveCruxLinkOutcome.failed(
+          WaveCruxLinkFailure.notAWaveform,
+          fileName: 'a.vcd" ',
+        ),
+      )!;
+      expect(refused.message, contains('because a.vcd is not'));
+      expect(refused.message, isNot(contains('"')));
+    });
+
     test('a clean open and a cancel say nothing', () {
       expect(
         waveCruxLinkOutcomeMessage(

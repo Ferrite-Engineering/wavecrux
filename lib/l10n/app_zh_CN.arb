@@ -2421,6 +2421,18 @@
       }
     }
   },
+  "decoderAutoBindRvfiHint": "这些信号看起来是 RVFI 退休信号组，而不是指令取指总线，因此此解码器无法绑定它们。{widgetName} 舞台部件可一次绑定全部 21 个 RVFI 通道：请从舞台面板添加它，然后选择“{actionName}”。",
+  "@decoderAutoBindRvfiHint": {
+    "description": "Note in the decoder auto-bind preview when the loaded signals are an RVFI bundle and the decoder finds no instruction bus; widgetName is the RVFI Commit Inspector's display name and actionName is its Auto-bind RVFI channels label",
+    "placeholders": {
+      "widgetName": {
+        "type": "String"
+      },
+      "actionName": {
+        "type": "String"
+      }
+    }
+  },
   "decoderAutoBindAmbiguousBanner": "多个总线前缀同样合理。请选择一个以继续。",
   "@decoderAutoBindAmbiguousBanner": {
     "description": "Warning banner shown when the auto-bind algorithm flags more than one bus prefix as equally viable"

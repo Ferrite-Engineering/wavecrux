@@ -85,7 +85,7 @@ class OpenLinkConfirmDialog extends StatelessWidget {
   L10N l10n,
   WaveCruxLinkOutcome outcome,
 ) {
-  final name = outcome.fileName ?? '';
+  final name = _displayName(outcome.fileName ?? '');
   switch (outcome.failure) {
     case WaveCruxLinkFailure.malformed:
       return (message: l10n.linkRefusedMalformed, error: true);
@@ -112,6 +112,14 @@ class OpenLinkConfirmDialog extends StatelessWidget {
   if (notes.isEmpty) return null;
   return (message: notes.join(' '), error: false);
 }
+
+/// A file name taken from a link, ready to sit inside a sentence: the link
+/// chose it, so quote characters and control characters (a stray `"` from a
+/// mis-quoted command line) are dropped, the ends are trimmed and the length
+/// is bounded.
+String _displayName(String fileName) => _bounded(
+  fileName.replaceAll(RegExp(r'["\x00-\x1f]'), '').trim(),
+);
 
 /// A link chose this text, so it is shortened before it reaches the screen.
 String _bounded(String text) =>

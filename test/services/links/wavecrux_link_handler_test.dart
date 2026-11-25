@@ -7,6 +7,7 @@ library;
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
@@ -16,8 +17,11 @@ import 'package:wavecrux/features/cursors/providers/cursor_providers.dart';
 import 'package:wavecrux/features/signal_tree/providers/signal_tree_providers.dart';
 import 'package:wavecrux/features/tabs/providers/tab_providers.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
+import 'package:wavecrux/features/viewer/widgets/value_column_panel.dart';
+import 'package:wavecrux/features/viewer/widgets/value_column_row.dart';
 import 'package:wavecrux/features/workspace/providers/recent_lists.dart';
 import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
+import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/services/links/wavecrux_link.dart';
 import 'package:wavecrux/services/links/wavecrux_link_handler.dart';
 import 'package:wavecrux/services/remote/remote_control_notifier.dart';
@@ -280,6 +284,36 @@ void main() {
       expect(unknown.opened, isTrue);
       expect(unknown.signalNotFound, isTrue);
       expect(unknown.signal, 'top.nope');
+    });
+
+    testWidgets('the Values column has the value on the first frame, no dash', (
+      tester,
+    ) async {
+      final h = (await tester.runAsync(_harness))!;
+      final path = _copy(h);
+      final outcome = (await tester.runAsync(
+        () => h.open(_link(path, signal: 'top.data', t: '30ns')),
+      ))!;
+      expect(outcome.signalNotFound, isFalse);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: h.activeTab(),
+          child: const MaterialApp(
+            localizationsDelegates: L10N.localizationsDelegates,
+            supportedLocales: L10N.supportedLocales,
+            home: Scaffold(body: ValueColumnPanel()),
+          ),
+        ),
+      );
+      // The first frame the row is built, with no later pump to catch up.
+      final row = tester.widget<ValueColumnRow>(find.byType(ValueColumnRow));
+      expect(row.signalValue, isNotNull);
+      expect(find.text('—'), findsNothing);
+
+      // Let the provider scheduler's zero-length timer run before the test
+      // ends.
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(milliseconds: 10));
     });
 
     test('a signal already in the view is selected, not added twice', () async {

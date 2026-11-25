@@ -2421,6 +2421,18 @@
       }
     }
   },
+  "decoderAutoBindRvfiHint": "これらの信号は命令フェッチバスではなく RVFI リタイアメントバンドルのようです。このデコーダではバインドできません。{widgetName} ステージウィジェットは 21 個の RVFI チャネルをまとめてバインドします。ステージパネルから追加し、{actionName} を選択してください。",
+  "@decoderAutoBindRvfiHint": {
+    "description": "Note in the decoder auto-bind preview when the loaded signals are an RVFI bundle and the decoder finds no instruction bus; widgetName is the RVFI Commit Inspector's display name and actionName is its Auto-bind RVFI channels label",
+    "placeholders": {
+      "widgetName": {
+        "type": "String"
+      },
+      "actionName": {
+        "type": "String"
+      }
+    }
+  },
   "decoderAutoBindAmbiguousBanner": "複数のバスプレフィックスが同じくらい妥当です。1 つを選択してください。",
   "@decoderAutoBindAmbiguousBanner": {
     "description": "Warning banner shown when the auto-bind algorithm flags more than one bus prefix as equally viable"

@@ -38,10 +38,19 @@ Future<Directory?> _defaultAppSupportDirectory() async {
   }
 }
 
-/// Test seam — overridden by tests that want to assert the directory
-/// reveal action without launching a real `file://` URL.
+/// Test seam — overridden by tests that want to assert the Learn more link
+/// without launching a real URL.
 @visibleForTesting
 Future<bool> Function(Uri uri) decoderPluginsLaunchUrl = cruxOpenUrl;
+
+/// Test seam — overridden by tests that want to assert the directory
+/// reveal action without spawning a file manager. The folder goes through
+/// [cruxRevealFile], not [cruxOpenUrl]: a folder is not a link, and a browser
+/// failure toast is the wrong words for it. [cruxRevealFile] says so itself
+/// (naming the path, with Copy) when no file manager took the request.
+@visibleForTesting
+Future<bool> Function(String path) decoderPluginsRevealDirectory =
+    cruxRevealFile;
 
 /// Settings → Decoders → Plugins panel.
 ///
@@ -306,7 +315,7 @@ class _ActionRow extends ConsumerWidget {
       if (!dir.existsSync()) {
         dir.createSync(recursive: true);
       }
-      await decoderPluginsLaunchUrl(Uri.directory(path));
+      await decoderPluginsRevealDirectory(path);
     } on Object catch (e) {
       if (context.mounted) {
         showCruxErrorSnack(

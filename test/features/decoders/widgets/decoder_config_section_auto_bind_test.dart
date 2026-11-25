@@ -148,6 +148,97 @@ void main() {
     });
   });
 
+  group('Auto-bind preview on an RVFI retirement bundle', () {
+    const fetchDef = DecoderDefinition(
+      id: 'fetch_bus',
+      displayName: 'Fetch bus',
+      description: 'Instruction fetch bus',
+      requiredSignals: [
+        SignalBinding(name: 'clk', description: 'Clock', bitWidth: 1),
+        SignalBinding(
+          name: 'instruction',
+          description: 'Instruction word',
+          bitWidth: 32,
+        ),
+      ],
+    );
+    const rvfi = [
+      'tb.rvfi_valid',
+      'tb.rvfi_order',
+      'tb.rvfi_insn',
+      'tb.rvfi_pc_rdata',
+      'tb.rvfi_pc_wdata',
+    ];
+
+    for (final locale in const [
+      Locale('en'),
+      Locale('zh', 'CN'),
+      Locale('zh'),
+      Locale('ja'),
+      Locale('ko'),
+    ]) {
+      testWidgets('points at the RVFI Commit Inspector in $locale', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          definition: fetchDef,
+          signals: _signals(['tb.clk', ...rvfi]),
+          locale: locale,
+        );
+        final l10n = _l10n(tester);
+        await tester.tap(find.text(l10n.decoderConfigAutoBindButton));
+        await tester.pumpAndSettle();
+
+        final hint = find.byKey(const ValueKey('decoderAutoBindRvfiHint'));
+        expect(hint, findsOneWidget);
+        expect(
+          tester.widget<Text>(hint).data,
+          l10n.decoderAutoBindRvfiHint(
+            l10n.stageRiscvCommitDisplayName,
+            l10n.stageRvfiAutoBindTitle,
+          ),
+        );
+      });
+    }
+
+    testWidgets('no hint when the decoder bound everything it needs', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        definition: fetchDef,
+        signals: inspectorTestSignals([
+          inspectorTestVar('tb.clk'),
+          inspectorTestVar('tb.instruction', bitWidth: 32),
+          for (final path in rvfi) inspectorTestVar(path),
+        ]),
+      );
+      final l10n = _l10n(tester);
+      await tester.tap(find.text(l10n.decoderConfigAutoBindButton));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('decoderAutoBindRvfiHint')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('no hint on a trace with no RVFI channels', (tester) async {
+      await _pump(
+        tester,
+        definition: _spiDef,
+        signals: _signals(['tb.sclk']),
+      );
+      final l10n = _l10n(tester);
+      await tester.tap(find.text(l10n.decoderConfigAutoBindButton));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('decoderAutoBindRvfiHint')),
+        findsNothing,
+      );
+    });
+  });
+
   group('Auto-bind preview summary', () {
     testWidgets('summary shows expected counts for SPI', (tester) async {
       // 2 required (sclk, mosi) + 2 optional (miso, cs). All four resolve
