@@ -10,7 +10,8 @@
 // Each claim below is mechanically checkable against `lib/`:
 //
 //  1. `bootstrap()` installs the CXP overrides (binding, request handler,
-//     version, attention, server policy, send observer).
+//     version, attention, foreground hand-off, server policy, send
+//     observer), and every desktop runner answers the hand-off's channel.
 //  2. The handler override is WaveCrux's, not the shared do-nothing default,
 //     and the server policy override is the organization's rule.
 //  3. The shared runtime is started at launch.
@@ -56,6 +57,9 @@ void main() {
       'cruxCxpRequestHandlerProvider.overrideWith(WaveCruxCxpRequestHandler.new)',
       'cruxCxpProductVersionProvider.overrideWith',
       'cruxCxpAttentionRequesterProvider.overrideWithValue',
+      'cruxCxpForegroundHandoffProvider.overrideWithValue',
+      'windowForegroundHandoff.yieldForegroundTo(',
+      'windowForegroundHandoff.takeForeground(',
       'cruxCxpServerPolicyProvider.overrideWith',
       'resolveCxpServerPolicy(',
       'crossProbeSendObserverProvider.overrideWith',
@@ -67,6 +71,35 @@ void main() {
         reason: 'wavecrux_cxp_overrides.dart no longer contains `$required`',
       );
     }
+  });
+
+  test('every desktop runner answers the foreground hand-off channel', () {
+    // The Dart override hands over through `crux_window_chrome/foreground`;
+    // a runner that does not answer it degrades to "no hand-off" in silence.
+    for (final runner in <String>[
+      'macos/Runner/WindowForegroundPlugin.swift',
+      'windows/runner/flutter_window.cpp',
+      'linux/runner/my_application.cc',
+    ]) {
+      final source = _read(runner);
+      expect(
+        source,
+        contains('"crux_window_chrome/foreground"'),
+        reason: '$runner does not register the foreground channel',
+      );
+      expect(source, contains('yieldForeground'), reason: runner);
+      expect(source, contains('takeForeground'), reason: runner);
+    }
+    expect(
+      _read('macos/Runner/MainFlutterWindow.swift'),
+      contains('WindowForegroundPlugin(messenger:'),
+      reason: 'the macOS plugin is written but never registered',
+    );
+    expect(
+      _read('macos/Runner.xcodeproj/project.pbxproj'),
+      contains('WindowForegroundPlugin.swift in Sources'),
+      reason: 'the macOS plugin is not compiled into the Runner target',
+    );
   });
 
   test('the request handler reaches the inbound dispatchers', () {

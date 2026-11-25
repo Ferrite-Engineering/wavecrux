@@ -20,6 +20,10 @@ import 'package:wavecrux/services/remote/cxp/wavecrux_cxp_request_handler.dart';
 /// off never starts the server or writes a manifest, even briefly. On the web
 /// and on a phone no CXP code runs, and the settings are left to load lazily.
 ///
+/// On a desktop it also wires the directed cross-probe's foreground hand-off
+/// ([cruxCxpForegroundHandoffProvider]), which shows the "Bring the target
+/// forward" switch in Settings.
+///
 /// The organization's policy still decides whether the server may run: the
 /// shared runtime asks [cruxCxpServerPolicyProvider], answered here by
 /// `resolveCxpServerPolicy` (a locked org value beats the engineer's own
@@ -42,6 +46,17 @@ Future<List<Override>> wavecruxCxpOverrides() async {
     cruxCxpAttentionRequesterProvider.overrideWithValue(
       () => unawaited(requestUserAttention()),
     ),
+    // A directed cross-probe hands the foreground to the target. The native
+    // side is the runner's `crux_window_chrome/foreground` channel; read
+    // through the settable global at each call, so a test can swap it.
+    if (cruxCxpDesktopHost())
+      cruxCxpForegroundHandoffProvider.overrideWithValue(
+        CruxCxpForegroundHandoff(
+          yieldTo: (processId) =>
+              windowForegroundHandoff.yieldForegroundTo(processId),
+          take: (token) => windowForegroundHandoff.takeForeground(token),
+        ),
+      ),
     cruxCxpServerPolicyProvider.overrideWith((ref) {
       final policy = ref.watch(cruxPolicyProvider).document;
       return ({required bool userEnabled}) =>
