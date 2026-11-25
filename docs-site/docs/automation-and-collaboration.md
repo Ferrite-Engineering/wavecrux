@@ -117,10 +117,11 @@ From WaveCrux 1.2 there are two quicker ways in, both free:
 
 From WaveCrux 1.2 the toolbar badge counts the peers you are connected to, the status row reads **CXP status**, and a new port in Settings applies at once, without a restart.
 
-The server and its behavior live under **Settings → CXP Cross-Probe** (**Enable CXP server**, **CXP port** (default `54322`, distinct from the WCP port), and **CXP Status**) along with two options that are on by default:
+The server and its behavior live under **Settings → CXP Cross-Probe** (**Enable CXP server**, **CXP port** (default `54322`, distinct from the WCP port), and **CXP Status**) along with three options that are on by default:
 
 - **Broadcast selection automatically.** As you select signals, WaveCrux announces the selection to connected peers so they follow along live. Turn it off to share only explicit sends.
 - **Request attention on cross-probe.** When a peer cross-probes you, WaveCrux bounces the dock (or flashes the taskbar) so you notice: it never steals focus.
+- **Bring the target forward on a directed cross-probe.** When you cross-probe to one named app, that app comes to the front. Both apps need this on. A broadcast selection never brings an app forward.
 
 From WaveCrux 1.2 the other suite tools' **Cross-probe to** menus show the file open in WaveCrux's active tab beside its name (the file name only, never its folder), and the name follows as you switch tabs.
 
