@@ -24,8 +24,8 @@ link that leads outside it, or a network path is refused and never opened.
 WaveCrux Pro adds a fifth, `advise`: the Debug Advisor's rule-based findings at
 one time (X propagation, clock-domain crossing, stuck-at and setup/hold
 proximity), each with a confidence and a link. A finding is a heuristic, not a
-verdict; check it in the waveform before reporting it as fact. The Pro binary is
-`wavecrux_pro`, started the same way, and `advise` needs a licence that admits
+verdict; check it in the waveform before reporting it as fact. The Pro command is
+the one in the desktop bundle, started the same way, and `advise` needs a licence that admits
 Pro, read from `--license-file`, then the `WAVECRUX_LICENSE_FILE` environment
 variable, then the organisation's `.crux-policy.json`. Without one it answers
 with a licence error and reads nothing. The four other tools answer at every
@@ -49,7 +49,7 @@ agent read the same document.
 The `wavecrux` command must be on the `PATH` of the program that starts the
 server. The instructions below were checked against each host's own
 documentation on 2026-11-24; hosts change, so check theirs if a step differs.
-To use Pro, replace `wavecrux` with `wavecrux_pro`.
+To use Pro, replace `wavecrux` with the Pro command from the desktop bundle.
 
 === "Claude Code"
 
@@ -84,7 +84,7 @@ To use Pro, replace `wavecrux` with `wavecrux_pro`.
     configure. The extension registers the server with the editor for each
     workspace folder you open, with that folder as `--root`, and the editor asks
     you before it first runs. It needs a folder open in a trusted workspace.
-    It finds `wavecrux_pro` or `wavecrux` through the `edacrux.wave.executable`
+    It finds the Pro command or `wavecrux` through the `edacrux.wave.executable`
     setting, then your `PATH`. Turn registration off with the
     `edacrux.wave.mcp.enabled` setting.
 
