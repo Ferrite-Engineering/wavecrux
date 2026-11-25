@@ -16,7 +16,6 @@ import 'package:wavecrux/core/shortcuts/action_tier_label.dart';
 import 'package:wavecrux/core/shortcuts/shortcut_action.dart';
 import 'package:wavecrux/domain/enums/device_class.dart';
 import 'package:wavecrux/features/diagnostics/providers/diagnostics_providers.dart';
-import 'package:wavecrux/features/menu_bar/edit_commands.dart';
 import 'package:wavecrux/features/menu_bar/widgets/desktop_menu_bar.dart';
 import 'package:wavecrux/features/viewer/providers/waveform_source_provider.dart';
 import 'package:wavecrux/features/workspace/providers/workspace_provider.dart';
@@ -216,8 +215,13 @@ void main() {
       final l10n = L10N.of(tester.element(find.byType(PlatformMenuBar)));
       // The macOS Edit menu also carries the standard Cut / Copy / Paste /
       // Select All, which are the system's commands and not actions of the
-      // catalog; edit_commands_test.dart covers them.
-      final editLabels = {for (final c in EditCommand.values) c.label(l10n)};
+      // catalog; the shared menu bar's tests cover them.
+      final editLabels = {
+        l10n.menuEditCut,
+        l10n.menuEditCopy,
+        l10n.menuEditPaste,
+        l10n.menuEditSelectAll,
+      };
       final leafLabels = _allLeafItems(
         bar,
       ).map((e) => e.label).where((l) => !editLabels.contains(l)).toSet();

@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:crux_menu_bar/crux_menu_bar.dart';
 import 'package:flutter/gestures.dart'
     show computePanSlop, kDoubleTapSlop, kDoubleTapTimeout, kPrimaryButton;
 import 'package:flutter/material.dart';
@@ -10,7 +11,6 @@ import 'package:flutter/rendering.dart' show SelectedContent;
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:markdown/markdown.dart' as md;
 import 'package:url_launcher/url_launcher.dart';
-import 'package:wavecrux/features/menu_bar/edit_commands.dart';
 
 /// Opens a note's link in the system browser.
 ///
@@ -95,7 +95,7 @@ class _AnnotationMarkdownState extends State<AnnotationMarkdown> {
 
   @override
   void dispose() {
-    EditSelectionRegistry.instance.forget(this);
+    CruxEditSelectionRegistry.instance.forget(this);
     _focus.dispose();
     super.dispose();
   }
@@ -104,7 +104,7 @@ class _AnnotationMarkdownState extends State<AnnotationMarkdown> {
   // selection even when no key press found its way to the text. The area
   // reports null when its selection clears, as it does on losing focus.
   void _reportSelection(SelectedContent? content) =>
-      EditSelectionRegistry.instance.report(this, content?.plainText);
+      CruxEditSelectionRegistry.instance.report(this, content?.plainText);
 
   void _markLinkPress() => _pressOnLink = true;
 

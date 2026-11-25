@@ -16,7 +16,7 @@ import 'package:wavecrux/core/shortcuts/menu_layout.dart';
 import 'package:wavecrux/core/shortcuts/shortcut_action.dart';
 import 'package:wavecrux/core/shortcuts/shortcut_bindings_provider.dart';
 import 'package:wavecrux/features/annotations/providers/active_tab_annotation_copy_provider.dart';
-import 'package:wavecrux/features/menu_bar/edit_commands.dart';
+import 'package:wavecrux/features/menu_bar/copy_annotation_action.dart';
 import 'package:wavecrux/l10n/generated/l10n.dart';
 import 'package:wavecrux/shared/widgets/wavecrux_icon_image.dart';
 
@@ -66,39 +66,9 @@ class DesktopMenuBar extends ConsumerStatefulWidget {
 }
 
 class _DesktopMenuBarState extends ConsumerState<DesktopMenuBar> {
-  /// Watches focus and text selection for the macOS Edit menu's enablement;
-  /// null on the other platforms, whose menu carries no Edit commands.
-  ///
-  /// [PlatformMenuBar] sends the menu to the system only when it rebuilds, so
-  /// an item that should enable or grey needs a rebuild. The watcher notifies
-  /// only when an item's state would change, not on every keystroke.
-  EditAvailabilityWatcher? _editWatcher;
-
   late final CopyAnnotationAction _copyAnnotation = CopyAnnotationAction(
     () => ref.read(activeTabAnnotationCopyTextProvider),
   );
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final isMacOS = Theme.of(context).platform == TargetPlatform.macOS;
-    if (isMacOS && _editWatcher == null) {
-      _editWatcher = EditAvailabilityWatcher()..addListener(_editChanged);
-    } else if (!isMacOS && _editWatcher != null) {
-      _editWatcher!.dispose();
-      _editWatcher = null;
-    }
-  }
-
-  void _editChanged() {
-    if (mounted) setState(() {});
-  }
-
-  @override
-  void dispose() {
-    _editWatcher?.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,61 +78,34 @@ class _DesktopMenuBarState extends ConsumerState<DesktopMenuBar> {
     final isMacOS = Theme.of(context).platform == TargetPlatform.macOS;
     // Whether an annotation is selected, not its text: the text is read when
     // Copy runs, so editing the note does not rebuild the menu.
-    final annotationSelected = ref.watch(
+    ref.watch(
       activeTabAnnotationCopyTextProvider.select((text) => text != null),
     );
-    final edit =
-        _editWatcher?.availability(annotationSelected: annotationSelected) ??
-        const EditAvailability();
 
-    return CruxDesktopMenuBar<Object>(
-      layout: _layout,
-      appActions: _appActions,
+    return CruxDesktopMenuBar<ShortcutAction>(
+      layout: kMenuLayout,
+      appActions: kAppMenuActions,
       categoryLabel: (category) => category.label(l10n),
       categoryAcceleratorLabel: (category) => category.acceleratorLabel(l10n),
       windowMenuLabel: l10n.menuWindow,
-      labelOf: (item) => switch (item) {
-        EditCommand() => item.label(l10n),
-        final ShortcutAction action =>
+      labelOf: (action) =>
           _label(action, l10n, isMacOS: isMacOS) +
-              tierLabelSuffix(descriptorFor(action).requiredTier, l10n),
-        _ => '',
-      },
-      shortcutOf: (item) => switch (item) {
-        EditCommand() => item.activator,
-        final ShortcutAction action => bindings[action],
-        _ => null,
-      },
-      isVisible: (item) => switch (item) {
-        // The standard Edit commands are the macOS menu's. The Windows and
-        // Linux menu is a row of in-window buttons that takes the focus when
-        // it opens, so a Copy there would have no selection to copy; the
-        // keys work in the focused widget on those platforms already.
-        EditCommand() => isMacOS,
-        final ShortcutAction action => isActionVisibleIn(
-          action,
-          ActionSurface.menu,
-          ctx,
-        ),
-        _ => false,
-      },
-      // Enabled only when the command would do something, as in any Mac
-      // app. A greyed item is skipped as a key equivalent, so its key falls
-      // through to the alert sound: the system's signal that there is
-      // nothing to copy, cut, paste or select.
-      isEnabled: (item) => switch (item) {
-        EditCommand() => edit.isEnabled(item),
-        final ShortcutAction action => isActionEnabled(action, ctx),
-        _ => false,
-      },
-      onAction: (item) => switch (item) {
-        EditCommand() => performEditCommand(
-          item,
-          annotationText: ref.read(activeTabAnnotationCopyTextProvider),
-        ),
-        final ShortcutAction action => widget.onAction(action),
-        _ => null,
-      },
+          tierLabelSuffix(descriptorFor(action).requiredTier, l10n),
+      shortcutOf: (action) => bindings[action],
+      isVisible: (action) => isActionVisibleIn(action, ActionSurface.menu, ctx),
+      isEnabled: (action) => isActionEnabled(action, ctx),
+      onAction: widget.onAction,
+      // The macOS Edit menu leads with Cut, Copy, Paste and Select All, and
+      // Copy falls back to the selected annotation. The shared menu bar
+      // renders them on macOS only; the Windows and Linux in-window menu would
+      // take the focus, and the keys work there already.
+      editCommands: CruxEditCommands(
+        cutLabel: l10n.menuEditCut,
+        copyLabel: l10n.menuEditCopy,
+        pasteLabel: l10n.menuEditPaste,
+        selectAllLabel: l10n.menuEditSelectAll,
+        copyFallback: () => ref.read(activeTabAnnotationCopyTextProvider),
+      ),
       // States the edition in force, disabled, above `About WaveCrux`.
       // Null at Open Core, so this is safe to pass unconditionally: the
       // Pro overlay supplies the licence status that gives it a value.
@@ -193,27 +136,6 @@ class _DesktopMenuBarState extends ConsumerState<DesktopMenuBar> {
             ),
     );
   }
-
-  /// [kMenuLayout] with the standard Edit commands ahead of the product's own
-  /// Edit actions, as the macOS convention puts them.
-  ///
-  /// The shared menu bar is generic over what an item is, so the product's
-  /// [ShortcutAction]s and the [EditCommand]s share one layout of [Object]s.
-  static final CruxMenuLayout<Object> _layout = {
-    for (final entry in kMenuLayout.entries)
-      entry.key: [
-        if (entry.key == ActionCategory.edit) <Object>[...EditCommand.values],
-        for (final group in entry.value) <Object>[...group],
-      ],
-  };
-
-  static final CruxAppMenuActions<Object> _appActions =
-      CruxAppMenuActions<Object>(
-        about: kAppMenuActions.about,
-        checkForUpdates: kAppMenuActions.checkForUpdates,
-        settings: kAppMenuActions.settings,
-        quit: kAppMenuActions.quit,
-      );
 
   /// The action's localized label, with the one platform-dependent override.
   ///
